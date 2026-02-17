@@ -1,4 +1,4 @@
-# Title
+# SignMuon: fast as Muon, communication-effective as SignSGD
 
 <!-- Change `kisnikser/m1p-template` to `intsystems/your-repository`-->
 [![License](https://badgen.net/github/license/kisnikser/m1p-template?color=green)](https://github.com/kisnikser/m1p-template/blob/main/LICENSE)
@@ -9,15 +9,15 @@
 <table>
     <tr>
         <td align="left"> <b> Author </b> </td>
-        <td> Name Surname </td>
+        <td> Maria Smirnova </td>
     </tr>
     <tr>
         <td align="left"> <b> Consultant </b> </td>
-        <td> Name Surname, PhD/DSc </td>
+        <td> Alexey Kravatskiy, PhD/DSc </td>
     </tr>
     <tr>
         <td align="left"> <b> Advisor </b> </td>
-        <td> Name Surname, PhD/DSc </td>
+        <td> Dmitry Kovalev, PhD </td>
     </tr>
 </table>
 
