@@ -13,7 +13,7 @@
     </tr>
     <tr>
         <td align="left"> <b> Consultant </b> </td>
-        <td> Alexey Kravatskiy, PhD/DSc </td>
+        <td> Alexey Kravatskiy </td>
     </tr>
     <tr>
         <td align="left"> <b> Advisor </b> </td>
