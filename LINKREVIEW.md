@@ -24,7 +24,7 @@
 | Benchmarks | Practical Efficiency of Muon for Pretraining | 2025 | Shah, I., et al. | [arXiv](https://arxiv.org/abs/2505.02222 ) | - | Benchmarks Muon's practical efficiency in pretraining scenarios against standard baselines. |
 | Benchmarks | Modded-NanoGPT: Speedrunning the NanoGPT Baseline | 2024a | Jordan, K., et al. | [GitHub](https://github.com/KellerJordan/modded-nanogpt ) | [GitHub](https://github.com/KellerJordan/modded-nanogpt ) | Establishes a fast NanoGPT baseline for comparing optimizer performance in LLM training. |
 | Benchmarks | CIFAR-10 Airbench | 2023 | Jordan, K. | [GitHub](https://github.com/KellerJordan/cifar10-airbench) | [GitHub](https://github.com/KellerJordan/cifar10-airbench) | Standardized benchmark for comparing optimizer performance on CIFAR-10 with standardized architecture. |
-| SignSGD | signSGD: Compressed Optimisation for Non-Convex Problems | 2018 | Bernstein, J., et al. | [arXiv](https://arxiv.org/abs/1802.04434 ) | - | - |
+| Muon / LMO  | Training Deep Learning Models with Norm-Constrained LMOs | 2018 | Bernstein, J., et al. | [arXiv](https://arxiv.org/pdf/2502.07529 ) | - | - |
 | Muon / LMO | Generalized Gradient Norm Clipping & Non-Euclidean (L_0,L_1)-Smoothness | 2025 | Pethick, T., et al. | [arXiv](https://arxiv.org/abs/2506.01913 ) | - | - |
 | Muon / LMO | Dion: Distributed Orthonormalized Updates | 2025 | Ahn, K., et al. | [arXiv](https://arxiv.org/abs/2504.05295 ) | - | - |
 | Muon / LMO | An Exploration of Non-Euclidean Gradient Descent: Muon and its Many Variants | 2025 | Ahn, K., et al.  | [arXiv](https://arxiv.org/abs/2510.09827 ) | - | - |
