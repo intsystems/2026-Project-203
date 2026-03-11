@@ -44,25 +44,20 @@
 %%%
 
 
-\title{Title}
-
-
-% The \author macro works with any number of authors. There are two commands
-% used to separate the names and addresses of multiple authors: \And and \AND.
-%
-% Using \And between authors leaves it to LaTeX to determine where to break the
-% lines. Using \AND forces a line break at that point. So, if LaTeX puts 3 of 4
-% authors names on the first line, and the last on the second line, try using
-% \AND instead of \And before the third author name.
-
+\title{SignMuon: fast as Muon, communication-effective as SignSGD}
 
 \author{
-  Name Surname\\
+  Maria Smirnova\\
+  MIPT\\
+  Moscow, Russia\\
+  \texttt{smirnova.ma@phystech.edu}\\
+  \And
+  Alexey Kravatskiy \\
   MIPT\\
   Moscow, Russia\\
   \texttt{email@phystech.edu}\\
-  \And
-  Name Surname\\
+\And
+  Dmitry Kovalev\\
   MIPT\\
   Moscow, Russia\\
   \texttt{email@phystech.edu}\\
@@ -75,31 +70,100 @@
 \maketitle
 
 \begin{abstract}
-    TODO
+SignSGD is a popular algorithm due to its strong performance in both centralized and decentralized settings: it performs competitively with Adam while being communication-efficient, transmitting up to 32x fewer bits than standard optimizers. This work introduces SignMuon, an algorithm that combines the structured LMO-based update of Muon with the sign compression of SignSGD. Our experiments show that SignMuon achieves performance nearly on par with Muon in the centralized setting and outperforms SignSGD in both centralized and federated settings. We establish theoretical convergence guarantees for SignMuon in the smooth non-convex regime. We further analyze specific modifications to the algorithm that enhance numerical stability without compromising communication efficiency. Finally, this work extends our framework to the broader class of SignA algorithms, where A denotes any LMO-based optimizer, providing a unified convergence analysis for sign-compressed LMO methods. Empirical validation is conducted on synthetic convex and nonconvex problems with known smoothness constants, CIFAR-airbench, federated MNIST/CIFAR-10 classification, and NanoGPT training.
+    
 \end{abstract}
 
 \textbf{Keywords:} TODO
 
-\section{Introduction}\label{sec:intro}
 
-TODO
+\section{Introduction}
+Modern deep learning training methods require optimizers that not only achieve fast convergence but also minimize communication overhead in distributed and federated settings, where transmitting updates between workers becomes a bottleneck. For instance, the SignSGD algorithm has demonstrated that even extreme compression (down to 1 bit per coordinate) preserves the effectiveness of the method and reduces the amount of data exchanged by a factor of approximately $\sim32\times$, with only a minor degradation in model quality \cite{bernstein2018signsgd, bernstein2019majority}.
 
-\textbf{Contributions.} Our contributions can be summarized as follows:
+SignSGD does not properly leverage the matrix structure of parameters: in problems involving matrix-valued weights, it ignores the linear dependencies between rows and columns, which can degrade training performance. The recently proposed Muon optimizer addresses this limitation by employing orthonormalized updates, which have been shown to stabilize the training of deep models and, in several cases, outperform standard adaptive optimization methods in terms of final solution quality \cite{bernstein2024oldoptimizer, jordan2024muon, shah2025practical}.
+
+However, Muon requires transmitting full gradient matrices, which can be prohibitively expensive in federated settings. In federated learning, data is distributed across multiple clients that communicate with a central server to jointly train a global model. Each client holds a local dataset. The goal of federated learning is to minimize the average loss across all clients. Since clients are often geographically distributed and may have limited communication bandwidth, this creates a communication bottleneck. To address this issue, gradient compression and update compression techniques are commonly employed \cite{bernstein2018signsgd, horvath2023quantization}. 
+
+In this work, we propose the SignMuon algorithm, which combines Muon updates with the extreme compression of SignSGD. Unlike SignSGD, where the sign of the stochastic gradient is transmitted, our method first computes a descent direction via the LMO-based update employed in Muon, and then transmits only the sign of this direction. This approach preserves the matrix structure of the parameters and retains the benefits of Muon, while reducing the communication cost to just one bit per coordinate. Thus, SignMuon aims to bridge the gap between the fast convergence of structured optimizers and the communication efficiency of sign-based methods.
+
+We show the performance of the proposed algorithm on various synthetic and real-world problems:
 \begin{itemize}
-    \item We present...
-    \item We demonstrate the validity of our theoretical results through empirical studies...
-    \item We highlight the implications of our findings for...
+    \item Synthetic least squares experiment
+    \item CIFAR-10 airbench \cite{jordan2023airbench}
+    \item MNIST
+    \item Pre-training NanoGPT and GPT-2 Medium on FineWeb dataset \cite{jordan2024modded}
 \end{itemize}
 
-\textbf{Outline.} The rest of the paper is organized as follows...
+Our experiments aim to investigate how effectively structured update directions from Muon can be combined with the extreme communication compression of sign-based methods. Specifically, we analyze the extent to which transmitting only the sign of the update direction affects training performance and stability compared to using the full Muon update.
 
-\section{Related Work}\label{sec:rw}
+Experimental results demonstrate that applying sign compression to Muon update directions allows (to be continued...) 
 
-\textbf{Topic \#1.}
-TODO
+Thus, the proposed approach demonstrates that LMO-based methods can be successfully combined with sign compression without significant degradation in training performance. Moreover, the proposed scheme naturally generalizes to the broader class of SignA algorithms, where A denotes any optimizer that relies on LMO directions. This opens up new possibilities for designing communication-efficient optimization algorithms.
 
-\textbf{Topic \#2.}
-TODO
+
+\section{Problem statement}\label{sec:prostate}
+We consider the stochastic optimization problem for a smooth non-convex function
+\begin{equation}
+\min_{\mathbf{x}\in\mathbb{R}^d} f(\mathbf{x})=\mathbb{E}_{\xi\sim\mathcal{J}}[f(\mathbf{x},\xi)],
+\end{equation}
+where  $\xi$ — a random vector from an unknown distribution $\mathcal{J}$, $f(\mathbf{x},\xi)$ — denotes the model loss function. In the context of deep neural network training, $\mathbf{x}\in\mathbb{R}^d$ — epresents the vector of all parameters, and the goal in practice is to find a point $\mathbf{x}$ with a small gradient norm $\|\nabla f(\mathbf{x})\|$.
+
+This problem can be formulated in the context of federated learning. Suppose the data is distributed across $M$ clients, where each client $m$ has a local dataset $D_m$ of size $|D_m|$ and a local function $f_m(\mathbf{x}) = \mathbb{E}_{\xi \sim D_m}[f(\mathbf{x}, \xi)]$. The goal is to minimize the average function across clients:
+\begin{equation}
+F(\mathbf{x})=\min_{\mathbf{x}\in\mathbb{R}^d}\frac{1}{M}\sum_{m=1}^M\mathbb{E}_{\xi_m \sim D_m}f(\mathbf{x}, \xi_m),\qquad \min_{\mathbf{x}\in\mathbb{R}^d} F(\mathbf{x}).
+\end{equation}
+In the federated setting, clients compute local stochastic gradients and periodically send updates to a central server. The communication channel is often limited, making the amount of transmitted data a critical resource \cite{horvath2023quantization, bernstein2018signsgd}. For an overview of practical techniques in federated learning and gradient compression, see also \cite{bernstein2018signsgd, bernstein2019majority, horvath2023quantization}.
+
+Common assumptions include the $L$-smoothness of $f$:
+$\|\nabla f(\mathbf{x})-\nabla f(\mathbf{y})\|\le L\|\mathbf{x}-\mathbf{y}\|.
+$ In practice, weaker $(L_0,L_1)$-type conditions may be used \cite{pethick2025gradnorm}. Furthermore, prior results impose additional constraints: transmitting full 32‑bit gradients over the network is prohibitive, making a compression level of 1 bit per coordinate the target \cite{bernstein2018signsgd, bernstein2019majority}.
+
+We define the Linear Minimization Oracle (LMO) operator $A(\cdot)$ as the solution to a linear minimization problem over a feasible set:
+\begin{equation}
+A(\mathbf{G})=\arg\min_{\mathbf{D} \in \mathcal{S}}\langle \mathbf{G}, \mathbf{D}\rangle.
+\end{equation}
+where  $\mathbf{G}\in\mathbb{R}^{m\times n}$ — the gradient (or its stochastic estimate), $\mathbf{D}\in\mathbb{R}^{m\times n}$ — the update direction, $\langle \mathbf{A},\mathbf{B}\rangle=\mathrm{tr}(\mathbf{A}^\top\mathbf{B})$ — the standard matrix inner product, and $\mathcal{S}\subset\mathbb{R}^{m\times n}$ — the set of admissible directions \cite{kravatskiy2025kyfan}. In particular, constraints can be specified via the unit ball of some norm:
+\begin{equation}
+A(\mathbf{G})=\arg\min_{\|\mathbf{D}\|\le 1}\langle \mathbf{G},\mathbf{D}\rangle.
+\end{equation}
+This operator selects the steepest descent direction with respect to the given norm. The analytical and practical role of the LMO is discussed in detail in works on norm-constrained LMO-based optimizers \cite{bernstein2025normconstrained, kovalev2025orthogonalization}.
+
+The Muon optimizer leverages the matrix structure of the gradient. Let $\mathbf{G}=\mathbf{U}\boldsymbol{\Sigma}\mathbf{V}^\top$ — be the singular value decomposition of $\mathbf{G}\in\mathbb{R}^{m\times n}$, where $\mathbf{U}\in\mathbb{R}^{m\times r}$, $\mathbf{V}\in\mathbb{R}^{n\times r}$ — orthonormal matrices of singular vectors, $\boldsymbol{\Sigma}\in\mathbb{R}^{r\times r}$ — the diagonal matrix of singular values, and $r=\mathrm{rank}(\mathbf{G})$. The LMO direction is then given by
+\begin{equation}
+A(\mathbf{G})=\mathbf{U}\mathbf{V}^\top \in \mathbb{R}^{m\times n}.
+\end{equation}
+when it selects the orthonormal direction corresponding to the solution of the linear minimization problem. Muon thus performs a steepest descent step with respect to the spectral norm, where the update direction is obtained by orthogonalizing the gradient matrix. In practice, Muon employs a momentum-smoothed estimate of the gradient.
+\begin{equation}
+    \begin{aligned}
+        \mathbf{M}_t &= \mu \mathbf{M}_{t-1} + \mathbf{G}_t, \\
+        \mathbf{M}_t &= \mathbf{U}_t \boldsymbol{\Sigma}_t \mathbf{V}_t^\top, \\
+        \mathbf{D}_t &= \mathbf{U}_t \mathbf{V}_t^\top.
+    \end{aligned}
+\end{equation}
+In the original implementation of Muon, the product $\mathbf{U}_t\mathbf{V}_t^\top$ is computed approximately using Newton–Schulz iterations and other polynomial schemes, enabling efficient orthogonalization of the matrix without explicitly computing the SVD \cite{amsel2025polarexpress, li2025convergence, liu2025muonscalable}. Intuitively, such orthogonalization renders the updates isotropic and prevents a few gradient directions from dominating—a property that is particularly important when training deep neural networks \cite{bernstein2024oldoptimizer, shah2025practical}.
+
+We denote compression via the element-wise sign function $\mathcal{Q}(\mathbf{M})=\operatorname{sign}(\mathbf{M})\in\{\pm1\}^{d}$, and define the class of SignA algorithms as:
+\begin{equation}
+    \begin{aligned}
+        A(\mathbf{G}_t) &: \mathbf{G}_t \to \mathbf{D}_t, \\
+        \mathbf{s}_t &= \mathcal{Q}(\mathbf{D}_t), \\
+        \mathbf{x}_{t+1} &= \mathbf{x}_t - \eta_t \lambda_t \hat{\mathbf{s}}_t.
+    \end{aligned}
+\end{equation}
+where $\lambda_t$ — a scaling factor, $\hat{\mathbf{s}}_t$ — aggregated message (in the centralized setting $\hat{\mathbf{s}}_t=\mathbf{s}_t$,, while in federated settings it is obtained via majority vote or averaging across clients). A particular instance of this family is SignMuon, where $A$ — Muon (i.e. $\mathbf{D}_t=\mathbf{U}_t\mathbf{V}_t^\top$) is transmitted $\operatorname{sign}(\mathbf{U}_t\mathbf{V}_t^\top)$ \cite{petrov2025signmuon}.
+
+SignA performs a steepest descent step with norm constraints and an LMO direction:
+\begin{equation}
+\mathbf{x}_{t+1} = \mathbf{x}_t - \eta_t \lambda_t \operatorname{sign}\Big(\arg\min_{\|\mathbf{D}\|\le 1}\langle \mathbf{G}_t, \mathbf{D}\rangle\Big).
+\end{equation}
+
+Our goal is to design a communication-efficient method that provides theoretical and empirical convergence guarantees comparable to Muon in terms of performance and to SignSGD in terms of communication:
+\begin{equation}
+\min_{t\le T}\mathbb{E}\|\nabla f(\mathbf{x}_t)\|^2 = \mathcal{O}(T^{-1/2}),
+\end{equation}
+using a communication budget of order $d$ bits per iteration (sign encoding).
+
+
 
 \section{Preliminaries}\label{sec:prelim}
 
@@ -140,5 +204,8 @@ TODO
 \subsection{Additional experiments / Proofs of Theorems}\label{app:exp}
 
 TODO
+
+
+
 
 \end{document}
