@@ -1,0 +1,214 @@
+\documentclass{article}
+
+\PassOptionsToPackage{numbers, sort, compress}{natbib}
+\usepackage[main,final]{neurips_2025}
+
+\usepackage[T1]{fontenc}
+\usepackage[utf8]{inputenc}
+\usepackage{tempora}
+\usepackage[english,russian]{babel}
+\usepackage{hyperref}
+\usepackage{url}
+\usepackage{booktabs}
+\usepackage{nicefrac}
+\usepackage{microtype}
+\usepackage{xcolor}
+
+%%%
+
+\usepackage{subcaption}
+\usepackage{graphicx}
+\usepackage{multirow}
+\usepackage{amsmath,amssymb,amsfonts}
+\usepackage{amsthm}
+\usepackage{mathrsfs}
+\usepackage{xcolor}
+\usepackage{textcomp}
+\usepackage{manyfoot}
+\usepackage{algorithm}
+\usepackage{algorithmicx}
+\usepackage{algpseudocode}
+\usepackage{listings}
+
+\newtheorem{theorem}{Theorem} % continuous numbers
+%%\newtheorem{theorem}{Theorem}[section] % sectionwise numbers
+%% optional argument [theorem] produces theorem numbering sequence instead of independent numbers for Proposition
+\newtheorem{proposition}[theorem]{Proposition}% 
+\newtheorem{lemma}{Lemma}% 
+%%\newtheorem{proposition}{Proposition} % to get separate numbers for theorem and proposition etc.
+
+\newtheorem{example}{Example}
+\newtheorem{remark}{Remark}
+
+\newtheorem{definition}{Definition}
+\newtheorem{assumption}{Assumption}
+
+%%%
+
+
+\title{SignMuon: fast as Muon, communication-effective as SignSGD}
+
+\author{
+  Maria Smirnova\\
+  MIPT\\
+  Moscow, Russia\\
+  \texttt{smirnova.ma@phystech.edu}\\
+  \And
+  Alexey Kravatskiy \\
+  MIPT\\
+  Moscow, Russia\\
+  \texttt{email@phystech.edu}\\
+\And
+  Dmitry Kovalev\\
+  MIPT\\
+  Moscow, Russia\\
+  \texttt{email@phystech.edu}\\
+}
+
+
+\begin{document}
+
+
+\maketitle
+
+\begin{abstract}
+SignSGD is a popular algorithm due to its strong performance in both centralized and decentralized settings: it performs competitively with Adam while being communication-efficient, transmitting up to 32x fewer bits than standard optimizers. This work introduces SignMuon, an algorithm that combines the structured LMO-based update of Muon with the sign compression of SignSGD. Our experiments show that SignMuon achieves performance nearly on par with Muon in the centralized setting and outperforms SignSGD in both centralized and federated settings. We establish theoretical convergence guarantees for SignMuon in the smooth non-convex regime. We further analyze specific modifications to the algorithm that enhance numerical stability without compromising communication efficiency. Finally, this work extends our framework to the broader class of SignA algorithms, where A denotes any LMO-based optimizer, providing a unified convergence analysis for sign-compressed LMO methods. Empirical validation is conducted on synthetic convex and nonconvex problems with known smoothness constants, CIFAR-airbench, federated MNIST/CIFAR-10 classification, and NanoGPT training.
+    
+\end{abstract}
+
+\textbf{Keywords:} TODO
+
+
+\section{Введение}
+Современные методы обучения глубоких нейронных сетей (DNN) требуют использования оптимизаторов, которые не только обеспечивают высокую скорость сходимости, но и минимизируют коммуникационные издержки в распределённых и федеративных системах, где передача обновлений между узлами является узким местом (bottleneck). Так, алгоритм SignSGD продемонстрировал, что даже экстремальная компрессия (до 1 бита на компоненту) сохраняет работоспособность метода и позволяет сократить объём передаваемых данных примерно в 32 раза при незначительной потере качества модели \cite{bernstein2018signsgd, bernstein2019signsgdmajority}.
+
+
+SignSGD плохо учитывает матричную структуру параметров: в задачах с матричными весами он рассматривает матрицы как одномерные векторы (flattening), игнорируя их внутреннюю 2D-тензорную структуру, что может ухудшать качество обучения DNN. Недавно предложенный оптимизатор Muon показал, что его ортонормированные обновления стабилизируют обучение DNN и в ряде случаев превосходят стандартные адаптивные методы оптимизации по качеству итогового решения \cite{bernstein2024old, jordan2024muon, shah2025practical}. 
+ 
+Однако Muon требует передачи полных матриц обновлений, что в федеративных задачах может быть слишком затратным. В условиях федеративного обучения данные распределены между узлами, которые обмениваются параметрами с сервером с целью обучения общей модели. Каждый узел имеет локальный набор данных, а целью федеративного машинного обучения является минимизация усредненной функции потерь по всем узлам. Поскольку участники сети часто находятся на значительном расстоянии от агрегирующего сервера и могут иметь ограниченную пропускную способность канала связи, возникает коммуникационное узкое место. Для решения этой проблемы обычно используются методы компрессии градиентов и обновлений \cite{horvath2023stochastic, bernstein2018signsgd, beznosikov2020biased, alistarh2017qsgd}.  
+
+В данной работе мы предлагаем алгоритм SignMuon, который объединяет методы обновления Muon с экстремальной компрессией SignSGD. В отличие от SignSGD, где передаётся знак стохастического градиента, наш метод сначала вычисляет направление спуска с помощью LMO-обновления, аналогично Muon, а затем передаёт только знак этого направления. Такая схема позволяет учитывать матричную структуру параметров и сохранять преимущества Muon, одновременно сокращая объём передаваемой информации до одного бита на компоненту. Тем самым SignMuon стремится объединить быструю сходимость структурированных оптимизаторов с коммуникационной эффективностью знаковых методов.
+
+Эффективность предложенного оптимизатора показана на различных синтетических и прикладных задач:
+\begin{itemize}
+    \item Синтетический эксперимент по методу наименьших квадратов; 
+    \item Бенчмарк CIFAR-10 airbench \cite{jordan2023cifar10}
+    \item Классификация изображений MNIST
+    \item Предварительное обучение (pre-training) моделей NanoGPT и GPT-2 Medium на датасете FineWeb \cite{jordan2024moddednanogpt}
+\end{itemize}
+
+Наши эксперименты направлены на изучение того, насколько эффективно можно сочетать структурированные направления обновления Muon с экстремальной коммуникационной компрессией знаковых методов. В частности, мы анализируем, как передача только знака направления обновления влияет на качество и устойчивость обучения по сравнению с использованием полного Muon-обновления.
+
+Экспериментальные результаты показывают, что использование знаковой компрессии для направлений Muon позволяет (to be contunied...) 
+
+
+Таким образом, предложенный подход демонстрирует, что LMO-основанные методы могут быть успешно объединены с знаковой компрессией без существенной потери качества обучения. Более того, предложенная схема естественным образом обобщается на более широкий класс алгоритмов SignA, где A обозначает любой оптимизатор, использующий LMO-направления. Это открывает возможность построения новых коммуникационно-эффективных алгоритмов оптимизации.
+
+
+\section{Постановка задачи}\label{sec:prostate}
+Рассматриваем стохастическую задачу оптимизации для гладкой невыпуклой функции
+\begin{equation}
+\min_{\mathbf{x}\in\mathbb{R}^d} f(\mathbf{x})=\mathbb{E}_{\xi\sim\mathcal{J}}[f(\mathbf{x},\xi)],
+\end{equation}
+где $\xi$ — случайный вектор неизвестного распределения $\mathcal{J}$, $f(\mathbf{x},\xi)$ — функция потерь модели (loss function). В контексте обучения DNN: $\mathbf{x}\in\mathbb{R}^d$ — вектор всех параметров, цель практической оптимизации — найти точку $\mathbf{x}$ с малой нормой градиента $\|\nabla f(\mathbf{x})\|$.
+
+Рассмотрим данную задачу в контексте федеративного обучения. Пусть данные распределены по $M$ узлам, каждый узел $m$ имеет локальную выборку $D_m$ размера $|D_m|$ и соответствующую локальную функцию потерь $f_m(\mathbf{x})=\mathbb{E}_{\xi\sim D_m}[f(\mathbf{x},\xi)]$. Цель — минимизировать усредненную по всем узлам функцию:
+\begin{equation}
+F(\mathbf{x})=\min_{\mathbf{x}\in\mathbb{R}^d}\frac{1}{M}\sum_{m=1}^M\mathbb{E}_{\xi_m \sim D_m}f(\mathbf{x}, \xi_m),\qquad \min_{\mathbf{x}\in\mathbb{R}^d} F(\mathbf{x}).
+\end{equation}
+В федеративном режиме узлы вычисляют локальные стохастические градиенты и периодически отправляют сообщения на сервер, канал коммуникации часто ограничен, поэтому критическим ресурсом является объём передаваемых данных \cite{bernstein2019signsgdmajority, horvath2023stochastic}. Для обзора практических приёмов в федеративном обучении и компрессии см. также \cite{beznosikov2020biased, gruntkowska2025error, ahn2025dion}.
+
+Возможные ограничения связаны с $L$-гладкостью функции $f$ в неевклидовом пространстве, оснащенном нормой $\|\cdot\|$ :
+$\|\nabla f(\mathbf{x}) - \nabla f(\mathbf{y})\|_* \leq L \|\mathbf{x} - \mathbf{y}\|,$ где $\|\cdot\|_*$ — дуальная норма. На практике возможно использовать ослабленные условия типа $(L_0,L_1)$ \cite{pethick2025generalized}. Учитывая результаты существующих исследований, показавших неэффективность передачи полных 32-битных градиентов в распределенных системах, целесообразно рассмотреть сценарии с экстремальной компрессией, где целевой уровень сжатия составляет 1 бит на компоненту сообщения \cite{bernstein2018signsgd, bernstein2019signsgdmajority, beznosikov2020biased}.
+
+Определим Linear Minimization Oracle (LMO) - оператор $A(\cdot)$ как решение задачи линейной минимизации на допустимом множестве:
+\begin{equation}
+A(\mathbf{G})=\arg\min_{\mathbf{D} \in \mathcal{S}}\langle \mathbf{G}, \mathbf{D}\rangle.
+\end{equation}
+где $\mathbf{G}\in\mathbb{R}^{m\times n}$ — градиент (или его стохастическая оценка), $\mathbf{D}\in\mathbb{R}^{m\times n}$ — направление обновления, $\langle \mathbf{A},\mathbf{B}\rangle=\mathrm{tr}(\mathbf{A}^\top\mathbf{B})$ — стандартное скалярное произведение матриц, а $\mathcal{S}\subset\mathbb{R}^{m\times n}$ — множество допустимых направлений \cite{pethick2025training}. В частности, ограничения можно задать через единичный шар некоторой нормы:
+\begin{equation}
+A(\mathbf{G})=\arg\min_{\|\mathbf{D}\|\le 1}\langle \mathbf{G},\mathbf{D}\rangle.
+\end{equation}
+Такой оператор выбирает направление наискорейшего спуска в заданной норме. Аналитическая и практическая роль LMO подробно обсуждается в работах по норм-ограниченным LMO-оптимизаторам \cite{pethick2025training, kovalev2025understanding, riabinin2025gluon}.
+
+Оптимизатор Muon использует матричную структуру градиента. Пусть $\mathbf{G}=\mathbf{U}\boldsymbol{\Sigma}\mathbf{V}^\top$ — сингулярное разложение матрицы $\mathbf{G}\in\mathbb{R}^{m\times n}$, где $\mathbf{U}\in\mathbb{R}^{m\times r}$, $\mathbf{V}\in\mathbb{R}^{n\times r}$ — ортонормированные матрицы сингулярных векторов, $\boldsymbol{\Sigma}\in\mathbb{R}^{r\times r}$ — диагональная матрица сингулярных значений, $r=\mathrm{rank}(\mathbf{G})$. Тогда LMO-направление имеет вид
+\begin{equation}
+A(\mathbf{G})=\mathbf{U}\mathbf{V}^\top \in \mathbb{R}^{m\times n}.
+\end{equation}
+то есть выбирается ортонормированное направление, соответствующее решению задачи линейной минимизации. Muon реализует шаг steepest descent в спектральной норме, где направление обновления получается ортогонализацией матрицы градиента. На практике Muon использует сглаженную оценку градиента с импульсом. 
+\begin{equation}
+    \begin{aligned}
+        \mathbf{M}_t &= \mu \mathbf{M}_{t-1} + \mathbf{G}_t, \\
+        \mathbf{M}_t &= \mathbf{U}_t \boldsymbol{\Sigma}_t \mathbf{V}_t^\top, \\
+        \mathbf{D}_t &= \mathbf{U}_t \mathbf{V}_t^\top.
+    \end{aligned}
+\end{equation}
+В исходной реализации Muon вычисление $\mathbf{U}_t\mathbf{V}_t^\top$ выполняется приближённо с помощью итераций Ньютона–Шульца и других полиномиальных схем, что позволяет эффективно ортогонализовать матрицу без явного вычисления SVD \cite{amsel2025polar, li2025note, liu2025muon}. Интуитивно такая ортогонализация делает обновления изотропными и предотвращает доминирование нескольких направлений градиента, что особенно важно при обучении DNN \cite{bernstein2024old, shah2025practical}.
+
+Обозначим компрессию через поэлементную знаковую функцию $\operatorname{sign}(\mathbf{M})\in\{\pm1\}^{d}$, и определим класс алгоритмов SignA как:
+\begin{equation}
+    \begin{aligned}
+        A(\mathbf{G}_t) &: \mathbf{G}_t \to \mathbf{D}_t, \\
+        \mathbf{s}_t &= \operatorname{sign}(\mathbf{D}_t), \\
+        \mathbf{X}_{t+1} &= \mathbf{X}_t - \eta_t \hat{\mathbf{s}}_t.
+    \end{aligned}
+\end{equation}
+где $\hat{\mathbf{s}}_t$ — агрегированное сообщение (в централизованной схеме $\hat{\mathbf{s}}_t=\mathbf{s}_t$, во федеративной — majority-vote или среднее по узлам). Частным случаем данного семейства алгоритмов является SignMuon, где $A$ — Muon (т.е. $\mathbf{D}_t=\mathbf{U}_t\mathbf{V}_t^\top$) и передаётся $\operatorname{sign}(\mathbf{U}_t\mathbf{V}_t^\top)$ \cite{petrov2025leveraging}.
+
+SignA реализует шаг steepest-descent с ограничением по норме и LMO-направлением:
+\begin{equation}
+\mathbf{X}_{t+1} = \mathbf{X}_t - \eta_t \operatorname{sign}\Big(\arg\min_{\|\mathbf{D}\|\le 1}\langle \mathbf{G}_t, \mathbf{D}\rangle\Big).
+\end{equation}
+
+Мы поставили цель сконструировать коммуникационно-эффективный метод, который обеспечивает теоретические и эмпирические гарантии сходимости, сравнимые с Muon по качеству и с SignSGD — по коммуникации:
+\begin{equation}
+\min_{t\le T}\mathbb{E}\|\nabla f(\mathbf{x}_t)\|^2 = \mathcal{O}(T^{-1/2}),
+\end{equation}
+при использовании коммуникационного бюджета порядка $d$ бит на шаг (sign-кодирование). Для анализа модификаций с error-feedback и квантованием см. \cite{gruntkowska2025error, gupta2025effective}.
+
+
+
+\section{Preliminaries}\label{sec:prelim}
+
+\subsection{General notation}
+
+In this section, we introduce the general notation used in the rest of the paper and the basic assumptions. 
+
+\subsection{Assumptions} 
+
+TODO
+
+\section{Method}\label{sec:method}
+
+\section{Experiments}\label{sec:exp}
+
+To verify the theoretical estimates obtained, we conducted a detailed empirical study...
+
+\section{Discussion}\label{sec:disc}
+
+TODO
+
+\section{Conclusion}\label{sec:concl}
+
+TODO
+
+
+%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%
+
+\bibliographystyle{unsrtnat}
+\bibliography{references}
+
+%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%
+
+\newpage
+\appendix
+\section{Appendix / supplemental material}\label{app}
+
+\subsection{Additional experiments / Proofs of Theorems}\label{app:exp}
+
+TODO
+
+
+
+
+\end{document}
