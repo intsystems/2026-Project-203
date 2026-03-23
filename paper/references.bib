@@ -1,0 +1,238 @@
+@article{bernstein2018signsgd,
+  title={sign{SGD}: {C}ompressed {O}ptimisation for {N}on-{C}onvex {P}roblems},
+  author={Bernstein, J. and others},
+  journal={},
+  year={2018},
+  url={https://arxiv.org/abs/1802.04434},
+  note={Introduces sign-based gradient descent to reduce communication costs in distributed training.}
+}
+
+@article{bernstein2019signsgdmajority,
+  title={sign{SGD} with {M}ajority {V}ote is {C}ommunication {E}fficient {A}nd {F}ault {T}olerant},
+  author={Bernstein, J. and others},
+  journal={},
+  year={2019},
+  url={https://arxiv.org/abs/1810.05291},
+  note={Prove signSGD convergence in large and mini-batch settings (establishing for a specific parameter regime ADAM convergence as a byproduct) and demonstrate that majority vote aggregation ensures robustness against up to 50\% adversarial workers.}
+}
+
+@article{bernstein2024old,
+  title={{O}ld {O}ptimizer, {N}ew {N}orm: {A}n {A}nthology},
+  author={Bernstein, J. and Newhouse, L.},
+  journal={},
+  year={2024},
+  url={https://arxiv.org/abs/2409.20325},
+  note={Connects classical optimization methods with modern norm-based constraints and preconditioning.}
+}
+
+@misc{jordan2024muon,
+  title={{M}uon: {A}n {O}ptimizer for {H}idden {L}ayers in {N}eural {N}etworks},
+  author={Jordan, K. and others},
+  year={2024},
+  howpublished={\url{https://github.com/KellerJordan/Muon}},
+  note={Blog/GitHub. Proposes Muon optimizer specifically designed for hidden layers using matrix preconditioning.}
+}
+
+@article{kovalev2025understanding,
+  title={{U}nderstanding {G}radient {O}rthogonalization for {D}eep {L}earning via {N}on-{E}uclidean {T}rust-{R}egion {O}ptimization},
+  author={Kovalev, D.},
+  journal={},
+  year={2025},
+  url={https://arxiv.org/abs/2503.12645},
+  note={Provides theoretical analysis of gradient orthogonalization via Non-Euclidean Trust-Region Optimization.}
+}
+
+@article{kravatskiy2025kyfan,
+  title={{T}he {K}y {F}an {N}orms and {B}eyond: {D}ual {N}orms and {C}ombinations for {M}atrix {O}ptimization},
+  author={Kravatskiy, A. and others},
+  journal={},
+  year={2025},
+  url={https://arxiv.org/abs/2512.09678},
+  note={Utilizes non-spectral matrix norms to construct LMO-based algorithms. Code: https://github.com/alexlegeartis/Neon/}
+}
+
+@misc{bernstein2025deriving,
+  title={{D}eriving {M}uon},
+  author={Bernstein, Jeremy},
+  year={2025},
+  howpublished={\url{https://jeremybernste.in/writing/deriving-muon}},
+  note={Blog. Explains the theoretical derivation and intuition behind the Muon optimizer.}
+}
+
+@article{liu2025muon,
+  title={{M}uon is {S}calable for {LLM} {T}raining},
+  author={Liu, J. and others},
+  journal={},
+  year={2025},
+  url={https://arxiv.org/abs/2502.16982},
+  note={Demonstrates Muon's scalability for LLM training, validating its performance against AdamW on large-scale models.}
+}
+
+@article{horvath2023stochastic,
+  title={{S}tochastic {D}istributed {L}earning with {G}radient {Q}uantization and {D}ouble-{V}ariance {R}eduction},
+  author={Horv{\'a}th, S. and others},
+  journal={},
+  year={2023},
+  url={https://arxiv.org/abs/1904.05115},
+  note={Provides theoretical analysis of gradient quantization and variance reduction in distributed learning for communication efficiency.}
+}
+
+@article{petrov2025leveraging,
+  title={{L}everaging {C}oordinate {M}omentum in {S}ign{SGD} and {M}uon},
+  author={Petrov, E. and others},
+  journal={},
+  year={2025},
+  url={https://arxiv.org/abs/2506.04430},
+  note={Zeroth-order modifications for SignSGD and Muon.}
+}
+
+@article{li2025note,
+  title={{A} {N}ote on the {C}onvergence of {M}uon and {F}urther},
+  author={Li, J. and Hong, M.},
+  journal={},
+  year={2025},
+  url={https://arxiv.org/abs/2502.02900},
+  note={Provides convergence analysis for Muon, addressing theoretical gaps in LMO-based optimizers.}
+}
+
+@article{amsel2025polar,
+  title={{T}he {P}olar {E}xpress: {O}ptimal {M}atrix {S}ign {M}ethods},
+  author={Amsel, N. and others},
+  journal={},
+  year={2025},
+  url={https://arxiv.org/abs/2505.16932},
+  note={More effective replacement for Newton-Schulz iterations.}
+}
+
+@article{cutkosky2020momentum,
+  title={{M}omentum {I}mproves {N}ormalized {SGD}},
+  author={Cutkosky, A. and Mehta, H.},
+  journal={},
+  year={2020},
+  url={https://arxiv.org/abs/2002.03305},
+  note={Proves that momentum improves convergence for normalized SGD, offering theoretical insights relevant to sign-based methods.}
+}
+
+@article{shah2025practical,
+  title={{P}ractical {E}fficiency of {M}uon for {P}retraining},
+  author={Shah, I. and others},
+  journal={},
+  year={2025},
+  url={https://arxiv.org/abs/2505.02222},
+  note={Benchmarks Muon's practical efficiency in pretraining scenarios against standard baselines.}
+}
+
+@misc{jordan2024moddednanogpt,
+  title={{M}odded-{N}ano{GPT}: {S}peedrunning the {N}ano{GPT} {B}aseline},
+  author={Jordan, K. and others},
+  year={2024},
+  howpublished={\url{https://github.com/KellerJordan/modded-nanogpt}},
+  note={Establishes a fast NanoGPT baseline for comparing optimizer performance in LLM training.}
+}
+
+@misc{jordan2023cifar10,
+  title={{CIFAR}-10 {A}irbench},
+  author={Jordan, K.},
+  year={2023},
+  howpublished={\url{https://github.com/KellerJordan/cifar10-airbench}},
+  note={Standardized benchmark for comparing optimizer performance on CIFAR-10 with standardized architecture.}
+}
+
+@article{pethick2025training,
+  title={{T}raining {D}eep {L}earning {M}odels with {N}orm-{C}onstrained {LMO}s},
+  author={Pethick, T. and others},
+  journal={},
+  year={2025},
+  url={https://arxiv.org/pdf/2502.07529},
+  note={This paper presents the Scion algorithm, a memory-efficient LMO-based stochastic optimizer that adapts to geometry, integrates existing methods, accelerates nanoGPT training without using Adam.}
+}
+
+@article{pethick2025generalized,
+  title={{G}eneralized {G}radient {N}orm {C}lipping \& {N}on-{E}uclidean $L_0, L_1$-{S}moothness},
+  author={Pethick, T. and others},
+  journal={},
+  year={2025},
+  url={https://arxiv.org/abs/2506.01913},
+  note={This paper presents the Clipped Scion is a hybrid non-Euclidean optimizer combining steepest descent and conditional gradient to generalize gradient clipping, achieve descent under $L_0, L_1$-smoothness, incorporate weight decay via Frank-Wolfe.}
+}
+
+@article{ahn2025dion,
+  title={{D}ion: {D}istributed {O}rthonormalized {U}pdates},
+  author={Ahn, K. and others},
+  journal={},
+  year={2025},
+  url={https://arxiv.org/abs/2504.05295},
+  note={This paper presents the Dion is a scalable, distributed orthonormalization method that replaces Newton-Schulz with amortized power iteration on a momentum buffer.}
+}
+
+@article{crawshaw2025exploration,
+  title={{A}n {E}xploration of {N}on-{E}uclidean {G}radient {D}escent: {M}uon and its {M}any {V}ariants},
+  author={Crawshaw, M. and others},
+  journal={arXiv preprint arXiv:2510.09827},
+  year={2025},
+  url={https://arxiv.org/abs/2510.09827},
+  note={In this paper, we combine non-Euclidean optimizers such as Adam and Muon, present a robust variant of MuonMax.}
+}
+
+@article{gruntkowska2025error,
+  title={{E}rror {F}eedback for {M}uon and {F}riends},
+  author={Gruntkowska, K. and others},
+  journal={},
+  year={2025},
+  url={https://arxiv.org/abs/2510.00643},
+  note={This paper presents the EF21-Muon is the communication-efficient distributed optimizer with rigorous convergence guarantees for non-Euclidean LMO-based methods (Muon/Scion/Gluon), supporting compression and error feedback while achieving up to 7x communication savings without accuracy loss.}
+}
+
+@article{gupta2025effective,
+  title={{E}ffective {Q}uantization of {M}uon {O}ptimizer {S}tates},
+  author={Gupta, A. and others},
+  journal={},
+  year={2025},
+  url={https://arxiv.org/abs/2509.23106},
+  note={It presents 8-bit Muon with blockwise quantization, which reduces optimizer memory by up to 62\% while matching full-precision Muon's performance in LLM pre-training and fine-tuning.}
+}
+
+@inproceedings{carlson2015stochastic,
+  title={{S}tochastic {S}pectral {D}escent for {R}estricted {B}oltzmann {M}achines},
+  author={Carlson, D. and others},
+  booktitle={Proceedings of Machine Learning Research (PMLR)},
+  year={2015},
+  url={https://proceedings.mlr.press/v38/carlson15.html},
+  note={Stochastic Spectral Descent updates RBM parameters in $\ell_\infty$ and Shatten-$\infty$ norms, achieving dramatic improvements over SGD with only a fractional increase in per-iteration cost.}
+}
+
+@inproceedings{sun2023momentum,
+  title={{M}omentum {E}nsures {C}onvergence of {SIGNSGD} under {W}eaker {A}ssumptions},
+  author={Sun, T. and others},
+  booktitle={Proceedings of Machine Learning Research (PMLR)},
+  year={2023},
+  url={https://proceedings.mlr.press/v202/sun23l},
+  note={In this paper proves that momentum ensures convergence of SignSGD under weaker assumptions and improves the convergence rate under second-order smoothness, aligning with empirical observations of its robustness with small batches.}
+}
+
+@article{beznosikov2020biased,
+  title={{O}n {B}iased {C}ompression for {D}istributed {L}earning},
+  author={Beznosikov, Aleksandr and others},
+  journal={},
+  year={2020},
+  url={https://arxiv.org/abs/2002.12410},
+  note={Provides a unified theoretical framework for distributed learning with biased compression operators, such as SignSGD, and analyzes error feedback mechanisms.}
+}
+
+@inproceedings{alistarh2017qsgd,
+  title={{QSGD}: {C}ommunication-{E}fficient {SGD} via {G}radient {Q}uantization and {E}ncoding},
+  author={Alistarh, Dan and others},
+  booktitle={Advances in Neural Information Processing Systems (NeurIPS)},
+  volume={30},
+  year={2017},
+  url={https://arxiv.org/abs/1610.02132},
+  note={Foundational paper on gradient quantization, introducing the trade-off between communication bandwidth and convergence guarantees.}
+}
+
+@article{riabinin2025gluon,
+  title={{G}luon: {M}aking {M}uon \& {S}cion {G}reat {A}gain! ({B}ridging {T}heory and {P}ractice of {LMO}-based {O}ptimizers for {LLM}s)},
+  author={Riabinin, A. and others},
+  journal={},
+  year={2025},
+  url={https://arxiv.org/abs/2505.13416}
+}
