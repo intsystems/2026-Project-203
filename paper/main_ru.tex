@@ -79,7 +79,7 @@ SignSGD is a popular algorithm due to its strong performance in both centralized
 \textbf{Keywords:} TODO
 
 
-\section{Введение}
+\section{Введение (Introduction)}\label{sec:intro}
 Современные методы обучения глубоких нейронных сетей (DNN) требуют использования оптимизаторов, которые не только обеспечивают высокую скорость сходимости, но и минимизируют коммуникационные издержки в распределённых и федеративных системах, где передача обновлений между узлами является узким местом (bottleneck). Так, алгоритм SignSGD продемонстрировал, что даже экстремальная компрессия (до 1 бита на компоненту) сохраняет работоспособность метода и позволяет сократить объём передаваемых данных примерно в 32 раза при незначительной потере качества модели \cite{bernstein2018signsgd, bernstein2019signsgdmajority}.
 
 
@@ -105,7 +105,7 @@ SignSGD плохо учитывает матричную структуру па
 Таким образом, предложенный подход демонстрирует, что LMO-основанные методы могут быть успешно объединены с знаковой компрессией без существенной потери качества обучения. Более того, предложенная схема естественным образом обобщается на более широкий класс алгоритмов SignA, где A обозначает любой оптимизатор, использующий LMO-направления. Это открывает возможность построения новых коммуникационно-эффективных алгоритмов оптимизации.
 
 
-\section{Постановка задачи}\label{sec:prostate}
+\section{Постановка задачи (Problem Statement)}\label{sec:prostate}
 Рассматриваем стохастическую задачу оптимизации для гладкой невыпуклой функции
 \begin{equation}
 \min_{\mathbf{x}\in\mathbb{R}^d} f(\mathbf{x})=\mathbb{E}_{\xi\sim\mathcal{J}}[f(\mathbf{x},\xi)],
@@ -168,21 +168,157 @@ SignA реализует шаг steepest-descent с ограничением п�
 
 
 
-\section{Preliminaries}\label{sec:prelim}
-
-\subsection{General notation}
-
-In this section, we introduce the general notation used in the rest of the paper and the basic assumptions. 
-
-\subsection{Assumptions} 
-
+\section{Theory}\label{sec:theory}
 TODO
 
-\section{Method}\label{sec:method}
 
-\section{Experiments}\label{sec:exp}
+\section{Вычислительный эксперимент (Computational Experiment)}\label{sec:exp}
+\textbf{Целью} эксперимента является эмпирическая валидация алгоритма SignMuon, как оптимизатора, объединяющего высокую скорость сходимости LMO-оптимизаторов с коммуникационной эффективностью знаковой компрессии. Само исследование состоит из нескольких частей:
+\begin{itemize}
+    \item \textbf{Централизованное обучение (Centralized Performance):} Сравнение динамики сходимости и итоговой точности (Accuracy) алгоритма SignMuon с классическими оптимизаторами Adam, SGD, SignSGD и Muon при фиксированном количестве эпох. Одной из целей является демонстрация того, что SignMuon обеспечивает высокое качество классификации, сопоставимое с Muon, и при этом превосходит по точности классический знаковый метод SignSGD при идентичной коммуникации (1 бит на параметр). 
+    \item \textbf{Федеративное обучение (Federated learning):} Оценка алгоритма в распределенной среде, где передача полных 32-битных матриц градиентов является bottleneck. Цель данного этапа исследования показать, что сжатие ортогонализованных LMO-обновлений позволяет достичь качества полного Muon при снижении объема передаваемых данных.
+    \item \textbf{Синтетическая неевклидова оптимизация (Synthetic Benchmarks):} Исследование сходимости расширенного семейства алгоритмов SignA на контролируемых задачах. Использование синтетических сред с заранее известными константами гладкости и числами обусловленности позволяет ...  TODO
+    \item \textbf{Эксперимент на масштабируемость и LLM:} Применение алгоритма SignMuon с целью предварительного обучения (pre-training) языковых моделей архитектуры Transformer. Валидация проводится на базе высокооптимизированного фреймворка Modded-NanoGPT, что позволяет сравнить SignMuon с Muon и  AdamW. ...  TODO
+\end{itemize}
 
-To verify the theoretical estimates obtained, we conducted a detailed empirical study...
+\textbf{Наборы данных.} Эксперименты проводятся на синтетических и реальных наборах данных:
+\begin{itemize}
+    \item \textbf{CIFAR-10:} Стандартный датасет для задачи классификации изображений. Содержит 60 000 цветных изображений размера 3x32x32. Для централизованного обучение датасет делится на обучающую и тестовую выборку, для федеративного сценария обучающая выборка партиционируется между узлами.
+    \item \textbf{MNIST:} Датасет для задачи классификации изображений, используемый в бенчмарках распределенного обучения. Содержит 70 000 черно-белых изображений рукописных цифр размера 1x28x28. Как и в случае с CIFAR-10, для централизованного обучения датасет делится на обучающую и тестовую выборки, а для федеративного сценария обучающая выборка партиционируется между узлами.
+    \item \textbf{Синтетические данные: } TODO
+    \item \textbf{FineWeb (для NanoGPT):} Текстовый корпус для pre-training языковых моделей, используемый в бенчмарках серии modded-nanogpt.
+\end{itemize}
+
+\textbf{Конфигурация алгоритма.} Для экспериментов на MNIST и CIFAR-10 используется 4-слойная сверточная архитектура (CNN). Оптимизация матричных параметров производится исследуемыми алгоритмами SignMuon, Muon, SignSGD, SGD, Adam. Векторные параметры (смещения) обновляются с помощью Adam \cite{jordan2023cifar10}. В качестве метода ортогонализации для Muon и SignMuon используется алгоритм Ньютона-Шульца. Темп обучения (learning rate) варьируется в зависимости от примененного алгоритма, используется Nesterov Momentum (0.9) и пкосинусный планировщик скорости обучения (CosineAnnealingLR). Обновление шага обучения $\eta_t$ на эпохе $t$ осуществляется по следующей формуле:
+\begin{equation}
+\eta_t = \eta_{\text{min}} + \frac{1}{2}(\eta_{\text{max}} - \eta_{\text{min}})\left(1 + \cos\left(\frac{t}{T_{\text{max}}}\pi\right)\right),
+\end{equation}
+где $\eta_{\text{max}}$ — начальный темп обучения алгоритма, $\eta_{\text{min}} = 0$ — минимальное значение (в нашей конфигурации), а $T_{\text{max}}$ соответствует общему числу эпох обучения. 
+
+\textbf{Ожидаемые таблицы и графики.} После проведения исследований ожидаем получения следующих результатов: график сравнение сходимости, по оси X — количество эпох (epochs), Y — точность на тестовой выборке / значение функции потерь; таблица сравнения конечных результатов обучения; график сравнения коммуникационной эффективности в распределенном обучении.
+
+\section{Предварительные результаты (Preliminary Report)}
+В качестве базовой модели для централизованного обучения была реализована сверточная нейронная сеть, представляющая собой отображение из пространства изображений в пространство вероятностей классов. Архитектура сети включает два сверточных блока с пакетной нормализацией (BatchNorm) и MLP-классификатор (multilayer perceptron). Основным исследуемым алгоритмом является SignMuon. Практическая реализация алгоритма учитывает тензорную структуру параметров нейронной сети. Процесс оптимизации разделен на два потока\cite{jordan2023cifar10}:
+\begin{enumerate}
+    \item Матричные параметры (веса сверточных и полносвязных слоев, $ndim \ge 2$) обновляются с помощью LMO-оракула.
+    \item Векторные параметры (смещения и веса слоев пакетной нормализации, $ndim < 2$) оптимизируются стандартным методом Adam. 
+\end{enumerate}
+Первоначально такой подход был предложен Jordan и другими \cite{jordan2024muon} в эмпирическом описании. Первый результат о теоретической сходимости был получен Li и Hong, которые проанализировали гладкую невыпуклую постановку \cite{li2025note}. Так же данный подход описан в работе Рябинина \cite{riabinin2025gluon}.
+
+Вычисление ортонормированного направления $\mathbf{D}_t \approx \mathbf{U}_t \mathbf{V}_t^\top$ для матричных параметров осуществляется без явного вычисления сингулярного разложения (SVD). Вместо этого применяется итерационный алгоритм Ньютона–Шульца. После получения LMO-направления $\mathbf{D}_t$, к нему применяется поэлементная функция $\operatorname{sign}(\mathbf{D}_t)$, что сокращает объем передаваемой информации до 1 бита на компоненту. Логика обновления представлена в Алгоритме 1:
+
+\begin{algorithm}[H]
+\caption{Обновление матричных параметров алгоритмом SignMuon}
+\begin{algorithmic}[1]
+\Require Текущие веса $\mathbf{X}_t$, градиент $\mathbf{G}_t$, импульс $\mu$, шаг обучения $\eta_t$, буфер импульса $\mathbf{M}_{t-1}$
+\Ensure Обновленные веса $\mathbf{X}_{t+1}$
+
+\State $\mathbf{M}_t \gets \mu \mathbf{M}_{t-1} + \mathbf{G}_t$ \Comment{Cглаженный градиент (импульс)}
+\State $\tilde{\mathbf{M}}_t \gets \mathbf{G}_t + \mu \mathbf{M}_t$ \Comment{Шаг Нестерова для ускорения сходимости}
+
+\State $\mathbf{Y} \gets \text{ReshapeTo2D}(\tilde{\mathbf{M}}_t)$ \Comment{Приведение тензора к матрице $m \times n$}
+\State $\mathbf{Y} \gets \mathbf{Y} / (\|\mathbf{Y}\|_F + \varepsilon)$ \Comment{Нормализация}
+
+\For{$k = 1$ to $5$} \Comment{Итерации Ньютона-Шульца для аппроксимации $\operatorname{sign}(\mathbf{Y})$}
+    \State $\mathbf{A} \gets \mathbf{Y} \mathbf{Y}^\top$
+    \State $\mathbf{Y} \gets 3.4445\,\mathbf{Y} - 4.7750\,\mathbf{A}\mathbf{Y} + 2.0315\,\mathbf{A}^2\mathbf{Y}$
+\EndFor
+
+\State $\mathbf{D}_t \gets \text{ReshapeToOriginal}(\mathbf{Y})$ \Comment{Восстановление исходной размерности}
+\State $\mathbf{s}_t \gets \operatorname{sign}(\mathbf{D}_t)$ \Comment{Знаковая компрессия}
+\State $\mathbf{X}_{t+1} \gets \mathbf{X}_t - \eta_t \mathbf{s}_t$ \Comment{Обновление весов}
+
+\State \Return $\mathbf{X}_{t+1}$
+\end{algorithmic}
+\end{algorithm}
+
+На данном этапе реализован программный пайплайн и проведен базовый вычислительный эксперимент по централизованному обучению на наборах данных MNIST и CIFAR-10. На датасете CIFAR-10 модель обучалась в течение 50 эпох с использованием CosineAnnealingLR. Для валидации предложенного алгоритма SignMuon проводилось сравнение с оптимизаторами Adam, SGD, SignSGD и Muon. На рисунках ниже представлены результаты данного эксперимента: 
+\begin{figure}[htbp]
+    \centering
+    \begin{subfigure}[b]{0.48\textwidth}
+        \centering
+        \includegraphics[width=\textwidth]{images/train_loss_mnist.png} 
+        \caption{Loss on train dataset}
+        \label{fig:adam}
+    \end{subfigure}
+    \hfill
+
+    \begin{subfigure}[b]{0.48\textwidth}
+        \centering
+        \includegraphics[width=\textwidth]{images/train_acc_mnist.png} 
+        \caption{Accuracy on train dataset}
+        \label{fig:sgd}
+    \end{subfigure}
+
+    \vspace{1em}
+
+    \begin{subfigure}[b]{0.48\textwidth}
+        \centering
+        \includegraphics[width=\textwidth]{images/test_loss_mnist.png}
+        \caption{Loss on test dataset}
+        \label{fig:muon}
+    \end{subfigure}
+    \hfill
+
+    \begin{subfigure}[b]{0.48\textwidth}
+        \centering
+        \includegraphics[width=\textwidth]{images/test_acc_mnist.png}
+        \caption{Accuracy on test dataset}
+        \label{fig:signmuon}
+    \end{subfigure}
+    
+    \caption{Сравнение сходимости и точности различных алгоритмов оптимизации на обучении классификатора MNIST. На верхнем ряду представлены результаты работы на обучающей выборке, в нижнем на тестовой.}
+    \label{fig:four_optimizers}
+\end{figure}
+
+
+\begin{figure}[htbp]
+    \centering
+    \begin{subfigure}[b]{0.48\textwidth}
+        \centering
+        \includegraphics[width=\textwidth]{images/train_loss_cifar.png} 
+        \caption{Loss on train dataset}
+        \label{fig:adam}
+    \end{subfigure}
+    \hfill
+
+    \begin{subfigure}[b]{0.48\textwidth}
+        \centering
+        \includegraphics[width=\textwidth]{images/train_acc_cifar.png} 
+        \caption{Accuracy on train dataset}
+        \label{fig:sgd}
+    \end{subfigure}
+
+    \vspace{1em}
+
+    \begin{subfigure}[b]{0.48\textwidth}
+        \centering
+        \includegraphics[width=\textwidth]{images/test_loss_cifar.png}
+        \caption{Loss on test dataset}
+        \label{fig:muon}
+    \end{subfigure}
+    \hfill
+
+    \begin{subfigure}[b]{0.48\textwidth}
+        \centering
+        \includegraphics[width=\textwidth]{images/test_acc_cifar.png}
+        \caption{Accuracy on test dataset}
+        \label{fig:signmuon}
+    \end{subfigure}
+    
+    \caption{Сравнение сходимости и точности различных алгоритмов оптимизации на обучении классификатора CIFAR-10. На верхнем ряду представлены результаты работы на обучающей выборке, в нижнем на тестовой.}
+    \label{fig:four_optimizers}
+\end{figure}
+
+\newpage
+Затем был реализован эксперимент по федеративному обучению: 
+
+\begin{figure}[htbp]
+    \centering
+    \includegraphics[width=0.8\textwidth]{images/эскиз.JPG}
+    \caption{Набросок ожидаемых результатов эксперимента.}
+    \label{fig:example}
+\end{figure}
 
 \section{Discussion}\label{sec:disc}
 
