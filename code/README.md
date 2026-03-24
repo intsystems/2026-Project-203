@@ -9,13 +9,8 @@ This repository contains source code for our paper. The code includes data proce
 
 Clone the repo:
 ```bash
-git clone https://github.com/kisnisker/m1p-template.git
-cd m1p-template/code
-```
-
-Install dependencies:
-```bash
-pip install -r requirements.txt
+git clone https://github.com/intsystems/2026-Project-203.git
+cd 2026-Project-203/code
 ```
 
 ## Usage
