@@ -1,0 +1,712 @@
+import torch
+import torch.optim as optim
+import torch.nn as nn
+from torch import autograd
+from tqdm import tqdm
+import copy
+from torch.utils.data import ConcatDataset, DataLoader
+import os
+import torchvision.utils as vutils
+from pathlib import Path
+from models import *
+from data_loader import *
+from torchvision import transforms
+from sklearn.cluster import KMeans
+from contextlib import contextmanager
+from optimizers import *
+import time
+
+
+@contextmanager
+def disable_bn_running_stats(model):
+    """Context manager to temporarily disable BatchNorm running statistics updates."""
+    bn_training_flags = {}
+    for module in model.modules():
+        if isinstance(module, (nn.BatchNorm1d, nn.BatchNorm2d, nn.BatchNorm3d)):
+            bn_training_flags[module] = module.training
+            module.training = False
+            module.eval()
+    try:
+        yield
+    finally:
+        for module, was_training in bn_training_flags.items():
+            module.training = was_training
+            if was_training:
+                module.train()
+
+def save_client_images(train_loaders, test_loaders, output_dir='saves/client_images', save_all=False):
+    if not os.path.exists(output_dir):
+        os.makedirs(output_dir)
+
+    for client_id, (train_loader, test_loader) in enumerate(zip(train_loaders, test_loaders)):
+        print(f"Saving images for client {client_id}")
+        
+        client_dir = os.path.join(output_dir, f'client_{client_id}')
+        train_dir = os.path.join(client_dir, 'train')
+        test_dir = os.path.join(client_dir, 'test')
+        os.makedirs(train_dir, exist_ok=True)
+        os.makedirs(test_dir, exist_ok=True)
+
+        for batch_idx, (images, labels) in enumerate(train_loader):
+            if save_all:
+                for img_idx, (image, label) in enumerate(zip(images, labels)):
+                    train_filename = os.path.join(train_dir, 
+                        f'batch_{batch_idx}_img_{img_idx}_label_{label}.png')
+                    vutils.save_image(image, train_filename)
+            else:
+                train_filename = os.path.join(train_dir, 
+                    f'batch_{batch_idx}_label_{labels[0]}.png')
+                vutils.save_image(images[0], train_filename)
+
+        for batch_idx, (images, labels) in enumerate(test_loader):
+            if save_all:
+                for img_idx, (image, label) in enumerate(zip(images, labels)):
+                    test_filename = os.path.join(test_dir, 
+                        f'batch_{batch_idx}_img_{img_idx}_label_{label}.png')
+                    vutils.save_image(image, test_filename)
+            else:
+                test_filename = os.path.join(test_dir, 
+                    f'batch_{batch_idx}_label_{labels[0]}.png')
+                vutils.save_image(images[0], test_filename)
+
+        if save_all:
+            print(f"Saved {len(train_loader.dataset)} training images and {len(test_loader.dataset)} test images for client {client_id}")
+        else:
+            print(f"Saved {len(train_loader)} training batch samples and {len(test_loader)} test batch samples for client {client_id}")
+
+
+def evaluate_model(global_model, test_loaders, args = None, verbose = False, device=None):
+    if device is not None:
+        if not torch.cuda.is_available():
+            device = torch.device("cpu")
+    if device is None:
+        device = torch.device("cuda:0" if torch.cuda.is_available() else "cpu")
+    global_model.eval()
+    global_model.to(device)
+
+    criterion = nn.CrossEntropyLoss(reduction = "sum")
+
+    client_accuracies = []
+    total_correct, total_samples = 0, 0
+    total_loss = 0.0
+
+    with torch.no_grad():
+        for client_id, test_loader in enumerate(test_loaders):
+            client_correct, client_total = 0, 0
+            client_loss = 0.0
+
+            if verbose:
+                print(f"\nEvaluating Client {client_id}")
+
+            for images, labels in test_loader:
+                images, labels = images.to(device), labels.to(device)
+
+                outputs = global_model(images)
+                if isinstance(outputs, tuple):
+                    outputs = outputs[-1]
+
+                loss = criterion(outputs, labels)
+                client_loss += loss.item()
+
+                _, predicted = torch.max(outputs, 1)
+                client_correct += (predicted == labels).sum().item()
+                client_total += labels.size(0)
+
+            client_accuracy = (client_correct / client_total) * 100 if client_total > 0 else 0
+            client_accuracies.append(client_accuracy)
+
+            if verbose:
+                print(f"Client {client_id} Classification Accuracy: {client_accuracy:.2f}%")
+
+            total_correct += client_correct
+            total_samples += client_total
+            total_loss += client_loss
+
+    total_accuracy = (total_correct / total_samples) * 100 if total_samples > 0 else 0
+    total_loss = total_loss / total_samples if total_samples > 0 else 0 
+
+    print(f"\rRound Accuracy: {total_accuracy:.2f}%, Loss: {total_loss:.4f}")
+    
+    return client_accuracies, total_accuracy, total_loss
+
+
+# =========================== SGD (FedSGD) ==============================================
+def local_train_sgd(global_model, train_loader, n_steps, device = None):
+    local_model = copy.deepcopy(global_model)
+    if device is not None:
+        if not torch.cuda.is_available():
+            device = torch.device("cpu")
+    if device is None:
+        device = torch.device("cuda:0" if torch.cuda.is_available() else "cpu")
+    local_model.to(device)
+    local_model.train()
+
+    criterion = nn.CrossEntropyLoss()
+
+    for param in local_model.parameters():
+        if param.requires_grad:
+            param.grad = None
+
+    for step, (x_train, y_train) in enumerate(train_loader):
+        if step >= n_steps:
+            break
+
+        x_train, y_train = x_train.to(device), y_train.to(device)
+
+        y_train = y_train.long()
+
+        loss = criterion(local_model(x_train), y_train)
+        loss.backward()
+
+
+    return {name: param.grad / n_steps for name, param in local_model.named_parameters() if param.grad is not None}
+
+def federated_sgd(global_model, train_loaders, num_clients, rounds, n_steps, lr, test_loaders, eval_freq=1, momentum=0.9, device = None):
+    """
+    Federated SGD.
+    
+    Args:
+        eval_freq: Evaluate model every N rounds (default: 1, i.e., every round). Set to higher value to evaluate less frequently.
+    """
+    if device is not None:
+        if not torch.cuda.is_available():
+            device = torch.device("cpu")
+    if device is None:
+        device = torch.device("cuda:0" if torch.cuda.is_available() else "cpu")
+    global_model.to(device)
+    global_model.train()
+
+    round_accuracies = []
+    round_losses = []
+
+    momentum_buffers = {
+        name: torch.zeros_like(param, device=device)
+        for name, param in global_model.named_parameters() 
+        if param.requires_grad
+    }
+
+    for r in range(rounds):
+        print(f"\rRound {r}", end='', flush=True)
+
+        client_grads = [
+            local_train_sgd(global_model, train_loaders[i], n_steps)
+            for i in range(num_clients)
+        ]
+
+        avg_grad = {
+            name: sum(client_grads[i][name] for i in range(num_clients)) / num_clients
+            for name, param in global_model.named_parameters()
+            if param.requires_grad
+        }
+
+
+        with torch.no_grad(): # W = W - lr * momentum,  momentum = mu*momentum + G_avg
+            for name, param in global_model.named_parameters():
+                if param.requires_grad:
+                    momentum_buffers[name] = momentum * momentum_buffers[name] + avg_grad[name]
+                    param -= lr * momentum_buffers[name]
+                    #param -= lr * avg_grad[name]
+
+        # Evaluate only at specified frequency or on last round
+        if (r + 1) % eval_freq == 0 or r == rounds - 1:
+            _, total_accuracy, total_loss = evaluate_model(global_model, test_loaders)
+        else:
+            # Use previous values or None
+            total_accuracy = round_accuracies[-1] if round_accuracies else None
+            total_loss = round_losses[-1] if round_losses else None
+        
+        round_accuracies.append(total_accuracy)
+        round_losses.append(total_loss)
+
+    return round_accuracies, round_losses
+
+
+# ========================= Sign SGD + momentum (Bernstein 2018) ==========================================
+def local_train_signsgd(global_model, train_loader, n_steps, device = None):
+    local_model = copy.deepcopy(global_model)
+    if device is not None:
+        if not torch.cuda.is_available():
+            device = torch.device("cpu")
+    if device is None:
+        device = torch.device("cuda:0" if torch.cuda.is_available() else "cpu")
+    local_model.to(device)
+    local_model.train()
+
+    criterion = nn.CrossEntropyLoss()
+
+    accumulated_grad = {}
+    
+    # Use context manager to disable BatchNorm running stats updates during gradient computation
+    # This prevents corruption of BatchNorm statistics when using small batches
+    with disable_bn_running_stats(local_model):
+        for step, (x_train, y_train) in enumerate(train_loader):
+            if step >= n_steps:
+                break
+
+            x_train, y_train = x_train.to(device), y_train.to(device)
+            y_train = y_train.long()
+
+            # Zero gradients for this batch
+            for param in local_model.parameters():
+                if param.requires_grad:
+                    param.grad = None
+
+            loss = criterion(local_model(x_train), y_train)
+            loss.backward()
+
+            # Accumulate gradients (will normalize by n_steps at the end)
+            for name, param in local_model.named_parameters():
+                if param.grad is not None:
+                    if name not in accumulated_grad:
+                        accumulated_grad[name] = param.grad.clone()
+                    else:
+                        accumulated_grad[name] += param.grad
+
+    # Normalize accumulated gradients by n_steps
+    for name in accumulated_grad:
+        accumulated_grad[name] = accumulated_grad[name] / n_steps
+
+    return { name: torch.sign(accumulated_grad[name]) for name in accumulated_grad }
+
+def federated_signsgd(global_model, train_loaders, num_clients, rounds, n_steps, lr, test_loaders, momentum=0.9, eval_freq=1, device = None):
+    """
+    Federated SignSGD with momentum.
+    """
+    if device is not None:
+        if not torch.cuda.is_available():
+            device = torch.device("cpu")
+    if device is None:
+        device = torch.device("cuda:0" if torch.cuda.is_available() else "cpu")
+    global_model.to(device)
+    global_model.train()
+
+    momentum_buffers = {
+        name: torch.zeros_like(param, device=device)
+        for name, param in global_model.named_parameters()
+        if param.requires_grad
+    }
+
+    round_accuracies = []
+    round_losses = []
+
+    for r in range(rounds):
+        print(f"\rRound {r}", end='', flush=True)
+
+        # Get client signs (same as SignSGD)
+        client_signs = [
+            local_train_signsgd(global_model, train_loaders[i], n_steps)
+            for i in range(num_clients)
+        ]
+
+        # Aggregate signs using majority vote (same as SignSGD)
+        majority_sign = {
+            name: torch.sign(sum(client_signs[i][name].to(device) for i in range(num_clients)))
+            for name, param in global_model.named_parameters()
+            if param.requires_grad
+        }
+
+        # Update momentum buffers: m_t = β * m_{t-1} + (1-β) * sign(g_t)
+        # Then update parameters: θ_{t+1} = θ_t - lr * sign(m_t)
+        with torch.no_grad():
+            for name, param in global_model.named_parameters():
+                if param.requires_grad:
+                    # Update momentum buffer
+                    momentum_buffers[name] = momentum * momentum_buffers[name] + (1 - momentum) * majority_sign[name]
+                    # Update parameters using sign of momentum
+                    param -= lr * torch.sign(momentum_buffers[name])
+
+        # Evaluate only at specified frequency or on last round
+        if (r + 1) % eval_freq == 0 or r == rounds - 1:
+            _, total_accuracy, total_loss = evaluate_model(global_model, test_loaders, verbose=False)
+            print(f"\rRound {r} - Accuracy: {total_accuracy:.2f}%, Loss: {total_loss:.4f}", end='', flush=True)
+        else:
+            # Use previous values or None
+            total_accuracy = round_accuracies[-1] if round_accuracies else None
+            total_loss = round_losses[-1] if round_losses else None
+            print(f"\rRound {r} - (skipped evaluation)", end='', flush=True)
+        
+        round_accuracies.append(total_accuracy)
+        round_losses.append(total_loss)
+    
+    print()  # Newline after all rounds complete
+
+    return round_accuracies, round_losses
+
+
+# =========================== Muon =============================================
+def local_train_muon(global_model, train_loader, n_steps, ns_steps: int = 5, device = None):
+    """
+    Local training for Federated Muon.
+    """
+    local_model = copy.deepcopy(global_model)
+    if device is not None:
+        if not torch.cuda.is_available():
+            device = torch.device("cpu")
+    if device is None:
+        device = torch.device("cuda:0" if torch.cuda.is_available() else "cpu")
+    local_model.to(device)
+    local_model.train()
+
+    criterion = nn.CrossEntropyLoss()
+    accumulated_grad = {}
+
+    with disable_bn_running_stats(local_model):
+        for step, (x_train, y_train) in enumerate(train_loader):
+            if step >= n_steps:
+                break
+            x_train, y_train = x_train.to(device), y_train.to(device)
+            y_train = y_train.long()
+
+            for param in local_model.parameters():
+                if param.requires_grad:
+                    param.grad = None
+
+            loss = criterion(local_model(x_train), y_train)
+            loss.backward()
+
+            for name, param in local_model.named_parameters():
+                if param.grad is not None:
+                    if name not in accumulated_grad:
+                        accumulated_grad[name] = param.grad.clone()
+                    else:
+                        accumulated_grad[name] += param.grad
+
+    for name in accumulated_grad:
+        accumulated_grad[name] = accumulated_grad[name] / n_steps
+
+    muon_update_dict = {}
+    for name, G in accumulated_grad.items():
+        orth_G = muon_orthogonalized_update(G, ns_steps=ns_steps)
+        muon_update_dict[name] = orth_G
+
+    return muon_update_dict
+
+def federated_muon(
+        global_model, train_loaders, num_clients, rounds, n_steps, lr, 
+        test_loaders, ns_steps: int = 5, eval_freq: int = 1, momentum=0.9, device = None):
+    """
+    Federated Muon Algorithm.
+    """
+    if device is not None:
+        if not torch.cuda.is_available():
+            device = torch.device("cpu")
+    if device is None:
+        device = torch.device("cuda:0" if torch.cuda.is_available() else "cpu")
+    global_model.to(device)
+    global_model.train()
+
+    last_layer_names = [
+        name for name, _ in list(global_model.named_parameters())[-2:]
+    ]
+
+    adamw = torch.optim.AdamW(
+        [param for name, param in global_model.named_parameters()
+         if name in last_layer_names],
+        lr=lr
+    )
+
+    momentum_buffers = {
+        name: torch.zeros_like(param, device=device)
+        for name, param in global_model.named_parameters()
+        if param.requires_grad
+    }
+
+    round_accuracies = []
+    round_losses = []
+
+    for r in range(rounds):
+        print(f"\rRound {r}", end='', flush=True)
+
+        client_updates = [
+            local_train_muon(global_model, train_loaders[i], n_steps, ns_steps=ns_steps)
+            for i in range(num_clients)
+        ]
+
+        avg_update = {
+            name: sum(client_updates[i][name].to(device) for i in range(num_clients)) / num_clients
+            for name, param in global_model.named_parameters()
+            if param.requires_grad
+        }
+
+        with torch.no_grad():
+            for name, param in global_model.named_parameters():
+                if param.requires_grad and name not in last_layer_names:
+                    # m_t = β * m_{t-1} + (1 - β) * D_avg
+                    momentum_buffers[name] = momentum * momentum_buffers[name] + (1 - momentum) * avg_update[name]
+                    # x_{t+1} = x_t - η * m_t
+                    param -= lr * momentum_buffers[name]
+        
+
+        adamw.zero_grad()
+        for name, param in global_model.named_parameters():
+            if name in last_layer_names:
+                param.grad = avg_update[name].clone()
+        adamw.step()
+
+        if (r + 1) % eval_freq == 0 or r == rounds - 1:
+            _, total_accuracy, total_loss = evaluate_model(global_model, test_loaders, verbose=False)
+            print(f"\rRound {r} - Accuracy: {total_accuracy:.2f}%, Loss: {total_loss:.4f}", end='', flush=True)
+        else:
+            total_accuracy = round_accuracies[-1] if round_accuracies else None
+            total_loss = round_losses[-1] if round_losses else None
+            print(f"\rRound {r} - (skipped evaluation)", end='', flush=True)
+
+        round_accuracies.append(total_accuracy)
+        round_losses.append(total_loss)
+
+    print()
+    return round_accuracies, round_losses
+
+
+# =========================== Sign Muon =========================================
+def local_train_signmuon(global_model, train_loader, n_steps, ns_steps: int = 5, device = None):
+    """
+    Local training for SignMuon.
+
+    Same protocol as SignSGD, but instead of taking sign(grad),
+    we take sign(UV^T) where USV^T is the SVD of the (possibly
+    reshaped) gradient tensor, approximated via Muon's
+    Newton–Schulz orthogonalization.
+    """
+    local_model = copy.deepcopy(global_model)
+    if device is not None:
+        if not torch.cuda.is_available():
+            device = torch.device("cpu")
+    if device is None:
+        device = torch.device("cuda:0" if torch.cuda.is_available() else "cpu")
+    local_model.to(device)
+    local_model.train()
+
+    criterion = nn.CrossEntropyLoss()
+
+    accumulated_grad = {}
+
+    # Disable BN running stats, as in SignSGD
+    with disable_bn_running_stats(local_model):
+        for step, (x_train, y_train) in enumerate(train_loader):
+            if step >= n_steps:
+                break
+
+            x_train, y_train = x_train.to(device), y_train.to(device)
+            y_train = y_train.long()
+
+            # Zero gradients for this batch
+            for param in local_model.parameters():
+                if param.requires_grad:
+                    param.grad = None
+
+            loss = criterion(local_model(x_train), y_train)
+            loss.backward()
+
+            # Accumulate gradients
+            for name, param in local_model.named_parameters():
+                if param.grad is not None:
+                    if name not in accumulated_grad:
+                        accumulated_grad[name] = param.grad.clone()
+                    else:
+                        accumulated_grad[name] += param.grad
+
+    # Normalize accumulated gradients by n_steps
+    for name in accumulated_grad:
+        accumulated_grad[name] = accumulated_grad[name] / n_steps
+
+    # Apply Muon-style orthogonalization, then take elementwise sign
+    sign_muon_dict = {}
+    for name, G in accumulated_grad.items():
+        orth_G = muon_orthogonalized_update(G, ns_steps=ns_steps)
+        sign_muon_dict[name] = torch.sign(orth_G)
+
+    return sign_muon_dict
+
+
+def federated_signmuon(
+        global_model, train_loaders, num_clients, rounds, n_steps, lr, 
+        test_loaders, ns_steps: int = 5, eval_freq: int = 1, momentum=0.9, device = None):
+    """
+    Federated SignMuon.
+
+    Same outer structure as Federated SignSGD:
+    - Each client returns sign(UV^T) of its local (averaged) gradients.
+    - Server aggregates via majority vote on these signs.
+    - Hidden layers are updated directly with the majority sign.
+    - The last layer is updated with AdamW, using the majority sign
+      as a surrogate gradient (mirroring federated_signsgd).
+    """
+    if device is not None:
+        if not torch.cuda.is_available():
+            device = torch.device("cpu")
+    if device is None:
+        device = torch.device("cuda:0" if torch.cuda.is_available() else "cpu")
+    global_model.to(device)
+    global_model.train()
+
+    last_layer_names = [
+        name for name, _ in list(global_model.named_parameters())[-2:]
+    ]
+
+    adamw = torch.optim.AdamW(
+        [param for name, param in global_model.named_parameters()
+         if name in last_layer_names],
+        lr=lr
+    )
+
+    # Initialize momentum buffers
+    momentum_buffers = {
+        name: torch.zeros_like(param, device=device)
+        for name, param in global_model.named_parameters()
+        if param.requires_grad
+    }
+
+    round_accuracies = []
+    round_losses = []
+
+    for r in range(rounds):
+        round_start = time.perf_counter() 
+        print(f"\rRound {r}", end='', flush=True)
+
+        client_signs = [
+            local_train_signmuon(global_model, train_loaders[i], n_steps, ns_steps=ns_steps)
+            for i in range(num_clients)
+        ]
+
+        majority_sign = {
+            name: torch.sign(sum(client_signs[i][name].to(device) for i in range(num_clients)))
+            for name, param in global_model.named_parameters()
+            if param.requires_grad
+        }
+
+        with torch.no_grad():
+            for name, param in global_model.named_parameters():
+                if param.requires_grad:
+                    # Update momentum buffers: m_t = β * m_{t-1} + (1 - β) * majority_sign_t
+                    momentum_buffers[name] = momentum * momentum_buffers[name] + (1 - momentum) * majority_sign[name]
+                    # Then update parameters: x_{t+1} = x_t - η * sign(m_t)
+                    param -= lr * torch.sign(momentum_buffers[name])
+
+        # Update last layer with AdamW on the majority sign "gradient"
+        adamw.zero_grad()
+        for name, param in global_model.named_parameters():
+            if name in last_layer_names:
+                param.grad = majority_sign[name].clone()
+        adamw.step()
+
+        round_elapsed = time.perf_counter() - round_start
+
+        if (r + 1) % eval_freq == 0 or r == rounds - 1:
+            _, total_accuracy, total_loss = evaluate_model(global_model, test_loaders, verbose=False)
+            print(f"\rRound {r} | {round_elapsed:.2f}s | Accuracy: {total_accuracy:.2f}%, Loss: {total_loss:.4f}", end='', flush=True)
+        else:
+            total_accuracy = round_accuracies[-1] if round_accuracies else None
+            total_loss = round_losses[-1] if round_losses else None
+            print(f"\rRound {r} - (skipped evaluation) | {round_elapsed:.2f}s", end='', flush=True)
+
+        round_accuracies.append(total_accuracy)
+        round_losses.append(total_loss)
+
+    print()
+    return round_accuracies, round_losses
+
+
+# =========================== Adam =============================================
+def local_train_adam(global_model, train_loader, n_steps, device=None):
+    """
+    Local training for Adam
+    """
+    if device is not None:
+        if not torch.cuda.is_available():
+            device = torch.device("cpu")
+    if device is None:
+        device = torch.device("cuda:0" if torch.cuda.is_available() else "cpu")
+
+    local_model = copy.deepcopy(global_model)
+    local_model.to(device)
+    local_model.train()
+
+    criterion = nn.CrossEntropyLoss()
+
+    accumulated_grad = {}
+
+    with disable_bn_running_stats(local_model):
+        for step, (x_train, y_train) in enumerate(train_loader):
+            if step >= n_steps:
+                break
+
+            x_train, y_train = x_train.to(device), y_train.to(device)
+            y_train = y_train.long()
+
+            for param in local_model.parameters():
+                if param.requires_grad:
+                    param.grad = None
+
+            loss = criterion(local_model(x_train), y_train)
+            loss.backward()
+
+            for name, param in local_model.named_parameters():
+                if param.grad is not None:
+                    if name not in accumulated_grad:
+                        accumulated_grad[name] = param.grad.clone()
+                    else:
+                        accumulated_grad[name] += param.grad
+
+
+    return {name: g / n_steps for name, g in accumulated_grad.items()}     
+
+def federated_adam(
+        global_model, train_loaders, num_clients, rounds, n_steps, lr, 
+        test_loaders, weight_decay=5e-4, eps=1e-8, eval_freq=1, device=None):
+    """
+    Federated Adam Algorithm.
+    """
+    if device is not None:
+        if not torch.cuda.is_available():
+            device = torch.device("cpu")
+    if device is None:
+        device = torch.device("cuda:0" if torch.cuda.is_available() else "cpu")
+
+    print(device)
+    global_model.to(device)
+    global_model.train()
+
+    optimizer = torch.optim.Adam(
+        global_model.parameters(), 
+        lr=lr, 
+        weight_decay=weight_decay
+    )
+    
+    round_accuracies = []
+    round_losses = []
+
+    for r in range(rounds):
+        round_start = time.perf_counter() 
+        print(f"\rRound {r}", end='', flush=True)
+
+        client_grads = [
+            local_train_adam(global_model, train_loaders[i], n_steps, device=device)
+            for i in range(num_clients)
+        ]
+
+        avg_grad = {
+            name: sum(client_grads[i][name].to(device) for i in range(num_clients)) / num_clients
+            for name, param in global_model.named_parameters() if param.requires_grad
+        }
+
+        optimizer.zero_grad()
+        for name, param in global_model.named_parameters():
+            if param.requires_grad:
+                param.grad = avg_grad[name].clone()
+        optimizer.step()
+
+        round_elapsed = time.perf_counter() - round_start
+
+        if (r + 1) % eval_freq == 0 or r == rounds - 1:
+            _, total_accuracy, total_loss = evaluate_model(global_model, test_loaders, verbose=False, device=device)
+            print(f"\rRound {r} | {round_elapsed:.2f}s | Accuracy: {total_accuracy:.2f}%, Loss: {total_loss:.4f}", end='', flush=True)
+        else:
+            total_accuracy = round_accuracies[-1] if round_accuracies else None
+            total_loss = round_losses[-1] if round_losses else None
+            print(f"\rRound {r} - (skipped evaluation)| {round_elapsed:.2f}s ", end='', flush=True)
+
+        round_accuracies.append(total_accuracy)
+        round_losses.append(total_loss)
+
+    return round_accuracies, round_losses

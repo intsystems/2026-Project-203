@@ -122,7 +122,11 @@ def build_optimizers(model, args):
         return opt, None
     
     elif args.optimizer == "adam":
-        opt = torch.optim.Adam(model.parameters(), lr=args.lr, weight_decay=args.weight_decay)
+        opt = torch.optim.Adam(
+            model.parameters(), 
+            lr=args.lr, 
+            weight_decay=args.weight_decay
+        )
         return opt, None
 
     else:
@@ -148,7 +152,8 @@ def get_args():
 
 def train(args):
     
-    device = torch.device("cuda" if torch.cuda.is_available() else "cpu")
+    device = torch.device(args.device if torch.cuda.is_available() else "cpu")
+    print(device)
 
     train_dl, test_dl = cifar10_loaders(args.data, batch_size=args.batch_size, download=args.download)
 
@@ -163,6 +168,22 @@ def train(args):
     opt_main, opt_aux = optimizers
     scheduler_main = torch.optim.lr_scheduler.CosineAnnealingLR(opt_main, T_max=args.epochs)
     scheduler_aux = torch.optim.lr_scheduler.CosineAnnealingLR(opt_aux, T_max=args.epochs) if opt_aux else None
+
+    # начальная инициализация
+    with torch.no_grad():
+        loss_tr_0, acc_tr_0 = eval_epoch(model, train_dl, device)
+        loss_te_0, acc_te_0 = eval_epoch(model, test_dl, device)
+    
+    train_losses.append(loss_tr_0)
+    train_accs.append(acc_tr_0)
+    test_losses.append(loss_te_0)
+    test_accs.append(acc_te_0)
+    
+    print(
+        f"Epoch 0/{args.epochs}  "
+        f"| train loss {loss_tr_0:.4f}, acc {acc_tr_0:.3f}  "
+        f"| test loss {loss_te_0:.4f}, acc {acc_te_0:.3f} "
+    )
 
     for epoch in range(1, args.epochs + 1):
         loss_tr, acc_tr = train_epoch(model, train_dl, optimizers, device)
