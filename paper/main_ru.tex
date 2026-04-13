@@ -1,7 +1,11 @@
 \documentclass{article}
 
 \PassOptionsToPackage{numbers, sort, compress}{natbib}
-\usepackage[main,final]{neurips_2025}
+\usepackage[main, final]{neurips_2025}
+
+\makeatletter
+\def\@trackname{}
+\makeatother
 
 \usepackage[T1]{fontenc}
 \usepackage[utf8]{inputenc}
@@ -32,10 +36,10 @@
 
 \newtheorem{theorem}{Theorem} % continuous numbers
 %%\newtheorem{theorem}{Theorem}[section] % sectionwise numbers
-%% optional argument [theorem] produces theorem numbering sequence instead of independent numbers for Proposition
+%% optional argument [theorem] produces theorem numbering sequence instead of independent numbers For Proposition
 \newtheorem{proposition}[theorem]{Proposition}% 
 \newtheorem{lemma}{Lemma}% 
-%%\newtheorem{proposition}{Proposition} % to get separate numbers for theorem and proposition etc.
+%%\newtheorem{proposition}{Proposition} % to get separate numbers For theorem and proposition etc.
 
 \newtheorem{example}{Example}
 \newtheorem{remark}{Remark}
@@ -72,7 +76,7 @@
 \maketitle
 
 \begin{abstract}
-SignSGD is a popular algorithm due to its strong performance in both centralized and decentralized settings: it performs competitively with Adam while being communication-efficient, transmitting up to 32x fewer bits than standard optimizers. This work introduces SignMuon, an algorithm that combines the structured LMO-based update of Muon with the sign compression of SignSGD. Our experiments show that SignMuon achieves performance nearly on par with Muon in the centralized setting and outperforms SignSGD in both centralized and federated settings. We establish theoretical convergence guarantees for SignMuon in the smooth non-convex regime. We further analyze specific modifications to the algorithm that enhance numerical stability without compromising communication efficiency. Finally, this work extends our framework to the broader class of SignA algorithms, where A denotes any LMO-based optimizer, providing a unified convergence analysis for sign-compressed LMO methods. Empirical validation is conducted on synthetic convex and nonconvex problems with known smoothness constants, CIFAR-airbench, federated MNIST/CIFAR-10 classification, and NanoGPT training.
+SignSGD is a popular algorithm due to its strong perFormance in both centralized and decentralized settings: it perForms competitively with Adam while being communication-efficient, transmitting up to 32x fewer bits than standard optimizers. This work introduces SignMuon, an algorithm that combines the structured LMO-based update of Muon with the sign compression of SignSGD. Our experiments show that SignMuon achieves perFormance nearly on par with Muon in the centralized setting and outperForms SignSGD in both centralized and federated settings. We establish theoretical convergence guarantees For SignMuon in the smooth non-convex regime. We further analyze specific modifications to the algorithm that enhance numerical stability without compromising communication efficiency. Finally, this work extends our framework to the broader class of SignA algorithms, where A denotes any LMO-based optimizer, providing a unified convergence analysis For sign-compressed LMO methods. Empirical validation is conducted on synthetic convex and nonconvex problems with known smoothness constants, CIFAR-airbench, federated MNIST/CIFAR-10 classification, and NanoGPT training.
     
 \end{abstract}
 
@@ -80,14 +84,14 @@ SignSGD is a popular algorithm due to its strong performance in both centralized
 
 
 \section{Введение (Introduction)}\label{sec:intro}
-Современные методы обучения глубоких нейронных сетей (DNN) требуют использования оптимизаторов, которые не только обеспечивают высокую скорость сходимости, но и минимизируют коммуникационные издержки в распределённых и федеративных системах, где передача обновлений между узлами является узким местом (bottleneck). Так, алгоритм SignSGD продемонстрировал, что даже экстремальная компрессия (до 1 бита на компоненту) сохраняет работоспособность метода и позволяет сократить объём передаваемых данных примерно в 32 раза при незначительной потере качества модели \cite{bernstein2018signsgd, bernstein2019signsgdmajority}.
+Современные методы обучения глубоких нейронных сетей (DNN) требуют использования оптимизаторов, которые не только обеспечивают высокую скорость сходимости, но и минимизируют коммуникационные издержки в распределённых и федеративных системах, где передача обновлений между узлами является узким местом (bottleneck). Так, алгоритм SignSGD продемонстрировал, что даже экстремальная компрессия (до 1 бита на компоненту) сохраняет работоспособность метода и позволяет сократить объём передаваемых данных примерно в 32 раза при незначительной потере качества модели по сравнению с SGD \cite{bernstein2018signsgd, bernstein2019signsgdmajority}.
 
 
-SignSGD плохо учитывает матричную структуру параметров: в задачах с матричными весами он рассматривает матрицы как одномерные векторы (flattening), игнорируя их внутреннюю 2D-тензорную структуру, что может ухудшать качество обучения DNN. Недавно предложенный оптимизатор Muon показал, что его ортонормированные обновления стабилизируют обучение DNN и в ряде случаев превосходят стандартные адаптивные методы оптимизации по качеству итогового решения \cite{bernstein2024old, jordan2024muon, shah2025practical}. 
+SignSGD не учитывает матричную структуру параметров: в задачах с матричными весами он рассматривает матрицы как одномерные векторы (flattening), игнорируя их внутреннюю 2D-тензорную структуру, что может ухудшать качество обучения DNN. Недавно предложенный оптимизатор Muon показал, что его ортонормированные обновления стабилизируют обучение DNN и в ряде случаев превосходят стандартные адаптивные методы оптимизации по качеству итогового решения \cite{bernstein2024old, jordan2024muon, shah2025practical}. Оптимизатор Muon для матричных параметров реализует шаг steepest descent в спектральной норме. Согласно \citet{bernstein2024old}, Muon вычисляет направление обновления как ортонормированную матрицу $\mathbf{U}\mathbf{V}^\top$, где $\mathbf{U}$ и $\mathbf{V}$ – ведущие сингулярные векторы градиента.
  
-Однако Muon требует передачи полных матриц обновлений, что в федеративных задачах может быть слишком затратным. В условиях федеративного обучения данные распределены между узлами, которые обмениваются параметрами с сервером с целью обучения общей модели. Каждый узел имеет локальный набор данных, а целью федеративного машинного обучения является минимизация усредненной функции потерь по всем узлам. Поскольку участники сети часто находятся на значительном расстоянии от агрегирующего сервера и могут иметь ограниченную пропускную способность канала связи, возникает коммуникационное узкое место. Для решения этой проблемы обычно используются методы компрессии градиентов и обновлений \cite{horvath2023stochastic, bernstein2018signsgd, beznosikov2020biased, alistarh2017qsgd}.  
+Однако Muon требует передачи полных матриц обновлений, что в федеративных задачах может быть слишком затратным. В условиях федеративного обучения данные распределены между узлами, которые обмениваются информацией с сервером с целью обучения общей модели. Каждый узел имеет локальный набор данных, а целью федеративного машинного обучения является минимизация усредненной функции потерь по всем узлам. Поскольку участники сети часто находятся на значительном расстоянии от агрегирующего сервера и могут иметь ограниченную пропускную способность канала связи, возникает коммуникационное узкое место. Для решения этой проблемы обычно используются методы компрессии градиентов и обновлений \cite{horvath2023stochastic, bernstein2018signsgd, beznosikov2020biased, alistarh2017qsgd}.  
 
-В данной работе мы предлагаем алгоритм SignMuon, который объединяет методы обновления Muon с экстремальной компрессией SignSGD. В отличие от SignSGD, где передаётся знак стохастического градиента, наш метод сначала вычисляет направление спуска с помощью LMO-обновления, аналогично Muon, а затем передаёт только знак этого направления. Такая схема позволяет учитывать матричную структуру параметров и сохранять преимущества Muon, одновременно сокращая объём передаваемой информации до одного бита на компоненту. Тем самым SignMuon стремится объединить быструю сходимость структурированных оптимизаторов с коммуникационной эффективностью знаковых методов.
+В данной работе мы предлагаем алгоритм SignMuon, который объединяет методы обновления Muon с экстремальной компрессией SignSGD. В отличие от SignSGD, где передаётся знак стохастического градиента, наш метод сначала вычисляет направление спуска с помощью LMO-обновления, как оптимизатор Muon, а затем передаёт только знак этого направления. Такая схема позволяет учитывать матричную структуру параметров и сохранять преимущества Muon, одновременно сокращая объём передаваемой информации до одного бита на компоненту. Тем самым SignMuon стремится объединить быструю сходимость структурированных оптимизаторов с коммуникационной эффективностью знаковых методов.
 
 Эффективность предложенного оптимизатора показана на различных синтетических и прикладных задач:
 \begin{itemize}
@@ -105,62 +109,71 @@ SignSGD плохо учитывает матричную структуру па
 Таким образом, предложенный подход демонстрирует, что LMO-основанные методы могут быть успешно объединены с знаковой компрессией без существенной потери качества обучения. Более того, предложенная схема естественным образом обобщается на более широкий класс алгоритмов SignA, где A обозначает любой оптимизатор, использующий LMO-направления. Это открывает возможность построения новых коммуникационно-эффективных алгоритмов оптимизации.
 
 
-\section{Постановка задачи (Problem Statement)}\label{sec:prostate}
-Рассматриваем стохастическую задачу оптимизации для гладкой невыпуклой функции
+\section{Постановка задачи (Problem Statement)}\label{sec:proState}
+
+\textbf{Стохастическая оптимизация}
+\\Рассмотрим стохастическую задачу оптимизации для гладкой невыпуклой функции
 \begin{equation}
 \min_{\mathbf{x}\in\mathbb{R}^d} f(\mathbf{x})=\mathbb{E}_{\xi\sim\mathcal{J}}[f(\mathbf{x},\xi)],
 \end{equation}
-где $\xi$ — случайный вектор неизвестного распределения $\mathcal{J}$, $f(\mathbf{x},\xi)$ — функция потерь модели (loss function). В контексте обучения DNN: $\mathbf{x}\in\mathbb{R}^d$ — вектор всех параметров, цель практической оптимизации — найти точку $\mathbf{x}$ с малой нормой градиента $\|\nabla f(\mathbf{x})\|$.
+где $\xi$ – случайный вектор неизвестного распределения $\mathcal{J}$, $f(\mathbf{x},\xi)$ – функция потерь модели (loss function). В контексте обучения DNN: $\mathbf{x}\in\mathbb{R}^d$ – вектор всех параметров, цель практической оптимизации – найти точку $\mathbf{x}$ с малой нормой градиента $\|\nabla f(\mathbf{x})\|$.
 
-Рассмотрим данную задачу в контексте федеративного обучения. Пусть данные распределены по $M$ узлам, каждый узел $m$ имеет локальную выборку $D_m$ размера $|D_m|$ и соответствующую локальную функцию потерь $f_m(\mathbf{x})=\mathbb{E}_{\xi\sim D_m}[f(\mathbf{x},\xi)]$. Цель — минимизировать усредненную по всем узлам функцию:
+\textbf{Федеративное обучение}
+\\Рассмотрим данную задачу в контексте федеративного обучения. Пусть данные распределены по $M$ узлам, каждый узел $m$ имеет локальную выборку $D_m$ размера $|D_m|$ и соответствующую локальную функцию потерь $f_m(\mathbf{x})=\mathbb{E}_{\xi\sim D_m}[f(\mathbf{x},\xi)]$. Цель – минимизировать усредненную по всем узлам функцию:
 \begin{equation}
 F(\mathbf{x})=\min_{\mathbf{x}\in\mathbb{R}^d}\frac{1}{M}\sum_{m=1}^M\mathbb{E}_{\xi_m \sim D_m}f(\mathbf{x}, \xi_m),\qquad \min_{\mathbf{x}\in\mathbb{R}^d} F(\mathbf{x}).
 \end{equation}
-В федеративном режиме узлы вычисляют локальные стохастические градиенты и периодически отправляют сообщения на сервер, канал коммуникации часто ограничен, поэтому критическим ресурсом является объём передаваемых данных \cite{bernstein2019signsgdmajority, horvath2023stochastic}. Для обзора практических приёмов в федеративном обучении и компрессии см. также \cite{beznosikov2020biased, gruntkowska2025error, ahn2025dion}.
+В федеративном режиме узлы вычисляют локальные стохастические градиенты и периодически отправляют сообщения на сервер, канал коммуникации часто ограничен, поэтому критическим ресурсом является объём передаваемых данных \cite{bernstein2019signsgdmajority, horvath2023stochastic}. Некоторые практические приёмы в федеративном обучении и компрессии также рассмотрены в \cite{beznosikov2020biased, gruntkowska2025error, ahn2025dion}.
 
 Возможные ограничения связаны с $L$-гладкостью функции $f$ в неевклидовом пространстве, оснащенном нормой $\|\cdot\|$ :
-$\|\nabla f(\mathbf{x}) - \nabla f(\mathbf{y})\|_* \leq L \|\mathbf{x} - \mathbf{y}\|,$ где $\|\cdot\|_*$ — дуальная норма. На практике возможно использовать ослабленные условия типа $(L_0,L_1)$ \cite{pethick2025generalized}. Учитывая результаты существующих исследований, показавших неэффективность передачи полных 32-битных градиентов в распределенных системах, целесообразно рассмотреть сценарии с экстремальной компрессией, где целевой уровень сжатия составляет 1 бит на компоненту сообщения \cite{bernstein2018signsgd, bernstein2019signsgdmajority, beznosikov2020biased}.
+$\|\nabla f(\mathbf{x}) - \nabla f(\mathbf{y})\|_* \leq L \|\mathbf{x} - \mathbf{y}\|,$ где $\|\cdot\|_*$ – дуальная норма, определяемую как
+$ \|\mathbf{x}\|_* := \sup_{\|\mathbf{x'}\| \leq 1} \langle \mathbf{x}, \mathbf{x'} \rangle \text{ для всех } \mathbf{x} \in \mathbb{R}^d $ \cite{kovalev2025understanding}. На практике возможно использовать ослабленные условия типа $(L_0,L_1)$ \cite{pethick2025generalized}. Учитывая результаты существующих исследований, показавших неэффективность передачи полных 32-битных градиентов в распределенных системах, целесообразно рассмотреть сценарии с экстремальной компрессией, где целевой уровень сжатия составляет 1 бит на компоненту сообщения \cite{bernstein2018signsgd, bernstein2019signsgdmajority, beznosikov2020biased}.
 
-Определим Linear Minimization Oracle (LMO) - оператор $A(\cdot)$ как решение задачи линейной минимизации на допустимом множестве:
+\textbf{Linear Minimization Oracle (LMO)}
+\\Определим Linear Minimization Oracle (LMO) – оператор $A(\cdot)$ как решение задачи линейной минимизации на допустимом множестве:
 \begin{equation}
 A(\mathbf{G})=\arg\min_{\mathbf{D} \in \mathcal{S}}\langle \mathbf{G}, \mathbf{D}\rangle.
 \end{equation}
-где $\mathbf{G}\in\mathbb{R}^{m\times n}$ — градиент (или его стохастическая оценка), $\mathbf{D}\in\mathbb{R}^{m\times n}$ — направление обновления, $\langle \mathbf{A},\mathbf{B}\rangle=\mathrm{tr}(\mathbf{A}^\top\mathbf{B})$ — стандартное скалярное произведение матриц, а $\mathcal{S}\subset\mathbb{R}^{m\times n}$ — множество допустимых направлений \cite{pethick2025training}. В частности, ограничения можно задать через единичный шар некоторой нормы:
+где $\mathbf{G}\in\mathbb{R}^{m\times n}$ – градиент (или его стохастическая оценка), $\mathbf{D}\in\mathbb{R}^{m\times n}$ – направление обновления, $\langle \mathbf{A},\mathbf{B}\rangle=\mathrm{tr}(\mathbf{A}^\top\mathbf{B})$ – стандартное скалярное произведение матриц, а $\mathcal{S}\subset\mathbb{R}^{m\times n}$ – множество допустимых направлений \cite{pethick2025training}. В частности, ограничения можно задать через единичный шар некоторой нормы:
 \begin{equation}
 A(\mathbf{G})=\arg\min_{\|\mathbf{D}\|\le 1}\langle \mathbf{G},\mathbf{D}\rangle.
 \end{equation}
 Такой оператор выбирает направление наискорейшего спуска в заданной норме. Аналитическая и практическая роль LMO подробно обсуждается в работах по норм-ограниченным LMO-оптимизаторам \cite{pethick2025training, kovalev2025understanding, riabinin2025gluon}.
 
-Оптимизатор Muon использует матричную структуру градиента. Пусть $\mathbf{G}=\mathbf{U}\boldsymbol{\Sigma}\mathbf{V}^\top$ — сингулярное разложение матрицы $\mathbf{G}\in\mathbb{R}^{m\times n}$, где $\mathbf{U}\in\mathbb{R}^{m\times r}$, $\mathbf{V}\in\mathbb{R}^{n\times r}$ — ортонормированные матрицы сингулярных векторов, $\boldsymbol{\Sigma}\in\mathbb{R}^{r\times r}$ — диагональная матрица сингулярных значений, $r=\mathrm{rank}(\mathbf{G})$. Тогда LMO-направление имеет вид
+\textbf{Оптимизатор Muon}
+\\Оптимизатор Muon использует матричную структуру градиента. Muon реализует шаг steepest descent в спектральной норме, где направление обновления получается ортогонализацией матрицы градиента \cite{bernstein2024old}. Пусть $\mathbf{G}=\mathbf{U}\boldsymbol{\Sigma}\mathbf{V}^\top$ – сингулярное разложение матрицы $\mathbf{G}\in\mathbb{R}^{m\times n}$, где $\mathbf{U}\in\mathbb{R}^{m\times r}$, $\mathbf{V}\in\mathbb{R}^{n\times r}$ – ортонормированные матрицы сингулярных векторов, $\boldsymbol{\Sigma}\in\mathbb{R}^{r\times r}$ – диагональная матрица сингулярных значений, $r=\mathrm{rank}(\mathbf{G})$. Тогда LMO-направление имеет вид:
 \begin{equation}
 A(\mathbf{G})=\mathbf{U}\mathbf{V}^\top \in \mathbb{R}^{m\times n}.
 \end{equation}
-то есть выбирается ортонормированное направление, соответствующее решению задачи линейной минимизации. Muon реализует шаг steepest descent в спектральной норме, где направление обновления получается ортогонализацией матрицы градиента. На практике Muon использует сглаженную оценку градиента с импульсом. 
+то есть выбирается ортонормированное направление, соответствующее решению задачи линейной минимизации. На практике Muon использует сглаженную оценку градиента с моментумом и его обновление выглядит следующим образом: 
 \begin{equation}
     \begin{aligned}
         \mathbf{M}_t &= \mu \mathbf{M}_{t-1} + \mathbf{G}_t, \\
         \mathbf{M}_t &= \mathbf{U}_t \boldsymbol{\Sigma}_t \mathbf{V}_t^\top, \\
-        \mathbf{D}_t &= \mathbf{U}_t \mathbf{V}_t^\top.
+        \mathbf{D}_t &= \mathbf{U}_t \mathbf{V}_t^\top, \\
+        \mathbf{X}_{t+1} &= \mathbf{X}_t - \eta_t \mathbf{D}_t.
     \end{aligned}
 \end{equation}
-В исходной реализации Muon вычисление $\mathbf{U}_t\mathbf{V}_t^\top$ выполняется приближённо с помощью итераций Ньютона–Шульца и других полиномиальных схем, что позволяет эффективно ортогонализовать матрицу без явного вычисления SVD \cite{amsel2025polar, li2025note, liu2025muon}. Интуитивно такая ортогонализация делает обновления изотропными и предотвращает доминирование нескольких направлений градиента, что особенно важно при обучении DNN \cite{bernstein2024old, shah2025practical}.
 
-Обозначим компрессию через поэлементную знаковую функцию $\operatorname{sign}(\mathbf{M})\in\{\pm1\}^{d}$, и определим класс алгоритмов SignA как:
+В исходной реализации Muon вычисление $\mathbf{U}_t\mathbf{V}_t^\top$ выполняется приближённо с помощью итераций Ньютона-Шульца и других полиномиальных схем, что позволяет эффективно ортогонализовать матрицу без явного вычисления SVD \cite{amsel2025polar, li2025note, liu2025muon}. Интуитивно такая ортогонализация делает обновления изотропными и предотвращает доминирование нескольких направлений градиента, что особенно важно при обучении DNN \cite{bernstein2024old, shah2025practical}.
+
+\textbf{Класс алгоритмов SignA и SignMuon}
+\\Обозначим знаковую компрессию через поэлементную функцию $\operatorname{sign}(\cdot)$, которая переводит каждый элемент матрицы (или вектора) в $\pm 1$. Определим класс алгоритмов SignA как:
 \begin{equation}
-    \begin{aligned}
-        A(\mathbf{G}_t) &: \mathbf{G}_t \to \mathbf{D}_t, \\
-        \mathbf{s}_t &= \operatorname{sign}(\mathbf{D}_t), \\
-        \mathbf{X}_{t+1} &= \mathbf{X}_t - \eta_t \hat{\mathbf{s}}_t.
-    \end{aligned}
+\begin{aligned}
+A(\mathbf{G}_t) &\colon \mathbf{G}_t \mapsto \mathbf{D}_t, \\
+\mathbf{s}_t &= \operatorname{sign}(\mathbf{D}_t) \in \{\pm 1\}^{m \times n}, \\
+\mathbf{X}_{t+1} &= \mathbf{X}_t - \eta_t \hat{\mathbf{s}}_t,
+\end{aligned}
 \end{equation}
-где $\hat{\mathbf{s}}_t$ — агрегированное сообщение (в централизованной схеме $\hat{\mathbf{s}}_t=\mathbf{s}_t$, во федеративной — majority-vote или среднее по узлам). Частным случаем данного семейства алгоритмов является SignMuon, где $A$ — Muon (т.е. $\mathbf{D}_t=\mathbf{U}_t\mathbf{V}_t^\top$) и передаётся $\operatorname{sign}(\mathbf{U}_t\mathbf{V}_t^\top)$ \cite{petrov2025leveraging}.
+где $\mathbf{G}_t, \mathbf{D}_t, \mathbf{X}_t \in \mathbb{R}^{m \times n}$, $\hat{\mathbf{s}}_t$ – агрегированное сообщение (в централизованном случае $\hat{\mathbf{s}}_t = \mathbf{s}_t$, в федеративном – majority-vote или усреднение по узлам). Частным случаем данного семейства алгоритмов является SignMuon, где оператор $A$ соответствует Muon (т.е. $\mathbf{D}_t=\mathbf{U}_t\mathbf{V}_t^\top$), и передаётся только $\operatorname{sign}(\mathbf{U}_t\mathbf{V}_t^\top)$ \cite{petrov2025leveraging}.
 
 SignA реализует шаг steepest-descent с ограничением по норме и LMO-направлением:
 \begin{equation}
 \mathbf{X}_{t+1} = \mathbf{X}_t - \eta_t \operatorname{sign}\Big(\arg\min_{\|\mathbf{D}\|\le 1}\langle \mathbf{G}_t, \mathbf{D}\rangle\Big).
 \end{equation}
 
-Мы поставили цель сконструировать коммуникационно-эффективный метод, который обеспечивает теоретические и эмпирические гарантии сходимости, сравнимые с Muon по качеству и с SignSGD — по коммуникации:
+Мы поставили цель сконструировать коммуникационно-эффективный метод, который обеспечивает теоретические и эмпирические гарантии сходимости, сравнимые с Muon по качеству и с SignSGD – по коммуникации:
 \begin{equation}
 \min_{t\le T}\mathbb{E}\|\nabla f(\mathbf{x}_t)\|^2 = \mathcal{O}(T^{-1/2}),
 \end{equation}
@@ -169,157 +182,284 @@ SignA реализует шаг steepest-descent с ограничением п�
 
 
 \section{Theory}\label{sec:theory}
-TODO
+В работе рассматривается семейство алгоритмов SignA, где A обозначает любой оптимизатор, использующий LMO-направления. Все алгоритмы семейства построены по единой структуре, состоящей из трёх последовательных этапов: обработка моментума, вычисление LMO-направления и знаковая компрессия обновления. 
 
-
-\section{Вычислительный эксперимент (Computational Experiment)}\label{sec:exp}
-\textbf{Целью} эксперимента является эмпирическая валидация алгоритма SignMuon, как оптимизатора, объединяющего высокую скорость сходимости LMO-оптимизаторов с коммуникационной эффективностью знаковой компрессии. Само исследование состоит из нескольких частей:
-\begin{itemize}
-    \item \textbf{Централизованное обучение (Centralized Performance):} Сравнение динамики сходимости и итоговой точности (Accuracy) алгоритма SignMuon с классическими оптимизаторами Adam, SGD, SignSGD и Muon при фиксированном количестве эпох. Одной из целей является демонстрация того, что SignMuon обеспечивает высокое качество классификации, сопоставимое с Muon, и при этом превосходит по точности классический знаковый метод SignSGD при идентичной коммуникации (1 бит на параметр). 
-    \item \textbf{Федеративное обучение (Federated learning):} Оценка алгоритма в распределенной среде, где передача полных 32-битных матриц градиентов является bottleneck. Цель данного этапа исследования показать, что сжатие ортогонализованных LMO-обновлений позволяет достичь качества полного Muon при снижении объема передаваемых данных.
-    \item \textbf{Синтетическая неевклидова оптимизация (Synthetic Benchmarks):} Исследование сходимости расширенного семейства алгоритмов SignA на контролируемых задачах. Использование синтетических сред с заранее известными константами гладкости и числами обусловленности позволяет ...  TODO
-    \item \textbf{Эксперимент на масштабируемость и LLM:} Применение алгоритма SignMuon с целью предварительного обучения (pre-training) языковых моделей архитектуры Transformer. Валидация проводится на базе высокооптимизированного фреймворка Modded-NanoGPT, что позволяет сравнить SignMuon с Muon и  AdamW. ...  TODO
-\end{itemize}
-
-\textbf{Наборы данных.} Эксперименты проводятся на синтетических и реальных наборах данных:
-\begin{itemize}
-    \item \textbf{CIFAR-10:} Стандартный датасет для задачи классификации изображений. Содержит 60 000 цветных изображений размера 3x32x32. Для централизованного обучение датасет делится на обучающую и тестовую выборку, для федеративного сценария обучающая выборка партиционируется между узлами.
-    \item \textbf{MNIST:} Датасет для задачи классификации изображений, используемый в бенчмарках распределенного обучения. Содержит 70 000 черно-белых изображений рукописных цифр размера 1x28x28. Как и в случае с CIFAR-10, для централизованного обучения датасет делится на обучающую и тестовую выборки, а для федеративного сценария обучающая выборка партиционируется между узлами.
-    \item \textbf{Синтетические данные: } TODO
-    \item \textbf{FineWeb (для NanoGPT):} Текстовый корпус для pre-training языковых моделей, используемый в бенчмарках серии modded-nanogpt.
-\end{itemize}
-
-\textbf{Конфигурация алгоритма.} Для экспериментов на MNIST и CIFAR-10 используется 4-слойная сверточная архитектура (CNN). Оптимизация матричных параметров производится исследуемыми алгоритмами SignMuon, Muon, SignSGD, SGD, Adam. Векторные параметры (смещения) обновляются с помощью Adam \cite{jordan2023cifar10}. В качестве метода ортогонализации для Muon и SignMuon используется алгоритм Ньютона-Шульца. Темп обучения (learning rate) варьируется в зависимости от примененного алгоритма, используется Nesterov Momentum (0.9) и пкосинусный планировщик скорости обучения (CosineAnnealingLR). Обновление шага обучения $\eta_t$ на эпохе $t$ осуществляется по следующей формуле:
+В формальной постановке класс алгоритмов SignA на каждой итерации $t$ выполняет следующую последовательность обновлений:
 \begin{equation}
-\eta_t = \eta_{\text{min}} + \frac{1}{2}(\eta_{\text{max}} - \eta_{\text{min}})\left(1 + \cos\left(\frac{t}{T_{\text{max}}}\pi\right)\right),
+\begin{aligned}
+\mathbf{M}_t &= \mu \mathbf{M}_{t-1} + \mathbf{G}_t, \\
+\tilde{\mathbf{M}}_t &= \mathbf{G}_t + \mu \mathbf{M}_t && \text{(Nesterov momentum – optional)}, \\
+\mathbf{D}_t &= A(\tilde{\mathbf{M}}_t), \\
+\mathbf{s}_t &= \operatorname{sign}(\mathbf{D}_t) \in \{\pm 1\}^{m \times n}, \\
+\mathbf{X}_{t+1} &= \mathbf{X}_t - \eta_t \lambda_{\mathrm{mult}} \mathbf{s}_t,
+\end{aligned}
+\label{eq:signa_general}
 \end{equation}
-где $\eta_{\text{max}}$ — начальный темп обучения алгоритма, $\eta_{\text{min}} = 0$ — минимальное значение (в нашей конфигурации), а $T_{\text{max}}$ соответствует общему числу эпох обучения. 
+где $\mu$ – коэффициент моментума, $\lambda_{\mathrm{mult}} > 0$ – масштабирующий множитель (по умолчанию $\lambda_{\mathrm{mult}}=1$), $\mathbf{G}_t$ – стохастический градиент, а $\operatorname{sign}(\cdot)$ применяется поэлементно к LMO-направлению $\mathbf{D}_t$. 
 
-\textbf{Ожидаемые таблицы и графики.} После проведения исследований ожидаем получения следующих результатов: график сравнение сходимости, по оси X — количество эпох (epochs), Y — точность на тестовой выборке / значение функции потерь; таблица сравнения конечных результатов обучения; график сравнения коммуникационной эффективности в распределенном обучении.
+Предлагаемый в работе метод SignMuon является частным случаем класса алгоритмов SignA, он объединяет ортогонализованные LMO-направления оптимизатора Muon с экстремальной знаковой компрессией SignSGD. Ниже описаны две основные реализации данного алгоритма – централизованная и федеративная.
 
-\section{Предварительные результаты (Preliminary Report)}
-В качестве базовой модели для централизованного обучения была реализована сверточная нейронная сеть, представляющая собой отображение из пространства изображений в пространство вероятностей классов. Архитектура сети включает два сверточных блока с пакетной нормализацией (BatchNorm) и MLP-классификатор (multilayer perceptron). Основным исследуемым алгоритмом является SignMuon. Практическая реализация алгоритма учитывает тензорную структуру параметров нейронной сети. Процесс оптимизации разделен на два потока\cite{jordan2023cifar10}:
+\subsection{Централизованный сценарий}
+В централизованной постановке алгоритм SignMuon применяется к матричным параметрам модели. Практическая реализация алгоритма учитывает тензорную структуру параметров нейронной сети. Процесс оптимизации разделен на два потока\cite{jordan2023cifar10}:
 \begin{enumerate}
-    \item Матричные параметры (веса сверточных и полносвязных слоев, $ndim \ge 2$) обновляются с помощью LMO-оракула.
-    \item Векторные параметры (смещения и веса слоев пакетной нормализации, $ndim < 2$) оптимизируются стандартным методом Adam. 
+    \item Матричные параметры (веса сверточных и полносвязных слоев, $n_{dim} \ge 2$) обновляются с помощью LMO-оракула.
+    \item Векторные параметры (смещения и веса слоев пакетной нормализации, $n_{dim} = 1$) оптимизируются стандартным методом Adam. 
 \end{enumerate}
 Первоначально такой подход был предложен Jordan и другими \cite{jordan2024muon} в эмпирическом описании. Первый результат о теоретической сходимости был получен Li и Hong, которые проанализировали гладкую невыпуклую постановку \cite{li2025note}. Так же данный подход описан в работе Рябинина \cite{riabinin2025gluon}.
 
-Вычисление ортонормированного направления $\mathbf{D}_t \approx \mathbf{U}_t \mathbf{V}_t^\top$ для матричных параметров осуществляется без явного вычисления сингулярного разложения (SVD). Вместо этого применяется итерационный алгоритм Ньютона–Шульца. После получения LMO-направления $\mathbf{D}_t$, к нему применяется поэлементная функция $\operatorname{sign}(\mathbf{D}_t)$, что сокращает объем передаваемой информации до 1 бита на компоненту. Логика обновления представлена в Алгоритме 1:
+Вычисление ортонормированного направления $\mathbf{D}_t \approx \mathbf{U}_t \mathbf{V}_t^\top$ для матричных параметров осуществляется без явного вычисления сингулярного разложения (SVD). Вместо этого применяется итерационный алгоритм Ньютона-Шульца. После получения LMO-направления $\mathbf{D}_t$, к нему применяется поэлементная функция $\operatorname{sign}(\mathbf{D}_t)$, что сокращает объем передаваемой информации до 1 бита на компоненту. Логика обновления представлена в Алгоритме 1:
 
 \begin{algorithm}[H]
 \caption{Обновление матричных параметров алгоритмом SignMuon}
 \begin{algorithmic}[1]
-\Require Текущие веса $\mathbf{X}_t$, градиент $\mathbf{G}_t$, импульс $\mu$, шаг обучения $\eta_t$, буфер импульса $\mathbf{M}_{t-1}$
+\Require Текущие веса $\mathbf{X}_t$, градиент $\mathbf{G}_t$, буфер моментума $\mathbf{M}_{t-1}$, коэффицент моментума $\mu$, шаг обучения $\eta_t$, число итераций Newton--Schulz $\mathrm{ns\_steps}$
 \Ensure Обновленные веса $\mathbf{X}_{t+1}$
 
-\State $\mathbf{M}_t \gets \mu \mathbf{M}_{t-1} + \mathbf{G}_t$ \Comment{Cглаженный градиент (импульс)}
+\State $\mathbf{M}_t \gets \mu \mathbf{M}_{t-1} + \mathbf{G}_t$ \Comment{Cглаженный градиент (накопление моментума)}
 \State $\tilde{\mathbf{M}}_t \gets \mathbf{G}_t + \mu \mathbf{M}_t$ \Comment{Шаг Нестерова для ускорения сходимости}
 
 \State $\mathbf{Y} \gets \text{ReshapeTo2D}(\tilde{\mathbf{M}}_t)$ \Comment{Приведение тензора к матрице $m \times n$}
-\State $\mathbf{Y} \gets \mathbf{Y} / (\|\mathbf{Y}\|_F + \varepsilon)$ \Comment{Нормализация}
+\State $\mathbf{Y} \gets \mathbf{Y} / (\|\mathbf{Y}\|_F + \varepsilon)$ \Comment{Нормализация по норме Фробениуса}
 
-\For{$k = 1$ to $5$} \Comment{Итерации Ньютона-Шульца для аппроксимации $\operatorname{sign}(\mathbf{Y})$}
+\For{$k = 1$ to $\mathrm{ns\_steps}$} \Comment{Итерации Ньютона-Шульца}
     \State $\mathbf{A} \gets \mathbf{Y} \mathbf{Y}^\top$
     \State $\mathbf{Y} \gets 3.4445\,\mathbf{Y} - 4.7750\,\mathbf{A}\mathbf{Y} + 2.0315\,\mathbf{A}^2\mathbf{Y}$
 \EndFor
 
 \State $\mathbf{D}_t \gets \text{ReshapeToOriginal}(\mathbf{Y})$ \Comment{Восстановление исходной размерности}
 \State $\mathbf{s}_t \gets \operatorname{sign}(\mathbf{D}_t)$ \Comment{Знаковая компрессия}
-\State $\mathbf{X}_{t+1} \gets \mathbf{X}_t - \eta_t \mathbf{s}_t$ \Comment{Обновление весов}
+\State $\mathbf{X}_{t+1} \gets \mathbf{X}_t - \eta_t \mathbf{s}_t$ \Comment{Обновление параметров}
 
 \State \Return $\mathbf{X}_{t+1}$
 \end{algorithmic}
 \end{algorithm}
 
-На данном этапе реализован программный пайплайн и проведен базовый вычислительный эксперимент по централизованному обучению на наборах данных MNIST и CIFAR-10. На датасете CIFAR-10 модель обучалась в течение 50 эпох с использованием CosineAnnealingLR. Для валидации предложенного алгоритма SignMuon проводилось сравнение с оптимизаторами Adam, SGD, SignSGD и Muon. На рисунках ниже представлены результаты данного эксперимента: 
-\begin{figure}[htbp]
+В отличие от SignSGD, где знаковая компрессия применяется непосредственно к стохастическому градиенту, в данной алгоритме сначала строится структурированное направление обновления $\mathbf{D}_t$, соответствующее LMO-шагу Muon, и только затем происходит знаковая компрессия. Тем самым SignMuon сохраняет геометрию ортонормированных обновлений и снижает объём передаваемой информации до одного бита на компоненту.
+
+\subsection{Федеративный сценарий}
+В федеративном обучении данные распределены между $M$ клиентами (узлами). Каждый клиент $m$ имеет свой локальный набор данных $D_m$ и вычисляет локальную функцию потерь $f_m(\mathbf{x})$. Цель обучения состоит в минимизации усреднённой по всем клиентам функции $F(\mathbf{x})$. Клиенты не обмениваются данными между собой, они передают на сервер сжатые сообщения, что делает коммуникацию узким местом (bottleneck).
+
+В федеративном сценарии использования алгоритма SignMuon каждый клиент независимо вычисляет знаковое LMO-направление, а сервер выполняет агрегацию и обновление глобальной модели. Каждый клиент сначала копирует глобальную модель, после этого делает $\mathrm{n\_steps}$ локальных шагов стохастической оптимизации и на каждом шаге вычисляет градиент по текущему батчу. Все локальные градиенты суммируются, после чего усредняются, данный процесс повторяется до предела количества раундов $\mathrm{rounds}$:
+$$
+\mathbf{G}_t^{(m)}=\frac{1}{n_{\text{steps}}}\sum_{i=1}^{n_{\text{steps}}}\nabla f(\mathbf{X}_t;\xi_{t,i}^{(m)}).
+$$
+$$
+\mathbf{s}_t^{(m)} = \operatorname{sign}\bigl(\mathbf{D}_t^{(m)} \bigr) 
+= \operatorname{sign}\bigl(A(\mathbf{G}_t^{(m)})\bigr) \in \{\pm 1\}^{m \times n},
+$$
+где $t\in[0, \mathrm{rounds}-1]$, $A(\cdot)$ — оператор Muon (Newton--Schulz ортогонализация). Таким образом, каждый клиент передаёт на сервер лишь 1 бит на компонент матричного параметра.
+
+На сервере поступившие от клиентов сообщения агрегируются с помощью majority-vote. Обозначим агрегированный знак через $\mathbf{s}_t^{\mathrm{agg}}$, тогда он задаётся формулой:
+\begin{equation}
+\mathbf{s}_t^{\mathrm{agg}}=\operatorname{sign}\!\left(\sum_{m=1}^M \mathbf{s}_t^{(m)}\right).
+\end{equation}
+
+Операция majority-vote гарантирует, что результирующий знак $\mathbf{s}_t^{\mathrm{agg}}$ равен $+1$ или $-1$ в каждой компоненте и соответствует «мнению большинства» клиентов. 
+
+Далее сервер применяет momentum уже к агрегированному знаку:
+\[
+\mathbf{M}_t = \mu \mathbf{M}_{t-1} + (1-\mu) \mathbf{s}_t^{\mathrm{agg}},
+\]
+где $\mathbf{M}_t$ — буфер моментума на сервере. Обновление глобальной модели для матричных параметров (кроме последнего слоя) выполняется по правилу:
+\[
+\mathbf{X}_{t+1} = \mathbf{X}_t - \eta_t \cdot \operatorname{sign}(\mathbf{M}_t).
+\]
+Отдельно следует отметить обработку последних (классификационных) слоёв  модели. Эти параметры не обновляются SignMuon-правилом, а оптимизируются с помощью AdamW.
+
+Полный алгоритм федеративного SignMuon приведён ниже:
+\begin{algorithm}[H]
+\caption{Federated SignMuon}
+\begin{algorithmic}[1]
+\Require Начальная модель $\mathbf{X}_0$, число клиентов $M$, число раундов $\mathrm{rounds}$, число локальных шагов $\mathrm{n\_steps}$, шаг обучения $\eta_t$, коэффициент моментума $\mu$
+\Ensure Обновлённая глобальная модель $\mathbf{X}$
+
+\State $\mathbf{M}_0 \gets 0$ \Comment{Инициализация буфера моментума}
+
+\For{$t = 0$ to $\mathrm{rounds} - 1$}
+
+    \For{$m = 1$ to $M$} \Comment{Параллельно на каждом клиенте}
+        \State $\mathbf{X}_t^{(m)} \gets \mathbf{X}_t$ \Comment{Получение глобальной модели}
+        \\
+        \State $\mathbf{G}_t^{(m)} \gets \frac{1}{\mathrm{n\_steps}} \sum_{i=1}^{\mathrm{n\_steps}} \nabla f(\mathbf{X}_t^{(m)}; \xi_{t,i}^{(m)})$ \Comment{Усреднённый градиент}
+        \\
+        \State $\mathbf{Y}_t^{(m)} \gets \text{ReshapeTo2D}(\mathbf{G}_t^{(m)})$ \Comment{Приведение тензора к матрице $m \times n$}
+        \\
+        \State $\mathbf{Y}_t^{(m)} \gets \mathbf{Y}_t^{(m)} / (\|\mathbf{Y}_t^{(m)}\|_F + \varepsilon)$ \Comment{Нормализация по норме Фробениуса}
+        \\
+        \For{$k = 1$ to $\mathrm{ns\_steps}$} \Comment{Итерации Ньютона-Шульца (Muon)}
+            \State $\mathbf{A}_t^{(m)} \gets \mathbf{Y}_t^{(m)} (\mathbf{Y}_t^{(m)})^\top$
+            \State $\mathbf{Y}_t^{(m)} \gets 3.4445\,\mathbf{Y}_t^{(m)} - 4.7750\,\mathbf{A}_t^{(m)}\mathbf{Y}_t^{(m)} + 2.0315\,(\mathbf{A}_t^{(m)})^2\mathbf{Y}_t^{(m)}$
+        \EndFor
+        \\
+        \State $\mathbf{D}_t^{(m)} \gets \text{ReshapeToOriginal}(\mathbf{Y}_t^{(m)})$ \Comment{Восстановление размерности}
+        \\
+        \State $\mathbf{s}_t^{(m)} \gets \operatorname{sign}\bigl(\mathbf{D}_t^{(m)}\bigr)$ \Comment{Знаковая компрессия}
+        \\
+        \State Отправить $\mathbf{s}_t^{(m)}$ на сервер
+    \EndFor
+    \\
+    \State $\mathbf{s}_t^{\mathrm{agg}} \gets \operatorname{sign}\!\left(\sum_{m=1}^{M} \mathbf{s}^{(m)}\right)$ \Comment{Majority-vote агрегация на сервере}
+    \\
+    \State $\mathbf{M}_t \gets \mu \mathbf{M}_{t-1} + (1-\mu)\mathbf{s}_t^{\mathrm{agg}}$ \Comment{Обновление моментума}
+    \\
+    \State $\mathbf{X}_{t+1} \gets \mathbf{X}_t - \eta_t \cdot \operatorname{sign}(\mathbf{M}_t)$ \Comment{Обновление матричных параметров}
+    \\
+    \State $\mathbf{X}_{t+1}^{\text{last}} \gets \text{AdamW}(\mathbf{X}_t^{\text{last}}, \mathbf{s}_t^{\mathrm{agg}})$ \Comment{Обновление последнего слоя}
+\EndFor
+\State \Return $\mathbf{X}_{\mathrm{rounds}}$
+\end{algorithmic}
+\end{algorithm}
+Таким образом, федеративный SignMuon сохраняет все структурные преимущества Muon, одновременно обеспечивая экстремально низкую коммуникационную нагрузку (только знаки $\pm 1$ от каждого клиента).
+
+\subsection{Гипотезы исследования}
+Сформулируем две основные гипотезы для теоретического и экспериментального исследования алгоритма SignMuon. Пусть $\{\mathbf{x}_t\}_{t\ge 0}$ -- последовательность итерационных шагов SignMuon, а $F(\mathbf{x})$ -- целевая функция в постановке федеративного обучения (в центарализованной постановке $F=f$).
+
+Для анализа алгоритмов в обоих сценариях мы сделаем несколько предположений (Assumption). 
+\paragraph{Assumption 1.} Функция $F(\mathbf{x})$ является $L$-гладкой относительно нормы $\|\cdot\|$, т.е. для любых $\mathbf{x}, \mathbf{y} \in \mathbb{R}^d$ выполняется:
+\begin{equation}
+\|\nabla F(\mathbf{x}) - \nabla F(\mathbf{y})\|_* \le L \|\mathbf{x} - \mathbf{y}\|,
+\end{equation}
+где $\|\cdot\|$ — дуальная норма.
+
+
+\paragraph{Assumption 2.} 
+Cтохастический градиент удовлетворяет:
+\begin{itemize}
+    \item Unbiased:\begin{equation}
+    \mathbb{E}_{\xi}\bigl[\nabla f(\mathbf{x};\xi)\bigr] = \nabla f(\mathbf{x}),
+    \end{equation}
+    \item Bounded variance: \begin{equation}
+    \mathbb{E}{\xi}\bigl[\|\nabla f(\mathbf{x};\xi) - \nabla f(\mathbf{x})\|^2\bigr] \le \sigma^2, \quad \sigma > 0
+    \end{equation}
+\end{itemize}
+
+
+
+\paragraph{Гипотеза 1 (Сходимость).} При выполнении условий Assumption 1 и Assumption 2 алгоритм SignMuon сходится в гладком невыпуклом режиме. В частности, предполагается, что выполняется та же оценка скорости сходимости, что и для SignSGD:
+\begin{equation}
+\min_{0 \le t \le T}\mathbb{E}\bigl[\|\nabla F(\mathbf{x}_t)\|^2\bigr]
+=
+\mathcal{O}\bigl(T^{-1/2}\bigr).
+\end{equation}
+Иными словами, знаковая компрессия LMO-направления не ухудшает стандартный порядок сходимости в гладком невыпуклом случае.
+
+\paragraph{Гипотеза 2 (Сохранение преимуществ Muon).}
+Переход от LMO-направления Muon $\mathbf{D}_t=\mathbf{U}_t\mathbf{V}_t^\top$ к его знаковой компрессии $\operatorname{sign}(\mathbf{U}_t\mathbf{V}_t^\top)$ сохраняет основную геометрию ортонормированных обновлений. В результате SignMuon должен сохранять качество обучения, близкое к полному Muon, при существенно меньших коммуникационных затратах и превосходить SignSGD как в централизованном, так и в федеративном режимах.
+
+
+\section{Вычислительный эксперимент (Computational Experiment)}\label{sec:exp}
+\textbf{Целью} эксперимента является эмпирическая валидация алгоритма SignMuon, как оптимизатора, объединяющего высокую скорость сходимости LMO-оптимизаторов с коммуникационной эффективностью знаковой компрессии. Само исследование состоит из нескольких частей:
+\begin{itemize}
+    \item \textbf{Централизованное обучение (Centralized PerFormance):} Сравнение динамики сходимости и итоговой точности (Accuracy) алгоритма SignMuon с классическими оптимизаторами Adam, SGD, SignSGD и Muon при фиксированном количестве эпох. Одной из целей является демонстрация того, что SignMuon обеспечивает высокое качество классификации, сопоставимое с Muon, и при этом превосходит по точности классический знаковый метод SignSGD при идентичной коммуникации (1 бит на параметр). 
+    \item \textbf{Федеративное обучение (Federated learning):} Оценка алгоритма в распределенной среде, где передача полных 32-битных матриц градиентов является bottleneck. Цель данного этапа исследования показать, что сжатие ортогонализованных LMO-обновлений позволяет достичь качества полного Muon при снижении объема передаваемых данных.
+    \item \textbf{Синтетическая неевклидова оптимизация (Synthetic Benchmarks):} Исследование сходимости расширенного семейства алгоритмов SignA на контролируемых задачах. Использование синтетических сред с заранее известными константами гладкости и числами обусловленности позволяет ...  TODO
+    \item \textbf{Эксперимент на масштабируемость и LLM:} Применение алгоритма SignMuon с целью предварительного обучения (pre-training) языковых моделей архитектуры TransFormer. Валидация проводится на базе высокооптимизированного фреймворка Modded-NanoGPT, что позволяет сравнить SignMuon с Muon и  AdamW. ...  TODO
+\end{itemize}
+
+\textbf{Наборы данных.} Эксперименты проводятся на синтетических и реальных наборах данных:
+\begin{itemize}
+    \item \textbf{CIFAR-10:} Стандартный датасет для задачи классификации изображений. Содержит 60 000 цветных изображений. Каждое изображение представлено в виде тензора размерности $3 \times 32 \times 32$, где первый индекс соответствует количеству цветовых каналов (RGB). Для централизованного обучения датасет делится на обучающую и тестовую выборки. В федеративном сценарии обучающая выборка делится между узлами.
+    \item \textbf{MNIST:} Датасет для задачи классификации изображений, используемый в бенчмарках распределенного обучения. Содержит 70 000 черно-белых изображений рукописных цифр размером $28 \times 28$ пикселей (1 канал). Как и в случае с CIFAR-10, для централизованного обучения датасет делится на обучающую и тестовую выборки, а для федеративного сценария обучающая выборка делится между узлами.
+    \item \textbf{Синтетические данные: } TODO
+    \item \textbf{FineWeb (для NanoGPT):} Текстовый корпус для pre-training языковых моделей, используемый в бенчмарках серии modded-nanogpt.
+\end{itemize}
+
+\textbf{Конфигурация алгоритма.} Для экспериментов на MNIST и CIFAR-10 используется 4-слойная сверточная архитектура (CNN). Оптимизация матричных параметров производится исследуемыми алгоритмами SignMuon, Muon, SignSGD, SGD, Adam. Векторные параметры (смещения и веса слоев пакетной нормализации, $n_{dim} = 1$) оптимизируются стандартным методом Adam \cite{jordan2023cifar10}. В качестве метода ортогонализации для Muon и SignMuon используется алгоритм Ньютона-Шульца. Темп обучения (learning rate) варьируется в зависимости от примененного алгоритма, используется Nesterov Momentum (0.9) и косинусный планировщик скорости обучения (CosineAnnealingLR). Обновление шага обучения $\eta_t$ на эпохе $t$ осуществляется по следующей формуле:
+\begin{equation}
+\eta_t = \eta_{\text{min}} + \frac{1}{2}(\eta_{\text{max}} - \eta_{\text{min}})\left(1 + \cos\left(\frac{t}{T_{\text{max}}}\pi\right)\right),
+\end{equation}
+где $\eta_{\text{max}}$ – начальный темп обучения алгоритма, $\eta_{\text{min}} = 0$ – минимальное значение (в нашей конфигурации), а $T_{\text{max}}$ соответствует общему числу эпох обучения. 
+
+\textbf{Метрики оценки качества.} Для оценки качества работы алгоритмов мы используем две стандартные метрики: точность классификации (Accuracy) и кросс-энтропийную функцию потерь (Cross-Entropy Loss). Обе метрики вычисляются как на обучающей, так и на тестовой выборках.
+
+Пусть $N$ — общее число примеров в выборке (или в тестовом множестве всех клиентов в федеративном режиме), $\hat{y}_i \in \{1,\dots,C\}$ — предсказанный класс для $i$-го примера, $y_i \in \{1,\dots,C\}$ — истинный класс, а $\hat{p}_{i,c}$ — предсказанная моделью вероятность класса $c$ для примера $i$.
+
+\begin{itemize}
+    \item Точность классификации (в процентах): $\text{Accuracy} = \frac{1}{N} \sum_{i=1}^N \mathbb{I}(\hat{y}_i = y_i) \times 100\%,$
+    \item Функция потерь кросс-энтропия: $\mathcal{L} = -\frac{1}{N} \sum_{i=1}^N \sum_{c=1}^C y_{i,c} \log(\hat{p}_{i,c}),$ где $y_{i,c}$ — one-hot кодировка истинного класса.
+\end{itemize}
+
+Эти метрики позволяют сравнивать сходимость и финальное качество всех рассматриваемых алгоритмов (SignMuon, Muon, SignSGD, SGD, Adam) как в централизованном, так и в федеративном сценариях.
+
+\textbf{Ожидаемые таблицы и графики.} После проведения исследований ожидаем получения следующих результатов: график сравнение сходимости, по оси X – количество эпох (epochs), Y – точность на тестовой выборке / значение функции потерь; таблица сравнения конечных результатов обучения; график сравнения коммуникационной эффективности в распределенном обучении.
+
+\section{Предварительные результаты (Preliminary Report)}
+\paragraph{Централизованный сценарий.}
+В качестве базовой модели для централизованного обучения была использована сверточная нейронная сеть, представляющая собой отображение из пространства изображений в пространство вероятностей классов. Архитектура сети включает два сверточных блока с пакетной нормализацией (BatchNorm) и MLP-классификатор (multilayer perceptron). Основным исследуемым алгоритмом является SignMuon. 
+
+Был реализован программный пайплайн и проведен базовый вычислительный эксперимент по централизованному обучению на наборах данных MNIST и CIFAR-10. На датасете CIFAR-10 модель обучалась в течение 50 эпох с использованием CosineAnnealingLR. Для валидации предложенного алгоритма SignMuon проводилось сравнение с оптимизаторами Adam, SGD, SignSGD и Muon. На рисунках ниже представлены результаты данного эксперимента: 
+\begin{figure}[H]
     \centering
-    \begin{subfigure}[b]{0.48\textwidth}
+    \begin{subfigure}[b]{0.34\textwidth}
         \centering
         \includegraphics[width=\textwidth]{images/train_loss_mnist.png} 
-        \caption{Loss on train dataset}
-        \label{fig:adam}
+        \caption{Train Loss}
+        \label{fig:train_loss_mnist}
     \end{subfigure}
     \hfill
-
-    \begin{subfigure}[b]{0.48\textwidth}
+    \begin{subfigure}[b]{0.34\textwidth}
         \centering
         \includegraphics[width=\textwidth]{images/train_acc_mnist.png} 
-        \caption{Accuracy on train dataset}
-        \label{fig:sgd}
+        \caption{Train Accuracy}
+        \label{fig:train_acc_mnist}
     \end{subfigure}
-
-    \vspace{1em}
-
-    \begin{subfigure}[b]{0.48\textwidth}
+    \hfill
+    \begin{subfigure}[b]{0.34\textwidth}
         \centering
         \includegraphics[width=\textwidth]{images/test_loss_mnist.png}
-        \caption{Loss on test dataset}
-        \label{fig:muon}
+        \caption{Test Loss}
+        \label{fig:test_loss_mnist}
     \end{subfigure}
     \hfill
-
-    \begin{subfigure}[b]{0.48\textwidth}
+    \begin{subfigure}[b]{0.34\textwidth}
         \centering
         \includegraphics[width=\textwidth]{images/test_acc_mnist.png}
-        \caption{Accuracy on test dataset}
-        \label{fig:signmuon}
+        \caption{Test Accuracy}
+        \label{fig:test_acc_mnist}
     \end{subfigure}
     
-    \caption{Сравнение сходимости и точности различных алгоритмов оптимизации на обучении классификатора MNIST. На верхнем ряду представлены результаты работы на обучающей выборке, в нижнем на тестовой.}
-    \label{fig:four_optimizers}
+    \caption{Сравнение сходимости и точности различных алгоритмов оптимизации на обучении классификатора MNIST.}
+    \label{fig:mnist_results}
 \end{figure}
 
-
-\begin{figure}[htbp]
+\begin{figure}[H]
     \centering
-    \begin{subfigure}[b]{0.48\textwidth}
+    \begin{subfigure}[b]{0.34\textwidth}
         \centering
         \includegraphics[width=\textwidth]{images/train_loss_cifar.png} 
-        \caption{Loss on train dataset}
-        \label{fig:adam}
+        \caption{Train Loss}
+        \label{fig:cifar_train_loss}
     \end{subfigure}
     \hfill
-
-    \begin{subfigure}[b]{0.48\textwidth}
+    \begin{subfigure}[b]{0.34\textwidth}
         \centering
         \includegraphics[width=\textwidth]{images/train_acc_cifar.png} 
-        \caption{Accuracy on train dataset}
-        \label{fig:sgd}
-    \end{subfigure}
-
-    \vspace{1em}
-
-    \begin{subfigure}[b]{0.48\textwidth}
-        \centering
-        \includegraphics[width=\textwidth]{images/test_loss_cifar.png}
-        \caption{Loss on test dataset}
-        \label{fig:muon}
+        \caption{Train Accuracy}
+        \label{fig:cifar_train_acc}
     \end{subfigure}
     \hfill
-
-    \begin{subfigure}[b]{0.48\textwidth}
+    \begin{subfigure}[b]{0.34\textwidth}
+        \centering
+        \includegraphics[width=\textwidth]{images/test_loss_cifar.png}
+        \caption{Test Loss}
+        \label{fig:cifar_test_loss}
+    \end{subfigure}
+    \hfill
+    \begin{subfigure}[b]{0.34\textwidth}
         \centering
         \includegraphics[width=\textwidth]{images/test_acc_cifar.png}
-        \caption{Accuracy on test dataset}
-        \label{fig:signmuon}
+        \caption{Test Accuracy}
+        \label{fig:cifar_test_acc}
     \end{subfigure}
     
-    \caption{Сравнение сходимости и точности различных алгоритмов оптимизации на обучении классификатора CIFAR-10. На верхнем ряду представлены результаты работы на обучающей выборке, в нижнем на тестовой.}
-    \label{fig:four_optimizers}
+    \caption{Сравнение сходимости и точности различных алгоритмов оптимизации на обучении классификатора CIFAR-10.}
+    \label{fig:cifar_results}
 \end{figure}
+
+
+\paragraph{Федеративный сценарий.}
 
 \newpage
-Затем был реализован эксперимент по федеративному обучению: 
-
-\begin{figure}[htbp]
-    \centering
-    \includegraphics[width=0.8\textwidth]{images/эскиз.JPG}
-    \caption{Набросок ожидаемых результатов эксперимента.}
-    \label{fig:example}
-\end{figure}
-
 \section{Discussion}\label{sec:disc}
 
 TODO
