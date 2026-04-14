@@ -32,17 +32,5 @@
 
 SignSGD is a popular algorithm due to its strong performance in both centralized and decentralized settings: it performs competitively with Adam while being communication-efficient, transmitting up to 32x fewer bits than standard optimizers. This work introduces SignMuon, an algorithm that combines the structured LMO-based update of Muon with the sign compression of SignSGD. Our experiments show that SignMuon achieves performance nearly on par with Muon in the centralized setting and outperforms SignSGD in both centralized and federated settings. We establish theoretical convergence guarantees for SignMuon in the smooth non-convex regime. We further analyze specific modifications to the algorithm that enhance numerical stability without compromising communication efficiency. Finally, this work extends our framework to the broader class of SignA algorithms, where A denotes any LMO-based optimizer, providing a unified convergence analysis for sign-compressed LMO methods. Empirical validation is conducted on synthetic convex and nonconvex problems with known smoothness constants, CIFAR-airbench, federated MNIST/CIFAR-10 classification, and NanoGPT training.
 
-## Citation
-
-If you find our work helpful, please cite us.
-```BibTeX
-@article{citekey,
-    title={Title},
-    author={Name Surname, Name Surname (consultant), Name Surname (advisor)},
-    year={2025}
-}
-```
-
-## Licence
-
-Our project is MIT licensed. See [LICENSE](LICENSE) for details.
+## Code
+How to run the code:
