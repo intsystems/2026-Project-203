@@ -176,20 +176,28 @@ def federated_sgd(global_model, train_loaders, num_clients, rounds, n_steps, lr,
     global_model.to(device)
     global_model.train()
 
-    round_accuracies = []
-    round_losses = []
-
+    
     momentum_buffers = {
         name: torch.zeros_like(param, device=device)
         for name, param in global_model.named_parameters() 
         if param.requires_grad
     }
 
+    round_accuracies = []
+    round_losses = []
+
+    # Инициализация 0 эпохи
+    _, total_accuracy, total_loss = evaluate_model(global_model, test_loaders, verbose=False, device=device)
+    round_accuracies.append(total_accuracy)
+    round_losses.append(total_loss)
+    print(f"\rRound 0 - Accuracy: {total_accuracy:.2f}%, Loss: {total_loss:.4f} ", end='', flush=True)
+
     for r in range(rounds):
-        print(f"\rRound {r}", end='', flush=True)
+        round_start = time.perf_counter() 
+        print(f"\rRound {r + 1}", end='', flush=True)
 
         client_grads = [
-            local_train_sgd(global_model, train_loaders[i], n_steps)
+            local_train_sgd(global_model, train_loaders[i], n_steps, device=device)
             for i in range(num_clients)
         ]
 
@@ -208,12 +216,14 @@ def federated_sgd(global_model, train_loaders, num_clients, rounds, n_steps, lr,
                     #param -= lr * avg_grad[name]
 
         # Evaluate only at specified frequency or on last round
+        round_elapsed = time.perf_counter() - round_start
         if (r + 1) % eval_freq == 0 or r == rounds - 1:
-            _, total_accuracy, total_loss = evaluate_model(global_model, test_loaders)
+            _, total_accuracy, total_loss = evaluate_model(global_model, test_loaders, verbose=False, device=device)
+            print(f"\rRound {r+1} | {round_elapsed:.2f}s | Accuracy: {total_accuracy:.2f}%, Loss: {total_loss:.4f}", end='', flush=True)
         else:
-            # Use previous values or None
             total_accuracy = round_accuracies[-1] if round_accuracies else None
             total_loss = round_losses[-1] if round_losses else None
+            print(f"\rRound {r+1} - (skipped evaluation)| {round_elapsed:.2f}s ", end='', flush=True)
         
         round_accuracies.append(total_accuracy)
         round_losses.append(total_loss)
@@ -289,12 +299,19 @@ def federated_signsgd(global_model, train_loaders, num_clients, rounds, n_steps,
     round_accuracies = []
     round_losses = []
 
+    # инициализация 0 эпохи
+    _, total_accuracy, total_loss = evaluate_model(global_model, test_loaders, verbose=False, device=device)
+    round_accuracies.append(total_accuracy)
+    round_losses.append(total_loss)
+    print(f"\rRound 0 - Accuracy: {total_accuracy:.2f}%, Loss: {total_loss:.4f} ", end='', flush=True)
+    
     for r in range(rounds):
-        print(f"\rRound {r}", end='', flush=True)
+        round_start = time.perf_counter() 
+        print(f"\rRound {r+1}", end='', flush=True)
 
         # Get client signs (same as SignSGD)
         client_signs = [
-            local_train_signsgd(global_model, train_loaders[i], n_steps)
+            local_train_signsgd(global_model, train_loaders[i], n_steps, device=device)
             for i in range(num_clients)
         ]
 
@@ -316,14 +333,14 @@ def federated_signsgd(global_model, train_loaders, num_clients, rounds, n_steps,
                     param -= lr * torch.sign(momentum_buffers[name])
 
         # Evaluate only at specified frequency or on last round
+        round_elapsed = time.perf_counter() - round_start
         if (r + 1) % eval_freq == 0 or r == rounds - 1:
-            _, total_accuracy, total_loss = evaluate_model(global_model, test_loaders, verbose=False)
-            print(f"\rRound {r} - Accuracy: {total_accuracy:.2f}%, Loss: {total_loss:.4f}", end='', flush=True)
+            _, total_accuracy, total_loss = evaluate_model(global_model, test_loaders, verbose=False, device=device)
+            print(f"\rRound {r+1} | {round_elapsed:.2f}s | Accuracy: {total_accuracy:.2f}%, Loss: {total_loss:.4f}", end='', flush=True)
         else:
-            # Use previous values or None
             total_accuracy = round_accuracies[-1] if round_accuracies else None
             total_loss = round_losses[-1] if round_losses else None
-            print(f"\rRound {r} - (skipped evaluation)", end='', flush=True)
+            print(f"\rRound {r+1} - (skipped evaluation)| {round_elapsed:.2f}s ", end='', flush=True)
         
         round_accuracies.append(total_accuracy)
         round_losses.append(total_loss)
@@ -414,11 +431,18 @@ def federated_muon(
     round_accuracies = []
     round_losses = []
 
+    # инициализация 0 эпохи
+    _, total_accuracy, total_loss = evaluate_model(global_model, test_loaders, verbose=False, device=device)
+    round_accuracies.append(total_accuracy)
+    round_losses.append(total_loss)
+    print(f"\rRound 0 - Accuracy: {total_accuracy:.2f}%, Loss: {total_loss:.4f} ", end='', flush=True)
+
     for r in range(rounds):
-        print(f"\rRound {r}", end='', flush=True)
+        round_start = time.perf_counter() 
+        print(f"\rRound {r+1}", end='', flush=True)
 
         client_updates = [
-            local_train_muon(global_model, train_loaders[i], n_steps, ns_steps=ns_steps)
+            local_train_muon(global_model, train_loaders[i], n_steps, ns_steps=ns_steps, device=device)
             for i in range(num_clients)
         ]
 
@@ -443,13 +467,14 @@ def federated_muon(
                 param.grad = avg_update[name].clone()
         adamw.step()
 
+        round_elapsed = time.perf_counter() - round_start
         if (r + 1) % eval_freq == 0 or r == rounds - 1:
-            _, total_accuracy, total_loss = evaluate_model(global_model, test_loaders, verbose=False)
-            print(f"\rRound {r} - Accuracy: {total_accuracy:.2f}%, Loss: {total_loss:.4f}", end='', flush=True)
+            _, total_accuracy, total_loss = evaluate_model(global_model, test_loaders, verbose=False, device=device)
+            print(f"\rRound {r+1} | {round_elapsed:.2f}s | Accuracy: {total_accuracy:.2f}%, Loss: {total_loss:.4f}", end='', flush=True)
         else:
             total_accuracy = round_accuracies[-1] if round_accuracies else None
             total_loss = round_losses[-1] if round_losses else None
-            print(f"\rRound {r} - (skipped evaluation)", end='', flush=True)
+            print(f"\rRound {r+1} - (skipped evaluation)| {round_elapsed:.2f}s ", end='', flush=True)
 
         round_accuracies.append(total_accuracy)
         round_losses.append(total_loss)
@@ -537,6 +562,7 @@ def federated_signmuon(
             device = torch.device("cpu")
     if device is None:
         device = torch.device("cuda:0" if torch.cuda.is_available() else "cpu")
+    print(device)
     global_model.to(device)
     global_model.train()
 
@@ -560,12 +586,18 @@ def federated_signmuon(
     round_accuracies = []
     round_losses = []
 
+    # инициализация 0 эпохи
+    _, total_accuracy, total_loss = evaluate_model(global_model, test_loaders, verbose=False, device=device)
+    round_accuracies.append(total_accuracy)
+    round_losses.append(total_loss)
+    print(f"\rRound 0 - Accuracy: {total_accuracy:.2f}%, Loss: {total_loss:.4f} ", end='', flush=True)
+  
     for r in range(rounds):
         round_start = time.perf_counter() 
-        print(f"\rRound {r}", end='', flush=True)
+        print(f"\rRound {r+1}", end='', flush=True)
 
         client_signs = [
-            local_train_signmuon(global_model, train_loaders[i], n_steps, ns_steps=ns_steps)
+            local_train_signmuon(global_model, train_loaders[i], n_steps, ns_steps=ns_steps, device=device)
             for i in range(num_clients)
         ]
 
@@ -591,14 +623,13 @@ def federated_signmuon(
         adamw.step()
 
         round_elapsed = time.perf_counter() - round_start
-
         if (r + 1) % eval_freq == 0 or r == rounds - 1:
-            _, total_accuracy, total_loss = evaluate_model(global_model, test_loaders, verbose=False)
-            print(f"\rRound {r} | {round_elapsed:.2f}s | Accuracy: {total_accuracy:.2f}%, Loss: {total_loss:.4f}", end='', flush=True)
+            _, total_accuracy, total_loss = evaluate_model(global_model, test_loaders, verbose=False, device=device)
+            print(f"\rRound {r+1} | {round_elapsed:.2f}s | Accuracy: {total_accuracy:.2f}%, Loss: {total_loss:.4f}", end='', flush=True)
         else:
             total_accuracy = round_accuracies[-1] if round_accuracies else None
             total_loss = round_losses[-1] if round_losses else None
-            print(f"\rRound {r} - (skipped evaluation) | {round_elapsed:.2f}s", end='', flush=True)
+            print(f"\rRound {r+1} - (skipped evaluation) | {round_elapsed:.2f}s", end='', flush=True)
 
         round_accuracies.append(total_accuracy)
         round_losses.append(total_loss)
@@ -676,9 +707,15 @@ def federated_adam(
     round_accuracies = []
     round_losses = []
 
+    # инициализация 0 эпохи
+    _, total_accuracy, total_loss = evaluate_model(global_model, test_loaders, verbose=False, device=device)
+    round_accuracies.append(total_accuracy)
+    round_losses.append(total_loss)
+    print(f"\rRound 0 - Accuracy: {total_accuracy:.2f}%, Loss: {total_loss:.4f} ", end='', flush=True)
+
     for r in range(rounds):
         round_start = time.perf_counter() 
-        print(f"\rRound {r}", end='', flush=True)
+        print(f"\rRound {r+1}", end='', flush=True)
 
         client_grads = [
             local_train_adam(global_model, train_loaders[i], n_steps, device=device)
@@ -697,7 +734,6 @@ def federated_adam(
         optimizer.step()
 
         round_elapsed = time.perf_counter() - round_start
-
         if (r + 1) % eval_freq == 0 or r == rounds - 1:
             _, total_accuracy, total_loss = evaluate_model(global_model, test_loaders, verbose=False, device=device)
             print(f"\rRound {r} | {round_elapsed:.2f}s | Accuracy: {total_accuracy:.2f}%, Loss: {total_loss:.4f}", end='', flush=True)
