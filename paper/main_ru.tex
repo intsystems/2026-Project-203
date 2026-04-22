@@ -211,7 +211,7 @@ SignA реализует шаг steepest-descent с ограничением п�
 
 \begin{algorithm}[H]
 \caption{Обновление матричных параметров алгоритмом SignMuon}
-\begin{algorithmic}[1]
+\begin{algorithmic}
 \Require Текущие веса $\mathbf{X}_t$, градиент $\mathbf{G}_t$, буфер моментума $\mathbf{M}_{t-1}$, коэффицент моментума $\mu$, шаг обучения $\eta_t$, число итераций Newton--Schulz $\mathrm{ns\_steps}$
 \Ensure Обновленные веса $\mathbf{X}_{t+1}$
 
@@ -222,8 +222,8 @@ SignA реализует шаг steepest-descent с ограничением п�
 \State $\mathbf{Y} \gets \mathbf{Y} / (\|\mathbf{Y}\|_F + \varepsilon)$ \Comment{Нормализация по норме Фробениуса}
 
 \For{$k = 1$ to $\mathrm{ns\_steps}$} \Comment{Итерации Ньютона-Шульца}
-    \State $\mathbf{A} \gets \mathbf{Y} \mathbf{Y}^\top$
-    \State $\mathbf{Y} \gets 3.4445\,\mathbf{Y} - 4.7750\,\mathbf{A}\mathbf{Y} + 2.0315\,\mathbf{A}^2\mathbf{Y}$
+    \\ \State $\mathbf{A} \gets \mathbf{Y} \mathbf{Y}^\top$
+    \\ \State $\mathbf{Y} \gets 3.4445\,\mathbf{Y} - 4.7750\,\mathbf{A}\mathbf{Y} + 2.0315\,\mathbf{A}^2\mathbf{Y}$
 \EndFor
 
 \State $\mathbf{D}_t \gets \text{ReshapeToOriginal}(\mathbf{Y})$ \Comment{Восстановление исходной размерности}
@@ -239,14 +239,13 @@ SignA реализует шаг steepest-descent с ограничением п�
 \subsection{Федеративный сценарий}
 В федеративном обучении данные распределены между $M$ клиентами (узлами). Каждый клиент $m$ имеет свой локальный набор данных $D_m$ и вычисляет локальную функцию потерь $f_m(\mathbf{x})$. Цель обучения состоит в минимизации усреднённой по всем клиентам функции $F(\mathbf{x})$. Клиенты не обмениваются данными между собой, они передают на сервер сжатые сообщения, что делает коммуникацию узким местом (bottleneck).
 
-В федеративном сценарии использования алгоритма SignMuon каждый клиент независимо вычисляет знаковое LMO-направление, а сервер выполняет агрегацию и обновление глобальной модели. Каждый клиент сначала копирует глобальную модель, после этого делает $\mathrm{n\_steps}$ локальных шагов стохастической оптимизации и на каждом шаге вычисляет градиент по текущему батчу. Все локальные градиенты суммируются, после чего усредняются, данный процесс повторяется до предела количества раундов $\mathrm{rounds}$:
+В федеративном сценарии использования алгоритма SignMuon сервер выполняет роль агрегатора, а основная структурная оптимизация происходит на клиентах. В начале раунда $t$ каждый клиент $m$ копирует глобальную модель. Вместо выполнения локальных шагов изменения параметров, клиент вычисляет усреднённый стохастический градиент, накапливая его по $\mathrm{n\_steps}$ мини-батчам локальных данных. Этот приём (Gradient Accumulation) снижает дисперсию оценки перед применением LMO-оракула. Формально, накопленный градиент равен:
 $$
 \mathbf{G}_t^{(m)}=\frac{1}{n_{\text{steps}}}\sum_{i=1}^{n_{\text{steps}}}\nabla f(\mathbf{X}_t;\xi_{t,i}^{(m)}).
 $$
-$$
-\mathbf{s}_t^{(m)} = \operatorname{sign}\bigl(\mathbf{D}_t^{(m)} \bigr) 
-= \operatorname{sign}\bigl(A(\mathbf{G}_t^{(m)})\bigr) \in \{\pm 1\}^{m \times n},
-$$
+В соответствии с общей логикой семейства SignA (\ref{eq:signa_general}), каждый клиент поддерживает свой локальный буфер моментума $\mathbf{M}_t^{(m)}$. Клиент обновляет моментум, применяет к нему LMO-оракул (Newton-Schulz) и выполняет знаковую компрессию:
+$$ \mathbf{M}_t^{(m)} = \mu \mathbf{M}_{t-1}^{(m)} + \mathbf{G}_t^{(m)} $$
+$$ \mathbf{s}_t^{(m)} = \operatorname{sign}\bigl(A(\mathbf{M}_t^{(m)})\bigr) \in \{\pm 1\}^{m \times n} $$
 где $t\in[0, \mathrm{rounds}-1]$, $A(\cdot)$ — оператор Muon (Newton--Schulz ортогонализация). Таким образом, каждый клиент передаёт на сервер лишь 1 бит на компонент матричного параметра.
 
 На сервере поступившие от клиентов сообщения агрегируются с помощью majority-vote. Обозначим агрегированный знак через $\mathbf{s}_t^{\mathrm{agg}}$, тогда он задаётся формулой:
@@ -254,97 +253,101 @@ $$
 \mathbf{s}_t^{\mathrm{agg}}=\operatorname{sign}\!\left(\sum_{m=1}^M \mathbf{s}_t^{(m)}\right).
 \end{equation}
 
-Операция majority-vote гарантирует, что результирующий знак $\mathbf{s}_t^{\mathrm{agg}}$ равен $+1$ или $-1$ в каждой компоненте и соответствует «мнению большинства» клиентов. 
+Операция majority-vote гарантирует, что результирующий знак $\mathbf{s}_t^{\mathrm{agg}}$ равен $+1$ или $-1$ в каждой компоненте и соответствует «мнению большинства» клиентов. Поскольку моментум уже был учтен на стороне клиентов, сервер напрямую обновляет глобальную модель матричных параметров:
+\[
+\mathbf{X}_{t+1} = \mathbf{X}_t - \eta_t \mathbf{s}_t^{\mathrm{agg}}.
+\]
 
-Далее сервер применяет momentum уже к агрегированному знаку:
-\[
-\mathbf{M}_t = \mu \mathbf{M}_{t-1} + (1-\mu) \mathbf{s}_t^{\mathrm{agg}},
-\]
-где $\mathbf{M}_t$ — буфер моментума на сервере. Обновление глобальной модели для матричных параметров (кроме последнего слоя) выполняется по правилу:
-\[
-\mathbf{X}_{t+1} = \mathbf{X}_t - \eta_t \cdot \operatorname{sign}(\mathbf{M}_t).
-\]
 Отдельно следует отметить обработку последних (классификационных) слоёв  модели. Эти параметры не обновляются SignMuon-правилом, а оптимизируются с помощью AdamW.
 
 Полный алгоритм федеративного SignMuon приведён ниже:
 \begin{algorithm}[H]
 \caption{Federated SignMuon}
-\begin{algorithmic}[1]
+\begin{algorithmic}
 \Require Начальная модель $\mathbf{X}_0$, число клиентов $M$, число раундов $\mathrm{rounds}$, число локальных шагов $\mathrm{n\_steps}$, шаг обучения $\eta_t$, коэффициент моментума $\mu$
 \Ensure Обновлённая глобальная модель $\mathbf{X}$
 
-\State $\mathbf{M}_0 \gets 0$ \Comment{Инициализация буфера моментума}
-
+\For{$m = 1$ to $M$} \State $\mathbf{M}_0^{(m)} \gets 0$ \Comment{Инициализация локальных буферов на клиентах}
+\EndFor
+\\
 \For{$t = 0$ to $\mathrm{rounds} - 1$}
 
-    \For{$m = 1$ to $M$} \Comment{Параллельно на каждом клиенте}
+    \For{$m = 1$ to $M$ \textbf{in parallel}} 
         \State $\mathbf{X}_t^{(m)} \gets \mathbf{X}_t$ \Comment{Получение глобальной модели}
+        \State $\mathbf{G}_t^{(m)} \gets \frac{1}{\mathrm{n\_steps}} \sum_{i=1}^{\mathrm{n\_steps}} \nabla f(\mathbf{X}_t^{(m)}; \xi_{t,i}^{(m)})$ \Comment{Накопленный градиент}
         \\
-        \State $\mathbf{G}_t^{(m)} \gets \frac{1}{\mathrm{n\_steps}} \sum_{i=1}^{\mathrm{n\_steps}} \nabla f(\mathbf{X}_t^{(m)}; \xi_{t,i}^{(m)})$ \Comment{Усреднённый градиент}
+        \State $\mathbf{M}_t^{(m)} \gets \mu \mathbf{M}_{t-1}^{(m)} + \mathbf{G}_t^{(m)}$ \Comment{Обновление локального моментума}
         \\
-        \State $\mathbf{Y}_t^{(m)} \gets \text{ReshapeTo2D}(\mathbf{G}_t^{(m)})$ \Comment{Приведение тензора к матрице $m \times n$}
+        \State $\mathbf{Y}_t^{(m)} \gets \text{ReshapeTo2D}(\mathbf{M}_t^{(m)})$ \Comment{Приведение моментума к матрице $m \times n$}
         \\
-        \State $\mathbf{Y}_t^{(m)} \gets \mathbf{Y}_t^{(m)} / (\|\mathbf{Y}_t^{(m)}\|_F + \varepsilon)$ \Comment{Нормализация по норме Фробениуса}
+        \State $\mathbf{Y}_t^{(m)} \gets \mathbf{Y}_t^{(m)} / (\|\mathbf{Y}_t^{(m)}\|_F + \varepsilon)$ 
         \\
-        \For{$k = 1$ to $\mathrm{ns\_steps}$} \Comment{Итерации Ньютона-Шульца (Muon)}
+        \For{$k = 1$ to $\mathrm{ns\_steps}$} \Comment{Ортогонализация (Muon LMO)}
+            \\
             \State $\mathbf{A}_t^{(m)} \gets \mathbf{Y}_t^{(m)} (\mathbf{Y}_t^{(m)})^\top$
+            \\
             \State $\mathbf{Y}_t^{(m)} \gets 3.4445\,\mathbf{Y}_t^{(m)} - 4.7750\,\mathbf{A}_t^{(m)}\mathbf{Y}_t^{(m)} + 2.0315\,(\mathbf{A}_t^{(m)})^2\mathbf{Y}_t^{(m)}$
         \EndFor
         \\
-        \State $\mathbf{D}_t^{(m)} \gets \text{ReshapeToOriginal}(\mathbf{Y}_t^{(m)})$ \Comment{Восстановление размерности}
+        \State $\mathbf{D}_t^{(m)} \gets \text{ReshapeToOriginal}(\mathbf{Y}_t^{(m)})$ 
         \\
         \State $\mathbf{s}_t^{(m)} \gets \operatorname{sign}\bigl(\mathbf{D}_t^{(m)}\bigr)$ \Comment{Знаковая компрессия}
         \\
         \State Отправить $\mathbf{s}_t^{(m)}$ на сервер
     \EndFor
+    
+    \State $\mathbf{s}_t^{\mathrm{agg}} \gets \operatorname{sign}\!\left(\sum_{m=1}^{M} \mathbf{s}_t^{(m)}\right)$ \Comment{Majority-vote агрегация на сервере}
     \\
-    \State $\mathbf{s}_t^{\mathrm{agg}} \gets \operatorname{sign}\!\left(\sum_{m=1}^{M} \mathbf{s}^{(m)}\right)$ \Comment{Majority-vote агрегация на сервере}
+    \State $\mathbf{X}_{t+1} \gets \mathbf{X}_t - \eta_t \mathbf{s}_t^{\mathrm{agg}}$ \Comment{Обновление матричных параметров}
     \\
-    \State $\mathbf{M}_t \gets \mu \mathbf{M}_{t-1} + (1-\mu)\mathbf{s}_t^{\mathrm{agg}}$ \Comment{Обновление моментума}
-    \\
-    \State $\mathbf{X}_{t+1} \gets \mathbf{X}_t - \eta_t \cdot \operatorname{sign}(\mathbf{M}_t)$ \Comment{Обновление матричных параметров}
-    \\
-    \State $\mathbf{X}_{t+1}^{\text{last}} \gets \text{AdamW}(\mathbf{X}_t^{\text{last}}, \mathbf{s}_t^{\mathrm{agg}})$ \Comment{Обновление последнего слоя}
+    \State $\mathbf{X}_{t+1}^{\text{last}} \gets \text{AdamW}(\mathbf{X}_t^{\text{last}}, \mathbf{s}_t^{\mathrm{agg}})$ \Comment{Обновление последнего слоя (суррогатный градиент)}
 \EndFor
 \State \Return $\mathbf{X}_{\mathrm{rounds}}$
 \end{algorithmic}
 \end{algorithm}
+
 Таким образом, федеративный SignMuon сохраняет все структурные преимущества Muon, одновременно обеспечивая экстремально низкую коммуникационную нагрузку (только знаки $\pm 1$ от каждого клиента).
 
 \subsection{Гипотезы исследования}
 Сформулируем две основные гипотезы для теоретического и экспериментального исследования алгоритма SignMuon. Пусть $\{\mathbf{x}_t\}_{t\ge 0}$ -- последовательность итерационных шагов SignMuon, а $F(\mathbf{x})$ -- целевая функция в постановке федеративного обучения (в центарализованной постановке $F=f$).
 
 Для анализа алгоритмов в обоих сценариях мы сделаем несколько предположений (Assumption). 
-\paragraph{Assumption 1.} Функция $F(\mathbf{x})$ является $L$-гладкой относительно нормы $\|\cdot\|$, т.е. для любых $\mathbf{x}, \mathbf{y} \in \mathbb{R}^d$ выполняется:
+\paragraph{Assumption 1 (Lower Boundedness).} Целевая функция $F(\mathbf{x})$ ограничена снизу некоторым значением $F^*$, то есть $F(\mathbf{x}) \ge F^*$ для всех $\mathbf{x} \in \mathbb{R}^d$.
+\paragraph{Assumption 2 (Smoothness).} Функция $F(\mathbf{x})$ является $L$-гладкой относительно нормы $\|\cdot\|$, т.е. для любых $\mathbf{x}, \mathbf{y} \in \mathbb{R}^d$ выполняется:
 \begin{equation}
 \|\nabla F(\mathbf{x}) - \nabla F(\mathbf{y})\|_* \le L \|\mathbf{x} - \mathbf{y}\|,
 \end{equation}
 где $\|\cdot\|$ — дуальная норма.
 
-
-\paragraph{Assumption 2.} 
+\paragraph{Assumption 3 (Stochastic Gradient).} 
 Cтохастический градиент удовлетворяет:
 \begin{itemize}
     \item Unbiased:\begin{equation}
     \mathbb{E}_{\xi}\bigl[\nabla f(\mathbf{x};\xi)\bigr] = \nabla f(\mathbf{x}),
     \end{equation}
     \item Bounded variance: \begin{equation}
-    \mathbb{E}{\xi}\bigl[\|\nabla f(\mathbf{x};\xi) - \nabla f(\mathbf{x})\|^2\bigr] \le \sigma^2, \quad \sigma > 0
+    \mathbb{E}{\xi}\bigl[\|\nabla f(\mathbf{x};\xi) - \nabla f(\mathbf{x})\|_*^2\bigr] \le \sigma^2, \quad \sigma > 0
     \end{equation}
 \end{itemize}
 
-
-
-\paragraph{Гипотеза 1 (Сходимость).} При выполнении условий Assumption 1 и Assumption 2 алгоритм SignMuon сходится в гладком невыпуклом режиме. В частности, предполагается, что выполняется та же оценка скорости сходимости, что и для SignSGD:
+\paragraph{Assumption 4 (Biased Compression).} Введем ограничения на компрессор \cite{beznosikov2024biasedcompressiondistributedlearning}. Существуют константы $\gamma > 0$ и $\beta > 0$ такие, что для любого $\mathbf{X} \in \mathbb{R}^{m \times n}$ знаковый оператор $\mathcal{C}(\mathbf{X}) = \operatorname{sign}(\mathbf{X})$ удовлетворяет условиям:
 \begin{equation}
-\min_{0 \le t \le T}\mathbb{E}\bigl[\|\nabla F(\mathbf{x}_t)\|^2\bigr]
+\gamma \|\mathbf{X}\|_1 \le \langle \mathbf{X}, \operatorname{sign}(\mathbf{X}) \rangle = \|\mathbf{X}\|_1,
+\end{equation}
+\begin{equation}
+\mathbb{E}\bigl[\|\operatorname{sign}(\mathbf{X})\|^2\bigr] \le \beta \|\mathbf{X}\|_1.
+\end{equation}
+ 
+\paragraph{Гипотеза 1 (Сходимость).} При выполнении условий \textbf{Assumption 1-4} алгоритм Federated SignMuon сходится в гладком невыпуклом режиме. В частности, существует такой выбор шага обучения $\eta_t$, при котором средняя норма градиента удовлетворяет оценке:
+\begin{equation}
+\min_{0 \le t \le T}\mathbb{E}\bigl[\|\nabla F(\mathbf{x}_t)\|_*^2\bigr]
 =
 \mathcal{O}\bigl(T^{-1/2}\bigr).
 \end{equation}
-Иными словами, знаковая компрессия LMO-направления не ухудшает стандартный порядок сходимости в гладком невыпуклом случае.
+Это означает, что применение экстремальной 1-битной знаковой компрессии после матричной ортогонализации (LMO) не ухудшает асимптотическую скорость сходимости по сравнению с полноточными неевклидовыми методами в гладком невыпуклом случае.
 
 \paragraph{Гипотеза 2 (Сохранение преимуществ Muon).}
-Переход от LMO-направления Muon $\mathbf{D}_t=\mathbf{U}_t\mathbf{V}_t^\top$ к его знаковой компрессии $\operatorname{sign}(\mathbf{U}_t\mathbf{V}_t^\top)$ сохраняет основную геометрию ортонормированных обновлений. В результате SignMuon должен сохранять качество обучения, близкое к полному Muon, при существенно меньших коммуникационных затратах и превосходить SignSGD как в централизованном, так и в федеративном режимах.
+Переход от LMO-направления Muon $\mathbf{D}_t=\mathbf{U}_t\mathbf{V}_t^\top$ к его знаковой компрессии $\operatorname{sign}(\mathbf{D}_t)$ сохраняет основную геометрию ортонормированных обновлений. В результате SignMuon должен сохранять качество обучения, близкое к полному Muon, при существенно меньших коммуникационных затратах и превосходить SignSGD как в централизованном, так и в федеративном режимах. Предполагается, что структурная осведомленность делает алгоритм SignMuon значительно более робастным к высоким значениям темпа обучения $\eta$ по сравнению с классическими поэлементными методами, такими как Adam и SignSGD. 
 
 
 \section{Вычислительный эксперимент (Computational Experiment)}\label{sec:exp}
@@ -390,76 +393,148 @@ Cтохастический градиент удовлетворяет:
 Был реализован программный пайплайн и проведен базовый вычислительный эксперимент по централизованному обучению на наборах данных MNIST и CIFAR-10. На датасете CIFAR-10 модель обучалась в течение 50 эпох с использованием CosineAnnealingLR. Для валидации предложенного алгоритма SignMuon проводилось сравнение с оптимизаторами Adam, SGD, SignSGD и Muon. На рисунках ниже представлены результаты данного эксперимента: 
 \begin{figure}[H]
     \centering
-    \begin{subfigure}[b]{0.34\textwidth}
+    \begin{subfigure}[b]{0.48\textwidth}
         \centering
-        \includegraphics[width=\textwidth]{images/train_loss_mnist.png} 
+        \includegraphics[width=\textwidth]{images/mnist_train_loss.png} 
         \caption{Train Loss}
         \label{fig:train_loss_mnist}
     \end{subfigure}
     \hfill
-    \begin{subfigure}[b]{0.34\textwidth}
+    \begin{subfigure}[b]{0.48\textwidth}
         \centering
-        \includegraphics[width=\textwidth]{images/train_acc_mnist.png} 
+        \includegraphics[width=\textwidth]{images/mnist_train_acc.png} 
         \caption{Train Accuracy}
         \label{fig:train_acc_mnist}
     \end{subfigure}
-    \hfill
-    \begin{subfigure}[b]{0.34\textwidth}
+    \caption{Сравнение сходимости и точности различных алгоритмов оптимизации на обучении классификатора MNIST на тренировочной выборке.}
+\end{figure}
+
+\begin{figure}[H]
+    \begin{subfigure}[b]{0.48\textwidth}
         \centering
-        \includegraphics[width=\textwidth]{images/test_loss_mnist.png}
+        \includegraphics[width=\textwidth]{images/mnist_test_loss.png}
         \caption{Test Loss}
         \label{fig:test_loss_mnist}
     \end{subfigure}
     \hfill
-    \begin{subfigure}[b]{0.34\textwidth}
+    \begin{subfigure}[b]{0.48\textwidth}
         \centering
-        \includegraphics[width=\textwidth]{images/test_acc_mnist.png}
+        \includegraphics[width=\textwidth]{images/mnist_test_acc.png}
         \caption{Test Accuracy}
         \label{fig:test_acc_mnist}
     \end{subfigure}
     
-    \caption{Сравнение сходимости и точности различных алгоритмов оптимизации на обучении классификатора MNIST.}
+    \caption{Сравнение сходимости и точности различных алгоритмов оптимизации на обучении классификатора MNIST на тестовой выборке.}
     \label{fig:mnist_results}
 \end{figure}
 
 \begin{figure}[H]
     \centering
-    \begin{subfigure}[b]{0.34\textwidth}
+    \begin{subfigure}[b]{0.48\textwidth}
         \centering
-        \includegraphics[width=\textwidth]{images/train_loss_cifar.png} 
+        \includegraphics[width=\textwidth]{images/cifar_train_loss.png} 
         \caption{Train Loss}
         \label{fig:cifar_train_loss}
     \end{subfigure}
     \hfill
-    \begin{subfigure}[b]{0.34\textwidth}
+    \begin{subfigure}[b]{0.48\textwidth}
         \centering
-        \includegraphics[width=\textwidth]{images/train_acc_cifar.png} 
+        \includegraphics[width=\textwidth]{images/cifar_train_acc.png} 
         \caption{Train Accuracy}
         \label{fig:cifar_train_acc}
     \end{subfigure}
-    \hfill
-    \begin{subfigure}[b]{0.34\textwidth}
+
+    \caption{Сравнение сходимости и точности различных алгоритмов оптимизации на обучении классификатора CIFAR-10 на тренировочной выборке.}
+\end{figure}
+\begin{figure}[H]
+    \begin{subfigure}[b]{0.48\textwidth}
         \centering
-        \includegraphics[width=\textwidth]{images/test_loss_cifar.png}
+        \includegraphics[width=\textwidth]{images/cifar_test_loss.png}
         \caption{Test Loss}
         \label{fig:cifar_test_loss}
     \end{subfigure}
     \hfill
-    \begin{subfigure}[b]{0.34\textwidth}
+    \begin{subfigure}[b]{0.48\textwidth}
         \centering
-        \includegraphics[width=\textwidth]{images/test_acc_cifar.png}
+        \includegraphics[width=\textwidth]{images/cifar_test_acc.png}
         \caption{Test Accuracy}
         \label{fig:cifar_test_acc}
     \end{subfigure}
     
-    \caption{Сравнение сходимости и точности различных алгоритмов оптимизации на обучении классификатора CIFAR-10.}
+    \caption{Сравнение сходимости и точности различных алгоритмов оптимизации на обучении классификатора CIFAR-10 на тестовой выборке.}
     \label{fig:cifar_results}
 \end{figure}
 
-
-\paragraph{Федеративный сценарий.}
-
 \newpage
+\paragraph{Федеративный сценарий.} Для исследования эффективности алгоритма SignMuon в условиях распределенного обучения была реализована федеративная архитектура с агрегацией градиентов на центральном сервере. Использовалась та же сверточная нейронная сеть (два сверточных блока с BatchNorm и MLP-классификатор), что и в  централизованном сценарии. Датасет CIFAR-10 разбивался между клиентами в режиме однородного (homogeneous) распределения данных. Каждый раунд федеративного обучения включал локальное вычисление градиентов на клиентах с последующей агрегацией на сервере.
+\begin{itemize}
+    \item \textbf{Эксперимент 1: Масштабируемость SignMuon по числу клиентов.} Исследовалось зависимость числа участвующих клиентов на качество обучения с алгоритмом SignMuon. Число клиентов $n \in {1, 3, 5, 7, 9}$ при 2000 раундах обучения и одном локальном шаге на клиента. Результаты показали рост точности классификации с увеличением числа клиентов. Данный эффект объясняется улучшением качества агрегации через majority vote при большем числе независимых оценок знака градиента.
+    \item \textbf{Эксперимент 2: Сравнение разных алгоритмов при числе клиентов n=3.} Проводилось сравнение пяти оптимизаторов (Adam, Muon, SignMuon, SGD, SignSGD) в сценарии с 3 клиентами, 2000 раундами и одним локальным шагом.
+    \item \textbf{Эксперимент 3: Сравнение разных алгоритмов при числе клиентов n=10.} Те же пять оптимизаторов тестировались в условиях 10 клиентов, 2000 раундов и трех локальных шагов на клиента. В данном режиме SignMuon достиг качества Muon. Вывод эксперимента: при достаточном числе клиентов ($n \geq 10$) алгоритм SignMuon обеспечивает качество, сопоставимое с Muon, при этом сокращая объем передаваемых данных в $\sim$32 раза за счет передачи только знаков градиентов вместо значений float32. 
+\end{itemize}
+На рисунках ниже представлены результаты данных экспериментов:
+
+\begin{figure}[H]
+    \centering
+    \begin{subfigure}[b]{0.48\textwidth}
+        \centering
+        \includegraphics[width=\textwidth]{federated_images/signmuon_loss.png} 
+        \caption{Test Loss}
+        \label{fig:test_loss_cifar}
+    \end{subfigure}
+    \hfill
+    \begin{subfigure}[b]{0.48\textwidth}
+        \centering
+        \includegraphics[width=\textwidth]{federated_images/signmuon_acc.png}
+        \caption{Test Accuracy}
+        \label{fig:test_acc_cifar}
+    \end{subfigure}
+    
+    \caption{Эксперимент 1}
+    \label{fig:mnist_results}
+\end{figure}
+
+\begin{figure}[H]
+    \centering
+    \begin{subfigure}[b]{0.48\textwidth}
+        \centering
+        \includegraphics[width=\textwidth]{federated_images/3_1_loss.png} 
+        \caption{Test Loss}
+        \label{fig:test_loss_cifar}
+    \end{subfigure}
+    \hfill
+    \begin{subfigure}[b]{0.48\textwidth}
+        \centering
+        \includegraphics[width=\textwidth]{federated_images/3_1_acc.png}
+        \caption{Test Accuracy}
+        \label{fig:test_acc_cifar}
+    \end{subfigure}
+    
+    \caption{Эксперимент 2}
+    \label{fig:mnist_results}
+\end{figure}
+
+\begin{figure}[H]
+    \centering
+    \begin{subfigure}[b]{0.48\textwidth}
+        \centering
+        \includegraphics[width=\textwidth]{federated_images/10_3_loss.png} 
+        \caption{Test Loss}
+        \label{fig:test_loss_cifar}
+    \end{subfigure}
+    \hfill
+    \begin{subfigure}[b]{0.48\textwidth}
+        \centering
+        \includegraphics[width=\textwidth]{federated_images/10_3_acc.png}
+        \caption{Test Accuracy}
+        \label{fig:test_acc_cifar}
+    \end{subfigure}
+    
+    \caption{Эксперимент 3}
+    \label{fig:mnist_results}
+\end{figure}
+
+
 \section{Discussion}\label{sec:disc}
 
 TODO
