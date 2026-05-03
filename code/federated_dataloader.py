@@ -25,13 +25,16 @@ def get_cifar10_transforms(train: bool = True):
 
 def load_full_datasets(dataset, datadir, download=False):
     if dataset == 'cifar10':
-        train_ds = datasets.CIFAR10(datadir, train=True, download=download)
-        test_ds = datasets.CIFAR10(datadir, train=False, download=download)
+        train_transform = get_cifar10_transforms(train=True)
+        test_transform = get_cifar10_transforms(train=False)
+        train_ds = datasets.CIFAR10(datadir, train=True, download=download, transform=train_transform)
+        test_ds = datasets.CIFAR10(datadir, train=False, download=download, transform=test_transform)
         y_train = np.array(train_ds.targets)
         y_test = np.array(test_ds.targets)
     elif dataset == 'mnist':
-        train_ds = datasets.MNIST(datadir, train=True, download=download)
-        test_ds = datasets.MNIST(datadir, train=False, download=download)
+        mnist_transform = get_mnist_transform()
+        train_ds = datasets.MNIST(datadir, train=True, download=download, transform=mnist_transform)
+        test_ds = datasets.MNIST(datadir, train=False, download=download, transform=mnist_transform)
         y_train = train_ds.targets.numpy()
         y_test = test_ds.targets.numpy()
     else:
@@ -93,15 +96,31 @@ def partition_data(y_train, y_test, partition, n_parties, beta=0.4):
                 proportions = np.random.dirichlet(np.repeat(beta, n_parties))
                 
                 # Балансировка тренировочных данных
-                proportions = np.array([p * (len(idx_j) < n_train / n_parties) for p, idx_j in zip(proportions, idx_batch_train)])
-                proportions = proportions / proportions.sum()
-
+                proportions = np.array([p * (len(idx_j) < n_train / n_parties) 
+                                        for p, idx_j in zip(proportions, idx_batch_train)])
+                prop_sum = proportions.sum()
+                if prop_sum == 0:
+                    # Если все подходящие клиенты "забиты", распределяем равномерно между теми, кто еще не полон
+                    eligible = np.array([len(idx_j) < n_train / n_parties for idx_j in idx_batch_train])
+                    if eligible.sum() == 0: # Если вообще все клиенты полны (крайний случай)
+                        proportions = np.repeat(1.0 / n_parties, n_parties)
+                    else:
+                        proportions = eligible / eligible.sum()
+                else:
+                    proportions = proportions / prop_sum
+                
                 # Разбиваем индексы согласно пропорциям
                 split_train = (np.cumsum(proportions) * len(idx_k_train)).astype(int)[:-1]
                 split_test = (np.cumsum(proportions) * len(idx_k_test)).astype(int)[:-1]
                 
                 idx_batch_train = [idx_j + idx.tolist() for idx_j, idx in zip(idx_batch_train, np.split(idx_k_train, split_train))]
                 idx_batch_test = [idx_j + idx.tolist() for idx_j, idx in zip(idx_batch_test, np.split(idx_k_test, split_test))]
+
+                idx_k_train = np.where(y_train == k)[0]
+                idx_k_test = np.where(y_test == k)[0]
+                
+                np.random.shuffle(idx_k_train)
+                np.random.shuffle(idx_k_test)
             
             min_size = min([len(idx_j) for idx_j in idx_batch_train])
 

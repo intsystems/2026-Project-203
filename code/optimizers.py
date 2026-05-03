@@ -96,6 +96,7 @@ class SignMuon(Optimizer):
         momentum: float = 0.0,
         nesterov: bool = False,
         norm_weight: bool = True,
+        weight_decay=0.0, 
         lambda_mult: float = 1.0,
         ns_steps: int = 5,
     ):
@@ -106,12 +107,15 @@ class SignMuon(Optimizer):
         if nesterov and momentum <= 0:
             raise ValueError("Nesterov momentum requires a positive momentum")
 
-        defaults = dict(lr=lr, momentum=momentum, nesterov=nesterov)
+        defaults = dict(
+            lr=lr, momentum=momentum, nesterov=nesterov,
+            norm_weight=norm_weight, weight_decay=weight_decay,
+            lambda_mult=lambda_mult, ns_steps=ns_steps
+        )
         super().__init__(params, defaults)
-
-        self.norm_weight = norm_weight
-        self.lambda_mult = lambda_mult
-        self.ns_steps = ns_steps
+        # self.norm_weight = norm_weight
+        # self.lambda_mult = lambda_mult
+        # self.ns_steps = ns_steps
 
     @torch.no_grad()
     def step(self, closure=None):
@@ -124,6 +128,10 @@ class SignMuon(Optimizer):
             lr = group["lr"]
             momentum = group["momentum"]
             nesterov = group["nesterov"]
+            lambda_mult = group["lambda_mult"]
+            ns_steps = group["ns_steps"]
+            norm_weight = group["norm_weight"]
+            wd = group["weight_decay"]
 
             for p in group["params"]:
                 if p.grad is None:
@@ -131,33 +139,33 @@ class SignMuon(Optimizer):
                 if p.grad.is_sparse:
                     raise RuntimeError("SignMuon does not support sparse gradients")
                 
-                g = p.grad
+                g = p.grad 
+                if wd != 0:
+                    g = g.add(p.data, alpha=wd)               
                 state = self.state[p]
                 
                 # 1) momentum‑сглаживание градиента
                 if "momentum_buffer" not in state:
                     state["momentum_buffer"] = torch.zeros_like(g)
                 buf = state["momentum_buffer"]
-
                 buf.mul_(momentum).add_(g)
                 m_t = g.add(buf, alpha=momentum) if nesterov else buf
 
                 # 2) нормализация веса
-                if self.norm_weight:
-                    norm = p.data.norm()
-                    if norm < 1e-10:
-                        norm = 1e-10
-                    p.data.mul_(p.data.numel() ** 0.5 / norm)
+                if norm_weight:
+                    norm = p.data.norm().clamp(min=1e-10)
+                    scale = (p.data.numel()**0.5) / norm
+                    p.data.mul_(scale)
 
                 # 3) LMO‑направление через Newton–Schulz через ортогонализацию
                 #    zeropower_via_newtonschulz5 ожидает 2D тензор -> делаем reshape
-                d_t = muon_orthogonalized_update(m_t, ns_steps=self.ns_steps)
+                d_t = muon_orthogonalized_update(m_t, ns_steps=ns_steps)
                 
                 # 4) sign‑компрессия Muon‑направления
                 s_t = d_t.sign()
 
                 # 5) шаг параметра: x_{t+1} = x_t - lr * lambda_mult * s_t
-                p.data.add_(s_t, alpha=-lr * self.lambda_mult)
+                p.data.add_(s_t, alpha=-lr * lambda_mult)
 
         return loss
     
@@ -178,16 +186,31 @@ class Muon(Optimizer):
         lr: float = 1e-3,
         momentum: float = 0.0,
         nesterov: bool = False,
-        norm_weight: bool = True,
+        norm_weight: bool = False,
+        weight_decay: float = 0.0,
         lambda_mult: float = 1.0,
         ns_steps: int = 5,
     ):
-        if lr < 0.0: raise ValueError(f"Invalid learning rate: {lr}")
-        defaults = dict(lr=lr, momentum=momentum, nesterov=nesterov)
+        if lr < 0.0: 
+            raise ValueError(f"Invalid learning rate: {lr}")
+        if momentum < 0.0: 
+            raise ValueError(f"Invalid momentum value: {momentum}")
+        if weight_decay < 0.0:
+            raise ValueError(f"Invalid weight_decay value: {weight_decay}")
+
+        defaults = dict(
+            lr=lr, 
+            momentum=momentum, 
+            nesterov=nesterov,
+            norm_weight=norm_weight,
+            weight_decay=weight_decay,
+            lambda_mult=lambda_mult,
+            ns_steps=ns_steps
+        )
         super().__init__(params, defaults)
-        self.norm_weight = norm_weight
-        self.lambda_mult = lambda_mult
-        self.ns_steps = ns_steps
+        # self.norm_weight = norm_weight
+        # self.lambda_mult = lambda_mult
+        # self.ns_steps = ns_steps
 
     @torch.no_grad()
     def step(self, closure=None):
@@ -200,11 +223,17 @@ class Muon(Optimizer):
             lr = group["lr"]
             momentum = group["momentum"]
             nesterov = group["nesterov"]
+            wd = group["weight_decay"]
+            norm_weight = group["norm_weight"]
+            lambda_mult = group["lambda_mult"]
+            ns_steps = group["ns_steps"]
 
             for p in group["params"]:
                 if p.grad is None: continue
                 
                 g = p.grad
+                if wd != 0:
+                    g = g.add(p.data, alpha=wd)
                 state = self.state[p]
                 
                 # 1) momentum-сглаживание
@@ -215,16 +244,16 @@ class Muon(Optimizer):
                 m_t = g.add(buf, alpha=momentum) if nesterov else buf
 
                 # 2) нормализация веса
-                # if self.norm_weight:
-                #     norm = p.data.norm()
-                #     if norm < 1e-10: norm = 1e-10
-                #     p.data.mul_(p.data.numel() ** 0.5 / norm)
+                if norm_weight:
+                    norm = p.data.norm().clamp(min=1e-10)
+                    scale = (p.data.numel()**0.5) / norm
+                    p.data.mul_(scale)
 
                 # 3) LMO-направление через Newton–Schulz
-                d_t = muon_orthogonalized_update(m_t, ns_steps=self.ns_steps)
+                d_t = muon_orthogonalized_update(m_t, ns_steps=ns_steps)
                 
                 # 4) шаг параметра
-                p.data.add_(d_t, alpha=-lr * self.lambda_mult)
+                p.data.add_(d_t, alpha=-lr * lambda_mult)
 
         return loss
 

@@ -83,6 +83,8 @@ def build_optimizers(model, args):
             lr=args.lr,
             momentum=args.momentum,
             nesterov=args.nesterov,
+            weight_decay=args.weight_decay,
+            norm_weight=args.norm_weight,
             lambda_mult=args.lambda_mult,
             ns_steps=args.ns_steps,
         )
@@ -95,6 +97,8 @@ def build_optimizers(model, args):
             lr=args.lr,
             momentum=args.momentum,
             nesterov=args.nesterov,
+            weight_decay=args.weight_decay,
+            norm_weight=args.norm_weight,
             lambda_mult=args.lambda_mult,
             ns_steps=args.ns_steps,
         )
@@ -135,6 +139,7 @@ def build_optimizers(model, args):
 def get_args():
     parser = argparse.ArgumentParser()
     parser.add_argument("--data", type=str, default="./data", help="CIFAR10 data dir")
+    parser.add_argument("--device", type=str, default="cuda", help="Device to use")
     parser.add_argument("--batch-size", type=int, default=128)
     parser.add_argument("--epochs", type=int, default=50)
     parser.add_argument("--optimizer", type=str, default="signmuon", choices=["signmuon", "muon", "signsgd", "sgd", "adam"])
@@ -142,6 +147,7 @@ def get_args():
     parser.add_argument("--lr", type=float, default=1e-3)
     parser.add_argument("--lr-aux", type=float, default=1e-3)
     parser.add_argument("--weight-decay", type=float, default=5e-4)
+    parser.add_argument("--norm_weight", action='store_true', default=False)
     parser.add_argument("--momentum", type=float, default=0.9)
     parser.add_argument("--nesterov", action="store_true")
     parser.add_argument("--lambda-mult", type=float, default=1.0)
