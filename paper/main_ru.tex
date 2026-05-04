@@ -189,6 +189,7 @@ SignA реализует шаг steepest-descent с ограничением п�
 
 
 
+
 \section{Theory}\label{sec:theory}
 В работе рассматривается семейство алгоритмов SignA, где A обозначает любой оптимизатор, использующий LMO-направления. Все алгоритмы семейства построены по единой структуре, состоящей из трёх последовательных этапов: обработка моментума, вычисление LMO-направления и знаковая компрессия обновления. 
 
@@ -309,6 +310,53 @@ $$ \mathbf{s}_t^{(m)} = \operatorname{sign}\bigl(A(\mathbf{M}_t^{(m)})\bigr) \in
 \mathbf{s}_t^{\mathrm{agg}}=\operatorname{sign}\!\left(\sum_{m=1}^M \mathbf{s}_t^{(m)}\right).
 \end{equation}
 
+\begin{algorithm}[H]
+\caption{Federated EF-SignMuon}
+\begin{algorithmic}[1]
+\Require Начальная модель $\mathbf{X}_0$, число клиентов $M$, число раундов $\mathrm{rounds}$, число локальных шагов $\mathrm{n\_steps}$, шаг обучения $\eta_t$ (для основных слоёв), шаг обучения $\eta_t^{\text{aux}}$ (для последнего слоя), коэффициент моментума $\mu$, коэффициент весового распада $\lambda$
+\Ensure Обновлённая глобальная модель $\mathbf{X}$
+
+\State $\mathbf{G}_0 \gets 0$ \Comment{Инициализация глобальной оценки градиента на сервере (только для не-last\_layer параметров)}
+\For{$m = 1$ to $M$} 
+    \State $\mathbf{g}_0^{(m)} \gets 0, \; \mathbf{M}_0^{(m)} \gets 0$ \Comment{Инициализация локальных буферов на клиентах}
+\EndFor
+\\
+\For{$t = 0$ to $\mathrm{rounds} - 1$}
+
+    \For{$m = 1$ to $M$ \textbf{in parallel}} \Comment{Локальный шаг EF}
+        \State Вычислить накопленный градиент по $\mathrm{n\_steps}$ батчам с учётом $\lambda$: $\nabla f_{\lambda}(\mathbf{X}_t^{(m)}; \xi^{(m)})$
+        \State $\mathbf{M}_t^{(m)} \gets \mu \mathbf{M}_{t-1}^{(m)} + \frac{1}{\mathrm{n\_steps}} \sum_{i=1}^{\mathrm{n\_steps}} \nabla f_{\lambda}(\mathbf{X}_t^{(m)}; \xi_{t,i}^{(m)})$
+        \State $\Delta_t^{(m)} \gets \mathbf{M}_t^{(m)} - \mathbf{g}_t^{(m)}$ \Comment{Вычисление невязки}
+        \State $\alpha_t^{(m)} \gets \operatorname{mean}(|\Delta_t^{(m)}|)$
+        \State $\mathbf{s}_t^{(m)} \gets \operatorname{sign}(\Delta_t^{(m)})$
+        \State $\mathbf{g}_{t+1}^{(m)} \gets \mathbf{g}_t^{(m)} + \alpha_t^{(m)} \mathbf{s}_t^{(m)}$
+        \State Отправить $(\mathbf{s}_t^{(m)}, \alpha_t^{(m)})$ на сервер
+    \EndFor
+    \\
+    \State $\mathbf{G}_{t+1} \gets \mathbf{G}_t + \frac{1}{M} \sum_{m=1}^M \alpha_t^{(m)} \mathbf{s}_t^{(m)}$ \Comment{Глобальное обновление на сервере}
+    \\
+    \For{\textbf{each} параметр $\mathbf{X}$ \textbf{not in last\_layer}} \Comment{Обновление основных слоёв через Muon}
+        \State $\mathbf{Y} \gets \text{ReshapeTo2D}(\mathbf{G}_{t+1})$
+        \State $\mathbf{Y} \gets \mathbf{Y} / (\|\mathbf{Y}\|_F + \varepsilon)$
+        \For{$k = 1$ to $\mathrm{ns\_steps}$}
+            \State $\mathbf{A} \gets \mathbf{Y} \mathbf{Y}^\top$
+            \State $\mathbf{Y} \gets 3.4445\,\mathbf{Y} - 4.7750\,\mathbf{A}\mathbf{Y} + 2.0315\,\mathbf{A}^2\mathbf{Y}$
+        \EndFor
+        \State $\mathbf{D}_{t+1} \gets \text{ReshapeToOriginal}(\mathbf{Y})$
+        \State $\mathbf{X}_{t+1} \gets \mathbf{X}_t - \eta_t \mathbf{D}_{t+1}$
+    \EndFor
+    \\
+    \For{\textbf{each} параметр $\mathbf{X}^{\text{last}}$ \textbf{in last\_layer}} \Comment{Обновление последнего слоя через AdamW}
+        \State $\nabla^{\text{last}} \gets \frac{1}{M} \sum_{m=1}^M \mathbf{s}_t^{(m)}$ \Comment{Усреднение сырых невязок}
+        \State $\text{AdamW}(\mathbf{X}^{\text{last}}, \nabla^{\text{last}}, \eta_t^{\text{aux}}, \lambda)$
+    \EndFor
+\EndFor
+\State \Return $\mathbf{X}_{\mathrm{rounds}}$
+\label{ef21_alg}
+\end{algorithmic}
+\end{algorithm}
+
+
 Операция majority-vote гарантирует, что результирующий знак $\mathbf{s}_t^{\mathrm{agg}}$ равен $+1$ или $-1$ в каждой компоненте и соответствует «мнению большинства» клиентов. Поскольку моментум уже был учтен на стороне клиентов, сервер напрямую обновляет глобальную модель матричных параметров:
 \[
 \mathbf{X}_{t+1} = \mathbf{X}_t - \eta_t \mathbf{s}_t^{\mathrm{agg}}.
@@ -317,6 +365,8 @@ $$ \mathbf{s}_t^{(m)} = \operatorname{sign}\bigl(A(\mathbf{M}_t^{(m)})\bigr) \in
 Отдельно следует отметить обработку последних (классификационных) слоёв  модели. Эти параметры не обновляются SignMuon-правилом, а оптимизируются с помощью AdamW. Полный алгоритм федеративного SignMuon приведён выше \ref{fed_alg}.
 
 
+\subsection{Федеративный сценарий -- Error Feedback algorithm}
+Для обеспечения строгих теоретических доказательств сходимости мы опираемся на недавнюю работу Gruntkowska \cite{gruntkowska2025}, в которой фреймворк марковских невязок адаптирован для семейства LMO-оптимизаторов. Следуя предложенной архитектуре \cite{gruntkowska2025error}, мы реализовали модификацию алгоритма Federated EF-SignMuon. В данной реализации процедура ортогонализации (LMO) переносится на сторону сервера. Клиенты не вычисляют LMO локально; вместо этого они применяют знаковую компрессию к разности между обновленным локальным моментумом и своей текущей оценкой градиента. Сервер агрегирует полученные невязки, восстанавливает оценку градиента и только после этого применяет к ней оператор Muon. Полный алгоритм представлен в \ref{ef21_alg}.
 
 Таким образом, федеративный SignMuon сохраняет все структурные преимущества Muon, одновременно обеспечивая экстремально низкую коммуникационную нагрузку (только знаки $\pm 1$ от каждого клиента).
 
@@ -421,6 +471,7 @@ $$\mathbf{U} \mathbf{V}^\top = \mathbf{O}.$$
 Поскольку $\langle \mathbf{G}, \mathbf{S} \rangle < 0$, изменение целевой функции на каждой итерации составит $$f(\mathbf{W}_{t+1}) = f(\mathbf{W}_t) + 412.31 \eta.$$ Таким образом, вместо минимизации алгоритм будет строго монотонно расходиться к $+\infty$, что и требовалось доказать. $\blacksquare$
 
 Наличие такого контрпримера показывает, что алгоритм SignMuon не имеет глобальных гарантий сходимости для произвольных функций. Для обоснования его успешной работы на реальных задачах глубокого обучения (где алгоритм демонстрирует высокую точность) необходимо введение дополнительных предположений.
+
 
 \section{Вычислительный эксперимент (Computational Experiment)}\label{sec:exp}
 \textbf{Целью} эксперимента является эмпирическая валидация алгоритма SignMuon, как оптимизатора, объединяющего высокую скорость сходимости LMO-оптимизаторов с коммуникационной эффективностью знаковой компрессии. Само исследование состоит из нескольких частей:
