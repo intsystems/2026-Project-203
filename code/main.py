@@ -24,6 +24,7 @@ class RunConfig:
     nesterov: bool
     lambda_mult: float
     ns_steps: int
+    norm_weight: bool 
     weight_decay: float | None
     seed: int
     device: str
