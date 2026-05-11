@@ -113,10 +113,7 @@ class SignMuon(Optimizer):
             lambda_mult=lambda_mult, ns_steps=ns_steps
         )
         super().__init__(params, defaults)
-        # self.norm_weight = norm_weight
-        # self.lambda_mult = lambda_mult
-        # self.ns_steps = ns_steps
-
+        
     @torch.no_grad()
     def step(self, closure=None):
         loss = None
@@ -128,10 +125,10 @@ class SignMuon(Optimizer):
             lr = group["lr"]
             momentum = group["momentum"]
             nesterov = group["nesterov"]
+            wd = group["weight_decay"]
+            norm_weight = group["norm_weight"]
             lambda_mult = group["lambda_mult"]
             ns_steps = group["ns_steps"]
-            norm_weight = group["norm_weight"]
-            wd = group["weight_decay"]
 
             for p in group["params"]:
                 if p.grad is None:
@@ -139,12 +136,12 @@ class SignMuon(Optimizer):
                 if p.grad.is_sparse:
                     raise RuntimeError("SignMuon does not support sparse gradients")
                 
-                g = p.grad 
+                g = p.grad
                 if wd != 0:
-                    g = g.add(p.data, alpha=wd)               
+                    g = g.add(p.data, alpha=wd)
                 state = self.state[p]
                 
-                # 1) momentum‑сглаживание градиента
+                # 1) momentum-сглаживание
                 if "momentum_buffer" not in state:
                     state["momentum_buffer"] = torch.zeros_like(g)
                 buf = state["momentum_buffer"]
@@ -157,8 +154,7 @@ class SignMuon(Optimizer):
                     scale = (p.data.numel()**0.5) / norm
                     p.data.mul_(scale)
 
-                # 3) LMO‑направление через Newton–Schulz через ортогонализацию
-                #    zeropower_via_newtonschulz5 ожидает 2D тензор -> делаем reshape
+                # 3) LMO-направление через Newton–Schulz
                 d_t = muon_orthogonalized_update(m_t, ns_steps=ns_steps)
                 
                 # 4) sign‑компрессия Muon‑направления
@@ -208,9 +204,6 @@ class Muon(Optimizer):
             ns_steps=ns_steps
         )
         super().__init__(params, defaults)
-        # self.norm_weight = norm_weight
-        # self.lambda_mult = lambda_mult
-        # self.ns_steps = ns_steps
 
     @torch.no_grad()
     def step(self, closure=None):
@@ -229,7 +222,10 @@ class Muon(Optimizer):
             ns_steps = group["ns_steps"]
 
             for p in group["params"]:
-                if p.grad is None: continue
+                if p.grad is None: 
+                    continue
+                if p.grad.is_sparse:
+                    raise RuntimeError("SignMuon does not support sparse gradients")
                 
                 g = p.grad
                 if wd != 0:
