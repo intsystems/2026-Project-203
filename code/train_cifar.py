@@ -1,9 +1,9 @@
 import argparse
 import torch
 import torch.nn as nn
-
+import time
 from data_loader import cifar10_loaders
-from models import CNN2
+from models import CNN2, ResNet9, ResNet18
 from optimizers import SignMuon, Muon, SignSGD
 
 def train_epoch(model, loader, optimizers, device):
@@ -69,10 +69,13 @@ def build_optimizers(model, args):
     sign_params = []
     aux_params = []
 
-    for p in model.parameters():
+    last_layer_names = [name for name, _ in list(model.named_parameters())[-2:]]
+
+    for name, p in model.named_parameters():
         if not p.requires_grad:
             continue
-        if p.ndim >= 2:
+        
+        if p.ndim >= 2 and name not in last_layer_names:
             sign_params.append(p)
         else:
             aux_params.append(p)
@@ -88,7 +91,8 @@ def build_optimizers(model, args):
             lambda_mult=args.lambda_mult,
             ns_steps=args.ns_steps,
         )
-        aux_opt = torch.optim.Adam(aux_params, lr=args.lr_aux) if aux_params else None
+        #aux_opt = torch.optim.Adam(aux_params, lr=args.lr_aux) if aux_params else None
+        aux_opt = torch.optim.AdamW(aux_params, lr=args.lr_aux, weight_decay=0.0) if aux_params else None
         return main_opt, aux_opt
     
     elif args.optimizer == "muon":
@@ -102,7 +106,8 @@ def build_optimizers(model, args):
             lambda_mult=args.lambda_mult,
             ns_steps=args.ns_steps,
         )
-        aux_opt = torch.optim.Adam(aux_params, lr=args.lr_aux) if aux_params else None
+        # aux_opt = torch.optim.Adam(aux_params, lr=args.lr_aux) if aux_params else None
+        aux_opt = torch.optim.AdamW(aux_params, lr=args.lr_aux, weight_decay=0.0) if aux_params else None
         return main_opt, aux_opt
 
     elif args.optimizer == "signsgd":
@@ -113,6 +118,7 @@ def build_optimizers(model, args):
             nesterov=args.nesterov,
             weight_decay=args.weight_decay,
         )
+        aux_opt = torch.optim.AdamW(aux_params, lr=args.lr_aux, weight_decay=0.0) if aux_params else None
         return opt, None
        
     elif args.optimizer == "sgd":
@@ -134,12 +140,13 @@ def build_optimizers(model, args):
         return opt, None
 
     else:
-        return "Incorrect optimizer name"
+        raise ValueError(f"Incorrect optimizer name: {args.optimizer}")
 
 def get_args():
     parser = argparse.ArgumentParser()
     parser.add_argument("--data", type=str, default="./data", help="CIFAR10 data dir")
     parser.add_argument("--device", type=str, default="cuda", help="Device to use")
+    parser.add_argument("--model", type=str, default="cnn2", choices=["cnn2", "resnet9", "resnet18"])
     parser.add_argument("--batch-size", type=int, default=128)
     parser.add_argument("--epochs", type=int, default=50)
     parser.add_argument("--optimizer", type=str, default="signmuon", choices=["signmuon", "muon", "signsgd", "sgd", "adam"])
@@ -163,9 +170,16 @@ def train(args):
 
     train_dl, test_dl = cifar10_loaders(args.data, batch_size=args.batch_size, download=args.download)
 
-    model = CNN2(in_channels=3, input_size=32, n_kernels=64, out_dim=10)
+    if args.model == "resnet18":
+        print("Create model...")
+        model = ResNet18(in_channels=3, num_classes=10)
+    elif args.model == "resnet9":
+        model = ResNet9(num_classes=10)
+    else:
+        model = CNN2(in_channels=3, input_size=32, out_dim=10)
     model.to(device)
 
+    print("Create params...")    
     train_losses, train_accs = [], []
     test_losses, test_accs = [], []
 
@@ -175,8 +189,8 @@ def train(args):
     scheduler_main = torch.optim.lr_scheduler.CosineAnnealingLR(opt_main, T_max=args.epochs)
     scheduler_aux = torch.optim.lr_scheduler.CosineAnnealingLR(opt_aux, T_max=args.epochs) if opt_aux else None
 
-    # начальная инициализация
     with torch.no_grad():
+        print("Initialization...")
         loss_tr_0, acc_tr_0 = eval_epoch(model, train_dl, device)
         loss_te_0, acc_te_0 = eval_epoch(model, test_dl, device)
     
@@ -192,6 +206,8 @@ def train(args):
     )
 
     for epoch in range(1, args.epochs + 1):
+        epoch_start_time = time.perf_counter()
+
         loss_tr, acc_tr = train_epoch(model, train_dl, optimizers, device)
 
         scheduler_main.step()
@@ -200,6 +216,8 @@ def train(args):
 
         loss_te, acc_te = eval_epoch(model, test_dl, device)
 
+        epoch_duration = time.perf_counter() - epoch_start_time
+
         train_losses.append(loss_tr)
         train_accs.append(acc_tr)
         test_losses.append(loss_te)
@@ -207,6 +225,7 @@ def train(args):
 
         print(
             f"Epoch {epoch}/{args.epochs} "
+            f"| {epoch_duration:.2f}s "
             f"| train loss {loss_tr:.4f}, acc {acc_tr:.3f} "
             f"| test loss {loss_te:.4f}, acc {acc_te:.3f}"
         )

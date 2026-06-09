@@ -84,11 +84,12 @@ def run_optimizer(opt_name, opt_class, opt_kwargs, M, N, m=500, n=500, target_lo
     return metrics
 
 if __name__ == "__main__":
-    device = torch.device("cuda:2" if torch.cuda.is_available() else "cpu")
+    device = torch.device("cuda:0" if torch.cuda.is_available() else "cpu")
     print(f"Running on: {device}\n")
 
     m, n = 500, 500
-    target_loss = 0.001
+    #target_loss = 0.001
+    target_loss = 0.01
     max_iters = 5000
 
     torch.manual_seed(1337)
@@ -130,7 +131,7 @@ if __name__ == "__main__":
         }
 
 
-    os.makedirs("saves_synthetic", exist_ok=True)
+    os.makedirs("saves_synthetic_01", exist_ok=True)
     print(f"{'Optimizer':<15} | {'Best Iters':<12} | {'Best Loss':<12} | {'Best Params'}")
     print("-" * 80)
 
@@ -159,7 +160,7 @@ if __name__ == "__main__":
 
         if best_metrics is not None:
             safe_opt_name = opt_name.replace(" ", "_").replace("(", "").replace(")", "")
-            save_dir = os.path.join("saves_synthetic", safe_opt_name)
+            save_dir = os.path.join("saves_synthetic_01", safe_opt_name)
             os.makedirs(save_dir, exist_ok=True)
             
             best_metrics["optimizer"] = opt_name

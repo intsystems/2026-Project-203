@@ -15,6 +15,7 @@ from train_mnist import train as train_mnist
 @dataclass
 class RunConfig:
     dataset: str
+    model: str
     optimizer: str
     epochs: int
     batch_size: int
@@ -35,6 +36,7 @@ class RunConfig:
 def get_params():
     p = argparse.ArgumentParser()
     p.add_argument("--dataset", type=str, required=True, choices=["mnist", "cifar10"])
+    p.add_argument("--model", type=str, default="cnn2", choices=["cnn2", "resnet9", "resnet18"]) 
     p.add_argument("--optimizer", type=str, default="signmuon", choices=["signmuon", "muon", "signsgd", "sgd", "adam"])
     p.add_argument("--data", type=str, default="./data")
     p.add_argument("--download", action="store_true", help="Download dataset if missing")
@@ -95,11 +97,13 @@ def main() -> None:
     seed_everything(args.seed)
 
     if not args.run_name:
-        args.run_name = f"{args.dataset}_{args.optimizer}"
+        args.run_name = f"{args.dataset}_{args.model}_{args.optimizer}"
 
     # params
+    print("parse params...")
     config = RunConfig(
         dataset=args.dataset,
+        model=args.model,
         optimizer=args.optimizer,
         epochs=args.epochs,
         batch_size=args.batch_size,
@@ -121,8 +125,10 @@ def main() -> None:
     # train
     device = torch.device(args.device)
     if args.dataset == "mnist":
+        print("Train MNIST...")
         model, history = train_mnist(args)
     else:
+        print("Train CIFAR...")
         model, history = train_cifar(args)
 
     model.to("cpu")

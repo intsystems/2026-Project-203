@@ -1,3 +1,4 @@
+import torch
 import torch.nn as nn
 import torch.nn.functional as F
 
@@ -109,3 +110,77 @@ class ResNet9(nn.Module):
         x = self.conv4(x)
         x = x + self.res2(x)
         return self.classifier(x)        
+    
+
+
+
+class BasicBlock(nn.Module):
+    """
+    Классический остаточный блок (Residual Block) для ResNet18.
+    Состоит из двух сверточных слоев с остаточной связью (Skip Connection).
+    """
+    expansion = 1
+
+    def __init__(self, in_planes, planes, stride=1):
+        super(BasicBlock, self).__init__()
+        self.conv1 = nn.Conv2d(in_planes, planes, kernel_size=3, stride=stride, padding=1, bias=False)
+        self.bn1 = nn.BatchNorm2d(planes)
+        self.relu = nn.ReLU(inplace=True)
+        
+        self.conv2 = nn.Conv2d(planes, planes, kernel_size=3, stride=1, padding=1, bias=False)
+        self.bn2 = nn.BatchNorm2d(planes)
+
+        # Если меняется размерность (stride != 1) или количество каналов,
+        # подгоняем размерность входа через свертку 1x1, чтобы сложить с выходом
+        self.shortcut = nn.Sequential()
+        if stride != 1 or in_planes != self.expansion * planes:
+            self.shortcut = nn.Sequential(
+                nn.Conv2d(in_planes, self.expansion * planes, kernel_size=1, stride=stride, bias=False),
+                nn.BatchNorm2d(self.expansion * planes)
+            )
+
+    def forward(self, x):
+        out = self.relu(self.bn1(self.conv1(x)))
+        out = self.bn2(self.conv2(out))
+        out += self.shortcut(x)  # Skip Connection
+        out = self.relu(out)
+        return out
+
+
+class ResNet18(nn.Module):
+    def __init__(self, in_channels=3, num_classes=10):
+        super(ResNet18, self).__init__()
+        self.in_planes = 64
+
+        self.conv1 = nn.Conv2d(in_channels, 64, kernel_size=3, stride=1, padding=1, bias=False)
+        self.bn1 = nn.BatchNorm2d(64)
+        self.relu = nn.ReLU(inplace=True)
+        
+        self.layer1 = self._make_layer(BasicBlock, 64, num_blocks=2, stride=1)
+        self.layer2 = self._make_layer(BasicBlock, 128, num_blocks=2, stride=2)
+        self.layer3 = self._make_layer(BasicBlock, 256, num_blocks=2, stride=2)
+        self.layer4 = self._make_layer(BasicBlock, 512, num_blocks=2, stride=2)
+        
+        self.avgpool = nn.AdaptiveAvgPool2d((1, 1))
+        self.dropout = nn.Dropout(0.1)
+        self.linear = nn.Linear(512 * BasicBlock.expansion, num_classes)
+
+    def _make_layer(self, block, planes, num_blocks, stride):
+        strides = [stride] + [1] * (num_blocks - 1) 
+        layers = []
+        for stride in strides:
+            layers.append(block(self.in_planes, planes, stride))
+            self.in_planes = planes * block.expansion
+        return nn.Sequential(*layers)
+
+    def forward(self, x):
+        out = self.relu(self.bn1(self.conv1(x)))
+        out = self.layer1(out)
+        out = self.layer2(out)
+        out = self.layer3(out)
+        out = self.layer4(out)
+        out = self.avgpool(out)
+        out = torch.flatten(out, 1)
+        out = self.dropout(out)
+        out = self.linear(out)
+        return out

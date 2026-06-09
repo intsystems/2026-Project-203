@@ -583,7 +583,7 @@ def local_train_muon(global_model, train_loader, client_momentum_buffer,
 
 def federated_muon(
         global_model, train_loaders, num_clients, rounds, n_steps, lr, lr_aux,
-        test_loaders, ns_steps: int = 5, eval_freq: int = 1, momentum=0.9, device=None):
+        test_loaders, ns_steps: int = 5, eval_freq: int = 1, momentum=0.9, weight_decay=1e-4, device=None):
     """
     Federated Muon Algorithm (with client-side momentum).
     """
@@ -621,9 +621,22 @@ def federated_muon(
     round_losses.append(total_loss)
     print(f"\rRound 0 - Accuracy: {total_accuracy:.2f}%, Loss: {total_loss:.4f} ", end='', flush=True)
 
+    base_lr = lr
+    base_lr_aux = lr_aux
+
     for r in range(rounds):
-        round_start = time.perf_counter() 
+        round_start = time.perf_counter()
         print(f"\rRound {r+1}", end='', flush=True)
+        
+        # Расчет косинусного затухания (от начального до нуля к концу обучения)
+        import math
+        eta = 0.5 * (1 + math.cos(math.pi * r / rounds))
+        current_lr = base_lr * eta
+        current_lr_aux = base_lr_aux * eta
+        
+        # Обновляем LR для AdamW (голова)
+        for param_group in adamw.param_groups:
+            param_group['lr'] = current_lr_aux
 
         client_updates = []
         for i in range(num_clients):
@@ -634,6 +647,7 @@ def federated_muon(
                 n_steps=n_steps, 
                 last_layer_names=last_layer_names,
                 momentum=momentum, 
+                weight_decay=weight_decay,
                 ns_steps=ns_steps, 
                 device=device
             )
@@ -653,7 +667,11 @@ def federated_muon(
         with torch.no_grad():
             for name, param in global_model.named_parameters():
                 if param.requires_grad and name not in last_layer_names:
-                    param -= lr * avg_update[name]
+                    
+                    if weight_decay != 0:
+                        param.mul_(1.0 - current_lr * weight_decay)
+                        
+                    param -= current_lr * avg_update[name]
         
         # Обновление головы (AdamW)
         adamw.zero_grad()
@@ -789,9 +807,7 @@ def federated_signmuon_client(
     global_model.to(device)
     global_model.train()
 
-    last_layer_names = [
-        name for name, _ in list(global_model.named_parameters())[-2:]
-    ]
+    last_layer_names = [name for name, _ in list(global_model.named_parameters())[-2:]]
 
     adamw = torch.optim.AdamW(
         [param for name, param in global_model.named_parameters()

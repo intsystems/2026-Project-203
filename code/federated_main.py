@@ -9,7 +9,7 @@ from dataclasses import asdict, dataclass
 from torch.utils.data import DataLoader, Subset
 from torchvision import datasets, transforms
 
-from models import ResNet9, CNN2
+from models import ResNet18, ResNet9, CNN2
 from federated_algorithms import (
     federated_sgd,
     federated_signsgd,
@@ -53,7 +53,7 @@ def get_params():
     
     # --- Основные настройки ---
     p.add_argument("--dataset", type=str, default="cifar10", choices=["mnist", "cifar10"])
-    p.add_argument("--model", type=str, default="cnn2", choices=["resnet9", "cnn2"])
+    p.add_argument("--model", type=str, default="cnn2", choices=["resnet9", "cnn2", "resnet18"])
     p.add_argument("--algorithm", type=str, default="signmuon",
                     choices=["signmuon", "signmuon_ef", "signmuon_ef_21", "signmuon_cl",  "muon", "signsgd", "sgd", "adam"])
     p.add_argument("--data", type=str, default="./data_federated")
@@ -190,27 +190,20 @@ def main() -> None:
     
     # 2. Инициализация модели
     out_dim = 10
-    if args.model == "resnet9":
-        global_model = ResNet9(num_classes=out_dim)
-    else:
-        in_ch = 3 if args.dataset == "cifar10" else 1
-        size = 32 if args.dataset == "cifar10" else 28
-        global_model = CNN2(in_channels=in_ch, input_size=size, out_dim=out_dim)
+    in_ch = 3 if args.dataset == "cifar10" else 1
+    size = 32 if args.dataset == "cifar10" else 28
 
-    global_model = global_model.to(args.device)
+    if args.model == "resnet18":
+        global_model = ResNet18(in_channels=in_ch, num_classes=out_dim)
+        print("global_model = ResNet18")
+    elif args.model == "resnet9":
+        global_model = ResNet9(num_classes=out_dim) 
+        print("global_model = ResNet9")
+    else:
+        global_model = CNN2(in_channels=in_ch, input_size=size, out_dim=out_dim)
     
     # 3. Запуск алгоритма
     print(f"Starting {args.algorithm.upper()} on {args.device}...")
-    
-    # if args.algorithm == 'signmuon':
-    #     accs, losses = federated_signmuon(
-    #         global_model, train_loaders, args.n_parties, args.rounds,
-    #         args.n_steps, args.lr, test_loaders,
-    #         ns_steps=args.ns_steps,
-    #         eval_freq=args.eval_freq,
-    #         momentum=args.momentum,
-    #         device=args.device
-    #     )
 
     if args.algorithm == 'signmuon_ef':
         accs, losses = federated_signmuon_ef(
@@ -240,6 +233,7 @@ def main() -> None:
             ns_steps=args.ns_steps,
             eval_freq=args.eval_freq,
             momentum=args.momentum,
+            weight_decay=args.weight_decay,
             device=args.device
         )
 
@@ -250,6 +244,7 @@ def main() -> None:
             ns_steps=args.ns_steps,
             eval_freq=args.eval_freq,
             momentum=args.momentum,
+            weight_decay=args.weight_decay,
             device=args.device
         )
         

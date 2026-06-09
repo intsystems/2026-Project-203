@@ -104,11 +104,11 @@ if __name__ == "__main__":
 
 
     experiments = [
-        ("Muon", Muon, {"lr": 0.0065, "momentum": 0.1, "norm_weight": False}),
-        ("SignMuon", SignMuon, {"lr": 0.0002, "momentum": 0.2, "norm_weight": False}),
-        ("SignSGD", SignSGD, {"lr": 0.00015, "momentum": 0.8}),
-        ("SGD", SGD, {"lr": 0.1, "momentum": 0.95}),
-        ("Adam", Adam, {"lr": 0.007})
+        # ("Muon", Muon, {"lr": 0.0065, "momentum": 0.1, "norm_weight": False}),
+        # ("SignMuon", SignMuon, {"lr": 0.0002, "momentum": 0.2, "norm_weight": False}),
+        # ("SignSGD", SignSGD, {"lr": 0.00015, "momentum": 0.8}),
+        # ("SGD", SGD, {"lr": 0.1, "momentum": 0.95}),
+        ("Adam", Adam, {"lr": 0.07})
     ]
     
     os.makedirs("saves_synthetic", exist_ok=True)
