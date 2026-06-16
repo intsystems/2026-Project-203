@@ -31,7 +31,7 @@
 
 ## Abstract
 
-The SignSGD gradient compression algorithm enables up to a 32x reduction in communication volume, which is critical for federated learning in bandwidth-constrained environments. However, it often lags behind modern optimizers like Muon, which leverage the matrix structure of parameters to achieve superior convergence and performance. In this work, we propose SignMuon, an algorithm that applies sign compression to the Linear Minimization Oracle (LMO) update of the Muon optimizer. Our empirical results demonstrate that SignMuon achieves accuracy nearly on par with Muon while significantly outperforming SignSGD in both centralized and federated learning settings.
+The SignSGD gradient compression algorithm enables up to a $32\times$ reduction in communication volume, which is critical for federated learning in bandwidth-constrained environments. However, it often lags behind modern optimizers like Muon, which leverage the matrix structure of parameters to achieve superior convergence and performance. In this work, we propose SignMuon, an algorithm that applies sign compression to the Linear Minimization Oracle (LMO) update of the Muon optimizer. Our empirical results demonstrate that SignMuon achieves accuracy nearly on par with Muon while significantly outperforming SignSGD in both centralized and federated learning settings.
 
 ## Code
 ### Centralized setting
