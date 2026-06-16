@@ -15,10 +15,6 @@
         <td align="left"> <b> Consultant </b> </td>
         <td> Alexey Kravatskiy </td>
     </tr>
-    <tr>
-        <td align="left"> <b> Advisor </b> </td>
-        <td> Dmitry Kovalev, PhD </td>
-    </tr>
 </table>
 
 ## Assets
