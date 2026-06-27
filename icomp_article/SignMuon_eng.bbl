@@ -1,0 +1,120 @@
+\begin{thebibliography}{17}
+\providecommand{\natexlab}[1]{#1}
+\providecommand{\url}[1]{\texttt{#1}}
+\expandafter\ifx\csname urlstyle\endcsname\relax
+  \providecommand{\doi}[1]{doi: #1}\else
+  \providecommand{\doi}{doi: \begingroup \urlstyle{rm}\Url}\fi
+
+\bibitem[Bernstein et~al.(2018)Bernstein, Wang, Azizzadenesheli, and
+  Anandkumar]{bernstein2018signsgd}
+Jeremy Bernstein, Yu-Xiang Wang, Kamyar Azizzadenesheli, and Anima Anandkumar.
+\newblock sign{SGD}: Compressed optimisation for non-convex problems, 2018.
+\newblock URL \url{https://arxiv.org/abs/1802.04434}.
+
+\bibitem[Bernstein et~al.(2019)Bernstein, Zhao, Azizzadenesheli, and
+  Anandkumar]{bernstein2019signsgdmajority}
+Jeremy Bernstein, Jiawei Zhao, Kamyar Azizzadenesheli, and Anima Anandkumar.
+\newblock sign{SGD} with majority vote is communication efficient and fault
+  tolerant, 2019.
+\newblock URL \url{https://arxiv.org/abs/1810.05291}.
+
+\bibitem[Beznosikov et~al.(2024)Beznosikov, Horváth, Richtárik, and
+  Safaryan]{beznosikov2020biased}
+Aleksandr Beznosikov, Samuel Horváth, Peter Richtárik, and Mher Safaryan.
+\newblock On biased compression for distributed learning, 2024.
+\newblock URL \url{https://arxiv.org/abs/2002.12410}.
+
+\bibitem[Jordan et~al.(2024)Jordan, Jin, Boza, You, Cesista, Newhouse, and
+  Bernstein]{jordan2024muon}
+Keller Jordan, Yuchen Jin, Vlado Boza, Jiacheng You, Franz Cesista, Laker
+  Newhouse, and Jeremy Bernstein.
+\newblock Muon: An optimizer for hidden layers in neural networks, 2024.
+\newblock URL \url{https://kellerjordan.github.io/posts/muon/}.
+
+\bibitem[Bernstein and Newhouse(2024)]{bernstein2024old}
+Jeremy Bernstein and Laker Newhouse.
+\newblock Old optimizer, new norm: An anthology, 2024.
+\newblock URL \url{https://arxiv.org/abs/2409.20325}.
+
+\bibitem[{Essential AI}(2025)]{shah2025practical}
+{Essential AI}.
+\newblock Practical efficiency of {M}uon for pretraining, 2025.
+\newblock URL \url{https://arxiv.org/abs/2505.02222}.
+
+\bibitem[Jordan(2023)]{jordan2023cifar10}
+Keller Jordan.
+\newblock {CIFAR-10} airbench, 2023.
+\newblock URL \url{https://github.com/KellerJordan/cifar10-airbench}.
+
+\bibitem[Horváth et~al.(2019)Horváth, Kovalev, Mishchenko, Stich, and
+  Richtárik]{horvath2023stochastic}
+Samuel Horváth, Dmitry Kovalev, Konstantin Mishchenko, Sebastian Stich, and
+  Peter Richtárik.
+\newblock Stochastic distributed learning with gradient quantization and
+  variance reduction, 2019.
+\newblock URL \url{https://arxiv.org/abs/1904.05115}.
+
+\bibitem[Gruntkowska et~al.(2025)Gruntkowska, Gaponov, Tovmasyan, and
+  Richtárik]{gruntkowska2025error}
+Kaja Gruntkowska, Alexander Gaponov, Zhirayr Tovmasyan, and Peter Richtárik.
+\newblock Error feedback for {M}uon and friends, 2025.
+\newblock URL \url{https://arxiv.org/abs/2510.00643}.
+
+\bibitem[Ahn et~al.(2025)Ahn, Xu, Abreu, Fan, Magakyan, Sharma, Zhan, and
+  Langford]{ahn2025dion}
+Kwangjun Ahn, Byron Xu, Natalie Abreu, Ying Fan, Gagik Magakyan, Pratyusha
+  Sharma, Zheng Zhan, and John Langford.
+\newblock Dion: Distributed orthonormalized updates, 2025.
+\newblock URL \url{https://arxiv.org/abs/2504.05295}.
+
+\bibitem[Kovalev(2025)]{kovalev2025understanding}
+Dmitry Kovalev.
+\newblock Understanding gradient orthogonalization for deep learning via
+  non-{E}uclidean trust-region optimization, 2025.
+\newblock URL \url{https://arxiv.org/abs/2503.12645}.
+
+\bibitem[Pethick et~al.(2026)Pethick, Xie, Erdogan, Antonakopoulos,
+  Silveti-Falls, and Cevher]{pethick2025generalized}
+Thomas Pethick, Wanyun Xie, Mete Erdogan, Kimon Antonakopoulos, Antonio
+  Silveti-Falls, and Volkan Cevher.
+\newblock Generalized gradient norm clipping \& non-{E}uclidean
+  $(l_0,l_1)$-smoothness, 2026.
+\newblock URL \url{https://arxiv.org/abs/2506.01913}.
+
+\bibitem[Pethick et~al.(2025)Pethick, Xie, Antonakopoulos, Zhu, Silveti-Falls,
+  and Cevher]{pethick2025training}
+Thomas Pethick, Wanyun Xie, Kimon Antonakopoulos, Zhenyu Zhu, Antonio
+  Silveti-Falls, and Volkan Cevher.
+\newblock Training deep learning models with norm-constrained {LMOs}, 2025.
+\newblock URL \url{https://arxiv.org/abs/2502.07529}.
+
+\bibitem[Riabinin et~al.(2025)Riabinin, Shulgin, Gruntkowska, and
+  Richtárik]{riabinin2025gluon}
+Artem Riabinin, Egor Shulgin, Kaja Gruntkowska, and Peter Richtárik.
+\newblock {G}luon: Making {M}uon \& {S}cion great again! ({B}ridging theory and
+  practice of {LMO}-based optimizers for {LLMs}), 2025.
+\newblock URL \url{https://arxiv.org/abs/2505.13416}.
+
+\bibitem[Amsel et~al.(2026)Amsel, Persson, Musco, and Gower]{amsel2025polar}
+Noah Amsel, David Persson, Christopher Musco, and Robert~M. Gower.
+\newblock The {P}olar {E}xpress: Optimal matrix sign methods and their
+  application to the {M}uon algorithm, 2026.
+\newblock URL \url{https://arxiv.org/abs/2505.16932}.
+
+\bibitem[Li and Hong(2025)]{li2025note}
+Jiaxiang Li and Mingyi Hong.
+\newblock A note on the convergence of {M}uon, 2025.
+\newblock URL \url{https://arxiv.org/abs/2502.02900}.
+
+\bibitem[Liu et~al.(2025)Liu, Su, Yao, Jiang, Lai, Du, Qin, Xu, Lu, Yan, Chen,
+  Zheng, Liu, Liu, Yin, He, Zhu, Wang, Wang, Dong, Zhang, Kang, Zhang, Xu,
+  Zhang, Wu, Zhou, and Yang]{liu2025muon}
+Jingyuan Liu, Jianlin Su, Xingcheng Yao, Zhejun Jiang, Guokun Lai, Yulun Du,
+  Yidao Qin, Weixin Xu, Enzhe Lu, Junjie Yan, Yanru Chen, Huabin Zheng, Yibo
+  Liu, Shaowei Liu, Bohong Yin, Weiran He, Han Zhu, Yuzhi Wang, Jianzhou Wang,
+  Mengnan Dong, Zheng Zhang, Yongsheng Kang, Hao Zhang, Xinran Xu, Yutao Zhang,
+  Yuxin Wu, Xinyu Zhou, and Zhilin Yang.
+\newblock Muon is scalable for {LLM} training, 2025.
+\newblock URL \url{https://arxiv.org/abs/2502.16982}.
+
+\end{thebibliography}
