@@ -26,6 +26,7 @@
 \usepackage{algorithmicx}
 \usepackage{algpseudocode}
 \usepackage{listings}
+\input{math_commands.tex}
 
 \newtheorem{theorem}{Theorem}
 \newtheorem{proposition}[theorem]{Proposition}
@@ -39,7 +40,7 @@
 \algrenewcommand{\algorithmicrequire}{\textbf{Input:}}
 \algrenewcommand{\algorithmicensure}{\textbf{Output:}}
 
-\title{SignMuon: fast as Muon, communication-efficient as SignSGD}
+\title{The Curious Case of SignMuon: To Error Feedback or not to Error Feedback?}
 
 \author{
 Maria Smirnova\\
@@ -53,7 +54,7 @@ Maria Smirnova\\
   \texttt{kravatskii.a@miriai.org}\\
 }
 
-\icompfinalcopy
+% \icompfinalcopy
 
 \raggedbottom
 \begin{document}
@@ -235,10 +236,17 @@ This raises the question: does spectral orthogonalization guarantee that conditi
 
 % \begin{theorem}\label{th:1} Существуют такие функции $f(W)$ и размерности $N \geq 4$, для которых алгоритм SignMuon строго расходится.
 % \end{theorem}
-\begin{theorem}\label{th:1} There exist a function $f(W)$ and a matrix dimension $N \geq 4$ such that the SignMuon algorithm diverges.
+\begin{theorem}\label{th:1} There exist a function $f(\mW)$ and a matrix dimension $N \geq 4$ such that the SignMuon algorithm diverges.
 \end{theorem}
 
 % В качестве доказательства приведен пример в приложении~\ref{app:proof_th1}. Cуществование примера показывает, что алгоритм SignMuon не имеет глобальных гарантий сходимости для произвольных функций. Для обоснования его успешной работы на реальных задачах глубокого обучения (где алгоритм демонстрирует высокую точность) необходимо введение дополнительных предположений.
+\begin{figure}[H]
+    \centering
+    \includegraphics[width=0.9\textwidth]{images/signmuon_divergence.pdf}
+    \caption{Comparison of optimization trajectories for the linear objective function $f(\mW) = \mathrm{Tr}(\mG^\top \mW)$, demonstrating the strict divergence of SignMuon, while other methods successfully minimize the function.}
+    \label{fig:divergence_plot}
+\end{figure}
+
 A proof by counterexample is provided in Appendix~\ref{app:proof_th1}. The existence of such an example demonstrates that SignMuon does not provide any global convergence guarantees for functions. Therefore, to explain its successful empirical performance on practical deep learning problems, where the algorithm achieves high accuracy, it is necessary to introduce additional assumptions.
 
 \section{Experiments}\label{sec:exp}
@@ -481,7 +489,7 @@ Adam &  0.07 & - & 202 \\
 
 \subsection{Federated Algorithm with Error Feedback}\label{app:ef21_alg}
 \begin{algorithm}[H]
-\caption{Federated EF21-Muon}
+\caption{Federated EF Sign-Muon}
 \begin{algorithmic}[1]
 \Require Initial model $\mathbf{X}_0$, clients number $N$, rounds number $\mathrm{rounds}$, local steps number $\mathrm{n\_steps}$, learning rate for the main layers $\eta_t$, learning rate for the last layer $\eta_t^{\text{aux}}$,  momentum coefficient $\mu$
 \Ensure Updated global model $\mathbf{X}$
@@ -586,56 +594,49 @@ Adam &  0.07 & - & 202 \\
 \end{hypothesis}
 
 
-\subsection{Доказательство теоремы~\ref{th:1}}\label{app:proof_th1}
+\subsection{Proof of Theorem~\ref{th:1}}\label{app:proof_th1}
 
-\paragraph{Доказательство} Доказательство данной теоремы строится на аналитическом контрпримере, в который показывает существование матрицы градиента $\mathbf{G}$, состоящей из одной доминирующей сингулярной компоненты и ортогонального шума.
+\paragraph{Proof} The proof is constructed using a counterexample that shows the existence of a smooth function and a matrix dimension $N \ge 4$ for which the SignMuon algorithm is guaranteed to diverge. Extensive numerical searches strongly suggest that no counterexamples exist for $N \le 3$ and SignMuon should converge. However, at $N = 4$, this convergence guarantee vanishes.
 
-Рассмотрим простую линейную целевую функцию $f(\mathbf{W}) = \mathrm{Tr}(\mathbf{G}^\top \mathbf{W})$. Для такой функции градиент является глобальной константой: $\nabla f(\mathbf{W}_t) = \mathbf{G}$ для всех $t$. Изменение функции потерь на каждом шаге алгоритма SignMuon составит:
+Consider a simple linear objective function $f(\mathbf{W}) = \mathrm{Tr}(\mathbf{G}^\top \mathbf{W})$. For standard gradient descent or Muon, such a function diverges towards $-\infty$. The gradient is globally constant: $\nabla f(\mathbf{W}_t) = \mathbf{G}$ for all $t$. The change in the objective function at each iteration of the SignMuon algorithm is given by:
 \begin{equation}
 f(\mathbf{W}_{t+1}) - f(\mathbf{W}_t) = -\eta \langle \mathbf{G}, \operatorname{sign}(\mathbf{U} \mathbf{V}^\top) \rangle.
 \end{equation} 
-Для доказательства расходимости достаточно предъявить матрицу $\mathbf{G} \in \mathbb{R}^{4 \times 4}$, для которой выполняется $\langle \mathbf{G}, \operatorname{sign}(\mathbf{U} \mathbf{V}^\top) \rangle < 0$. В таком случае функция $f(\mathbf{W})$ будет строго монотонно возрастать к $+\infty$.
+To prove divergence, it is sufficient to present a matrix $\mathbf{G}$ for which $\langle \mathbf{G}, \operatorname{sign}(\mathbf{U} \mathbf{V}^\top) \rangle < 0$. In this case, $f(\mathbf{W})$ strictly increases at every step, and the algorithm perpetually moves in the wrong direction.
 
-Определим ортогональную матрицу $\mathbf{O} \in \mathbb{R}^{4 \times 4}$ с рациональными компонентами:
+We construct $\mathbf{G} \in \mathbb{R}^{4 \times 4}$ by defining a specific orthogonal matrix $\mathbf{O}$ and a specific rank-1 principal component $\mathbf{u}_1 \mathbf{v}_1^\top$. Let the orthogonal matrix $\mathbf{O}$ be given by the following exact rational numbers:
 \begin{equation}
 \mathbf{O} = \frac{1}{103} \begin{pmatrix} 101 & 20 & 2 & -2 \\ -20 & 97 & 20 & -20 \\ -2 & 20 & 2 & 101 \\ -2 & 20 & -101 & -2 \end{pmatrix}.
 \end{equation}
-Поскольку ни один элемент матрицы не равен нулю, её знаковая матрица $\mathbf{S} = \operatorname{sign}(\mathbf{O})$ определяется однозначно:
-\begin{equation}
-\mathbf{S} = \operatorname{sign}(\mathbf{O}) = \begin{pmatrix} 1 & 1 & 1 & -1 \\ -1 & 1 & 1 & -1 \\ -1 & 1 & 1 & 1 \\ -1 & 1 & -1 & -1 \end{pmatrix}.
-\end{equation}
-Зададим пару точных единичных векторов $\mathbf{u}_1$ и $\mathbf{v}_1$:
+Because no entry is zero, its element-wise sign matrix $\mathbf{S} = \operatorname{sign}(\mathbf{O})$ is uniquely defined. Now, let $\mathbf{u}_1$ and $\mathbf{v}_1$ be the following exact unit vectors:
 \begin{equation}
 \mathbf{u}_1 = \frac{1}{\sqrt{309}} \begin{pmatrix} 10 \\ -3 \\ 10 \\ 10 \end{pmatrix}, \quad \mathbf{v}_1 = \frac{1}{\sqrt{309}} \begin{pmatrix} 10 \\ 3 \\ -10 \\ 10 \end{pmatrix}.
 \end{equation}
-Прямым вычислением можно убедиться, что $\mathbf{O} \mathbf{v}_1 = \mathbf{u}_1$. 
-
-Введем скалярное произведение Фробениуса для двух вещественных матриц $\mathbf{A}, \mathbf{B} \in \mathbb{R}^{m \times n}$ как:
+One can easily verify that $\mathbf{O} \mathbf{v}_1 = \mathbf{u}_1$, meaning $\mathbf{u}_1$ and $\mathbf{v}_1$ act perfectly as left and right singular vectors for this orthogonal space. The crucial feature of this geometry is that the Frobenius inner product between this rank-1 component and the sign matrix $\mathbf{S}$ yields an exact, strictly negative fraction:
 \begin{equation}
-    \langle \mathbf{A}, \mathbf{B} \rangle_F = \operatorname{tr}(\mathbf{A}^\top \mathbf{B}) = \sum_{i=1}^m \sum_{j=1}^n A_{i,j} B_{i,j},
-\end{equation}
-где $\operatorname{tr}(\cdot)$ обозначает след матрицы. 
-Вычислим скалярное произведение Фробениуса между матрицей ранга один $\mathbf{u}_1 \mathbf{v}_1^\top$ и знаковой матрицей $\mathbf{S}$:
-\begin{equation}
-\langle \mathbf{u}_1 \mathbf{v}_1^\top, \mathbf{S} \rangle_F = \mathbf{u}_1^\top \mathbf{S} \mathbf{v}_1 = -\frac{43}{103}.
+\langle \mathbf{u}_1 \mathbf{v}_1^\top, \mathbf{S} \rangle = \mathbf{u}_1^\top \mathbf{S} \mathbf{v}_1 = -\frac{43}{103}.
 \end{equation}
 
-Сконструируем матрицу градиента $\mathbf{G}$, назначив аномально большое сингулярное значение ($\sigma_1 = 1000$) выбранной компоненте $\mathbf{u}_1 \mathbf{v}_1^\top$:
+We construct the gradient matrix $\mathbf{G}$ by assigning a massive singular value ($\sigma_1 = 1000$) to this pathological component and a singular value of $1$ to the rest of the orthogonal space:
 \begin{equation}
-\mathbf{G} = 1000 \, \mathbf{u}_1 \mathbf{v}_1^\top + \mathbf{O}.
+    \mathbf{G} = \begin{pmatrix}
+        324.6 & 97.3 & -323.6 & 323.6 \\
+        -97.3 & -28.2 & 97.3 & -97.3 \\
+        323.6 & 97.3 & -323.6 & 324.6 \\
+        323.6 & 97.3 & -324.6 & 323.6 \\
+      \end{pmatrix}.
 \end{equation}
-По определению сингулярного разложения (SVD), главными сингулярными векторами матрицы $\mathbf{G}$ будут $\mathbf{u}_1$ и $\mathbf{v}_1$ (с сингулярным числом $\sigma_1 = 1001$), а остальные три сингулярных числа $\sigma_2 = \sigma_3 =\sigma_4 =1$. Таким образом, результат ортогонализации градиента алгоритмом Muon в точности совпадет с матрицей $\mathbf{O}$, то есть 
-$$\mathbf{U} \mathbf{V}^\top = \mathbf{O}.$$
-Подставим полученную матрицу $\mathbf{G}$ в условие убывания (\ref{eq:descent_condition}):
+By definition of the Singular Value Decomposition (SVD), the leading singular vectors of $\mathbf{G}$ are $\mathbf{u}_1$ and $\mathbf{v}_1$ (with $\sigma_1 = 1001$), and the remaining singular values are $\sigma_2 = \sigma_3 = \sigma_4 = 1$. Consequently, the Muon orthogonalized step is exactly identical to $\mathbf{O}$, i.e., $\mathbf{U}_G \mathbf{V}_G^\top = \mathbf{O}$.
+
+Substituting the resulting matrix $\mathbf{G}$ into the descent condition yields:
 \begin{equation}
-\langle \mathbf{G}, \operatorname{sign}(\mathbf{U} \mathbf{V}^\top) \rangle =
 \langle \mathbf{G}, \mathbf{S} \rangle = \langle 1000 \, \mathbf{u}_1 \mathbf{v}_1^\top + \mathbf{O}, \mathbf{S} \rangle = 1000 \langle \mathbf{u}_1 \mathbf{v}_1^\top, \mathbf{S} \rangle + \langle \mathbf{O}, \mathbf{S} \rangle.
 \end{equation}
-Скалярное произведение $\langle \mathbf{O}, \mathbf{S} \rangle$ эквивалентно $L_1$-норме матрицы $\mathbf{O}$ и равно $\frac{532}{103}$. Следовательно:
+The inner product $\langle \mathbf{O}, \mathbf{S} \rangle$ is equivalent to the $L_1$ norm (sum of absolute values) of $\mathbf{O}$, which equals exactly $\frac{532}{103}$. Therefore:
 \begin{equation}
 \langle \mathbf{G}, \mathbf{S} \rangle = 1000 \left(-\frac{43}{103}\right) + \frac{532}{103} = -\frac{42468}{103} \approx -412.31.
 \end{equation}
-Поскольку $\langle \mathbf{G}, \mathbf{S} \rangle < 0$, изменение целевой функции на каждой итерации составит $$f(\mathbf{W}_{t+1}) = f(\mathbf{W}_t) + 412.31 \eta.$$ Таким образом, вместо минимизации алгоритм будет строго монотонно расходиться к $+\infty$, что и требовалось доказать. $\blacksquare$
+Because $\langle \mathbf{G}, \mathbf{S} \rangle < 0$, the change in the objective function at every iteration is given by $f(\mathbf{W}_{t+1}) = f(\mathbf{W}_t) + 412.31 \eta$. Thus, instead of minimizing, the algorithm strictly and monotonically diverges to $+\infty$, which completes the proof. $\blacksquare$
 
 \subsection{Results for the smooth convex problem}\label{app:images_task}
 \begin{figure}[H]
@@ -643,14 +644,14 @@ $$\mathbf{U} \mathbf{V}^\top = \mathbf{O}.$$
     \begin{subfigure}[b]{0.48\textwidth}
         \centering
         \includegraphics[width=\textwidth]{images/synt/loss.png} 
-        \caption{The Loss}
+        \caption{Loss}
         \label{fig:synthetic_results_loss}
     \end{subfigure}
     \hfill
     \begin{subfigure}[b]{0.48\textwidth}
         \centering
         \includegraphics[width=\textwidth]{images/synt/GN.png} 
-        \caption{The Frobenius norm of the full gradient}
+        \caption{Frobenius norm of the gradient}
         \label{fig:synthetic_results_GN}
     \end{subfigure}
     \caption{Smooth convex problem (matrix formulation \ref{eq:synthetic_problem} for $500\times500$).}
