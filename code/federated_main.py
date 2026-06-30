@@ -233,7 +233,7 @@ def main() -> None:
             ns_steps=args.ns_steps,
             eval_freq=args.eval_freq,
             momentum=args.momentum,
-            weight_decay=args.weight_decay,
+            # weight_decay=args.weight_decay,
             device=args.device
         )
 

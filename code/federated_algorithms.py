@@ -1087,13 +1087,13 @@ def federated_signmuon_ef(
 
 
 
-# =========================== Sign Muon with Error Feedback (EF21) =========================================
 def local_train_ef21_muon(global_model, train_loader, n_steps, 
                           local_G_estimator, local_momentum, last_layer_names, 
-                          weight_decay=1e-4, momentum=0.9, device=None):
+                          momentum=0.9, device=None):
     """
     EF21 Local Step.
-    Clients DO NOT perform LMO. They compress the Markov residual.
+    Clients compress the Markov residual.
+    Weight decay is strictly omitted here to preserve SVD geometry.
     """
     if device is None:
         device = torch.device("cuda:0" if torch.cuda.is_available() else "cpu")
@@ -1102,7 +1102,7 @@ def local_train_ef21_muon(global_model, train_loader, n_steps,
     local_model.train()
     criterion = nn.CrossEntropyLoss()
     
-    # 1. Накопление сырого градиента
+    # 1. Accumulate Pure Gradients
     accumulated_grad = {}
     train_iter = iter(train_loader)
 
@@ -1123,13 +1123,11 @@ def local_train_ef21_muon(global_model, train_loader, n_steps,
 
             for name, param in local_model.named_parameters():
                 if param.grad is not None:
-                    g = param.grad
-                    if weight_decay != 0:
-                        g = g.add(param.data, alpha=weight_decay)
+                    # PURE GRADIENT ONLY: No weight decay added here
                     if name not in accumulated_grad:
-                        accumulated_grad[name] = g.clone()
+                        accumulated_grad[name] = param.grad.clone()
                     else:
-                        accumulated_grad[name] += g
+                        accumulated_grad[name] += param.grad
 
     for name in accumulated_grad:
         accumulated_grad[name] = accumulated_grad[name] / n_steps
@@ -1137,15 +1135,15 @@ def local_train_ef21_muon(global_model, train_loader, n_steps,
     compressed_residual_dict = {}
     alpha_dict = {}
 
-    # 2. EF21 Logic (Вычисление невязки и сжатие)
+    # 2. EF21 Logic (Compute residual and compress)
     for name, G in accumulated_grad.items():
         if name in last_layer_names:
-            # Для последнего слоя возвращаем сырой градиент
+            # Uncompressed raw gradient for the classification head
             compressed_residual_dict[name] = G.cpu()
             alpha_dict[name] = torch.tensor(1.0, device='cpu')
             continue
 
-        # Lazy transfer буферов на GPU
+        # Lazy transfer buffers to GPU
         if name not in local_G_estimator:
             local_G_estimator[name] = torch.zeros_like(G, device=device)
             local_momentum[name] = torch.zeros_like(G, device=device)
@@ -1153,22 +1151,23 @@ def local_train_ef21_muon(global_model, train_loader, n_steps,
             local_G_estimator[name] = local_G_estimator[name].to(device)
             local_momentum[name] = local_momentum[name].to(device)
 
-        # Шаг A: Обновляем клиентский моментум
+        # Step A: Update client momentum
         local_momentum[name] = momentum * local_momentum[name] + G
 
-        # Шаг B: Вычисляем марковскую невязку (Residual)
-        # Delta = M_{new} - G_{old_estimator}
+        # # Step A: Update client momentum (EMA formulation to bound quantization scale) - empirically a bad suggestion
+        # local_momentum[name] = momentum * local_momentum[name] + (1.0 - momentum) * G
+
+        # Step B: Compute Markov residual (Delta = M_new - G_old_estimator)
         delta = local_momentum[name] - local_G_estimator[name]
 
-        # Шаг C: Сжатие (Scaled Sign)
+        # Step C: Compress (Scaled Sign)
         scale = delta.abs().mean()
         sign_delta = torch.sign(delta)
 
-        # Шаг D: Обновление локального эстиматора
-        # G_{new} = G_{old} + C(Delta)
+        # Step D: Update local estimator (G_new = G_old + C(Delta))
         local_G_estimator[name] = local_G_estimator[name] + (scale * sign_delta)
 
-        # Подготавливаем к отправке (и убираем буферы на CPU для VRAM)
+        # Prepare for transfer (and move buffers to CPU to save VRAM)
         compressed_residual_dict[name] = sign_delta.cpu()
         alpha_dict[name] = scale.cpu()
         
@@ -1183,7 +1182,7 @@ def federated_ef21_muon(
         test_loaders, ns_steps: int = 5, eval_freq: int = 1, momentum=0.9, weight_decay=1e-4, device=None):
     """
     EF21-Muon with 1-bit (Sign) compression.
-    Server maintains global estimator, applies LMO (Newton-Schulz), and updates the model.
+    Server maintains global estimator, applies Decoupled Weight Decay, applies LMO (Newton-Schulz), and updates the model.
     """
     if device is None:
         device = torch.device("cuda:0" if torch.cuda.is_available() else "cpu")
@@ -1194,20 +1193,21 @@ def federated_ef21_muon(
 
     last_layer_names = [name for name, _ in list(global_model.named_parameters())[-2:]]
 
+    # AdamW natively handles Decoupled Weight Decay for the head
     adamw = torch.optim.AdamW(
         [param for name, param in global_model.named_parameters() if name in last_layer_names],
         lr=lr_aux, weight_decay=weight_decay
     )
 
     # ================== STATE INITIALIZATION ==================
-    # 1. Глобальный эстиматор на сервере (на GPU)
+    # 1. Global estimator on the server (GPU)
     global_G_estimator = {
         name: torch.zeros_like(param, device=device)
         for name, param in global_model.named_parameters()
         if param.requires_grad and name not in last_layer_names
     }
 
-    # 2. Локальные буферы клиентов (на CPU для защиты от OOM)
+    # 2. Local buffers for clients (CPU to protect against OOM)
     client_G_estimators = [{name: torch.zeros_like(param, device='cpu') 
                             for name, param in global_model.named_parameters() 
                             if param.requires_grad and name not in last_layer_names} 
@@ -1227,26 +1227,39 @@ def federated_ef21_muon(
     round_losses.append(total_loss)
     print(f"\rRound 0 - Accuracy: {total_accuracy:.2f}%, Loss: {total_loss:.4f} ")
 
+    base_lr = lr
+    base_lr_aux = lr_aux
+
     for r in range(rounds):
         round_start = time.perf_counter()
-        print(f"\rRound {r+1}", end='', flush=True)
+        
+        # 1. Cosine Annealing Learning Rate Scheduler
+        eta = 0.5 * (1 + math.cos(math.pi * r / rounds))
+        current_lr = base_lr * eta
+        current_lr_aux = base_lr_aux * eta
+        
+        # Update AdamW LR
+        for param_group in adamw.param_groups:
+            param_group['lr'] = current_lr_aux
+
+        print(f"\rRound {r+1} | LR: {current_lr:.5f}", end='', flush=True)
 
         client_residuals = []
         client_alphas = []
         
-        # 1. Локальное обучение (EF21 шаг)
+        # 2. Local Training (EF21 step)
         for i in range(num_clients):
             res_sign, alphas = local_train_ef21_muon(
                 global_model=global_model, train_loader=train_loaders[i], n_steps=n_steps,
                 local_G_estimator=client_G_estimators[i],
                 local_momentum=client_momentums[i],
                 last_layer_names=last_layer_names,
-                weight_decay=weight_decay, momentum=momentum, device=device
+                momentum=momentum, device=device
             )
             client_residuals.append(res_sign)
             client_alphas.append(alphas)
 
-        # 2. Агрегация на сервере
+        # 3. Server Aggregation
         avg_head_grad = {}
         
         with torch.no_grad():
@@ -1254,23 +1267,28 @@ def federated_ef21_muon(
                 if name in last_layer_names:
                     avg_head_grad[name] = sum(client_residuals[i][name].to(device) for i in range(num_clients)) / num_clients
                 else:
-                    # Агрегируем сжатые невязки: (1/M) * sum(alpha_i * sign_i)
+                    # Aggregate compressed residuals: (1/M) * sum(alpha_i * sign_i)
                     agg_residual = sum(client_residuals[i][name].to(device) * client_alphas[i][name].to(device) 
                                        for i in range(num_clients)) / num_clients
                     
-                    # ОБНОВЛЕНИЕ ГЛОБАЛЬНОГО ЭСТИМАТОРА: G^{k+1} = G^k + R_agg
+                    # UPDATE GLOBAL ESTIMATOR: G_{k+1} = G_k + R_agg
                     global_G_estimator[name] = global_G_estimator[name] + agg_residual
 
-            # 3. Применение LMO (Muon) на сервере к глобальному эстиматору
+            # 4. Server LMO (Muon) and Weight Decay
             for name, param in global_model.named_parameters():
                 if param.requires_grad and name not in last_layer_names:
-                    # Сервер делает Newton-Schulz!
+                    
+                    # Decoupled Weight Decay applied strictly on the server
+                    if weight_decay != 0:
+                        param.mul_(1.0 - current_lr * weight_decay)
+
+                    # Server executes Newton-Schulz LMO on the global dense estimator
                     orth_G = muon_orthogonalized_update(global_G_estimator[name], ns_steps=ns_steps)
                     
-                    # Делаем шаг. LMO возвращает матрицу нужного масштаба, поэтому просто -lr * orth_G
-                    param -= lr * orth_G
+                    # Step 
+                    param -= current_lr * orth_G
 
-        # 4. Обновление классификатора
+        # 5. Update Classification Head
         adamw.zero_grad()
         for name, param in global_model.named_parameters():
             if name in last_layer_names:
@@ -1292,7 +1310,6 @@ def federated_ef21_muon(
 
     print()
     return round_accuracies, round_losses
-
 
 # # =========================== Sign Muon (Central Moment) =========================================
 # def local_train_signmuon(global_model, train_loader, n_steps, ns_steps: int = 5, device = None):
