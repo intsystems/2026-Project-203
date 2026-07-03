@@ -88,8 +88,7 @@ if __name__ == "__main__":
     print(f"Running on: {device}\n")
 
     m, n = 500, 500
-    #target_loss = 0.001
-    target_loss = 0.01
+    target_loss = 0.001
     max_iters = 5000
 
     torch.manual_seed(1337)

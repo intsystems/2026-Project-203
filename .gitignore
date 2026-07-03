@@ -1,3 +1,13 @@
+# books
+EF_for_Muon_and_Friends.pdf
+FEDMUON.pdf
+signmuon_india.pdf
+
+#adds
+SignMuon_eng.fls
+SignMuon_eng.fdb_latexmk
+SignMuonCounterexample_1.ipynb
+
 # Custom
 .DS_Store
 

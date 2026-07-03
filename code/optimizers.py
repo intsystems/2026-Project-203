@@ -95,7 +95,7 @@ class SignMuon(Optimizer):
         lr: float = 1e-3,
         momentum: float = 0.0,
         nesterov: bool = False,
-        norm_weight: bool = True,
+        norm_weight: bool = False,
         weight_decay=0.0, 
         lambda_mult: float = 1.0,
         ns_steps: int = 5,

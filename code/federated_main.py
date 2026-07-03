@@ -15,7 +15,7 @@ from federated_algorithms import (
     federated_signsgd,
     federated_muon,
     # federated_signmuon,
-    federated_signmuon_ef,
+    # federated_signmuon_ef,
     federated_ef21_muon,
     federated_signmuon_client,
     federated_adam,
@@ -55,7 +55,7 @@ def get_params():
     p.add_argument("--dataset", type=str, default="cifar10", choices=["mnist", "cifar10"])
     p.add_argument("--model", type=str, default="cnn2", choices=["resnet9", "cnn2", "resnet18"])
     p.add_argument("--algorithm", type=str, default="signmuon",
-                    choices=["signmuon", "signmuon_ef", "signmuon_ef_21", "signmuon_cl",  "muon", "signsgd", "sgd", "adam"])
+                    choices=["signmuon_ef_21", "signmuon_cl",  "muon", "signsgd", "sgd", "adam"])
     p.add_argument("--data", type=str, default="./data_federated")
     p.add_argument("--download", action="store_true", help="Download dataset if missing")
     p.add_argument("--device", type=str, default="cpu")
@@ -205,17 +205,17 @@ def main() -> None:
     # 3. Запуск алгоритма
     print(f"Starting {args.algorithm.upper()} on {args.device}...")
 
-    if args.algorithm == 'signmuon_ef':
-        accs, losses = federated_signmuon_ef(
-            global_model, train_loaders, args.n_parties, args.rounds,
-            args.n_steps, args.lr, args.lr_aux, test_loaders,
-            ns_steps=args.ns_steps,
-            eval_freq=args.eval_freq,
-            momentum=args.momentum,
-            device=args.device
-        )
+    # if args.algorithm == 'signmuon_ef':
+    #     accs, losses = federated_signmuon_ef(
+    #         global_model, train_loaders, args.n_parties, args.rounds,
+    #         args.n_steps, args.lr, args.lr_aux, test_loaders,
+    #         ns_steps=args.ns_steps,
+    #         eval_freq=args.eval_freq,
+    #         momentum=args.momentum,
+    #         device=args.device
+    #     )
     
-    elif args.algorithm == 'signmuon_ef_21':
+    if args.algorithm == 'signmuon_ef_21':
         accs, losses = federated_ef21_muon(
             global_model, train_loaders, args.n_parties, args.rounds,
             args.n_steps, args.lr, args.lr_aux, test_loaders,
@@ -226,7 +226,10 @@ def main() -> None:
             device=args.device
         )
 
-    elif args.algorithm == 'signmuon_cl':
+    # Federated SignMuon (majority-vote + client momentum, Algorithm 2).
+    # 'signmuon' is the canonical name used in the README and tables;
+    # 'signmuon_cl' is kept as a backward-compatible alias.
+    elif args.algorithm in ('signmuon', 'signmuon_cl'):
         accs, losses = federated_signmuon_client(
             global_model, train_loaders, args.n_parties, args.rounds,
             args.n_steps, args.lr, args.lr_aux, test_loaders,
