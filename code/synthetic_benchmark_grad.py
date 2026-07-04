@@ -102,6 +102,10 @@ if __name__ == "__main__":
 
     lr_range = [float(x) for x in np.arange(0.0001, 0.001, 0.0001)]
 
+    lr_range_ef = [float(x) for x in np.arange(0.001, 0.005, 0.0005)]
+    
+    lr_range_ef = [float(x) for x in np.arange(0.003, 0.0035, 0.0001)]
+
     signsgd_lr_range = [float(x) for x in np.arange(5e-5, 2.1e-4, 1e-5)]
 
     sgd_lr_range = [float(x) for x in np.arange(0.01, 0.11, 0.01)]
@@ -113,7 +117,7 @@ if __name__ == "__main__":
             # ]),
             "EFSignMuon": (EFSignMuon, [
                 {"lr": float(lr), "momentum": float(mom)}
-                for lr in lr_range_muon for mom in momentums
+                for lr in lr_range_ef for mom in momentums
             ]),
             # "SignMuon": (SignMuon, [
             #     {"lr": float(lr), "momentum": float(mom), "norm_weight": False}

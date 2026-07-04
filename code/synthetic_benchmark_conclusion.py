@@ -72,7 +72,7 @@ def run_optimizer(opt_name, opt_class, opt_kwargs, M, N, m=500, n=500, target_lo
     final_loss = loss_history[-1]
 
     safe_opt_name = opt_name.replace(" ", "_").replace("(", "").replace(")", "")
-    save_dir = os.path.join("saves_synthetic_001", safe_opt_name)
+    save_dir = os.path.join("project/saves_synthetic_001", safe_opt_name)
     os.makedirs(save_dir, exist_ok=True)
     
     metrics = {
@@ -91,7 +91,7 @@ def run_optimizer(opt_name, opt_class, opt_kwargs, M, N, m=500, n=500, target_lo
     return iters_to_converge, final_loss, elapsed_time
 
 if __name__ == "__main__":
-    device = torch.device("cuda:2" if torch.cuda.is_available() else "cpu")
+    device = torch.device("cuda:0" if torch.cuda.is_available() else "cpu")
     print(f"Running on: {device}\n")
 
     m, n = 500, 500
@@ -102,17 +102,16 @@ if __name__ == "__main__":
     M = generate_psd_matrix(m, device=device)
     N = generate_psd_matrix(n, device=device)
 
-
     experiments = [
         # ("Muon", Muon, {"lr": 0.0065, "momentum": 0.1, "norm_weight": False}),
         # ("SignMuon", SignMuon, {"lr": 0.0002, "momentum": 0.2, "norm_weight": False}),
         # ("SignSGD", SignSGD, {"lr": 0.00015, "momentum": 0.8}),
         # ("SGD", SGD, {"lr": 0.1, "momentum": 0.95}),
-        ("EFSignMuon", EFSignMuon, {"lr": 0.01, "momentum": 0.5}),  # TODO: tune via grid search (synthetic_benchmark_grad.py)
+        ("EFSignMuon", EFSignMuon, {"lr": 0.0033, "momentum": 0.1}),
         # ("Adam", Adam, {"lr": 0.07})
     ]
     
-    os.makedirs("saves_synthetic_001", exist_ok=True)
+    # os.makedirs("project/saves_synthetic_001", exist_ok=True)
     print(f"{'Optimizer':<15} | {'Iters to 0.001':<18} | {'Final Loss':<12} | {'Time (s)':<10}")
     print("-" * 65)
     for name, opt_class, kwargs in experiments:
@@ -122,4 +121,4 @@ if __name__ == "__main__":
         else:
             print(f"{name:<15} | > {max_iters:<16} | {f_loss:.6f}     | {t:.2f}s")
 
-    print(f"\nBenchmark finished! Results saved in './saves_synthetic_001/'")
+    print(f"\nBenchmark finished! Results saved in './project/saves_synthetic_001/'")
