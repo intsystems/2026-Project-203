@@ -279,6 +279,7 @@ Since theoretical convergence guarantees depend on the choice of norm and the co
 \midrule
 SignMuon & $[1 \cdot 10^{-4}, 1 \cdot 10^{-3}]$ with step $1 \cdot 10^{-4}$ & $\{0.1, 0.2, \dots, 0.9, 0.95\}$ \\
 Muon     & $[5 \cdot 10^{-3}, 2 \cdot 10^{-2}]$ with step $1 \cdot 10^{-3}$ & $\{0.1, 0.2, \dots, 0.9, 0.95\}$ \\
+EF-SignMuon & $[5 \cdot 10^{-3}, 2 \cdot 10^{-2}]$ with step $1 \cdot 10^{-3}$ & $\{0.1, 0.2, \dots, 0.9, 0.95\}$ \\
 SignSGD  & $[5 \cdot 10^{-5}, 2 \cdot 10^{-4}]$ with step $1 \cdot 10^{-5}$ & $\{0.1, 0.2, \dots, 0.9, 0.95\}$ \\
 SGD      & $[1 \cdot 10^{-2}, 1 \cdot 10^{-1}]$ with step $1 \cdot 10^{-2}$ & $\{0.1, 0.2, \dots, 0.9, 0.95\}$ \\
 Adam     & $[1 \cdot 10^{-2}, 1 \cdot 10^{-1}]$ with step $1 \cdot 10^{-2}$ & --- \\
@@ -301,6 +302,7 @@ The results of the grid search with the number of iterations required to converg
 \hline
 SignMuon & 0.0002 & 0.2 & 2104 \\
 Muon & 0.0065 & 0.1 & 1122 \\
+EF-SignMuon & - & - & - \\
 SignSGD & 0.00015 & 0.8 & 3120 \\
 SGD & 0.1 & 0.95 & 972 \\
 Adam &  0.07 & - & 202 \\
@@ -343,9 +345,11 @@ The experimental results and the selected hyperparameter values are reported in 
 \hline
 \textbf{Dataset} & \textbf{Optimizer} & \textbf{Epoch} & \textbf{Batch} & \textbf{LR} & \textbf{LR Aux} & \textbf{Mom} & \textbf{Train Acc} & \textbf{Test Acc} \\
 \hline
-\multirow{5}{*}{CIFAR-10} & SignMuon & \multirow{5}{*}{75} & \multirow{5}{*}{128} & 0.001 & 0.0001 & \multirow{5}{*}{0.9} & 99.69\% & 92.55\% \\
+\multirow{6}{*}{CIFAR-10} & SignMuon & \multirow{6}{*}{75} & \multirow{6}{*}{128} & 0.001 & 0.0001 & \multirow{6}{*}{0.9} & 99.69\% & 92.55\% \\
 \cline{2-2} \cline{5-6} \cline{8-9}
- & Muon & & & \multirow{2}{*}{0.015}  & \multirow{2}{*}{0.001} & & 99.94\% & 93.70\% \\
+ & Muon & & & \multirow{3}{*}{0.015}  & \multirow{3}{*}{0.001} & & 99.94\% & 93.70\% \\
+ \cline{2-2} \cline{8-9}
+& EF-SignMuon & & & & & & -\% & -\% \\
 \cline{2-2} \cline{8-9}
 & SGD & & & & & & 99.98\% & 93.93\% \\
 \cline{2-2} \cline{5-6} \cline{8-9}
@@ -401,7 +405,7 @@ The same 6 optimizers are tested with 10 clients, 2000 rounds, and 3 local steps
 \cline{2-2} \cline{7-7} \cline{9-9}
  & Adam & & & & & 0.001 & & 78.36\% \\
 \cline{2-2} \cline{7-7} \cline{9-9}
- & EF-SignMuon & & & & & 0.02 & & 82.31\% \\
+ & EF-SignMuon & & & & & 0.02 & & 84.59\% \\
 \hline
 \end{tabular}
 \end{table}
@@ -800,7 +804,7 @@ Because $\langle \mathbf{G}, \mathbf{S} \rangle < 0$, the change in the objectiv
 \cline{4-4} \cline{4-4} \cline{9-9}
  & & & 7 & & & & & 83.54\% \\
 \cline{4-4} \cline{9-9}
- & & & 9 & & & & & \textbf{84.03\%} \\
+ & & & 9 & & & & & 84.03\% \\
 \hline
 \end{tabular}
 \end{table}
@@ -836,7 +840,7 @@ Because $\langle \mathbf{G}, \mathbf{S} \rangle < 0$, the change in the objectiv
 \hline
 \multirow{6}{*}{CIFAR-10} & SignMuon & \multirow{6}{*}{2000} & \multirow{6}{*}{3} & \multirow{6}{*}{1} & \multirow{6}{*}{64} & 0.001 & \multirow{6}{*}{0.9} & 81.24\% \\
 \cline{2-2} \cline{7-7} \cline{9-9}
- & Muon & & & & & 0.05 & & \textbf{81.27\%} \\
+ & Muon & & & & & 0.05 & & 81.27\% \\
 \cline{2-2} \cline{7-7} \cline{9-9}
  & SignSGD & & & & & 0.001 & & 65.96\% \\
 \cline{2-2} \cline{7-7} \cline{9-9}
@@ -844,7 +848,7 @@ Because $\langle \mathbf{G}, \mathbf{S} \rangle < 0$, the change in the objectiv
 \cline{2-2} \cline{7-7} \cline{9-9}
  & Adam & & & & & 0.001 & & 70.83\% \\
 \cline{2-2} \cline{7-7} \cline{9-9}
- & EF-SignMuon & & & & & 0.02 & & 75.92\% \\
+ & EF-SignMuon & & & & & 0.02 & & 80.69\% \\
 \hline
 \end{tabular}
 \end{table}

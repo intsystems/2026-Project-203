@@ -4,7 +4,7 @@ import torch.nn as nn
 import time
 from data_loader import cifar10_loaders
 from models import CNN2, ResNet9, ResNet18
-from optimizers import SignMuon, Muon, SignSGD
+from optimizers import SignMuon, Muon, SignSGD, EFSignMuon
 
 def train_epoch(model, loader, optimizers, device):
 
@@ -110,6 +110,19 @@ def build_optimizers(model, args):
         aux_opt = torch.optim.AdamW(aux_params, lr=args.lr_aux, weight_decay=0.0) if aux_params else None
         return main_opt, aux_opt
 
+    elif args.optimizer == "ef_signmuon":
+        main_opt = EFSignMuon(
+            sign_params,
+            lr=args.lr,
+            momentum=args.momentum,
+            nesterov=args.nesterov,
+            weight_decay=args.weight_decay,
+            lambda_mult=args.lambda_mult,
+            ns_steps=args.ns_steps,
+        )
+        aux_opt = torch.optim.AdamW(aux_params, lr=args.lr_aux, weight_decay=0.0) if aux_params else None
+        return main_opt, aux_opt
+
     elif args.optimizer == "signsgd":
         opt = SignSGD(
             model.parameters(),
@@ -149,7 +162,7 @@ def get_args():
     parser.add_argument("--model", type=str, default="cnn2", choices=["cnn2", "resnet9", "resnet18"])
     parser.add_argument("--batch-size", type=int, default=128)
     parser.add_argument("--epochs", type=int, default=50)
-    parser.add_argument("--optimizer", type=str, default="signmuon", choices=["signmuon", "muon", "signsgd", "sgd", "adam"])
+    parser.add_argument("--optimizer", type=str, default="signmuon", choices=["signmuon", "ef_signmuon", "muon", "signsgd", "sgd", "adam"])
     parser.add_argument("--download", action="store_true", help="Download dataset if missing")
     parser.add_argument("--lr", type=float, default=1e-3)
     parser.add_argument("--lr-aux", type=float, default=1e-3)

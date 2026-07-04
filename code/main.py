@@ -37,7 +37,7 @@ def get_params():
     p = argparse.ArgumentParser()
     p.add_argument("--dataset", type=str, required=True, choices=["mnist", "cifar10"])
     p.add_argument("--model", type=str, default="cnn2", choices=["cnn2", "resnet9", "resnet18"]) 
-    p.add_argument("--optimizer", type=str, default="signmuon", choices=["signmuon", "muon", "signsgd", "sgd", "adam"])
+    p.add_argument("--optimizer", type=str, default="signmuon", choices=["signmuon", "ef_signmuon", "muon", "signsgd", "sgd", "adam"])
     p.add_argument("--data", type=str, default="./data")
     p.add_argument("--download", action="store_true", help="Download dataset if missing")
     p.add_argument("--device", type=str, default="cpu")

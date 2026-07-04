@@ -254,6 +254,102 @@ class Muon(Optimizer):
         return loss
 
 
+class EFSignMuon(Optimizer):
+    """
+    Centralized EF-SignMuon optimizer.
+
+    Single-node reduction of Federated EF-SignMuon (= EF21-Muon with identity
+    downlink, Gruntkowska et al. 2025). Sign compression acts on the EF21
+    residual (the internal "uplink"); the parameter step is the FULL Muon LMO
+    of the reconstructed gradient estimator (NO sign on the step). Applying the
+    LMO to the (asymptotically exact) estimator rather than to sign(UV^T) is
+    what repairs the SignMuon divergence on the counterexample of Theorem 1.
+
+    For each parameter p:
+        m_t   = μ m_{t-1} + g_t                       (momentum)
+        Δ_t   = m_t - g_est                           (EF21 residual)
+        α_t   = mean(|Δ_t|)
+        g_est <- g_est + α_t * sign(Δ_t)              (EF21 estimator, scaled-sign)
+        d_t   ≈ Muon-LMO(g_est)   (via muon_orthogonalized_update)
+        p_{t+1} = p_t - lr * lambda_mult * d_t
+    """
+    def __init__(
+        self,
+        params,
+        lr: float = 1e-3,
+        momentum: float = 0.0,
+        nesterov: bool = False,
+        weight_decay: float = 0.0,
+        lambda_mult: float = 1.0,
+        ns_steps: int = 5,
+    ):
+        if lr < 0.0:
+            raise ValueError(f"Invalid learning rate: {lr}")
+        if momentum < 0.0:
+            raise ValueError(f"Invalid momentum value: {momentum}")
+        if weight_decay < 0.0:
+            raise ValueError(f"Invalid weight_decay value: {weight_decay}")
+
+        defaults = dict(
+            lr=lr,
+            momentum=momentum,
+            nesterov=nesterov,
+            weight_decay=weight_decay,
+            lambda_mult=lambda_mult,
+            ns_steps=ns_steps,
+        )
+        super().__init__(params, defaults)
+
+    @torch.no_grad()
+    def step(self, closure=None):
+        loss = None
+        if closure is not None:
+            with torch.enable_grad():
+                loss = closure()
+
+        for group in self.param_groups:
+            lr = group["lr"]
+            momentum = group["momentum"]
+            nesterov = group["nesterov"]
+            wd = group["weight_decay"]
+            lambda_mult = group["lambda_mult"]
+            ns_steps = group["ns_steps"]
+
+            for p in group["params"]:
+                if p.grad is None:
+                    continue
+                if p.grad.is_sparse:
+                    raise RuntimeError("EFSignMuon does not support sparse gradients")
+
+                g = p.grad
+                if wd != 0:
+                    g = g.add(p.data, alpha=wd)
+                state = self.state[p]
+
+                # 1) momentum smoothing: m_t = μ m_{t-1} + g_t
+                if "momentum_buffer" not in state:
+                    state["momentum_buffer"] = torch.zeros_like(g)
+                buf = state["momentum_buffer"]
+                buf.mul_(momentum).add_(g)
+                m_t = g.add(buf, alpha=momentum) if nesterov else buf
+
+                # 2) EF21 gradient estimator (scaled-sign compressor on the residual)
+                if "grad_estimator" not in state:
+                    state["grad_estimator"] = torch.zeros_like(g)
+                g_est = state["grad_estimator"]
+                delta = m_t - g_est
+                alpha = delta.abs().mean()
+                g_est.add_(alpha * torch.sign(delta))   # g_est <- g_est + α * sign(Δ)
+
+                # 3) Muon LMO step on the estimator (NO sign on the step)
+                d_t = muon_orthogonalized_update(g_est, ns_steps=ns_steps)
+
+                # 4) parameter update
+                p.data.add_(d_t, alpha=-lr * lambda_mult)
+
+        return loss
+
+
 class SignSGD(Optimizer):
     """
     Standard SignSGD optimizer.

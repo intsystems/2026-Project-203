@@ -7,7 +7,7 @@ import os
 import json
 import numpy as np
 import copy
-from optimizers import Muon, SignMuon, SignSGD
+from optimizers import Muon, SignMuon, SignSGD, EFSignMuon
 from torch.optim import SGD, Adam
 
 
@@ -72,7 +72,7 @@ def run_optimizer(opt_name, opt_class, opt_kwargs, M, N, m=500, n=500, target_lo
     final_loss = loss_history[-1]
 
     safe_opt_name = opt_name.replace(" ", "_").replace("(", "").replace(")", "")
-    save_dir = os.path.join("saves_synthetic", safe_opt_name)
+    save_dir = os.path.join("saves_synthetic_001", safe_opt_name)
     os.makedirs(save_dir, exist_ok=True)
     
     metrics = {
@@ -108,10 +108,11 @@ if __name__ == "__main__":
         # ("SignMuon", SignMuon, {"lr": 0.0002, "momentum": 0.2, "norm_weight": False}),
         # ("SignSGD", SignSGD, {"lr": 0.00015, "momentum": 0.8}),
         # ("SGD", SGD, {"lr": 0.1, "momentum": 0.95}),
-        ("Adam", Adam, {"lr": 0.07})
+        ("EFSignMuon", EFSignMuon, {"lr": 0.01, "momentum": 0.5}),  # TODO: tune via grid search (synthetic_benchmark_grad.py)
+        # ("Adam", Adam, {"lr": 0.07})
     ]
     
-    os.makedirs("saves_synthetic", exist_ok=True)
+    os.makedirs("saves_synthetic_001", exist_ok=True)
     print(f"{'Optimizer':<15} | {'Iters to 0.001':<18} | {'Final Loss':<12} | {'Time (s)':<10}")
     print("-" * 65)
     for name, opt_class, kwargs in experiments:
@@ -121,4 +122,4 @@ if __name__ == "__main__":
         else:
             print(f"{name:<15} | > {max_iters:<16} | {f_loss:.6f}     | {t:.2f}s")
 
-    print(f"\nBenchmark finished! Results saved in './saves_synthetic/'")
+    print(f"\nBenchmark finished! Results saved in './saves_synthetic_001/'")

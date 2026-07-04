@@ -7,7 +7,7 @@ import os
 import json
 import numpy as np
 import copy
-from optimizers import Muon, SignMuon, SignSGD
+from optimizers import Muon, SignMuon, SignSGD, EFSignMuon
 from torch.optim import SGD, Adam
 
 
@@ -107,26 +107,30 @@ if __name__ == "__main__":
     sgd_lr_range = [float(x) for x in np.arange(0.01, 0.11, 0.01)]
 
     grids = {
-            "Muon": (Muon, [
-                {"lr": float(lr), "momentum": float(mom), "norm_weight": False}
+            # "Muon": (Muon, [
+            #     {"lr": float(lr), "momentum": float(mom), "norm_weight": False}
+            #     for lr in lr_range_muon for mom in momentums
+            # ]),
+            "EFSignMuon": (EFSignMuon, [
+                {"lr": float(lr), "momentum": float(mom)}
                 for lr in lr_range_muon for mom in momentums
             ]),
-            "SignMuon": (SignMuon, [
-                {"lr": float(lr), "momentum": float(mom), "norm_weight": False}
-                for lr in lr_range for mom in momentums
-            ]),
-            "SignSGD": (SignSGD, [
-                {"lr": float(lr), "momentum": float(mom)}
-                for lr in signsgd_lr_range for mom in momentums
-            ]),
-            "SGD": (SGD, [
-                {"lr": float(lr), "momentum": float(mom)}
-                for lr in sgd_lr_range for mom in momentums
-            ]),
-            "Adam": (Adam, [
-                {"lr": float(lr)}
-                for lr in sgd_lr_range
-            ]),
+            # "SignMuon": (SignMuon, [
+            #     {"lr": float(lr), "momentum": float(mom), "norm_weight": False}
+            #     for lr in lr_range for mom in momentums
+            # ]),
+            # "SignSGD": (SignSGD, [
+            #     {"lr": float(lr), "momentum": float(mom)}
+            #     for lr in signsgd_lr_range for mom in momentums
+            # ]),
+            # "SGD": (SGD, [
+            #     {"lr": float(lr), "momentum": float(mom)}
+            #     for lr in sgd_lr_range for mom in momentums
+            # ]),
+            # "Adam": (Adam, [
+            #     {"lr": float(lr)}
+            #     for lr in sgd_lr_range
+            # ]),
         }
 
 
