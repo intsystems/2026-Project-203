@@ -1,4 +1,5 @@
-# SignMuon: fast as Muon, communication-effective as SignSGD
+# The Curious Case of SignMuon: Sign Before or After the LMO?
+~~SignMuon: fast as Muon, communication-effective as SignSGD~~
 
 <!-- Change `kisnikser/m1p-template` to `intsystems/your-repository`-->
 [![License](https://badgen.net/github/license/kisnikser/m1p-template?color=green)](https://github.com/kisnikser/m1p-template/blob/main/LICENSE)
@@ -27,7 +28,7 @@
 
 ## Abstract
 
-The SignSGD gradient compression algorithm enables up to a $32\times$ reduction in communication volume, which is critical for federated learning in bandwidth-constrained environments. However, it often lags behind modern optimizers like Muon, which leverage the matrix structure of parameters to achieve superior convergence and performance. In this work, we propose SignMuon, an algorithm that applies sign compression to the Linear Minimization Oracle (LMO) update of the Muon optimizer. Our empirical results demonstrate that SignMuon achieves accuracy nearly on par with Muon while significantly outperforming SignSGD in both centralized and federated learning settings.
+The SignSGD gradient compression algorithm enables up to a $32\times$ reduction in communication volume, which is critical for federated learning in bandwidth-constrained environments. It often lags behind modern optimizers like Muon, which leverage the matrix structure of parameters to achieve superior convergence and performance. We propose SignMuon, an algorithm that applies sign compression to the Linear Minimization Oracle (LMO) update of the Muon optimizer, i.e., it computes $\operatorname{sign}(\operatorname{LMO}(\cdot))$. However, SignMuon offers no global convergence guarantee: we construct a linear function on which SignMuon provably diverges. Based on this observation, we introduce EF-USignMuon, an Error-Feedback variant that compresses the residual with $\operatorname{sign}(\cdot)$ and applies the Muon LMO on the server, computing $\operatorname{LMO}(\operatorname{sign}(\cdot))$ while keeping the uplink at one bit per parameter. It restores the descent property and converges on the same counterexample. We validate both methods on a synthetic convex problem and on centralized and federated CIFAR-10 classification.
 
 ## Code
 ### Centralized setting
