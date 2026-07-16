@@ -7,7 +7,7 @@ import os
 import json
 import numpy as np
 import copy
-from optimizers import Muon, SignMuon, SignSGD, EFSignMuon
+from optimizers import Muon, SignMuon, SignSGD, EF_USignMuon, EF_UDSignMuon
 from torch.optim import SGD, Adam
 
 
@@ -84,7 +84,7 @@ def run_optimizer(opt_name, opt_class, opt_kwargs, M, N, m=500, n=500, target_lo
     return metrics
 
 if __name__ == "__main__":
-    device = torch.device("cuda:0" if torch.cuda.is_available() else "cpu")
+    device = torch.device("cuda:3" if torch.cuda.is_available() else "cpu")
     print(f"Running on: {device}\n")
 
     m, n = 500, 500
@@ -95,7 +95,6 @@ if __name__ == "__main__":
     M = generate_psd_matrix(m, device=device)
     N = generate_psd_matrix(n, device=device)
 
-
     momentums = [0.1, 0.2, 0.3, 0.4, 0.5, 0.6, 0.7, 0.8, 0.9, 0.95]
 
     lr_range_muon = [float(x) for x in np.arange(0.005, 0.021, 0.001)]
@@ -104,7 +103,7 @@ if __name__ == "__main__":
 
     lr_range_ef = [float(x) for x in np.arange(0.001, 0.005, 0.0005)]
     
-    lr_range_ef = [float(x) for x in np.arange(0.003, 0.0035, 0.0001)]
+    lr_range_ef = [float(x) for x in np.arange(0.0020, 0.0030, 0.0001)]
 
     signsgd_lr_range = [float(x) for x in np.arange(5e-5, 2.1e-4, 1e-5)]
 
@@ -115,7 +114,11 @@ if __name__ == "__main__":
             #     {"lr": float(lr), "momentum": float(mom), "norm_weight": False}
             #     for lr in lr_range_muon for mom in momentums
             # ]),
-            "EFSignMuon": (EFSignMuon, [
+            # "EF-USignMuon": (EF_USignMuon, [
+            #     {"lr": float(lr), "momentum": float(mom)}
+            #     for lr in lr_range_ef for mom in momentums
+            # ]),
+            "EF-UDSignMuon": (EF_UDSignMuon, [
                 {"lr": float(lr), "momentum": float(mom)}
                 for lr in lr_range_ef for mom in momentums
             ]),

@@ -7,7 +7,7 @@ import os
 import json
 import numpy as np
 import copy
-from optimizers import Muon, SignMuon, SignSGD, EFSignMuon
+from optimizers import Muon, SignMuon, SignSGD, EF_USignMuon, EF_UDSignMuon
 from torch.optim import SGD, Adam
 
 
@@ -91,7 +91,7 @@ def run_optimizer(opt_name, opt_class, opt_kwargs, M, N, m=500, n=500, target_lo
     return iters_to_converge, final_loss, elapsed_time
 
 if __name__ == "__main__":
-    device = torch.device("cuda:0" if torch.cuda.is_available() else "cpu")
+    device = torch.device("cuda:2" if torch.cuda.is_available() else "cpu")
     print(f"Running on: {device}\n")
 
     m, n = 500, 500
@@ -107,7 +107,8 @@ if __name__ == "__main__":
         # ("SignMuon", SignMuon, {"lr": 0.0002, "momentum": 0.2, "norm_weight": False}),
         # ("SignSGD", SignSGD, {"lr": 0.00015, "momentum": 0.8}),
         # ("SGD", SGD, {"lr": 0.1, "momentum": 0.95}),
-        ("EFSignMuon", EFSignMuon, {"lr": 0.0033, "momentum": 0.1}),
+        # ("EF-USignMuon", EF_USignMuon, {"lr": 0.0033, "momentum": 0.1}),
+        ("EF-UDSignMuon", EF_UDSignMuon, {"lr": 0.0028, "momentum": 0.1}),
         # ("Adam", Adam, {"lr": 0.07})
     ]
     

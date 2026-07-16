@@ -4,7 +4,7 @@ import torch.nn as nn
 import time
 from data_loader import cifar10_loaders
 from models import CNN2, ResNet9, ResNet18
-from optimizers import SignMuon, Muon, SignSGD, EFSignMuon
+from optimizers import SignMuon, Muon, SignSGD, EF_USignMuon, EF_UDSignMuon
 
 def train_epoch(model, loader, optimizers, device):
 
@@ -65,6 +65,15 @@ def eval_epoch(model, loader, device):
     return total_loss / len(loader), correct / total
 
 
+@torch.no_grad()
+def evaluate(model, loader, device, opt_main=None):
+    cm = getattr(opt_main, "using_exact", None) if opt_main is not None else None
+    if cm is None:
+        return eval_epoch(model, loader, device)
+    with cm():
+        return eval_epoch(model, loader, device)
+
+
 def build_optimizers(model, args):
     sign_params = []
     aux_params = []
@@ -110,8 +119,21 @@ def build_optimizers(model, args):
         aux_opt = torch.optim.AdamW(aux_params, lr=args.lr_aux, weight_decay=0.0) if aux_params else None
         return main_opt, aux_opt
 
-    elif args.optimizer == "ef_signmuon":
-        main_opt = EFSignMuon(
+    elif args.optimizer == "ef_usignmuon":
+        main_opt = EF_USignMuon(
+            sign_params,
+            lr=args.lr,
+            momentum=args.momentum,
+            nesterov=args.nesterov,
+            weight_decay=args.weight_decay,
+            lambda_mult=args.lambda_mult,
+            ns_steps=args.ns_steps,
+        )
+        aux_opt = torch.optim.AdamW(aux_params, lr=args.lr_aux, weight_decay=0.0) if aux_params else None
+        return main_opt, aux_opt
+    
+    elif args.optimizer == "ef_udsignmuon":
+        main_opt = EF_UDSignMuon(
             sign_params,
             lr=args.lr,
             momentum=args.momentum,
@@ -162,7 +184,7 @@ def get_args():
     parser.add_argument("--model", type=str, default="cnn2", choices=["cnn2", "resnet9", "resnet18"])
     parser.add_argument("--batch-size", type=int, default=128)
     parser.add_argument("--epochs", type=int, default=50)
-    parser.add_argument("--optimizer", type=str, default="signmuon", choices=["signmuon", "ef_signmuon", "muon", "signsgd", "sgd", "adam"])
+    parser.add_argument("--optimizer", type=str, default="signmuon", choices=["signmuon", "ef_usignmuon", "ef_udsignmuon", "muon", "signsgd", "sgd", "adam"])
     parser.add_argument("--download", action="store_true", help="Download dataset if missing")
     parser.add_argument("--lr", type=float, default=1e-3)
     parser.add_argument("--lr-aux", type=float, default=1e-3)
@@ -204,8 +226,8 @@ def train(args):
 
     with torch.no_grad():
         print("Initialization...")
-        loss_tr_0, acc_tr_0 = eval_epoch(model, train_dl, device)
-        loss_te_0, acc_te_0 = eval_epoch(model, test_dl, device)
+        loss_tr_0, acc_tr_0 = evaluate(model, train_dl, device, opt_main)
+        loss_te_0, acc_te_0 = evaluate(model, test_dl, device, opt_main)
     
     train_losses.append(loss_tr_0)
     train_accs.append(acc_tr_0)
@@ -227,7 +249,7 @@ def train(args):
         if scheduler_aux:
             scheduler_aux.step()
 
-        loss_te, acc_te = eval_epoch(model, test_dl, device)
+        loss_te, acc_te = evaluate(model, test_dl, device, opt_main)
 
         epoch_duration = time.perf_counter() - epoch_start_time
 
@@ -242,6 +264,9 @@ def train(args):
             f"| train loss {loss_tr:.4f}, acc {acc_tr:.3f} "
             f"| test loss {loss_te:.4f}, acc {acc_te:.3f}"
         )
+
+    if hasattr(opt_main, "restore_exact"):
+        opt_main.restore_exact()
 
     history = {
         "train_loss": train_losses,

@@ -505,6 +505,31 @@ This work proposes SignMuon, which applies 1-bit sign compression to the Muon LM
 \end{algorithmic}
 \end{algorithm}
 
+\begin{algorithm}[H]
+\caption{EF-UDSignMuon}
+\begin{algorithmic}[1]
+\Require Initial model $\mathbf{X}_0$, initial gradient $\mathbf{G}_0$, momentum coefficient $\mu$, learning rate $\eta_t$, $\lambda_{\mathrm{mult}}=1$, number of Newton-Schulz iterations $\mathrm{ns\_steps}$
+\State $\mathbf{M}_0 \gets 0,\quad \mathbf{g}_0^{\mathrm{est}} \gets 0$
+\For{$t = 0$ to $(T - 1)$}
+  \State Stochastic gradient $\mathbf{G}_t$
+  \State $\mathbf{M}_t \gets \mu\mathbf{M}_{t-1} + \mathbf{G}_t$
+  \State $\Delta_t \gets \mathbf{M}_t - \mathbf{g}_t^{\mathrm{est}}$;
+  \State $\alpha_t \gets \operatorname{mean}(|\Delta_t|)$
+  \State $\mathbf{g}_{t+1}^{\mathrm{est}} \gets \mathbf{g}_t^{\mathrm{est}} + \alpha_t\operatorname{sign}(\Delta_t)$
+         \Comment{EF21 estimator (1-bit residual)}
+  \State $\mathbf{Y} \gets \text{ReshapeTo2D}(\mathbf{g}_{t+1}^{\mathrm{est}})$
+  \For{$k = 1$ to $\mathrm{ns\_steps}$} \Comment{Newton-Schulz on the estimator}
+      \State $\mathbf{A} \gets \mathbf{Y}\mathbf{Y}^\top$;
+      \State $\mathbf{Y} \gets a\,\mathbf{Y} - b\,\mathbf{A}\mathbf{Y} + c\,\mathbf{A}^2\mathbf{Y}$
+  \EndFor
+  \State $\mathbf{D}_t \gets \text{ReshapeToOriginal}(\mathbf{Y})$
+         \Comment{Muon LMO of estimator --- NO sign on the step}
+  \State $\mathbf{X}_{t+1} \gets \mathbf{X}_t - \eta_t\lambda_{\mathrm{mult}}\mathbf{D}_t$
+\EndFor
+\label{central_alg_ef}
+\end{algorithmic}
+\end{algorithm}
+
 
 \subsection{Federated Algorithm}\label{app:fed_alg}
 \begin{algorithm}[H]
