@@ -17,6 +17,7 @@ from federated_algorithms import (
     # federated_signmuon,
     # federated_signmuon_ef,
     federated_ef21_muon,
+    federated_ef_ud_signmuon,
     federated_signmuon_client,
     federated_adam,
 )
@@ -217,6 +218,17 @@ def main() -> None:
     
     if args.algorithm == 'signmuon_ef_21':
         accs, losses = federated_ef21_muon(
+            global_model, train_loaders, args.n_parties, args.rounds,
+            args.n_steps, args.lr, args.lr_aux, test_loaders,
+            ns_steps=args.ns_steps,
+            eval_freq=args.eval_freq,
+            momentum=args.momentum,
+            weight_decay=args.weight_decay,
+            device=args.device
+        )
+    
+    elif args.algorithm == 'signmuon_ef_ud':
+        accs, losses = federated_ef_ud_muon(
             global_model, train_loaders, args.n_parties, args.rounds,
             args.n_steps, args.lr, args.lr_aux, test_loaders,
             ns_steps=args.ns_steps,
