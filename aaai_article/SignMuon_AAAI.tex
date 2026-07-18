@@ -626,7 +626,7 @@ One can easily verify that $\mathbf{O} \mathbf{v}_1 = \mathbf{u}_1$, meaning $\m
 
 We construct the gradient matrix $\mathbf{G}$ by assigning a massive singular value ($\sigma_1 = 1001$) to this pathological component and a singular value of $1$ to the rest of the orthogonal space:
 \begin{equation}
-    \mathbf{G} = \begin{pmatrix}
+    \mathbf{G} \approx \begin{pmatrix}
         324.6 & 97.3 & -323.6 & 323.6 \\
         -97.3 & -28.2 & 97.3 & -97.3 \\
         323.6 & 97.3 & -323.6 & 324.6 \\
@@ -656,6 +656,78 @@ The inner product $\langle \mathbf{O}, \mathbf{S} \rangle$ is equivalent to the 
 \langle \mathbf{G}, \mathbf{S} \rangle = 1000 \left(-\frac{43}{103}\right) + \frac{532}{103} = -\frac{42468}{103} \approx -412.31.
 \end{equation}
 Because $\langle \mathbf{G}, \mathbf{S} \rangle < 0$, the change in the objective function at every iteration is given by $f(\mathbf{W}_{t+1}) = f(\mathbf{W}_t) + 412.31 \eta$. Thus, instead of minimizing, the algorithm strictly and monotonically diverges to $+\infty$, which completes the proof. $\blacksquare$
+
+\subsection{Divergence of MuonUSign}\label{app:proof_th2}
+
+While \cref{th:1} addresses the divergence of SignMuon (where the LMO is applied before sign compression), it is equally important to demonstrate that the reverse approach—MuonUSign (\cref{alg:muon_usign}), which applies sign compression prior to the LMO step—can also diverge in the absence of an error-feedback mechanism. Notably, the $4 \times 4$ counterexample from \cref{th:1} does not cause MuonUSign to diverge because its sign matrix happens to be rank-1. However, we can construct a strict $3 \times 3$ counterexample.
+
+\begin{theorem}[Divergence of MuonUSign]\label{th:2}
+There exists a smooth function $f(\mathbf{W})$ and a matrix dimension $N_{dim} = 3$ such that the MuonUSign algorithm strictly diverges for any learning rate $\eta_t > 0$ and any momentum coefficient $\mu \in [0, 1)$, under both Standard and Nesterov momentum variants.
+\end{theorem}
+
+\paragraph{Proof} 
+Consider the linear objective function $f(\mathbf{W}) = \mathrm{Tr}(\mathbf{G}^\top \mathbf{W})$. 
+For this function, the gradient is globally constant: $\nabla f(\mathbf{W}_t) = \mathbf{G}$ for all $t$. 
+Let us trace the effective direction $\tilde{\mathbf{M}}_t$ in \cref{alg:muon_usign}.
+Since $\mathbf{M}_0 = 0$, the momentum buffer at step $t \ge 1$ is simply a scaled version of the gradient:
+\begin{equation}
+\mathbf{M}_t = \sum_{i=0}^{t-1} \mu^i \mathbf{G} = \left(\frac{1-\mu^t}{1-\mu}\right) \mathbf{G} = c_t \mathbf{G},
+\end{equation}
+where $c_t > 0$ strictly, because $\mu \in [0, 1)$. 
+Consequently, the effective direction $\tilde{\mathbf{M}}_t$ is given by:
+\begin{equation}
+\tilde{\mathbf{M}}_t = \begin{cases} 
+\mathbf{M}_t = c_t \mathbf{G}, & \text{(Standard momentum)} \\
+\mathbf{G} + \mu \mathbf{M}_t = (1 + \mu c_t) \mathbf{G}, & \text{(Nesterov momentum)}
+\end{cases}
+\end{equation}
+In either variant, $\tilde{\mathbf{M}}_t = \gamma_t \mathbf{G}$ for some strictly positive scalar $\gamma_t > 0$. 
+Because the element-wise sign operator is invariant to multiplication by a strictly positive scalar, we have:
+\begin{equation}
+\mathbf{s}_t = \operatorname{sign}(\tilde{\mathbf{M}}_t) = \operatorname{sign}(\gamma_t \mathbf{G}) = \operatorname{sign}(\mathbf{G}).
+\end{equation}
+Thus, at every iteration, the LMO yields the exact same direction: $\mathbf{D} = A(\operatorname{sign}(\mathbf{G}))$.
+The change in the objective function at step $t$ is exactly:
+\begin{equation}
+f(\mathbf{W}_{t+1}) - f(\mathbf{W}_t) = -\eta_t \lambda_{\mathrm{mult}} \langle \mathbf{G}, \mathbf{D} \rangle.
+\end{equation}
+To prove strict divergence, we must construct a gradient $\mathbf{G}$ for which $\langle \mathbf{G}, \mathbf{D} \rangle < 0$.
+
+Let $\mathbf{S} \in \{-1, 1\}^{3 \times 3}$ be the following symmetric sign matrix:
+\begin{equation}
+\mathbf{S} = \begin{pmatrix} 1 & -1 & -1 \\ -1 & -1 & 1 \\ -1 & 1 & 1 \end{pmatrix}.
+\end{equation}
+Because $\mathbf{S}$ is symmetric, its singular values correspond to the absolute values of its eigenvalues. The characteristic polynomial of $\mathbf{S}$ yields the exact eigenvalues $\lambda_1 = \frac{1+\sqrt{17}}{2} \approx 2.56$, $\lambda_2 = 0$, and $\lambda_3 = \frac{1-\sqrt{17}}{2} \approx -1.56$. 
+
+The largest singular value is $\sigma_1 = \lambda_1 > 0$. Because it corresponds to a strictly positive eigenvalue, the leading left and right singular vectors of $\mathbf{S}$ are identical, given by the normalized eigenvector $\mathbf{u}$. Thus, the MuonUSign LMO direction is the rank-1 positive semidefinite matrix $\mathbf{D} = \mathbf{u}\mathbf{u}^\top$.
+
+An unnormalized eigenvector corresponding to $\lambda_1$ is analytically given by:
+\begin{equation}
+\mathbf{w} = \begin{pmatrix} -1 \\ \frac{\sqrt{17}-3}{2} \\ 1 \end{pmatrix}.
+\end{equation}
+The matrix $\mathbf{w}\mathbf{w}^\top$ dictates the sign structure of $\mathbf{D}$. Let us examine its center element at index $(2,2)$:
+\begin{equation}
+(\mathbf{w}\mathbf{w}^\top)_{2,2} = w_2^2 = \left(\frac{\sqrt{17}-3}{2}\right)^2 = \frac{13-3\sqrt{17}}{2}.
+\end{equation}
+Since $13 = \sqrt{169}$ and $3\sqrt{17} = \sqrt{153}$, we strictly have $w_2^2 > 0$. Because $\mathbf{D} = \frac{1}{\|\mathbf{w}\|^2} \mathbf{w}\mathbf{w}^\top$, the corresponding element $D_{2,2}$ is strictly positive. Notice the crucial sign mismatch: $S_{2,2} = -1 < 0$, while $D_{2,2} > 0$.
+
+We now define our adversarial gradient matrix $\mathbf{G}$ by assigning a massive positive weight $M$ to this mismatched entry, and a small positive weight $\epsilon$ to all other entries, while precisely preserving the signs of $\mathbf{S}$:
+\begin{equation}
+\mathbf{G} = \epsilon \mathbf{S} - (M - \epsilon) \mathbf{e}_2 \mathbf{e}_2^\top = \begin{pmatrix} \epsilon & -\epsilon & -\epsilon \\ -\epsilon & -M & \epsilon \\ -\epsilon & \epsilon & \epsilon \end{pmatrix}.
+\end{equation}
+By definition, $\operatorname{sign}(\mathbf{G}) = \mathbf{S}$, so MuonUSign deterministically selects the update direction $\mathbf{D} = \mathbf{u}\mathbf{u}^\top$ at every step, regardless of accumulated momentum.
+
+The inner product determining the descent condition is:
+\begin{equation}
+\langle \mathbf{G}, \mathbf{w}\mathbf{w}^\top \rangle = \epsilon \langle \mathbf{S}, \mathbf{w}\mathbf{w}^\top \rangle - (M - \epsilon) w_2^2.
+\end{equation}
+Since $\mathbf{S}\mathbf{w} = \lambda_1 \mathbf{w}$, we have $\langle \mathbf{S}, \mathbf{w}\mathbf{w}^\top \rangle = \mathbf{w}^\top \mathbf{S} \mathbf{w} = \lambda_1 \|\mathbf{w}\|^2 > 0$. Therefore:
+\begin{equation}
+\langle \mathbf{G}, \mathbf{w}\mathbf{w}^\top \rangle = \epsilon \lambda_1 \|\mathbf{w}\|^2 - (M - \epsilon) \left(\frac{13-3\sqrt{17}}{2}\right).
+\end{equation}
+Because $w_2^2 = \frac{13-3\sqrt{17}}{2} > 0$ and $\lambda_1 \|\mathbf{w}\|^2 > 0$ are fixed, strictly positive constants, we can pick $M$ to be sufficiently large (e.g., $M > \epsilon + \epsilon \lambda_1 \|\mathbf{w}\|^2 / w_2^2$) such that the negative term completely dominates. This makes $\langle \mathbf{G}, \mathbf{w}\mathbf{w}^\top \rangle < 0$, which immediately implies $\langle \mathbf{G}, \mathbf{D} \rangle < 0$.
+
+Because $\langle \mathbf{G}, \mathbf{D} \rangle < 0$ and $\eta_t, \lambda_{\mathrm{mult}} > 0$, the objective function change $-\eta_t \lambda_{\mathrm{mult}} \langle \mathbf{G}, \mathbf{D} \rangle$ is strictly positive. Thus, at every iteration, no matter the momentum coefficient or scheme, MuonUSign takes a step in the wrong direction, causing the linear objective to strictly and monotonically diverge to $+\infty$. This completes the proof. $\blacksquare$
 
 % \newpage
 \subsection{Research Hypotheses}\label{app:hyp}
@@ -1021,6 +1093,34 @@ Figure~\ref{fig:exp_3} (together with Table~\ref{tab:exp_3} in the main text) re
 \end{algorithmic}
 \end{algorithm}
 
+\begin{algorithm}[!h]
+    \caption{Centralized MuonUSign}
+    \label{alg:muon_usign}
+    \textbf{Input}: Initial model $\mathbf{X}_0$, initial gradient $\mathbf{G}_0$, momentum coefficient $\mu$, learning rate $\eta_t$, $\lambda_{\mathrm{mult}}=1$, number of Newton-Schulz iterations $\mathrm{ns\_steps}$ \\
+    \textbf{Output}: Updated model $\mathbf{X}$ 
+    \begin{algorithmic}[1]
+    \State $\mathbf{M}_0 \gets 0$ 
+    \For{$t = 0$ to $(T - 1)$}
+        \State Stochastic gradient $\mathbf{G}_t$
+        \State $\mathbf{M}_t \gets \mu \mathbf{M}_{t-1} + \mathbf{G}_t$ \Comment{Momentum accumulation}
+        \State $\tilde{\mathbf{M}}_t =
+        \begin{cases} 
+            \mathbf{G}_t + \mu \mathbf{M}_t, & \text{(Nesterov momentum)}, \\
+            \mathbf{M}_t, & \text{(otherwise)}
+        \end{cases}$
+        \State $\mathbf{s}_t \gets \operatorname{sign}(\tilde{\mathbf{M}}_t)$ \Comment{Sign compression BEFORE LMO}
+        \State $\mathbf{Y} \gets \text{ReshapeTo2D}(\mathbf{s}_t)$ \Comment{Flatten tensor to matrix $m \times n$}
+        \State $\mathbf{Y} \gets \mathbf{Y} / \|\mathbf{Y}\|_F$ \Comment{Scale appropriately for Newton-Schulz convergence}
+        \For{$k = 1$ to $\mathrm{ns\_steps}$} \Comment{Newton-Schulz orthogonalization (Muon LMO)}
+            \State $\mathbf{A} \gets \mathbf{Y} \mathbf{Y}^\top$
+            \State $\mathbf{Y} \gets a\,\mathbf{Y} - b\,\mathbf{A}\mathbf{Y} + c\,\mathbf{A}^2\mathbf{Y}$
+        \EndFor
+        \State $\mathbf{D}_t \gets \text{ReshapeToOriginal}(\mathbf{Y})$ \Comment{Reshape back to original tensor}
+        \State $\mathbf{X}_{t+1} \gets \mathbf{X}_t - \eta_t \lambda_{\mathrm{mult}} \mathbf{D}_t$ \Comment{Update parameters}
+    \EndFor
+    \end{algorithmic}
+    \end{algorithm}
+    
 \begin{algorithm}[!t]
 \caption{Centralized EF-USignMuon}
 \label{central_alg_ef}
