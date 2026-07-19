@@ -120,7 +120,7 @@
 % directly follow a colon or long dash
 
 
-\title{The Curious Case of SignMuon: Sign Before or After the LMO?}
+\title{The Curious Case of MuonSign and SignMuon: Sign Before or After the LMO?}
 \author{
     Maria Smirnova,
     Alexey Kravatskiy
@@ -171,7 +171,7 @@
 
 \iffalse
 %Example, Multiple Authors, ->> remove \iffalse,\fi and place them surrounding AAAI title to use it
-\title{The Curious Case of SignMuon: Sign Before or After the LMO?}
+\title{The Curious Case of MuonSign and SignMuon: Sign Before or After the LMO?}
 \author {
     % Authors
     Maria Smirnova\textsuperscript{\rm 1}\equalcontrib,
@@ -190,7 +190,7 @@
 \maketitle
 
 \begin{abstract}\label{sec:abs}
-The SignSGD gradient compression algorithm enables up to a $32\times$ reduction in communication volume, which is critical for federated learning in bandwidth-constrained environments. It often lags behind modern optimizers like Muon, which leverage the matrix structure of parameters to achieve superior convergence and performance. We propose SignMuon, an algorithm that applies sign compression to the Linear Minimization Oracle (LMO) update of the Muon optimizer, i.e., it computes $\operatorname{sign}(\operatorname{LMO}(\cdot))$. However, SignMuon offers no global convergence guarantee: we construct a linear function on which SignMuon provably diverges. Based on this observation, we introduce EF-USignMuon, an Error-Feedback variant that compresses the residual with $\operatorname{sign}(\cdot)$ and applies the Muon LMO on the server, computing $\operatorname{LMO}(\operatorname{sign}(\cdot))$ while keeping the uplink at one bit per parameter. We further introduce EF-UDSignMuon, a bidirectional variant that additionally compresses the downlink with the scaled-sign operator, reducing communication to one bit per parameter in both directions while retaining convergence guarantees. It restores the descent property and converges on the same counterexample. We validate both methods on a synthetic convex problem and on centralized and federated CIFAR-10 classification.
+The SignSGD gradient compression algorithm enables up to a $32\times$ reduction in communication volume, which is critical for federated learning in bandwidth-constrained environments. It often lags behind modern optimizers like Muon, which leverage the matrix structure of parameters to achieve superior convergence and performance. We propose SignMuon, an algorithm that applies sign compression to the Linear Minimization Oracle (LMO) update of the Muon optimizer, i.e., it computes $\operatorname{sign}(\operatorname{LMO}(\cdot))$. However, SignMuon offers no global convergence guarantee: we construct a linear function on which SignMuon provably diverges. Based on this observation, we introduce EF21-MuonUSign, an Error-Feedback variant that compresses the residual with $\operatorname{sign}(\cdot)$ and applies the Muon LMO on the server, computing $\operatorname{LMO}(\operatorname{sign}(\cdot))$ while keeping the uplink at one bit per parameter. We further introduce EF21-MuonUDSign, a bidirectional variant that additionally compresses the downlink with the scaled-sign operator, reducing communication to one bit per parameter in both directions while retaining convergence guarantees. It restores the descent property and converges on the same counterexample. We validate both methods on a synthetic convex problem and on centralized and federated CIFAR-10 classification.
 \end{abstract}
 
 
@@ -213,7 +213,7 @@ Recently, Muon has demonstrated that orthonormalized updates can stabilize DNN t
 % an optimization algorithm that applies sign compression to the Linear Minimization Oracle (LMO) update of Muon. SignSGD transmits the sign of the coordinates of the stochastic gradient direction. Our algorithm first computes an update direction using LMO, and then transmits only the sign of this direction. This approach allows for the matrix structure of the parameters to be accounted for and preserves the advantages of Muon, while reducing the amount of transmitted information to one bit per coordinate. Consequently, SignMuon combines the fast convergence of structured optimizers with the communication efficiency of sign-based approaches.
 We propose \textbf{SignMuon}, which applies sign compression to the Muon LMO direction: it preserves the matrix-aware geometry of Muon while communicating only one bit per parameter. Empirically, SignMuon matches Muon's accuracy and significantly outperforms SignSGD in both centralized and federated learning.
 
-However, this combination has no global convergence guarantee. We prove (Theorem~\ref{th:1}) that SignMuon can diverge: on a $4\times4$ counterexample, the sign-compressed LMO step becomes an ascent direction. To restore convergence without increasing the communication volume, we introduce \textbf{EF-USignMuon}, an Error-Feedback variant adapted from EF21-Muon~\citet{gruntkowska2025error}. It reconstructs the gradient through a contractive sign compressor and applies the Muon LMO on the server. EF-USignMuon converges on the same counterexample while retaining uplink one-bit communication.
+However, this combination has no global convergence guarantee. We prove (Theorem~\ref{th:1}) that SignMuon can diverge: on a $4\times4$ counterexample, the sign-compressed LMO step becomes an ascent direction. To restore convergence without increasing the communication volume, we introduce \textbf{EF21-MuonUSign}, an Error-Feedback variant adapted from EF21-Muon~\citet{gruntkowska2025error}. It reconstructs the gradient through a contractive sign compressor and applies the Muon LMO on the server. EF21-MuonUSign converges on the same counterexample while retaining uplink one-bit communication.
 
 % Эффективность предложенного оптимизатора показана на различных синтетических и прикладных задачах: 
 % The effectiveness of the proposed optimizer is evaluated on synthetic and practical tasks: centralized image classification on CIFAR-10 with a ResNet-18 backbone, federated image classification on CIFAR-10 with a CNN across several client counts, and on a synthetic smooth convex least-squares problem.
@@ -221,8 +221,8 @@ However, this combination has no global convergence guarantee. We prove (Theorem
 Our experiments investigate how effectively Muon-style structured update directions can be combined with the extreme communication compression characteristic of sign-based methods. Specifically, we analyze how transmitting only the update direction signal affects the accuracy and stability of training compared to using the full Muon update. We validate both methods on centralized image classification on CIFAR-10 with a ResNet-18 backbone, federated image classification on CIFAR-10 with a CNN across several client counts, and on a synthetic smooth convex least-squares problem. Our contributions are:
 (i)~SignMuon, a matrix-aware 1-bit optimizer; 
 (ii)~a counterexample (Theorem~\ref{th:1}) proving SignMuon may diverge;
-(iii)~EF-USignMuon, which compresses the uplink to one bit per parameter while restoring convergence guarantees;
-(iv)~EF-UDSignMuon, a bidirectional variant that adds scaled-sign compression on the downlink, keeping both channels at one bit per parameter.
+(iii)~EF21-MuonUSign, which compresses the uplink to one bit per parameter while restoring convergence guarantees;
+(iv)~EF21-MuonUDSign, a bidirectional variant that adds scaled-sign compression on the downlink, keeping both channels at one bit per parameter.
 
 % Экспериментальные результаты показывают, что использование знаковой компрессии для направлений Muon позволяет снизить коммуникационные издержки (в 32 раза), сохраняя при этом темпы оптимизации. В централизованном сценарии алгоритм SignMuon превосходит базовый метод SignSGD по скорости сходимости и итоговой точности. При этом точность предложенного 1-битного метода уступает оптимизатору Muon всего на $1-1.5\%$, при этом уверенно превосходя базовые знаковые алгоритмы. В федеративном сценарии интеграция SignMuon с механизмами клиентского моментума и мажоритарного голосования (Majority Vote) обеспечивает стабильную сходимость и защиту от аномальных обновлений даже в условиях жесткого ограничения пропускной способности сети. Также, в работе представлен аналитический пример, который формализует границы применимости знаковой компрессии к LMO-обновлениям в детерминированном случае и решение гладкой выпуклой задачи. В результате проведенных экспериментов, предложенный подход демонстрирует, что LMO-основанные методы могут быть успешно объединены с знаковой компрессией без существенной потери качества обучения.
 % Experimental results show that applying sign compression to Muon directions reduces communication overhead (by $32\times$) while maintaining optimization rates. In the centralized setting, SignMuon consistently outperforms the baseline SignSGD method in both convergence speed and final accuracy. At the same time, the accuracy of the proposed 1-bit method is only $1-1.5\%$ lower than that of the Muon optimizer, while significantly outperforming basic signed algorithms. In federated setting, integrating SignMuon with client momentum and Majority Vote aggregation method provides stable convergence and robustness to anomalous client updates even under severe communication constraints. Furthermore, we present an analytical example that formalizes the limitations of applying sign compression to LMO-based updates in the deterministic setting and for smooth convex optimization problems. The results of our experiments demonstrate that the proposed algorithm successfully combines LMO-based methods with sign compression without any significant loss in training accuracy.
@@ -290,7 +290,7 @@ In the original Muon implementation, the computation of $\mathbf{U}_t\mathbf{V}_
 % \begin{equation}
 % \min_{0 \le t \le T}\mathbb{E}\bigl[\|\nabla f(\mathbf{X}_t)\|_*^2\bigr] = \mathcal{O}(T^{-1/2}).
 % \end{equation}
-Despite its advantages, Muon requires transmitting the full update matrix $\mathbf{D}_t$, making it expensive in federated settings. Our objective is to combine Muon's matrix-aware geometry with extreme (1-bit) communication compression. SignMuon achieves this combination empirically, but, as we show (Theorem~\ref{th:1}), it lacks global convergence guarantees. The Error-Feedback variant EF-USignMuon restores convergence: the EF21 estimator bounds established in Appendix\ref{app:ef_bounds} provide the key ingredients for the standard $\mathcal{O}(T^{-1/2})$ rate for smooth non-convex optimization (Hypothesis~\ref{hyp:1}):
+Despite its advantages, Muon requires transmitting the full update matrix $\mathbf{D}_t$, making it expensive in federated settings. Our objective is to combine Muon's matrix-aware geometry with extreme (1-bit) communication compression. SignMuon achieves this combination empirically, but, as we show (Theorem~\ref{th:1}), it lacks global convergence guarantees. The Error-Feedback variant EF21-MuonUSign restores convergence: the EF21 estimator bounds established in Appendix\ref{app:ef_bounds} provide the key ingredients for the standard $\mathcal{O}(T^{-1/2})$ rate for smooth non-convex optimization (Hypothesis~\ref{hyp:1}):
 \begin{equation}
 \min_{0 \le t \le T}\mathbb{E}\bigl[\|\nabla f(\mathbf{X}_t)\|_*^2\bigr]
 = \mathcal{O}(T^{-1/2}).
@@ -320,7 +320,7 @@ Formally, a SignA method initializes the momentum buffer as $\mathbf{M}_0 = \mat
 where $\mathbf{X}_t \in \mathbb{R}^{m \times n}$ is the current model parameter matrix, $\mathbf{G}_t$ is its stochastic gradient, $\mu \in [0, 1)$ is the momentum coefficient, $\eta_t$ is the learning rate, and $\lambda_{\mathrm{mult}} > 0$ is an optional scaling factor (with $\lambda_{\mathrm{mult}}=1$ by default). The operator $A(\cdot)$ denotes a Linear Minimization Oracle (LMO) in a specified non-Euclidean norm, and the function $\operatorname{sign}(\cdot)$ is applied element-wise to the resulting structured direction $\mathbf{D}_t$.
 
 % Предлагаемый в работе метод SignMuon является частным случаем класса алгоритмов SignA, он объединяет ортогонализованные LMO-направления оптимизатора Muon с экстремальной знаковой компрессией SignSGD. Ниже описаны две основные реализации данного алгоритма -- централизованная и федеративная.
-The proposed SignMuon algorithm is a particular instance of the SignA family. It combines the orthogonalized LMO directions of the Muon optimizer with the extreme sign-based compression strategy of SignSGD. In the following sections, we present SignMuon and EF-USignMuon, each in centralized and federated variants.
+The proposed SignMuon algorithm is a particular instance of the SignA family. It combines the orthogonalized LMO directions of the Muon optimizer with the extreme sign-based compression strategy of SignSGD. In the following sections, we present SignMuon and EF21-MuonUSign, each in centralized and federated variants.
 
 \subsection{Centralized Learning}
 % В централизованной постановке алгоритм SignMuon применяется к матричным параметрам модели. Практическая реализация алгоритма учитывает тензорную структуру параметров нейронной сети. Процесс оптимизации разделен на два потока: матричные параметры (веса сверточных и полносвязных слоев, $n_{dim} \ge 2$) обновляются с помощью LMO-алгоритма SignMuon, а векторные параметры (bias, Batch Normalization layer, $n_{dim} = 1$) и последний слой классификатора оптимизируются стандартным методом AdamW. Первоначально такой подход был предложен в эмпирическом описании \cite{jordan2024muon}. Первый результат о теоретической сходимости был получен Li и Hong, которые проанализировали гладкую невыпуклую постановку \cite{li2025note}, а также формализован в рамках фреймворка Gluon \cite{riabinin2025gluon}.
@@ -328,7 +328,7 @@ The proposed SignMuon algorithm is a particular instance of the SignA family. It
 In the centralized setting, SignMuon is applied to the matrix-valued parameters (weights of convolutional and fully connected layers, $n_{dim}\ge 2$), while vector parameters (biases, BatchNorm, $n_{dim} = 1$) and the final classification layer are optimized with AdamW -- the design introduced by \citet{jordan2024muon} and formalized in \cite{li2025note, riabinin2025gluon}.
 
 % Для матричных параметров ключевым этапом алгоритма SignMuon является поиск ортонормированного LMO-направления $\mathbf{D}_t \approx \mathbf{U}_t \mathbf{V}_t^\top$. Чтобы избежать высоких вычислительных затрат на явное вычисление сингулярного разложения (SVD) на каждом шаге оптимизации, на практике применяется итерационный алгоритм Ньютона-Шульца 5-го порядка. В ортогонализации Ньютона-Шульца мы приняли коэффициенты равными $a=3.4445, b=4.7750, c=2.0315$. Отличие нашего подхода от классического SignSGD заключается в том, к какому объекту применяется компрессия. Если в SignSGD знаковая компрессия применяется непосредственно к стохастическому градиенту, то в SignMuon сначала строится структурированное направление обновления $\mathbf{D}_t$, соответствующее LMO-шагу Muon, и лишь затем полученная матрица сжимается поэлементной функцией $\operatorname{sign}(\mathbf{D}_t)$. Тем самым SignMuon сохраняет геометрию ортонормированных обновлений и одновременно снижает объём передаваемой информации до одного бита на компоненту. Полная логика обновления матричных параметров представлена в Приложении ~\ref{app:alg}.
-For matrix parameters, the key component of SignMuon is the computation of an orthonormal LMO direction $\mathbf{D}_t \approx \mathbf{U}_t \mathbf{V}_t^\top$. To avoid the computational cost of performing a full singular value decomposition (SVD) at every optimization step, the orthogonalization is approximated using a 5th-order Newton-Schulz iteration. In our implementation, the Newton-Schulz coefficients are chosen as $a=3.4445, b=4.7750, c=2.0315$. The main difference between SignMuon and the classical SignSGD algorithm lies in the object being compressed. In SignSGD, sign compression is applied directly to the stochastic gradient. In contrast, SignMuon first constructs a structured update direction $\mathbf{D}_t$, corresponding to the Muon LMO step and only then applies the elementwise sign operator to obtain $\operatorname{sign}(\mathbf{D}_t)$. Consequently, SignMuon preserves the geometry of orthonormal updates while reducing the transmitted information to one bit per component (Algorithm in Appendix\ref{app:alg}).
+For matrix parameters, the key component of SignMuon is the computation of an orthonormal LMO direction $\mathbf{D}_t \approx \mathbf{U}_t \mathbf{V}_t^\top$. To avoid the computational cost of performing a full singular value decomposition (SVD) at every optimization step, the orthogonalization is approximated using a 5th-order Newton-Schulz iteration (Algorithm~\ref{alg:muon_lmo}). In our implementation, the Newton-Schulz coefficients are chosen as $a=3.4445, b=4.7750, c=2.0315$. The main difference between SignMuon and the classical SignSGD algorithm lies in the object being compressed. In SignSGD, sign compression is applied directly to the stochastic gradient. In contrast, SignMuon first constructs a structured update direction $\mathbf{D}_t$, corresponding to the Muon LMO step and only then applies the elementwise sign operator to obtain $\operatorname{sign}(\mathbf{D}_t)$. Consequently, SignMuon preserves the geometry of orthonormal updates while reducing the transmitted information to one bit per component (Algorithm in Appendix\ref{app:alg}).
 
 \subsection{Federated Learning}
 % В федеративном обучении данные распределены между $N$ узлами. Каждый узел $j$ имеет свой локальный набор данных $\mathcal{D}_j$ и вычисляет локальную функцию потерь $f_j(\mathbf{X})$. Цель обучения состоит в минимизации усреднённой по всем узлам функции потерь (\ref{fed_eq}). Узлы не обмениваются данными между собой, они передают на сервер сжатые сообщения, что делает коммуникацию в федеративном обучении узким местом.
@@ -339,7 +339,7 @@ In the federated version of SignMuon, the server acts as an aggregation node, wh
 $$
 \mathbf{G}_t^{(j)}\gets\frac{1}{n_{\text{steps}}}\sum_{i=1}^{n_{\text{steps}}}\nabla f_j(\mathbf{X}_t;\xi_{t,i}^{(j)}).
 $$
-In accordance with the general SignA framework (\ref{eq:signa_general}), each client maintains its own local momentum buffer $\mathbf{M}_t^{(j)}$. After computing the accumulated gradient, the client updates the momentum estimate, applies the LMO (implemented via Newton-Schulz orthogonalization), and then performs element-wise sign compression:
+In accordance with the general SignA framework (\ref{eq:signa_general}), each client maintains its own local momentum buffer $\mathbf{M}_t^{(j)}$. After computing the accumulated gradient, the client updates the momentum estimate, applies the LMO (implemented via Newton-Schulz orthogonalization, Algorithm~\ref{alg:muon_lmo}), and then performs element-wise sign compression:
 $$ \mathbf{M}_t^{(j)} = \mu \mathbf{M}_{t-1}^{(j)} + \mathbf{G}_t^{(j)} $$
 $$ \mathbf{s}_t^{(j)} = \operatorname{sign}\bigl(A(\mathbf{M}_t^{(j)})\bigr) \in \{\pm 1\}^{m \times n} $$
 where $t\in[0, \mathrm{rounds}-1]$, $A(\cdot)$ is the Muon LMO (Newton-Schulz, as in the centralized setting). Thus, each client transmits only 1 bit per matrix parameter component to the server.
@@ -388,11 +388,11 @@ This counterexample demonstrates that the SignMuon algorithm does not guarantee 
 \end{figure*}
 
 We define the \textbf{USign} compressor as the directional pair $\mathrm{USign} := (\mathcal{C}_{\uparrow},\, \mathcal{C}_{\downarrow})$, where $\mathcal{C}_{\uparrow}(\mathbf{Y}) = \operatorname{mean}|\mathbf{Y}|\,\operatorname{sign}(\mathbf{Y})$ is the scaled-sign operator on the uplink (client $\to$ server) and $\mathcal{C}_{\downarrow} = I$ is the identity on the downlink
-(server $\to$ client). Unlike a fully 1-bit scheme, USign compresses only the uplink to one bit per parameter, while the server broadcasts the full model. \textbf{EF-USignMuon} pairs USign with EF21 and the Muon LMO: the sign acts on the EF21 residual, and the optimization step uses the full Muon LMO of the reconstructed estimator.
+(server $\to$ client). Unlike a fully 1-bit scheme, USign compresses only the uplink to one bit per parameter, while the server broadcasts the full model. \textbf{EF21-MuonUSign} pairs USign with EF21 and the Muon LMO: the sign acts on the EF21 residual, and the optimization step uses the full Muon LMO of the reconstructed estimator.
 
 Theorem~\ref{th:1} shows that sign-compressing the LMO direction can destroy the descent property. To restore convergence without increasing the communication volume, we replace the sign-compressed step $\mathbf{X}_{t+1}=\mathbf{X}_t -\eta_t\,\operatorname{sign}(\mathbf{D}_t)$ by an Error-Feedback variant inspired by EF21-Muon~\cite{gruntkowska2025error}.
 
-EF-USignMuon maintains a gradient estimator $\mathbf{g}_t^{\mathrm{est}}$ updated via a contractive sign compressor on the residual $\Delta_t = \mathbf{M}_t - \mathbf{g}_t^{\mathrm{est}}$: 
+EF21-MuonUSign maintains a gradient estimator $\mathbf{g}_t^{\mathrm{est}}$ updated via a contractive sign compressor on the residual $\Delta_t = \mathbf{M}_t - \mathbf{g}_t^{\mathrm{est}}$: 
 \begin{equation}
 \alpha_t = \operatorname{mean}(|\Delta_t|),\quad
 \mathbf{g}_{t+1}^{\mathrm{est}} = \mathbf{g}_t^{\mathrm{est}} + \alpha_t\,\operatorname{sign}(\Delta_t),
@@ -407,7 +407,7 @@ and takes the descent step
 As $\mathbf{g}_t^{\mathrm{est}}\to\mathbf{M}_t$, the direction
 $\mathbf{D}_t \to \mathbf{U}_t\mathbf{V}_t^\top$ is always a descent direction,
 since $\langle\nabla f,\,\mathbf{U}_t\mathbf{V}_t^\top\rangle \approx \|\nabla f\|_* > 0$.
-The sign in~\eqref{eq:ef21_central} acts only on the internal compression residual, keeping the uplink at one bit per parameter. The Algorithm~\ref{central_alg_ef} is given in Appendix\ref{app:alg}. Figure~\ref{fig:divergence_plot} confirms that EF-USignMuon converges on the same counterexample where SignMuon diverges. We now extend this Error-Feedback mechanism to the federated setting.
+The sign in~\eqref{eq:ef21_central} acts only on the internal compression residual, keeping the uplink at one bit per parameter. The Algorithm~\ref{central_alg_ef} is given in Appendix\ref{app:alg}. Figure~\ref{fig:divergence_plot} confirms that EF21-MuonUSign converges on the same counterexample where SignMuon diverges. We now extend this Error-Feedback mechanism to the federated setting.
 
 While USign leaves the downlink uncompressed, a fully 1-bit scheme is obtained by compressing both channels. We define the \textbf{UDSign} compressor as the directional pair $\mathrm{UDSign}:=(\mathcal{C}_{\uparrow},\,\mathcal{C}_{\downarrow})$ with the same scaled-sign operator on both channels, $\mathcal{C}_{\uparrow}(\mathbf{Y})=\mathcal{C}_{\downarrow}(\mathbf{Y})=\operatorname{mean}|\mathbf{Y}|\,\operatorname{sign}(\mathbf{Y})$. In this version of Error Feedback Algorithm the node keeps the exact model $\mathbf{X}_t$ and takes the exact LMO step, while it observes only a compressed model shift  $\mathbf{W}_t$ reconstructed by error feedback,
 \begin{multline}
@@ -422,14 +422,14 @@ It should be noted that both error feedback methods require additional memory: e
 % Алгоритм Federated SignMuon демонстрирует эмпирическую стабильность, однако знаковая компрессия неизбежно вносит смещение (bias) в направление спуска. Чтобы компенсировать ошибку квантования и обеспечить строгие гарантии сходимости, мы интегрируем в наш метод механизм Error Feedback, адаптированный для LMO-оптимизаторов в недавней работе Gruntkowska et al. \cite{gruntkowska2025error}. 
 Although Federated SignMuon demonstrates strong empirical stability, sign-based compression inevitably introduces bias into the descent direction. To compensate for quantization error and ensure strong convergence guarantees, we incorporate an Error Feedback method. In the federated setting, the Error-Feedback mechanism is adapted from EF21-Muon~\cite{gruntkowska2025error}. 
 
-% В данной модификации Federated EF-USignMuon процедура ортогонализации (LMO) переносится на сервер. Узлы не вычисляют LMO локально, вместо этого они вычисляют разность между текущим локальным моментумом и предыдущей оценкой градиента, после чего применяют к ней знаковую компрессию. Сервер агрегирует эти сжатые обновления, восстанавливает глобальную оценку градиента и только затем применяет к ней оператор Muon. Полный алгоритм представлен в Приложении ~\ref{app:ef21_alg}. Передача дополнительного скаляра $\alpha_t^{(j)}$ для каждого слоя практически не увеличивает размер сообщения, сохраняя общий объем трафика на уровне $\approx 1$ бита на параметр. Таким образом, обе предложенные архитектуры федеративного SignMuon: как базовая схема с мажоритарным голосованием, так и модификация с компенсацией ошибки -- успешно решают проблему коммуникационного узкого места. Они позволяют сохранить геометрические преимущества матричной ортогонализации Muon, обеспечивая при этом экстремально низкую нагрузку на сеть.
-% In this Federated EF-USignMuon variant, the orthogonalization procedure (LMO) is moved from the clients to the server. Instead of computing the LMO direction locally, each client evaluates the difference between its current local momentum estimate and the previous gradient estimate, and then applies sign compression to this residual. The server aggregates the compressed updates, reconstructs a global gradient estimate, and only then applies the Muon operator. The complete algorithm is presented in Appendix~\ref{app:ef21_alg}. 
-The LMO orthogonalization is moved from the clients to the server: each client evaluates the difference between its local momentum $\mathbf{M}_t^{(j)}$ and the previous gradient estimate $\mathbf{g}_t^{(j)}$, compresses it via scaled sign, and sends only $(\mathbf{s}_t^{(j)}, \alpha_t^{(j)})$. The server aggregates these, updates a global gradient estimator $\mathbf{G}_{t+1}$, and applies the Muon LMO. The complete Algorithm~\ref{ef21_alg} is in Appendix\ref{app:alg}. The transmission of an additional scalar $\alpha_t^{(j)}$ for each layer introduces insignificant communication overhead, keeping the uplink communication cost at $\approx 1$ bit per parameter (the server broadcasts the full model on the downlink). Thus, both federated variants -- SignMuon and EF-USignMuon -- effectively
+% В данной модификации Federated EF21-MuonUSign процедура ортогонализации (LMO) переносится на сервер. Узлы не вычисляют LMO локально, вместо этого они вычисляют разность между текущим локальным моментумом и предыдущей оценкой градиента, после чего применяют к ней знаковую компрессию. Сервер агрегирует эти сжатые обновления, восстанавливает глобальную оценку градиента и только затем применяет к ней оператор Muon. Полный алгоритм представлен в Приложении ~\ref{app:ef21_alg}. Передача дополнительного скаляра $\alpha_t^{(j)}$ для каждого слоя практически не увеличивает размер сообщения, сохраняя общий объем трафика на уровне $\approx 1$ бита на параметр. Таким образом, обе предложенные архитектуры федеративного SignMuon: как базовая схема с мажоритарным голосованием, так и модификация с компенсацией ошибки -- успешно решают проблему коммуникационного узкого места. Они позволяют сохранить геометрические преимущества матричной ортогонализации Muon, обеспечивая при этом экстремально низкую нагрузку на сеть.
+% In this Federated EF21-MuonUSign variant, the orthogonalization procedure (LMO) is moved from the clients to the server. Instead of computing the LMO direction locally, each client evaluates the difference between its current local momentum estimate and the previous gradient estimate, and then applies sign compression to this residual. The server aggregates the compressed updates, reconstructs a global gradient estimate, and only then applies the Muon operator. The complete algorithm is presented in Appendix~\ref{app:ef21_alg}. 
+The LMO orthogonalization is moved from the clients to the server: each client evaluates the difference between its local momentum $\mathbf{M}_t^{(j)}$ and the previous gradient estimate $\mathbf{g}_t^{(j)}$, compresses it via scaled sign, and sends only $(\mathbf{s}_t^{(j)}, \alpha_t^{(j)})$. The server aggregates these, updates a global gradient estimator $\mathbf{G}_{t+1}$, and applies the Muon LMO. The complete Algorithm~\ref{ef21_alg} is in Appendix\ref{app:alg}. The transmission of an additional scalar $\alpha_t^{(j)}$ for each layer introduces insignificant communication overhead, keeping the uplink communication cost at $\approx 1$ bit per parameter (the server broadcasts the full model on the downlink). Thus, both federated variants -- SignMuon and EF21-MuonUSign -- effectively
 address: the baseline majority-vote scheme and the error-feedback variant -- effectively address the communication bottleneck in federated learning. They preserve the geometric benefits of Muon-style matrix orthogonalization while maintaining an extremely low communication budget.
 
 \section{Experiments}\label{sec:exp}
 % Целью данных экспериментов является эмпирическая валидация алгоритма SignMuon, как оптимизатора, объединяющего высокую скорость сходимости LMO-оптимизаторов с коммуникационной эффективностью знаковой компрессии. Само исследование состоит из нескольких частей, включая валидацию в централизованном и федеративном случае, а также проверку алгоритма на синтетическом эксперименте по методу наименьших квадратов.
-The goal of these experiments is empirical validation of the SignMuon and EF-USignMuon algorithms. The study consists of several parts, including evaluation in both centralized and federated settings, as well as validation on a synthetic least-squares optimization problem.
+The goal of these experiments is empirical validation of the SignMuon and EF21-MuonUSign algorithms. The study consists of several parts, including evaluation in both centralized and federated settings, as well as validation on a synthetic least-squares optimization problem.
 
 \subsection{Smooth Convex Optimization Problem (Synthetic Experiment)}
 
@@ -443,7 +443,7 @@ The goal of these experiments is empirical validation of the SignMuon and EF-USi
 \hline
 SignMuon & 0.0002 & 0.2 & 2104 \\
 Muon & 0.0065 & 0.1 & 1122 \\
-EF-USignMuon & 0.0033 & 0.1 & 3694 \\
+EF21-MuonUSign & 0.0033 & 0.1 & 3694 \\
 SignSGD & 0.00015 & 0.8 & 3120 \\
 SGD & 0.1 & 0.95 & 972 \\
 Adam &  0.07 & - & 202 \\
@@ -472,7 +472,7 @@ Since theoretical convergence guarantees depend on the choice of norm and the co
 %     \item $\eta \in [0.01, 0.10]$ с шагом $0.01$ для SGD и Adam.
 % \end{itemize}
 
-The results of the grid search with the number of iterations required to converge to 0.001, are summarized in Table~\ref{tab:synthetic_results}. Muon converges in 1122 iterations, comparable to SGD (972) but slower than Adam (202). SignMuon reaches the target in 2104 iterations, significantly outperforming SignSGD (3120). EF-USignMuon requires 3694 iterations; its overhead on this benign convex problem is expected, since its purpose is to guarantee convergence on problems where SignMuon does not converge (Theorem~\ref{th:1}). The optimization trajectories are shown in Appendix\ref{app:images_task}, Figure~\ref{fig:synthetic_results}.
+The results of the grid search with the number of iterations required to converge to 0.001, are summarized in Table~\ref{tab:synthetic_results}. Muon converges in 1122 iterations, comparable to SGD (972) but slower than Adam (202). SignMuon reaches the target in 2104 iterations, significantly outperforming SignSGD (3120). EF21-MuonUSign requires 3694 iterations; its overhead on this benign convex problem is expected, since its purpose is to guarantee convergence on problems where SignMuon does not converge (Theorem~\ref{th:1}). The optimization trajectories are shown in Appendix\ref{app:images_task}, Figure~\ref{fig:synthetic_results}.
 
 % Из результатов видно, что алгоритм Muon достиг оптимума за 1122 итерации, что сопоставимо с классическими методами первого порядка (Adam, SGD). Стоит отметить, что алгоритм SignMuon достигает целевого значения функции потерь за 2104 итерации, значительно превосходя базовый алгоритм SignSGD (3120 итераций). Динамика целевой функции и нормы градиента в процессе оптимизации проиллюстрированы в Приложении на Рисунке \ref{fig:synthetic_results}.
 
@@ -494,7 +494,7 @@ The results of the grid search with the number of iterations required to converg
 \end{figure*}
 
 % В данном эксперименте мы сравниваем динамики сходимости и итоговые точности (Accuracy) алгоритма SignMuon с классическими оптимизаторами Muon, SignSGD, SGD и Adam при фиксированном количестве эпох. Одной из задач эксперимента является демонстрация того, что SignMuon обеспечивает высокое качество классификации, сопоставимое с Muon, при этом превосходит по точности классический алгоритм SignSGD при идентичной коммуникации (1 бит на параметр).  
-In this experiment, we compare the convergence dynamics and the final accuracies of SignMuon and EF-USignMuon with those of the classical optimizers: Muon, SignSGD, SGD, and Adam at a fixed number of epochs. One of the goals of the experiment is to demonstrate that SignMuon achieves classification quality comparable to Muon, while outperforming the classical SignSGD algorithm under the same uplink communication budget (1 bit per parameter on the uplink).
+In this experiment, we compare the convergence dynamics and the final accuracies of SignMuon and EF21-MuonUSign with those of the classical optimizers: Muon, SignSGD, SGD, and Adam at a fixed number of epochs. One of the goals of the experiment is to demonstrate that SignMuon achieves classification quality comparable to Muon, while outperforming the classical SignSGD algorithm under the same uplink communication budget (1 bit per parameter on the uplink).
 
 
 % Эксперименты проводились на датасетах MNIST и CIFAR-10:
@@ -514,7 +514,7 @@ The base model is a ResNet-18 architecture adapted to low-resolution images by u
 where $\eta_{\text{max}}$ is the initial learning rate of the algorithm, $\eta_{\text{min}} = 0$ is the minimum value (in our configuration), and $T_{\text{max}}$ is the total number of training epochs.
 % Результаты эксперимента и значения подобранных гиперпараметров указаны в Таблице \ref{tab:cifar_central}. Динамика целевой функции и точности алгоритмов в процессе обучения проиллюстрированы в Приложении~\ref{app:images_cen}.
 
-The experimental results and the selected hyperparameter values are reported in Appendix in Table~\ref{tab:cifar_central}. The dynamics of the loss function and of the accuracy of the algorithms during training are illustrated in Figure~\ref{fig:cifar_results}. Notably, EF-USignMuon achieves $93.82\%$ test accuracy, surpassing SignMuon ($92.55\%$) and matching Muon ($93.70\%$), confirming that the Error-Feedback mechanism does not sacrifice practical accuracy.
+The experimental results and the selected hyperparameter values are reported in Appendix in Table~\ref{tab:cifar_central}. The dynamics of the loss function and of the accuracy of the algorithms during training are illustrated in Figure~\ref{fig:cifar_results}. Notably, EF21-MuonUSign achieves $93.82\%$ test accuracy, surpassing SignMuon ($92.55\%$) and matching Muon ($93.70\%$), confirming that the Error-Feedback mechanism does not sacrifice practical accuracy.
 
 \subsection{Federated Learning}
 \begin{table*}[!t]
@@ -535,7 +535,7 @@ The experimental results and the selected hyperparameter values are reported in 
 \cline{2-2} \cline{7-7} \cline{9-9}
  & Adam & & & & & 0.001 & & 78.36\% \\
 \cline{2-2} \cline{7-7} \cline{9-9}
- & EF-USignMuon & & & & & 0.02 & & 84.59\% \\
+ & EF21-MuonUSign & & & & & 0.02 & & 84.59\% \\
 \hline
 \end{tabular}
 \caption{CIFAR-10: federated learning. Experiment~3: Comparison of the algorithms with $N=10$ clients.}
@@ -546,8 +546,8 @@ The next stage of the research was adaptation of SignMuon in federated learning,
 % Следующим этапом исследования стала оценка эффективности SignMuon в сценарии федеративного обучения (Federated Learning), где передача полных 32-битных матриц градиентов является узким местом. Цель экспериментов данного этапа -- подтвердить, что экстремальное сжатие ортогонализованных обновлений позволяет достичь точности, сопоставимой с алгоритмом Muon, при экстремальном снижении объема передаваемой информации.
 
 
-For these experiments, we implemented a federated architecture with a central aggregation server. To keep the results comparable with the previous stages, we used the convolutional neural network (CNN2), comprising two convolutional blocks with BatchNorm and an MLP classifier. The CIFAR-10 dataset was partitioned across the clients homogeneously (homogeneous split). Within this learning type, we study both the baseline Federated SignMuon scheme (Algorithm~\ref{fed_alg}) and the error-feedback variant Federated EF-USignMuon (Algorithm~\ref{ef21_alg}). Each communication round consists of a local gradient accumulation step on the clients, followed by transmitting the sign-compressed updates to the server, which updates the global model.
-% Для проведения тестов была реализована федеративная архитектура с центральным сервером агрегации. Чтобы обеспечить сопоставимость результатов с предыдущими этапами работы, использовалась та же сверточная нейронная сеть (CNN2), включающая два сверточных блока с BatchNorm и MLP-классификатор. Набор данных CIFAR-10 подвергался однородному (\textit{homogeneous}) разбиению между узлами. В рамках данного сценария мы исследовали как базовую схему Federated SignMuon (\cref{fed_alg}), так и модификацию с механизмом учета ошибки Federated EF-USignMuon (\cref{ef21_alg}). Каждый раунд обучения включал этап локального накопления градиента на узлах с последующей передачей данных, прошедших знаковую компрессию, на сервер для обновления глобальной модели.
+For these experiments, we implemented a federated architecture with a central aggregation server. To keep the results comparable with the previous stages, we used the convolutional neural network (CNN2), comprising two convolutional blocks with BatchNorm and an MLP classifier. The CIFAR-10 dataset was partitioned across the clients homogeneously (homogeneous split). Within this learning type, we study both the baseline Federated SignMuon scheme (Algorithm~\ref{fed_alg}) and the error-feedback variant Federated EF21-MuonUSign (Algorithm~\ref{ef21_alg}). Each communication round consists of a local gradient accumulation step on the clients, followed by transmitting the sign-compressed updates to the server, which updates the global model.
+% Для проведения тестов была реализована федеративная архитектура с центральным сервером агрегации. Чтобы обеспечить сопоставимость результатов с предыдущими этапами работы, использовалась та же сверточная нейронная сеть (CNN2), включающая два сверточных блока с BatchNorm и MLP-классификатор. Набор данных CIFAR-10 подвергался однородному (\textit{homogeneous}) разбиению между узлами. В рамках данного сценария мы исследовали как базовую схему Federated SignMuon (\cref{fed_alg}), так и модификацию с механизмом учета ошибки Federated EF21-MuonUSign (\cref{ef21_alg}). Каждый раунд обучения включал этап локального накопления градиента на узлах с последующей передачей данных, прошедших знаковую компрессию, на сервер для обновления глобальной модели.
 
 
 For a systematic analysis of the proposed algorithms, this experimental stage is split into several sub-experiments. First, we assess how the scale of the federated network affects the stability of sign-based optimization and the final accuracy of the model. To this end, we study the baseline SignMuon algorithm for different numbers of active clients.
@@ -566,7 +566,7 @@ However, the potential of sign-based optimization algorithms is most fully revea
 
 \textbf{Experiment~3: Comparison of the algorithms with $N=10$ clients.} 
 % Те же шесть оптимизаторов тестировались в условиях 10 узлов, 2000 раундов и трех локальных шагов на узле. В данном режиме SignMuon достиг качества Muon. Вывод эксперимента: при достаточном числе узлов ($N \geq 10$) алгоритм SignMuon обеспечивает качество, сопоставимое с Muon, при этом сокращая объем передаваемых данных в $\sim$32 раза за счет передачи только знаков градиентов вместо полных значений. Результаты данного эксперимента приведены в Таблице \ref{tab:exp_3}, а также на Рисунке \ref{fig:exp_3}. 
-The same 6 optimizers are tested with 10 clients, 2000 rounds, and 3 local steps per client. In this learning type, SignMuon reaches the quality of Muon. We conclude that, with a sufficient number of clients ($N \ge 10$), SignMuon achieves a quality comparable to Muon while reducing the volume of transmitted data by a factor of ${\sim}32\times$, by transmitting only the signs of the gradients instead of their full values. The results of this experiment are reported in Table~\ref{tab:exp_3} and Figure~\ref{fig:exp_3}. EF-USignMuon ($84.59\%$) performs on par with SignMuon ($84.57\%$), demonstrating that the convergence guarantee comes at no accuracy cost in the federated setting.
+The same 6 optimizers are tested with 10 clients, 2000 rounds, and 3 local steps per client. In this learning type, SignMuon reaches the quality of Muon. We conclude that, with a sufficient number of clients ($N \ge 10$), SignMuon achieves a quality comparable to Muon while reducing the volume of transmitted data by a factor of ${\sim}32\times$, by transmitting only the signs of the gradients instead of their full values. The results of this experiment are reported in Table~\ref{tab:exp_3} and Figure~\ref{fig:exp_3}. EF21-MuonUSign ($84.59\%$) performs on par with SignMuon ($84.57\%$), demonstrating that the convergence guarantee comes at no accuracy cost in the federated setting.
 
 
 
@@ -578,8 +578,8 @@ The same 6 optimizers are tested with 10 clients, 2000 rounds, and 3 local steps
 
 % Таким образом, мы добились существенных результатов в построении структурированного и коммуникационно-эффективного алгоритма оптимизации. Тем не менее, данная область остается открытой, оставляя множество путей для будущих исследований.
 
-This work proposes SignMuon, which applies 1-bit sign compression to the Muon LMO direction to bridge structured optimization and extreme communication efficiency in federated learning. While it empirically matches Muon's accuracy and outperforms SignSGD, we formally prove that direct sign-compressed LMO lacks global convergence guarantees and can diverge. To resolve this without compromising uplink efficiency, we introduce EF-USignMuon, an Error-Feedback variant that applies sign compression to the internal residual rather than the LMO step. EF-USignMuon restores convergence on our counterexample and achieves Muon-level performance while maintaining a 1-bit uplink. Our framework establishes a foundation for adapting matrix-aware optimizers to bandwidth-constrained distributed training without sacrificing model accuracy.
-\paragraph{Future work.} An extension of EF-USignMuon is a bidirectional scheme that compresses both the uplink (client $\to$ server) and the downlink (server $\to$ client), in the spirit of the two-sided framework of \citet{gruntkowska2025error}. In this work we focus on uplink compression, since the aggregation of many client messages is typically the dominant communication bottleneck, and we keep the downlink at full precision ($\mathcal{C}_{\downarrow} = I$). Furthermore, investigating how these matrix-aware 1-bit strategies scale to the massive parameter matrices of Large Language Models is a highly promising direction for future research.
+This work proposes SignMuon, which applies 1-bit sign compression to the Muon LMO direction to bridge structured optimization and extreme communication efficiency in federated learning. While it empirically matches Muon's accuracy and outperforms SignSGD, we formally prove that direct sign-compressed LMO lacks global convergence guarantees and can diverge. To resolve this without compromising uplink efficiency, we introduce EF21-MuonUSign, an Error-Feedback variant that applies sign compression to the internal residual rather than the LMO step. EF21-MuonUSign restores convergence on our counterexample and achieves Muon-level performance while maintaining a 1-bit uplink. Our framework establishes a foundation for adapting matrix-aware optimizers to bandwidth-constrained distributed training without sacrificing model accuracy.
+\paragraph{Future work.} An extension of EF21-MuonUSign is a bidirectional scheme that compresses both the uplink (client $\to$ server) and the downlink (server $\to$ client), in the spirit of the two-sided framework of \citet{gruntkowska2025error}. In this work we focus on uplink compression, since the aggregation of many client messages is typically the dominant communication bottleneck, and we keep the downlink at full precision ($\mathcal{C}_{\downarrow} = I$). Furthermore, investigating how these matrix-aware 1-bit strategies scale to the massive parameter matrices of Large Language Models is a highly promising direction for future research.
 
 
 
@@ -601,7 +601,7 @@ This work proposes SignMuon, which applies 1-bit sign compression to the Muon LM
 \appendix 
 \section{Appendix}\label{app}
 % \subsection{Additional experiments / Proofs of Theorems}\label{app:exp}
-\subsection{Proof of Theorem~\ref{th:1}}\label{app:proof_th1}
+\subsection{Proof of Theorem~\ref{th:1} (Divergence counterexample)}\label{app:proof_th1}
 
 \paragraph{Proof} The proof is constructed using a counterexample that shows the existence of a smooth function and a matrix dimension $N_{dim} \ge 4$ for which the SignMuon algorithm is guaranteed to diverge. We conjecture, supported by extensive numerical search, that no such counterexample exists for $N_{dim}\le3$. However, at $N_{dim} = 4$, this convergence guarantee vanishes.
 
@@ -807,8 +807,8 @@ $\beta = 1/\min_{i,j:\,Y_{ij}\neq 0}|Y_{ij}|$ whenever the nonzero entries are b
 % \end{equation}
 % This means that applying extreme 1-bit sign compression after matrix orthogonalization (LMO) does not worsen the asymptotic convergence rate compared to full-precision non-Euclidean methods in the smooth non-convex case.
 % \end{hypothesis}
-\begin{hypothesis}[\textbf{Convergence of EF-USignMuon}]\label{hyp:1}
-Under Assumptions~\ref{as:1}--\ref{as:3} and~\ref{as:5}, the Federated EF-USignMuon algorithm (Algorithm~\ref{ef21_alg}) converges in the smooth non-convex setting. There exists a choice of the learning rate $\eta_t$ such that
+\begin{hypothesis}[\textbf{Convergence of EF21-MuonUSign}]\label{hyp:1}
+Under Assumptions~\ref{as:1}--\ref{as:3} and~\ref{as:5}, the Federated EF21-MuonUSign algorithm (Algorithm~\ref{ef21_alg}) converges in the smooth non-convex setting. There exists a choice of the learning rate $\eta_t$ such that
 \begin{equation}
 \min_{0 \le t \le T}\mathbb{E}\bigl[\|\nabla f(\mathbf{X}_t)\|_*^2\bigr]
 = \mathcal{O}\bigl(T^{-1/2}\bigr).
@@ -826,9 +826,9 @@ Replacing the Muon LMO direction $\mathbf{D}_t = \mathbf{U}_t \mathbf{V}_t^\top$
 \end{hypothesis}
 
 % \newpage
-\subsection{Convergence Bounds for EF-USignMuon}\label{app:ef_bounds}
+\subsection{Convergence Bounds for EF21-MuonUSign}\label{app:ef_bounds}
 
-Our implementation of Federated EF-USignMuon (Algorithm~\ref{ef21_alg}) uses the following steps: the server broadcasts the full model~$\mathbf{X}_t$, which is equivalent to choosing the server compressor $\mathcal{C}_{\downarrow}^k \equiv I$ in the framework of \cite{gruntkowska2025error}. Compression is applied only on the client side, through the scaled-sign operator. This is the regime analyzed in Lemmas~7--8 of~\cite{gruntkowska2025error}; below we restate the two resulting bounds in our notation. For the analysis, we adopt the exponential moving-average (EMA) momentum convention used in~\cite{gruntkowska2025error}:
+Our implementation of Federated EF21-MuonUSign (Algorithm~\ref{ef21_alg}) uses the following steps: the server broadcasts the full model~$\mathbf{X}_t$, which is equivalent to choosing the server compressor $\mathcal{C}_{\downarrow}^k \equiv I$ in the framework of \cite{gruntkowska2025error}. Compression is applied only on the client side, through the scaled-sign operator. This is the regime analyzed in Lemmas~7--8 of~\cite{gruntkowska2025error}; below we restate the two resulting bounds in our notation. For the analysis, we adopt the exponential moving-average (EMA) momentum convention used in~\cite{gruntkowska2025error}:
 \[
 \mathbf{M}_t^{(j)} = (1-\beta)\,\mathbf{M}_{t-1}^{(j)} + \beta\,\nabla f_j(\mathbf{X}_t;\xi_t^{(j)}), \qquad \beta\in(0,1].
 \]
@@ -846,7 +846,7 @@ For the scaled-sign operator one may take $\alpha=1/d$, since a direct computati
 \end{assumption}
 
 \begin{lemma}[\textbf{Gradient-estimator contraction}]\label{lem:est}
-Let Assumptions~\ref{as:1}--\ref{as:3} and~\ref{as:5} hold, and run EF-USignMuon with identity compression on the server. Then the compressed gradient estimator~$\mathbf{g}_t^{(j)}$ of each client~$j\in[N]$ satisfies
+Let Assumptions~\ref{as:1}--\ref{as:3} and~\ref{as:5} hold, and run EF21-MuonUSign with identity compression on the server. Then the compressed gradient estimator~$\mathbf{g}_t^{(j)}$ of each client~$j\in[N]$ satisfies
 \begin{multline}
 \mathbb{E}\!\left[\|\mathbf{M}_t^{(j)}-\mathbf{g}_t^{(j)}\|_F^2 \,\big|\, \mathbf{X}_t,\mathbf{M}_{t-1}^{(j)},\mathbf{g}_{t-1}^{(j)}\right] \\
 \le (1-\alpha)\!\big[(1-\beta)\,\|\mathbf{M}_{t-1}^{(j)}-\mathbf{g}_{t-1}^{(j)}\|_F^2 \\
@@ -866,7 +866,7 @@ with $C(\beta)=(1-\beta)/\beta$ as in Lemma~8 of~\cite{gruntkowska2025error}.
 \end{lemma}
 \noindent This is Lemma~8 of~\cite{gruntkowska2025error} (identity server regime); the last term reflects the smoothness-induced drift and is proportional to the squared length of the LMO step $\mathbf{X}_t-\mathbf{X}_{t-1}$.
 
-Lemmas~\ref{lem:est}-\ref{lem:mom} imply that the global estimator $\mathbf{G}_t=\tfrac{1}{N}\sum_{j=1}^N\mathbf{g}_t^{(j)}$ remains a controlled-bias approximation of the full gradient~$\nabla f(\mathbf{X}_t)$. Combined with Assumption~\ref{as:2}, this is the key ingredient behind the $\mathcal{O}(T^{-1/2})$ rate postulated in Hypothesis~\ref{hyp:1} for our variant of EF-USignMuon.
+Lemmas~\ref{lem:est}-\ref{lem:mom} imply that the global estimator $\mathbf{G}_t=\tfrac{1}{N}\sum_{j=1}^N\mathbf{g}_t^{(j)}$ remains a controlled-bias approximation of the full gradient~$\nabla f(\mathbf{X}_t)$. Combined with Assumption~\ref{as:2}, this is the key ingredient behind the $\mathcal{O}(T^{-1/2})$ rate postulated in Hypothesis~\ref{hyp:1} for our variant of EF21-MuonUSign.
 
 
 
@@ -883,7 +883,7 @@ Table~\ref{tab:grid_search} details the grid-search ranges used for each optimiz
 \midrule
 SignMuon & $[1 \cdot 10^{-4}, 1 \cdot 10^{-3}]$ with step $1 \cdot 10^{-4}$ & $\{0.1, 0.2, \dots, 0.9, 0.95\}$ \\
 Muon     & $[5 \cdot 10^{-3}, 2 \cdot 10^{-2}]$ with step $1 \cdot 10^{-3}$ & $\{0.1, 0.2, \dots, 0.9, 0.95\}$ \\
-EF-USignMuon & $[5 \cdot 10^{-3}, 2 \cdot 10^{-2}]$ with step $1 \cdot 10^{-3}$ & $\{0.1, 0.2, \dots, 0.9, 0.95\}$ \\
+EF21-MuonUSign & $[5 \cdot 10^{-3}, 2 \cdot 10^{-2}]$ with step $1 \cdot 10^{-3}$ & $\{0.1, 0.2, \dots, 0.9, 0.95\}$ \\
 SignSGD  & $[5 \cdot 10^{-5}, 2 \cdot 10^{-4}]$ with step $1 \cdot 10^{-5}$ & $\{0.1, 0.2, \dots, 0.9, 0.95\}$ \\
 SGD      & $[1 \cdot 10^{-2}, 1 \cdot 10^{-1}]$ with step $1 \cdot 10^{-2}$ & $\{0.1, 0.2, \dots, 0.9, 0.95\}$ \\
 Adam     & $[1 \cdot 10^{-2}, 1 \cdot 10^{-1}]$ with step $1 \cdot 10^{-2}$ & --- \\
@@ -932,7 +932,7 @@ Table~\ref{tab:cifar_central} reports the centralized CIFAR-10 results on ResNet
 \cline{2-2} \cline{8-9}
  & Adam & & &  & & & 99.77\% & 93.03\% \\
  \cline{2-2} \cline{5-6} \cline{8-9}
- & EF-USignMuon & & & 0.008 & 0.001& & 99.96\% & 93.82\% \\
+ & EF21-MuonUSign & & & 0.008 & 0.001& & 99.96\% & 93.82\% \\
 \hline
 \end{tabular}
 \caption{CIFAR-10: Centralized Learning on ResNet-18.}
@@ -1020,7 +1020,7 @@ Table~\ref{tab:exp_2} and Figure~\ref{fig:exp_2} report the comparison of optimi
 \cline{2-2} \cline{7-7} \cline{9-9}
  & Adam & & & & & 0.001 & & 70.83\% \\
 \cline{2-2} \cline{7-7} \cline{9-9}
- & EF-USignMuon & & & & & 0.02 & & 80.69\% \\
+ & EF21-MuonUSign & & & & & 0.02 & & 80.69\% \\
 \hline
 \end{tabular}
 \caption{CIFAR-10 Federated Learning on CNN2. Experiment 2: Comparison of Optimization Algorithms with (N = 3) Clients.}
@@ -1066,6 +1066,23 @@ Figure~\ref{fig:exp_3} (together with Table~\ref{tab:exp_3} in the main text) re
 
 \subsection{Algorithms}\label{app:alg}
 
+\begin{algorithm}[!t]
+\caption{MuonLMO}
+\label{alg:muon_lmo}
+\begin{algorithmic}[1]
+\Statex \textbf{Input}: tensor $\mathbf{Y}$; Newton-Schulz coefficients $a=3.4445,\,b=4.7750,\,c=2.0315$; iteration count $\mathrm{ns\_steps}$
+\Statex \textbf{Output}: Muon LMO direction $\mathbf{D}\approx\mathbf{U}\mathbf{V}^\top$ of $\mathbf{Y}$
+\State $\mathbf{Y} \gets \text{ReshapeTo2D}(\mathbf{Y})$ \Comment{Flatten tensor to matrix $m \times n$}
+\State $\mathbf{Y} \gets \mathbf{Y}/\|\mathbf{Y}\|_F$ \Comment{Normalize (optional)}
+\For{$k = 1$ to $\mathrm{ns\_steps}$} \Comment{5th-order Newton-Schulz orthogonalization}
+    \State $\mathbf{A} \gets \mathbf{Y}\mathbf{Y}^\top$
+    \State $\mathbf{Y} \gets a\,\mathbf{Y} - b\,\mathbf{A}\mathbf{Y} + c\,\mathbf{A}^2\,\mathbf{Y}$
+\EndFor
+\State $\mathbf{D} \gets \text{ReshapeToOriginal}(\mathbf{Y})$ \Comment{Reshape back to the original tensor shape}
+\State \Return $\mathbf{D}$
+\end{algorithmic}
+\end{algorithm}
+
 \begin{algorithm}
 \caption{Centralized SignMuon}
 \label{central_alg}
@@ -1081,12 +1098,7 @@ Figure~\ref{fig:exp_3} (together with Table~\ref{tab:exp_3} in the main text) re
         \mathbf{G}_t + \mu \mathbf{M}_t, & \text{(Nesterov momentum)}, \\
         \mathbf{M}_t, & \text{(otherwise)}
     \end{cases}$
-    \State $\mathbf{Y} \gets \text{ReshapeTo2D}(\tilde{\mathbf{M}}_t)$ \Comment{Flatten tensor to matrix $m \times n$}
-    \For{$k = 1$ to $\mathrm{ns\_steps}$} \Comment{Newton-Schulz orthogonalization}
-        \State $\mathbf{A} \gets \mathbf{Y} \mathbf{Y}^\top$
-        \State $\mathbf{Y} \gets a\,\mathbf{Y} - b\,\mathbf{A}\mathbf{Y} + c\,\mathbf{A}^2\mathbf{Y}$
-    \EndFor
-    \State $\mathbf{D}_t \gets \text{ReshapeToOriginal}(\mathbf{Y})$ \Comment{Reshape back to original tensor}
+    \State $\mathbf{D}_t \gets \mathrm{MuonLMO}(\tilde{\mathbf{M}}_t)$ \Comment{Algorithm~\ref{alg:muon_lmo}}
     \State $\mathbf{s}_t \gets \operatorname{sign}(\mathbf{D}_t)$ \Comment{Sign compression}
     \State $\mathbf{X}_{t+1} \gets \mathbf{X}_t - \eta_t \mathbf{s}_t$ \Comment{Update parameters}
 \EndFor
@@ -1109,20 +1121,14 @@ Figure~\ref{fig:exp_3} (together with Table~\ref{tab:exp_3} in the main text) re
             \mathbf{M}_t, & \text{(otherwise)}
         \end{cases}$
         \State $\mathbf{s}_t \gets \operatorname{sign}(\tilde{\mathbf{M}}_t)$ \Comment{Sign compression BEFORE LMO}
-        \State $\mathbf{Y} \gets \text{ReshapeTo2D}(\mathbf{s}_t)$ \Comment{Flatten tensor to matrix $m \times n$}
-        \State $\mathbf{Y} \gets \mathbf{Y} / \|\mathbf{Y}\|_F$ \Comment{Scale appropriately for Newton-Schulz convergence}
-        \For{$k = 1$ to $\mathrm{ns\_steps}$} \Comment{Newton-Schulz orthogonalization (Muon LMO)}
-            \State $\mathbf{A} \gets \mathbf{Y} \mathbf{Y}^\top$
-            \State $\mathbf{Y} \gets a\,\mathbf{Y} - b\,\mathbf{A}\mathbf{Y} + c\,\mathbf{A}^2\mathbf{Y}$
-        \EndFor
-        \State $\mathbf{D}_t \gets \text{ReshapeToOriginal}(\mathbf{Y})$ \Comment{Reshape back to original tensor}
+        \State $\mathbf{D}_t \gets \mathrm{MuonLMO}(\mathbf{s}_t)$ \Comment{Algorithm~\ref{alg:muon_lmo}}
         \State $\mathbf{X}_{t+1} \gets \mathbf{X}_t - \eta_t \lambda_{\mathrm{mult}} \mathbf{D}_t$ \Comment{Update parameters}
     \EndFor
     \end{algorithmic}
     \end{algorithm}
     
 \begin{algorithm}[!t]
-\caption{Centralized EF-USignMuon}
+\caption{Centralized EF21-MuonUSign}
 \label{central_alg_ef}
 \textbf{Input}: Initial model $\mathbf{X}_0$, initial gradient $\mathbf{G}_0$, momentum coefficient $\mu$, learning rate $\eta_t$, $\lambda_{\mathrm{mult}}=1$, number of Newton-Schulz iterations $\mathrm{ns\_steps}$ \\
 \textbf{Output}: Updated model $\mathbf{X}$
@@ -1135,20 +1141,15 @@ Figure~\ref{fig:exp_3} (together with Table~\ref{tab:exp_3} in the main text) re
   \quad $\alpha_t \gets \operatorname{mean}(|\Delta_t|)$;
   \State $\mathbf{g}_{t+1}^{\mathrm{est}} \gets \mathbf{g}_t^{\mathrm{est}} + \alpha_t\operatorname{sign}(\Delta_t)$
          \Comment{Uplink EF21 estimator (1-bit residual)}
-  \State $\mathbf{Y} \gets \text{ReshapeTo2D}(\mathbf{g}_{t+1}^{\mathrm{est}})$
-  \For{$k = 1$ to $\mathrm{ns\_steps}$} \Comment{Newton-Schulz on the estimator}
-      \State $\mathbf{A} \gets \mathbf{Y}\mathbf{Y}^\top$;
-      \State $\mathbf{Y} \gets a\,\mathbf{Y} - b\,\mathbf{A}\mathbf{Y} + c\,\mathbf{A}^2\mathbf{Y}$
-  \EndFor
-  \State $\mathbf{D}_t \gets \text{ReshapeToOriginal}(\mathbf{Y})$
-         \Comment{Muon LMO of estimator --- NO sign on the step}
+  \State $\mathbf{D}_t \gets \mathrm{MuonLMO}(\mathbf{g}_{t+1}^{\mathrm{est}})$
+         \Comment{Algorithm~\ref{alg:muon_lmo}}
   \State $\mathbf{X}_{t+1} \gets \mathbf{X}_t - \eta_t\lambda_{\mathrm{mult}}\mathbf{D}_t$
 \EndFor
 \end{algorithmic}
 \end{algorithm}
 
 \begin{algorithm}[!t]
-\caption{Centralized EF-UDSignMuon (bidirectional)}
+\caption{Centralized EF21-MuonUDSign (bidirectional)}
 \label{central_alg_ud}
 \textbf{Input}: Initial model $\mathbf{X}_0=\mathbf{W}_0$,  initial gradient $\mathbf{G}_0$, momentum coefficient $\mu$, learning rate $\eta_t$, $\lambda_{\mathrm{mult}}=1$, number of Newton-Schulz iterations $\mathrm{ns\_steps}$ \\
 \textbf{Output}: Updated model $\mathbf{X}$
@@ -1157,22 +1158,17 @@ Figure~\ref{fig:exp_3} (together with Table~\ref{tab:exp_3} in the main text) re
 \For{$t = 0$ to $(T - 1)$}
 \State Stochastic gradient $\mathbf{G}_t$ at the broadcast model $\mathbf{W}_t$
 \State $\mathbf{M}_t \gets \mu\mathbf{M}_{t-1} + \mathbf{G}_t$ \Comment{Momentum}
-\State $\Delta_t^{\uparrow} \gets \mathbf{M}_t - \mathbf{g}_t^{\mathrm{est}}$;
-\quad $\alpha_t^{\uparrow} \gets
-\operatorname{mean}(|\Delta_t^{\uparrow}|)$;
+\State $\Delta_t^{\uparrow} \gets \mathbf{M}_t - \mathbf{g}_t^{\mathrm{est}}$
+\State $\alpha_t^{\uparrow} \gets
+\operatorname{mean}(|\Delta_t^{\uparrow}|)$
 \State $\mathbf{g}_{t+1}^{\mathrm{est}} \gets \mathbf{g}_t^{\mathrm{est}} +
 \alpha_t^{\uparrow}\operatorname{sign}(\Delta_t^{\uparrow})$
        \Comment{Uplink EF21 estimator (1-bit)}
-\State $\mathbf{Y} \gets \text{ReshapeTo2D}(\mathbf{g}_{t+1}^{\mathrm{est}})$
-\For{$k = 1$ to $\mathrm{ns\_steps}$} \Comment{Newton-Schulz on the estimator}
-    \State $\mathbf{A} \gets \mathbf{Y}\mathbf{Y}^\top$;\ \ $\mathbf{Y} \gets a\,\mathbf{Y} - b\,\mathbf{A}\mathbf{Y} +
-c\,\mathbf{A}^2\mathbf{Y}$
-\EndFor
-\State $\mathbf{D}_t \gets \text{ReshapeToOriginal}(\mathbf{Y})$ \Comment{Muon LMO direction}
+\State $\mathbf{D}_t \gets \mathrm{MuonLMO}(\mathbf{g}_{t+1}^{\mathrm{est}})$ \Comment{Algorithm~\ref{alg:muon_lmo}}
 \State $\mathbf{X}_{t+1} \gets \mathbf{X}_t - \eta_t\lambda_{\mathrm{mult}}\mathbf{D}_t$
-\State $\Delta_t^{\downarrow} \gets \mathbf{X}_{t+1} - \mathbf{W}_t$;
-\quad $\alpha_t^{\downarrow} \gets
-\operatorname{mean}(|\Delta_t^{\downarrow}|)$;
+\State $\Delta_t^{\downarrow} \gets \mathbf{X}_{t+1} - \mathbf{W}_t$
+\State $\alpha_t^{\downarrow} \gets
+\operatorname{mean}(|\Delta_t^{\downarrow}|)$
 \State $\mathbf{W}_{t+1} \gets \mathbf{W}_t + \alpha_t^{\downarrow}\operatorname{sign}(\Delta_t^{\downarrow})$
        \Comment{Downlink EF (1-bit model increment)}
 \EndFor
@@ -1199,12 +1195,7 @@ c\,\mathbf{A}^2\mathbf{Y}$
         \EndFor
         \\ \State $\mathbf{G}_t^{(j)} \gets \mathbf{G}_t^{(j)} / \mathrm{n\_steps}$ \Comment{Gradient averaging}
         \State $\mathbf{M}_t^{(j)} \gets \mu \mathbf{M}_{t-1}^{(j)} + \mathbf{G}_t^{(j)}$ \Comment{Local momentum update}
-        \State $\mathbf{Y}_t^{(j)} \gets \text{ReshapeTo2D}(\mathbf{M}_t^{(j)})$ \Comment{Reshape momentum to matrix $m \times n$}
-        \\\For{$k = 1$ to $\mathrm{ns\_steps}$} \Comment{Orthogonalization (Muon LMO)}
-            \State $\mathbf{A}_t^{(j)} \gets \mathbf{Y}_t^{(j)} (\mathbf{Y}_t^{(j)})^\top$
-            \State $\mathbf{Y}_t^{(j)} \gets a\,\mathbf{Y}_t^{(j)} - b\,\mathbf{A}_t^{(j)}\mathbf{Y}_t^{(j)} + c\,(\mathbf{A}_t^{(j)})^2\mathbf{Y}_t^{(j)}$
-        \EndFor
-        \\\State $\mathbf{D}_t^{(j)} \gets \text{ReshapeToOriginal}(\mathbf{Y}_t^{(j)})$ 
+        \State $\mathbf{D}_t^{(j)} \gets \mathrm{MuonLMO}(\mathbf{M}_t^{(j)})$ \Comment{Algorithm~\ref{alg:muon_lmo}}
         \State $\mathbf{s}_t^{(j)} \gets \operatorname{sign}\bigl(\mathbf{D}_t^{(j)}\bigr)$ \Comment{Sign compression}
         \\\State \textbf{Send $\mathbf{s}_t^{(j)}$ to server} \For{\textbf{each} $\mathbf{W}^{\text{last}}$ \textbf{in last\_layer}}
           \State Send $\mathbf{G}_t^{(j)}$ to the server \Comment{Raw gradient for the head}
@@ -1223,7 +1214,7 @@ c\,\mathbf{A}^2\mathbf{Y}$
 
 
 \begin{algorithm}[!t]
-\caption{Federated EF-USignMuon}
+\caption{Federated EF21-MuonUSign}
 \label{ef21_alg}
 \textbf{Input}: Initial model $\mathbf{X}_0$, clients number $N$, rounds number $\mathrm{rounds}$, local steps number $\mathrm{n\_steps}$, learning rate for the main layers $\eta_t$, learning rate for the last layer $\eta_t^{\text{aux}}$,  momentum coefficient $\mu$ \\
 \textbf{Output}: Updated global model $\mathbf{X}$
@@ -1261,12 +1252,7 @@ c\,\mathbf{A}^2\mathbf{Y}$
     \EndFor
     \State $\mathbf{G}_{t+1} \gets \mathbf{G}_t + \frac{1}{N} \sum_{j=1}^N \alpha_t^{(j)} \mathbf{s}_t^{(j)}$ \Comment{Update the global estimator on the server}
     \For{\textbf{each} parameters $\mathbf{X}$}
-        \State $\mathbf{Y} \gets \text{ReshapeTo2D}(\mathbf{G}_{t+1})$
-        \For{$k = 1$ to $\mathrm{ns\_steps}$} \Comment{Orthogonalization (Muon LMO)}
-            \State $\mathbf{A} \gets \mathbf{Y} \mathbf{Y}^\top$
-            \State $\mathbf{Y} \gets a\,\mathbf{Y} - b\,\mathbf{A}\mathbf{Y} + c\,\mathbf{A}^2\mathbf{Y}$
-        \EndFor
-        \State $\mathbf{D}_{t+1} \gets \text{ReshapeToOriginal}(\mathbf{Y})$
+        \State $\mathbf{D}_{t+1} \gets \mathrm{MuonLMO}(\mathbf{G}_{t+1})$ \Comment{Algorithm~\ref{alg:muon_lmo}}
         \State $\mathbf{X}_{t+1} \gets \mathbf{X}_t - \eta_t \mathbf{D}_{t+1}$ \Comment{Update the matrix parameters}
     \EndFor
     \State $\nabla^{\text{last}} \gets \frac{1}{N} \sum_{j=1}^N \mathbf{G}_t^{(j)}$
