@@ -17,7 +17,7 @@ from federated_algorithms import (
     # federated_signmuon,
     # federated_signmuon_ef,
     federated_ef21_muon,
-    federated_ef_ud_signmuon,
+    federated_ef_ud_muon,
     federated_signmuon_client,
     federated_adam,
 )
@@ -56,7 +56,7 @@ def get_params():
     p.add_argument("--dataset", type=str, default="cifar10", choices=["mnist", "cifar10"])
     p.add_argument("--model", type=str, default="cnn2", choices=["resnet9", "cnn2", "resnet18"])
     p.add_argument("--algorithm", type=str, default="signmuon",
-                    choices=["signmuon_ef_21", "signmuon_cl",  "muon", "signsgd", "sgd", "adam"])
+                    choices=["signmuon_ef_21", "signmuon_ef_ud", "signmuon_cl",  "muon", "signsgd", "sgd", "adam"])
     p.add_argument("--data", type=str, default="./data_federated")
     p.add_argument("--download", action="store_true", help="Download dataset if missing")
     p.add_argument("--device", type=str, default="cpu")

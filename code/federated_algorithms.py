@@ -1120,7 +1120,162 @@ def federated_ef21_muon(
     return round_accuracies, round_losses
 
 
+def federated_ef_ud_muon(
+        global_model, train_loaders, num_clients, rounds, n_steps, lr, lr_aux,
+        test_loaders, ns_steps: int = 5, eval_freq: int = 1, momentum=0.9, weight_decay=1e-4, device=None):
+    """
+    EF-UDSignMuon: EF21-Muon with BIDIRECTIONAL 1-bit (Sign) compression.
 
+    Uplink (client -> server) and Downlink (server -> client): the server keeps the EXACT model X (a state buffer)
+    and broadcasts only a sign-compressed model increment; clients observe the
+    compressed model W (= global_model parameters) and compute their gradients at W.
+    Concretely, after the exact server step X_{k+1} = X_k - lr * LMO(G_{k+1}), the
+    broadcast model is updated by error feedback:
+        W_{k+1} = W_k + mean|X_{k+1} - W_k| * sign(X_{k+1} - W_k).
+    """
+    if device is None:
+        device = torch.device("cuda:0" if torch.cuda.is_available() else "cpu")
+    print(f"Running EF-UD-Muon (Sign, bidirectional) on {device}")
+
+    global_model.to(device)
+    global_model.train()
+
+    last_layer_names = [name for name, _ in list(global_model.named_parameters())[-2:]]
+
+    adamw = torch.optim.AdamW(
+        [param for name, param in global_model.named_parameters() if name in last_layer_names],
+        lr=lr_aux, weight_decay=weight_decay
+    )
+
+    # ================== STATE INITIALIZATION ==================
+    # 0. Server exact model X for the matrix layers (global_model holds W = X_0 at start)
+    exact_model = {
+        name: param.detach().clone()
+        for name, param in global_model.named_parameters()
+        if param.requires_grad and name not in last_layer_names
+    }
+    # 1. Global estimator on the server (GPU)
+    global_G_estimator = {
+        name: torch.zeros_like(param, device=device)
+        for name, param in global_model.named_parameters()
+        if param.requires_grad and name not in last_layer_names
+    }
+    # 2. Local buffers for clients (CPU to protect against OOM)
+    client_G_estimators = [{name: torch.zeros_like(param, device='cpu')
+                            for name, param in global_model.named_parameters()
+                            if param.requires_grad and name not in last_layer_names}
+                           for _ in range(num_clients)]
+    client_momentums = [{name: torch.zeros_like(param, device='cpu')
+                         for name, param in global_model.named_parameters()
+                         if param.requires_grad and name not in last_layer_names}
+                        for _ in range(num_clients)]
+    # ==========================================================
+
+    round_accuracies = []
+    round_losses = []
+
+    _, total_accuracy, total_loss = evaluate_model(global_model, test_loaders, verbose=False, device=device)
+    round_accuracies.append(total_accuracy)
+    round_losses.append(total_loss)
+    print(f"\rRound 0 - Accuracy: {total_accuracy:.2f}%, Loss: {total_loss:.4f} ")
+
+    base_lr = lr
+    base_lr_aux = lr_aux
+
+    for r in range(rounds):
+        round_start = time.perf_counter()
+
+        # 1. Cosine Annealing Learning Rate Scheduler
+        eta = 0.5 * (1 + math.cos(math.pi * r / rounds))
+        current_lr = base_lr * eta
+        current_lr_aux = base_lr_aux * eta
+        for param_group in adamw.param_groups:
+            param_group['lr'] = current_lr_aux
+
+        print(f"\rRound {r+1} | LR: {current_lr:.5f}", end='', flush=True)
+
+        client_residuals = []
+        client_alphas = []
+
+        # 2. Local Training (clients compute gradients at the broadcast model W = global_model)
+        for i in range(num_clients):
+            res_sign, alphas = local_train_ef21_muon(
+                global_model=global_model, train_loader=train_loaders[i], n_steps=n_steps,
+                local_G_estimator=client_G_estimators[i],
+                local_momentum=client_momentums[i],
+                last_layer_names=last_layer_names,
+                momentum=momentum, device=device
+            )
+            client_residuals.append(res_sign)
+            client_alphas.append(alphas)
+
+        # 3. Server Aggregation (UPLINK) + Exact step (X) + Downlink compression (W)
+        avg_head_grad = {}
+
+        with torch.no_grad():
+            for name in client_residuals[0].keys():
+                if name in last_layer_names:
+                    avg_head_grad[name] = sum(client_residuals[i][name].to(device) for i in range(num_clients)) / num_clients
+                else:
+                    # Aggregate compressed residuals: (1/M) * sum(alpha_i * sign_i)
+                    agg_residual = sum(client_residuals[i][name].to(device) * client_alphas[i][name].to(device)
+                                       for i in range(num_clients)) / num_clients
+                    # UPDATE GLOBAL ESTIMATOR: G_{k+1} = G_k + R_agg
+                    global_G_estimator[name] = global_G_estimator[name] + agg_residual
+
+            # 4. Server LMO (Muon) exact step on X + DOWNLINK error feedback on W
+            for name, param in global_model.named_parameters():
+                if param.requires_grad and name not in last_layer_names:
+                    X = exact_model[name]
+
+                    if weight_decay != 0:
+                        X.mul_(1.0 - current_lr * weight_decay)
+
+                    orth_G = muon_orthogonalized_update(global_G_estimator[name], ns_steps=ns_steps)
+
+                    # Exact step on X: X <- X - lr * LMO(G)
+                    X.add_(orth_G, alpha=-current_lr)
+
+                    # DOWNLINK: compress the model increment (X - W) via scaled sign
+                    delta = X - param                              
+                    alpha_dn = delta.abs().mean()
+                    param.add_(alpha_dn * torch.sign(delta))      # W <- W + alpha_dn * sign(X - W)
+
+        # 5. Update Classification Head (AdamW, uncompressed — same as EF21-Muon)
+        adamw.zero_grad()
+        for name, param in global_model.named_parameters():
+            if name in last_layer_names:
+                param.grad = avg_head_grad[name].clone()
+        adamw.step()
+
+        # Evaluation on the EXACT model X (matrix layers), then restore W
+        round_elapsed = time.perf_counter() - round_start
+        if (r + 1) % eval_freq == 0 or r == rounds - 1:
+            W_backup = {}
+            for name, param in global_model.named_parameters():
+                if name in exact_model:
+                    W_backup[name] = param.detach().clone()
+                    param.data.copy_(exact_model[name].to(device))
+            _, total_accuracy, total_loss = evaluate_model(global_model, test_loaders, verbose=False, device=device)
+            for name, param in global_model.named_parameters():
+                if name in exact_model:
+                    param.data.copy_(W_backup[name])
+            print(f"\rRound {r+1} | {round_elapsed:.2f}s | Accuracy: {total_accuracy:.2f}%, Loss: {total_loss:.4f}", end='', flush=True)
+        else:
+            total_accuracy = round_accuracies[-1] if round_accuracies else None
+            total_loss = round_losses[-1] if round_losses else None
+            print(f"\rRound {r+1} - (skipped evaluation) | {round_elapsed:.2f}s", end='', flush=True)
+
+        round_accuracies.append(total_accuracy)
+        round_losses.append(total_loss)
+
+    with torch.no_grad():
+        for name, param in global_model.named_parameters():
+            if name in exact_model:
+                param.data.copy_(exact_model[name].to(device))
+
+    print()
+    return round_accuracies, round_losses
 
 
 # # =========================== Sign Muon (Central Moment) =========================================
