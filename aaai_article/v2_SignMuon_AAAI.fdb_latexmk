@@ -1,7 +1,7 @@
 # Fdb version 3
-["pdflatex"] 1784539386 "/home/maria/phystech/projects/signmuon/2026-Project-203/aaai_article/SignMuon_AAAI.tex" "SignMuon_AAAI.pdf" "SignMuon_AAAI" 1784539386
+["pdflatex"] 1784617795 "/home/maria/phystech/projects/signmuon/2026-Project-203/aaai_article/v2_SignMuon_AAAI.tex" "v2_SignMuon_AAAI.pdf" "v2_SignMuon_AAAI" 1784617795
   "/etc/texmf/web2c/texmf.cnf" 1733950528 475 c0e671620eb5563b2130f56340a5fde8 ""
-  "/home/maria/phystech/projects/signmuon/2026-Project-203/aaai_article/SignMuon_AAAI.tex" 1784539386 144783 e74f497b458c412fcec745bf719d720f ""
+  "/home/maria/phystech/projects/signmuon/2026-Project-203/aaai_article/v2_SignMuon_AAAI.tex" 1784617794 141301 22c696048f210c8c08040984afaaf4ca ""
   "/usr/share/texlive/texmf-dist/fonts/map/fontname/texfonts.map" 1577235249 3524 cb3e574dea2d1052e39280babc910dc8 ""
   "/usr/share/texlive/texmf-dist/fonts/tfm/jknappen/ec/ecrm1000.tfm" 1136768653 3584 adb004a0c8e7c46ee66cad73671f37b4 ""
   "/usr/share/texlive/texmf-dist/tex/generic/iftex/iftex.sty" 1583617216 6501 4011d89d9621e0b0901138815ba5ff29 ""
@@ -11,10 +11,10 @@
   "/usr/share/texlive/texmf-dist/web2c/texmf.cnf" 1644012257 39432 7155514e09a3d69036fac785183a21c2 ""
   "/usr/share/texmf/web2c/texmf.cnf" 1644012257 39432 7155514e09a3d69036fac785183a21c2 ""
   "/var/lib/texmf/web2c/pdftex/pdflatex.fmt" 1778277332 1481073 d4c76cc66f0cebb06e0064b4642c9035 ""
-  "SignMuon_AAAI.aux" 1784539386 32 3985256e7290058c681f74d7a3565a19 ""
-  "SignMuon_AAAI.tex" 1784539386 144783 e74f497b458c412fcec745bf719d720f ""
   "aaai2027.sty" 1779110464 16915 1b1c792e2acfbbd8b672259e267b95d8 ""
   "newtxtext.sty" 0 -1 0 ""
+  "v2_SignMuon_AAAI.aux" 1784617795 32 3985256e7290058c681f74d7a3565a19 ""
+  "v2_SignMuon_AAAI.tex" 1784617794 141301 22c696048f210c8c08040984afaaf4ca ""
   (generated)
-  "SignMuon_AAAI.log"
-  "SignMuon_AAAI.pdf"
+  "v2_SignMuon_AAAI.log"
+  "v2_SignMuon_AAAI.pdf"
