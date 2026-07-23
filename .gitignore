@@ -7,6 +7,11 @@ signmuon_india.pdf
 SignMuon_eng.fls
 SignMuon_eng.fdb_latexmk
 SignMuonCounterexample.ipynb
+plan.md
+error.txt
+log.txt
+README_run.md
+../code/nanogpt/modded-nanogpt/
 
 # Custom
 .DS_Store

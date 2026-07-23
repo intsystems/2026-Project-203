@@ -29,9 +29,6 @@ def zeropower_via_newtonschulz5(
 
     # normalization matrix X
     norm = X.norm(dim=(-2, -1), keepdim=True) + eps
-    if norm < eps:
-        print("Norm lower than eps")
-        return torch.zeros_like(X)
     X /= norm
 
     # steps of Newton–Schulz algorithm
@@ -165,7 +162,94 @@ class SignMuon(Optimizer):
                 p.data.add_(s_t, alpha=-lr * lambda_mult)
 
         return loss
+
+
+class MuonSign(Optimizer):
+    """
+    Centralized MuonSign optimizer (mirror image of SignMuon).
     
+    For each parameter p:
+        m_t = μ m_{t-1} + g_t                       (momentum)
+        s_t = sign(m̃_t)                            (sign compression FIRST)
+        d_t ≈ Muon-LMO(s_t)  (via muon_orthogonalized_update)
+        p_{t+1} = p_t - lr * lambda_mult * d_t      (full LMO step)
+    """
+    def __init__(
+        self,
+        params,
+        lr: float = 1e-3,
+        momentum: float = 0.0,
+        nesterov: bool = False,
+        norm_weight: bool = False,
+        weight_decay=0.0,
+        lambda_mult: float = 1.0,
+        ns_steps: int = 5,
+    ):
+        if lr < 0.0:
+            raise ValueError(f"Invalid learning rate: {lr}")
+        if momentum < 0.0:
+            raise ValueError(f"Invalid momentum value: {momentum}")
+        if nesterov and momentum <= 0:
+            raise ValueError("Nesterov momentum requires a positive momentum")
+
+        defaults = dict(
+            lr=lr, momentum=momentum, nesterov=nesterov,
+            norm_weight=norm_weight, weight_decay=weight_decay,
+            lambda_mult=lambda_mult, ns_steps=ns_steps
+        )
+        super().__init__(params, defaults)
+
+    @torch.no_grad()
+    def step(self, closure=None):
+        loss = None
+        if closure is not None:
+            with torch.enable_grad():
+                loss = closure()
+
+        for group in self.param_groups:
+            lr = group["lr"]
+            momentum = group["momentum"]
+            nesterov = group["nesterov"]
+            wd = group["weight_decay"]
+            norm_weight = group["norm_weight"]
+            lambda_mult = group["lambda_mult"]
+            ns_steps = group["ns_steps"]
+
+            for p in group["params"]:
+                if p.grad is None:
+                    continue
+                if p.grad.is_sparse:
+                    raise RuntimeError("MuonSign does not support sparse gradients")
+
+                g = p.grad
+                if wd != 0:
+                    g = g.add(p.data, alpha=wd)
+                state = self.state[p]
+
+                # 1) momentum-сглаживание
+                if "momentum_buffer" not in state:
+                    state["momentum_buffer"] = torch.zeros_like(g)
+                buf = state["momentum_buffer"]
+                buf.mul_(momentum).add_(g)
+                m_t = g.add(buf, alpha=momentum) if nesterov else buf
+
+                # 2) нормализация веса
+                if norm_weight:
+                    norm = p.data.norm().clamp(min=1e-10)
+                    scale = (p.data.numel()**0.5) / norm
+                    p.data.mul_(scale)
+
+                # 3) sign-компрессия моментума (ДО LMO)
+                s_t = m_t.sign()
+
+                # 4) LMO-направление через Newton–Schulz от знаковой матрицы
+                d_t = muon_orthogonalized_update(s_t, ns_steps=ns_steps)
+
+                # 5) шаг параметра: x_{t+1} = x_t - lr * lambda_mult * d_t
+                p.data.add_(d_t, alpha=-lr * lambda_mult)
+
+        return loss
+
 
 class Muon(Optimizer):
     """

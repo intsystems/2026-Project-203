@@ -105,7 +105,7 @@
 % \vspace{- -- No negative value may be used in proximity of a caption, figure, table, section, subsection, subsubsection, or reference
 % \vskip{- -- No negative value may be used to alter spacing above or below a caption, figure, table, section, subsection, subsubsection, or reference
 
-\setcounter{secnumdepth}{0} %May be changed to 1 or 2 if section numbers are desired.
+\setcounter{secnumdepth}{2} %May be changed to 1 or 2 if section numbers are desired.
 
 % The file aaai2027.sty is the style file for AAAI Press
 % proceedings, working notes, and technical reports.
@@ -120,7 +120,7 @@
 % directly follow a colon or long dash
 
 
-\title{The Curious Case of MuonSign and SignMuon: Sign Before or After the LMO?}
+\title{SignMuon, MuonSign, and the Role of Error Feedback}
 \author{
     Maria Smirnova,
     Alexey Kravatskiy
@@ -157,21 +157,21 @@
 }
 
 %Example, Single Author, ->> remove \iffalse,\fi and place them surrounding AAAI title to use it
-\iffalse
-\title{My Publication Title -- Single Author}
-\author {
-    Author Name
-}
-\affiliations{
-    Affiliation\\
-    Affiliation Line 2\\
-    name@example.com
-}
-\fi
+% \iffalse
+% \title{My Publication Title -- Single Author}
+% \author {
+%     Author Name
+% }
+% \affiliations{
+%     Affiliation\\
+%     Affiliation Line 2\\
+%     name@example.com
+% }
+% \fi
 
 \iffalse
 %Example, Multiple Authors, ->> remove \iffalse,\fi and place them surrounding AAAI title to use it
-\title{The Curious Case of MuonSign and SignMuon: Sign Before or After the LMO?}
+\title{SignMuon, MuonSign, and the Role of Error Feedback}
 \author {
     % Authors
     Maria Smirnova\textsuperscript{\rm 1}\equalcontrib,
@@ -190,7 +190,7 @@
 \maketitle
 
 \begin{abstract}\label{sec:abs}
-The SignSGD gradient-compression algorithm enables up to a $32\times$ reduction in communication volume, which is critical for federated learning under limited bandwidth, but it ignores the matrix structure of the parameters exploited by modern optimizers such as Muon. A natural attempt to combine the two is to insert a sign operator around the Muon Linear Minimization Oracle (LMO), yet where the sign is placed matters. We study the two resulting one-bit-per-parameter methods: \textbf{SignMuon}, which compresses after the LMO and computes $\operatorname{sign}(\operatorname{LMO}(\cdot))$, and \textbf{MuonSign}, which compresses before the LMO and computes $\operatorname{LMO}(\operatorname{sign}(\cdot))$. We prove that neither enjoys a global convergence guarantee: for each method we construct a smooth linear objective on which it provably diverges (Theorems~\ref{th:1} and~\ref{th:2}). To restore convergence without increasing the communication volume, we introduce \textbf{EF21-MuonUSign}, an Error-Feedback variant in which the scaled-sign operator compresses only the residual between the momentum and a gradient estimator, while the descent step uses the full Muon LMO of the reconstructed estimator on the server; the uplink stays at one bit per parameter and the standard $\mathcal{O}(T^{-1/2})$ rate for smooth non-convex optimization is retained. We further introduce \textbf{EF21-MuonUDSign}, a bidirectional variant that additionally compresses the downlink with the scaled-sign operator through a second error-feedback loop, reducing communication to one bit per parameter in both directions while preserving convergence. Both Error-Feedback methods converge on the same counterexamples where SignMuon and MuonSign diverge. We validate our analysis on a synthetic convex problem and on centralized and federated CIFAR-10 classification.
+SignMuon (sign compression of the Muon update to one bit per parameter) is the most straightforward adaptation of Muon for training deep neural networks under an extremely low communication budget. Although SignMuon significantly outperforms SignSGD in practice, it may diverge even on a linear function. It is natural to conjecture that the order of operations is to blame, and that placing the sign before rather than after the Linear Minimization Oracle (LMO) might fix this issue. We show that the resulting algorithm, which we call MuonSign, still diverges even on a linear function. Thus, neither naive placement of the sign around the LMO yields a convergent algorithm. At the same time, EF21 does fix MuonSign: EF21-MuonSign provably achieves the standard $\mathcal{O}(T^{-1/2})$ rate for smooth nonconvex optimization and outperforms both SignSGD and SignMuon when training various deep learning models, providing a reliable drop-in replacement for SignSGD.
 \end{abstract}
 
 
@@ -335,7 +335,7 @@ In the centralized setting, SignMuon is applied to the matrix-valued parameters 
 % Для матричных параметров ключевым этапом алгоритма SignMuon является поиск ортонормированного LMO-направления $\mathbf{D}_t \approx \mathbf{U}_t \mathbf{V}_t^\top$. Чтобы избежать высоких вычислительных затрат на явное вычисление сингулярного разложения (SVD) на каждом шаге оптимизации, на практике применяется итерационный алгоритм Ньютона-Шульца 5-го порядка. В ортогонализации Ньютона-Шульца мы приняли коэффициенты равными $a=3.4445, b=4.7750, c=2.0315$. Отличие нашего подхода от классического SignSGD заключается в том, к какому объекту применяется компрессия. Если в SignSGD знаковая компрессия применяется непосредственно к стохастическому градиенту, то в SignMuon сначала строится структурированное направление обновления $\mathbf{D}_t$, соответствующее LMO-шагу Muon, и лишь затем полученная матрица сжимается поэлементной функцией $\operatorname{sign}(\mathbf{D}_t)$. Тем самым SignMuon сохраняет геометрию ортонормированных обновлений и одновременно снижает объём передаваемой информации до одного бита на компоненту. Полная логика обновления матричных параметров представлена в Приложении ~\ref{app:alg}.
 For matrix parameters, the key component of SignMuon is the computation of an orthonormal LMO direction $\mathbf{D}_t \approx \mathbf{U}_t \mathbf{V}_t^\top$. To avoid the computational cost of performing a full singular value decomposition (SVD) at every optimization step, the orthogonalization is approximated using a 5th-order Newton-Schulz iteration (Algorithm~\ref{alg:muon_lmo}). In our implementation, the Newton-Schulz coefficients are chosen as $a=3.4445, b=4.7750, c=2.0315$. The main difference between SignMuon and the classical SignSGD algorithm lies in the object being compressed. In SignSGD, sign compression is applied directly to the stochastic gradient. In contrast, SignMuon first constructs a structured update direction $\mathbf{D}_t$, corresponding to the Muon LMO step and only then applies the elementwise sign operator to obtain $\operatorname{sign}(\mathbf{D}_t)$. Consequently, SignMuon preserves the geometry of orthonormal updates while reducing the transmitted information to one bit per component (Algorithm in Appendix\ref{app:alg}). The same idea is used for create MuonSign. It also presents in Appendix\ref{app:alg}).
 
-\subsection{Theoretical limitations of SignMuon}
+\subsection{Theoretical limitations}
 % Figure 1 (fig:divergence_plot) moved up to the start of \section{Theory} so
 % that the two-column figure lands on the same page as its first reference.
 % Предложенные гипотезы ~\ref{app:hyp} опираются на предположение о том, что направление наискорейшего спуска в спектральной норме (LMO-шаг алгоритма Muon) остается направлением убывания и после применения экстремальной знаковой компрессии. Однако это не всегда верно. 
@@ -360,7 +360,7 @@ A proof by counterexample is provided in Appendix\ref{app:proof_th1}.
 This counterexample demonstrates that the SignMuon algorithm does not guarantee global convergence for general smooth functions. This motivates the development of a variant with Error Feedback, which preserves one-bit uplink communication while restoring convergence.
 
 
-\subsection{Theoretical limitations of MuonSign}
+% \subsection{Theoretical limitations of MuonSign}
 Like SignMuon, MuonSign communicates only one bit per parameter on the uplink; unlike SignMuon, the step is taken along a full orthonormal LMO direction rather than along its sign. One might therefore hope that the LMO ``heals'' the coarseness of the sign and preserves the descent property. The direction $\mathbf{D}_t$ is a descent direction whenever
 \begin{equation}
 \bigl\langle \mathbf{G}_t,\, -A\bigl(\operatorname{sign}(\tilde{\mathbf{M}}_t)\bigr)\bigr\rangle > 0,
