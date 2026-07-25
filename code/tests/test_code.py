@@ -112,14 +112,73 @@ def test_newton_schulz_does_not_mutate_input():
         assert torch.equal(G, before), f"input mutated for dtype={dtype}"
 
 
-def test_newton_schulz_approximates_polar():
-    torch.manual_seed(0)
-    # Well conditioned: 5 steps of the Muon quintic land close to the polar factor.
-    G = torch.randn(8, 8)
-    D = muon_lmo(G, ns_steps=5, dtype=torch.float32, scale_aspect=False)
-    P = exact_polar(G).float()
-    assert torch.equal(torch.sign(D), torch.sign(P)), "sign pattern differs"
-    assert (D - P).norm() / P.norm() < 0.15, f"relative error {(D - P).norm() / P.norm()}"
+def _controlled_spectrum(shape, kappa: float, seed: int) -> torch.Tensor:
+    """``U diag(s) V^T`` with ``s`` log-spaced over ``[1/kappa, 1]``.
+
+    Testing on Gaussian matrices conflates the implementation with the *input's*
+    conditioning -- a Gaussian's condition number is heavy-tailed, and 5 Newton-Schulz
+    steps genuinely cannot lift a singular value that starts too small. Controlling
+    the spectrum separates the two.
+    """
+    g = torch.Generator().manual_seed(seed)
+    m, n = shape
+    r = min(m, n)
+    U, _ = torch.linalg.qr(torch.randn(m, r, generator=g))
+    V, _ = torch.linalg.qr(torch.randn(n, r, generator=g))
+    s = torch.logspace(math.log10(1.0 / kappa), 0.0, r)
+    return U @ torch.diag(s) @ V.T
+
+
+def test_newton_schulz_gets_the_direction_but_not_the_scale():
+    """What 5 steps of the Muon quintic actually deliver.
+
+    The quintic is *not* a convergent iteration: it drives the singular values into
+    a band around 1 and oscillates inside it. Two consequences, both measured over
+    80 (shape, seed) cases:
+
+    * On an **already orthogonal** input the direction is exact -- ``NS(Q) = c*Q`` for
+      a positive scalar ``c``, since ``A = QQ^T`` is a multiple of the identity and
+      each step just rescales. So cosine is 1.0000 and every sign agrees. But the
+      *relative Frobenius error reaches 0.31*, because ``c`` oscillates in
+      ``[0.69, 1.07]``. Asserting a small Frobenius error would therefore be wrong
+      even for a perfect implementation -- the quintic does not fix the scale, which
+      is exactly why magnitude is handled separately by ``lambda`` / ``scale_aspect``.
+    * On a conditioned input the sign pattern agrees only 84-91% of the time. So
+      ~1 entry in 8 of ``sign(polar(G))`` flips under the practical oracle -- the
+      reason the sign-family methods are sensitive to the LMO approximation
+      (cf. ``--lmo-dtype`` and ``counterexamples/verify_ns_oracle.py``).
+
+    The assertions below therefore test *direction* and *approximate orthogonality*,
+    with margins taken from the 80-case sweep.
+    """
+    shapes = [(8, 8), (16, 16), (64, 64), (32, 96)]
+
+    # (a) orthogonal input: direction must be essentially exact.
+    for shape in shapes:
+        for seed in (0, 1):
+            G = _controlled_spectrum(shape, kappa=1.0, seed=seed)
+            D = muon_lmo(G, ns_steps=5, dtype=torch.float32, scale_aspect=False)
+            P = exact_polar(G).float()
+            cos = float((D * P).sum() / (D.norm() * P.norm()))
+            agree = float((torch.sign(D) == torch.sign(P)).float().mean())
+            assert cos > 0.999, f"{shape}: cosine {cos:.5f} on an orthogonal input"
+            assert agree > 0.98, f"{shape}: {agree:.1%} sign agreement on an " \
+                                 f"orthogonal input (should be exact)"
+
+    # (b) moderately conditioned input: direction close, scale within the band.
+    for shape in shapes:
+        for seed in (0, 1, 2):
+            G = _controlled_spectrum(shape, kappa=4.0, seed=seed)
+            D = muon_lmo(G, ns_steps=5, dtype=torch.float32, scale_aspect=False)
+            P = exact_polar(G).float()
+            cos = float((D * P).sum() / (D.norm() * P.norm()))
+            agree = float((torch.sign(D) == torch.sign(P)).float().mean())
+            sv = torch.linalg.svdvals(D.double())
+            assert cos > 0.95, f"{shape}: cosine {cos:.4f} -- wrong direction"
+            assert agree > 0.70, f"{shape}: only {agree:.1%} of signs agree"
+            assert 0.4 < float(sv.min()) and float(sv.max()) < 1.5, \
+                f"{shape}: singular values [{sv.min():.3f}, {sv.max():.3f}] -- not " \
+                f"approximately orthogonal"
 
 
 def test_muon_lmo_shapes():
