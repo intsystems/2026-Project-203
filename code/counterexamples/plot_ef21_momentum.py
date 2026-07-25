@@ -26,8 +26,8 @@ matplotlib.use("Agg")
 import matplotlib.pyplot as plt
 
 sys.path.insert(0, os.path.dirname(os.path.abspath(__file__)))
-from optimizers import EF21SignMuon                       # noqa: E402
-from problems import ef21_signmuon_counterexample         # noqa: E402
+from counterexamples.optimizers import EF21SignMuon                       # noqa: E402
+from counterexamples.problems import ef21_signmuon_counterexample         # noqa: E402
 
 # --- shared style (kept in sync with run_counterexamples.py) --------------
 LABEL_FS, TICK_FS, LEG_FS = 18, 13, 12.5

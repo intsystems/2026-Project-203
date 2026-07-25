@@ -29,9 +29,10 @@ import torch.nn.functional as F
 import torch.distributed as dist
 from torch.nn.attention.flex_attention import BlockMask, flex_attention
 
-# import the optimizers from code/optimizers.py
+# import the optimizers from code/common/optimizers.py (code/ goes on sys.path)
 sys.path.insert(0, os.path.join(os.path.dirname(os.path.abspath(__file__)), ".."))
-from optimizers import SignMuon, MuonSign, Muon, EF_USignMuon, EF_UDSignMuon, SignSGD
+from common.optimizers import (SignMuon, MuonUSign, MuonSign, Muon,
+                               EF21MuonUSign, EF21MuonSign, SignSGD)
 
 # -----------------------------------------------------------------------------
 # Communication-volume accounting
@@ -43,9 +44,10 @@ OPTIMIZER_COMM_BITS = {
     "muon": 64,
     "signsgd": 33,
     "signmuon": 33,
-    "muonsign": 33,
-    "ef_usignmuon": 33,
-    "ef_udsignmuon": 2,
+    "muonusign": 33,
+    "muonsign": 2,
+    "ef21muonusign": 33,
+    "ef21muonsign": 2,
 }
 
 # -----------------------------------------------------------------------------
@@ -420,23 +422,15 @@ def build_optimizers(model: nn.Module, args):
     aux_params = embed_params + head_params + scalar_params
 
     name = args.optimizer
-    if name in ("signmuon", "muonsign", "muon"):
-        cls = {"signmuon": SignMuon, "muonsign": MuonSign, "muon": Muon}[name]
-        main_opt = cls(hidden_matrix_params,
-                       lr=args.lr, momentum=args.momentum, nesterov=args.nesterov,
-                       norm_weight=args.norm_weight, weight_decay=args.weight_decay,
-                       lambda_mult=args.lambda_mult, ns_steps=args.ns_steps)
-    elif name in ("ef_usignmuon", "ef_udsignmuon"):
-        cls = {"ef_usignmuon": EF_USignMuon, "ef_udsignmuon": EF_UDSignMuon}[name]
-        main_opt = cls(hidden_matrix_params,
-                       lr=args.lr, momentum=args.momentum, nesterov=args.nesterov,
-                       weight_decay=args.weight_decay, lambda_mult=args.lambda_mult, ns_steps=args.ns_steps)
-    elif name == "signsgd":
-        main_opt = SignSGD(hidden_matrix_params,
-                           lr=args.lr, momentum=args.momentum, nesterov=args.nesterov,
-                           weight_decay=args.weight_decay)
-    else:
+    classes = {"signmuon": SignMuon, "muonusign": MuonUSign, "muonsign": MuonSign,
+               "muon": Muon, "ef21muonusign": EF21MuonUSign,
+               "ef21muonsign": EF21MuonSign, "signsgd": SignSGD}
+    if name not in classes:
         raise ValueError(f"Unknown optimizer: {name}")
+    main_opt = classes[name](hidden_matrix_params,
+                             lr=args.lr, momentum=args.momentum, nesterov=args.nesterov,
+                             weight_decay=args.weight_decay,
+                             lambda_mult=args.lambda_mult, ns_steps=args.ns_steps)
 
     aux_groups = _aux_param_groups(aux_params, args.lr_aux, args.weight_decay_aux)
     aux_opt = torch.optim.AdamW(aux_groups, betas=(0.8, 0.95), eps=1e-10) if aux_groups else None
@@ -469,14 +463,14 @@ def get_window_size_blocks(step: int, total_steps: int):
 def get_args():
     p = argparse.ArgumentParser(description="Run optimizers.py optimizers on modded-nanogpt (1 GPU).")
     p.add_argument("--optimizer", type=str, required=True,
-                   choices=["signmuon", "muonsign", "muon", "ef_usignmuon", "ef_udsignmuon", "signsgd"])
+                   choices=["signmuon", "muonusign", "muonsign", "muon",
+                            "ef21muonusign", "ef21muonsign", "signsgd"])
     # main (matrix) optimizer hyperparameters
     p.add_argument("--lr", type=float, default=0.02)
     p.add_argument("--momentum", type=float, default=0.95)
     p.add_argument("--nesterov", action="store_true")
     p.add_argument("--lambda_mult", type=float, default=1.0)
     p.add_argument("--ns_steps", type=int, default=5)
-    p.add_argument("--norm_weight", action="store_true", default=False)
     p.add_argument("--weight_decay", type=float, default=0.01)
     # aux AdamW hyperparameters
     p.add_argument("--lr_aux", type=float, default=0.008)

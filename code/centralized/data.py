@@ -1,12 +1,23 @@
-from typing import Tuple
+from typing import Optional, Tuple
 import torch
 from torch.utils.data import DataLoader
 from torchvision import datasets, transforms
+
+
+def _generator(seed: Optional[int]) -> Optional[torch.Generator]:
+    """Seeded generator for DataLoader shuffling (``None`` keeps global RNG)."""
+    if seed is None:
+        return None
+    g = torch.Generator()
+    g.manual_seed(int(seed))
+    return g
+
 
 def mnist_loaders(
     datadir: str,
     batch_size: int = 128,
     download: bool = False,
+    seed: Optional[int] = None,
 ):
     """
     Централизованный MNIST, делим train/test с нормализацией
@@ -21,7 +32,8 @@ def mnist_loaders(
     train_ds = datasets.MNIST(datadir, train=True, download=download, transform=transform)
     test_ds = datasets.MNIST(datadir, train=False, download=download, transform=transform)
 
-    train_dl = DataLoader(train_ds, batch_size=batch_size, shuffle=True, drop_last=False)
+    train_dl = DataLoader(train_ds, batch_size=batch_size, shuffle=True, drop_last=False,
+                          generator=_generator(seed))
     test_dl = DataLoader(test_ds, batch_size=batch_size, shuffle=False, drop_last=False)
     return train_dl, test_dl
 
@@ -30,6 +42,7 @@ def cifar10_loaders(
     datadir: str,
     batch_size: int = 128,
     download: bool = False,
+    seed: Optional[int] = None,
 ) -> Tuple[DataLoader, DataLoader]:
     """
     Централизованный CIFAR10, делим train/test с нормализацией
@@ -58,7 +71,8 @@ def cifar10_loaders(
     train_ds = datasets.CIFAR10(datadir, train=True, download=download, transform=transform_train)
     test_ds = datasets.CIFAR10(datadir, train=False, download=download, transform=transform_test)
 
-    train_dl = DataLoader(train_ds, batch_size=batch_size, shuffle=True, drop_last=False)
+    train_dl = DataLoader(train_ds, batch_size=batch_size, shuffle=True, drop_last=False,
+                          generator=_generator(seed))
     test_dl = DataLoader(test_ds, batch_size=batch_size, shuffle=False, drop_last=False)
     return train_dl, test_dl
 

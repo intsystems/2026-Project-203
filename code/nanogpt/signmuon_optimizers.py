@@ -12,9 +12,9 @@ from the earlier classic-record port.
     SignMuon         sign AFTER the LMO          X <- X - eta * sign(PE(M))
     EF21-SignMuon    EF21 on the LMO direction   X <- X - eta * d_est,  d_est ~ PE(M)
     MuonUSign        sign BEFORE the LMO         X <- X - eta * PE(sign(M))     (== MuonSign)
-    MuonUDSign       sign BEFORE and AFTER LMO   X <- X - eta * sign(PE(sign(M)))
+    MuonSign       sign BEFORE and AFTER LMO   X <- X - eta * sign(PE(sign(M)))
     EF21-MuonUSign   EF21 on the momentum        X <- X - eta * PE(g_est), g_est ~ M
-    EF21-MuonUDSign  bidirectional EF21          exact X step + sign-compressed broadcast W
+    EF21-MuonSign  bidirectional EF21          exact X step + sign-compressed broadcast W
     SignSGD          sign of the momentum        X <- X - eta * sign(M)
     Muon             reference (no compression)  X <- X - eta * PE(M)
 
@@ -70,7 +70,7 @@ Consequences that make this correct and simple:
     precision via reduce_scatter). This is the honest distributed analog of the
     centralized algorithms the paper analyzes -- see the README for the full
     argument.
-  * ``EF21-MuonUDSign`` additionally keeps an *exact* server model ``X`` as
+  * ``EF21-MuonSign`` additionally keeps an *exact* server model ``X`` as
     optimizer state and lets the live parameters be the sign-compressed
     broadcast model ``W``; the gradient is naturally evaluated at ``W`` (the
     forward pass uses the live parameter) exactly as the downlink EF21-P scheme
@@ -100,10 +100,10 @@ __all__ = [
     "SignSGD",
     "SignMuon",
     "MuonUSign",
-    "MuonUDSign",
+    "MuonSign",
     "EF21SignMuon",
     "EF21MuonUSign",
-    "EF21MuonUDSign",
+    "EF21MuonSign",
     "OPTIMIZERS",
     "PAPER_METHODS",
 ]
@@ -244,7 +244,7 @@ class _DistributedMatrixOptimizer(Optimizer):
 
     def _decoupled_weight_decay(self, target: Tensor, p: Tensor, group: dict) -> None:
         """AdamW-style decoupled decay applied to ``target`` (usually ``p``, but
-        the *exact* model ``X`` for EF21-MuonUDSign)."""
+        the *exact* model ``X`` for EF21-MuonSign)."""
         eff_wd = group["lr"] * group["weight_decay"] * getattr(p, "wd_mul", 1.0)
         if eff_wd != 0:
             target.mul_(1 - eff_wd)
@@ -373,8 +373,8 @@ class MuonUSign(_DistributedMatrixOptimizer):
         p.add_(d, alpha=-self._eff_lr(p, group))
 
 
-class MuonUDSign(_DistributedMatrixOptimizer):
-    """MuonUDSign -- sign BEFORE *and* AFTER the LMO:
+class MuonSign(_DistributedMatrixOptimizer):
+    """MuonSign -- sign BEFORE *and* AFTER the LMO:
     ``s = sign(M);  D = PE(s);  X <- X - eta * sign(D)``.
     """
 
@@ -448,8 +448,8 @@ class EF21MuonUSign(_DistributedMatrixOptimizer):
         p.add_(d, alpha=-self._eff_lr(p, group))
 
 
-class EF21MuonUDSign(_DistributedMatrixOptimizer):
-    """EF21-MuonUDSign -- bidirectional EF21 (uplink gradient + downlink model).
+class EF21MuonSign(_DistributedMatrixOptimizer):
+    """EF21-MuonSign -- bidirectional EF21 (uplink gradient + downlink model).
 
     Uplink (as EF21-MuonUSign) reconstructs the gradient estimator ``g_est`` and
     the server advances an EXACT model ``X`` (kept as optimizer state) with the
@@ -555,9 +555,9 @@ OPTIMIZERS = {
     "SignMuon":        SignMuon,
     "EF21-SignMuon":   EF21SignMuon,
     "MuonUSign":       MuonUSign,
-    "MuonUDSign":      MuonUDSign,
+    "MuonSign":      MuonSign,
     "EF21-MuonUSign":  EF21MuonUSign,
-    "EF21-MuonUDSign": EF21MuonUDSign,
+    "EF21-MuonSign": EF21MuonSign,
     "SignSGD":         SignSGD,
     "Muon":            Muon,
 }
@@ -565,5 +565,5 @@ OPTIMIZERS = {
 #: the six methods introduced in the paper (the two above are references)
 PAPER_METHODS = [
     "SignMuon", "EF21-SignMuon", "MuonUSign",
-    "MuonUDSign", "EF21-MuonUSign", "EF21-MuonUDSign",
+    "MuonSign", "EF21-MuonUSign", "EF21-MuonSign",
 ]

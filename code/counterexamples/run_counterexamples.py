@@ -28,8 +28,8 @@ matplotlib.use("Agg")            # headless-safe; figures are written to disk
 import matplotlib.pyplot as plt  # noqa: E402
 from matplotlib.ticker import MultipleLocator  # noqa: E402
 
-from optimizers import OPTIMIZERS, PAPER_METHODS, REFERENCE_METHODS  # noqa: E402
-from problems import (  # noqa: E402
+from counterexamples.optimizers import OPTIMIZERS, PAPER_METHODS, REFERENCE_METHODS  # noqa: E402
+from counterexamples.problems import (  # noqa: E402
     make_linear_problem,
     signmuon_counterexample,
     muonsign_counterexample,
@@ -42,24 +42,24 @@ STYLES = {
     "SignMuon":        ("#1f77b4", "^", "-"),
     "EF21-SignMuon":   ("#8c564b", "D", (0, (5.5, 5.6))),
     "MuonUSign":       ("#2ca02c", "s", "-"),
-    "MuonUDSign":      ("#e377c2", "v", (0, (3, 1, 1, 1))),
+    "MuonSign":      ("#e377c2", "v", (0, (3, 1, 1, 1))),
     "EF21-MuonUSign":  ("#4A3322", "o", (0, (4, 2))),
-    "EF21-MuonUDSign": ("#10C5D5", "P", (0, (3, 1))),
+    "EF21-MuonSign": ("#10C5D5", "P", (0, (3, 1))),
     "SignSGD":         ("#9467bd", "*", "-"),
     "Muon":            ("#999999", None, (0, (1, 2))),
 }
 
 # Map the internal algorithm names to the paper's display names.  The code's
-# "sign before *and* after the LMO" method (``MuonUDSign``) is the paper's
-# ``MuonSign`` (Theorem 3), and its error-feedback counterpart ``EF21-MuonUDSign``
+# "sign before *and* after the LMO" method (``MuonSign``) is the paper's
+# ``MuonSign`` (Theorem 3), and its error-feedback counterpart ``EF21-MuonSign``
 # is the paper's bidirectional ``EF21-MuonSign``.  Everything else is unchanged.
 DISPLAY_NAMES = {
     "SignMuon":        "SignMuon",
     "EF21-SignMuon":   "EF21-SignMuon",
     "MuonUSign":       "MuonUSign",
-    "MuonUDSign":      "MuonSign",
+    "MuonSign":      "MuonSign",
     "EF21-MuonUSign":  "EF21-MuonUSign",
-    "EF21-MuonUDSign": "EF21-MuonSign",
+    "EF21-MuonSign": "EF21-MuonSign",
     "SignSGD":         "SignSGD",
     "Muon":            "Muon",
 }

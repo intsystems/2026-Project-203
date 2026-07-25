@@ -54,8 +54,8 @@ SIGNMUON_OPT=EF21-MuonUSign python train_gpt_a100.py
 #   or:  SIGNMUON_OPT=EF21-MuonUSign torchrun --standalone --nproc_per_node=1 train_gpt_a100.py
 ```
 
-Valid `SIGNMUON_OPT`: `SignMuon`, `EF21-SignMuon`, `MuonUSign`, `MuonUDSign`,
-`EF21-MuonUSign`, `EF21-MuonUDSign`, `SignSGD`, `Muon` (default `Muon`).
+Valid `SIGNMUON_OPT`: `SignMuon`, `EF21-SignMuon`, `MuonUSign`, `MuonSign`,
+`EF21-MuonUSign`, `EF21-MuonSign`, `SignSGD`, `Muon` (default `Muon`).
 Sweep overrides: `SIGNMUON_LR`, `SIGNMUON_MOMENTUM`, `SIGNMUON_WD`.
 
 Each logged run records `train_gpt*.py` **and** `signmuon_optimizers.py` verbatim, so a
@@ -118,13 +118,13 @@ rule is verbatim the centralized algorithm boxes of the paper and their numpy re
 | `SignMuon` | `X ← X − η·sign(PE(M))` | sign |
 | `EF21-SignMuon` | `d_est ← d_est + mean\|D−d_est\|·sign(D−d_est)`, `D=PE(M)`; `X ← X − η·d_est` | LMO |
 | `MuonUSign` (= MuonSign) | `X ← X − η·PE(sign(M))` | LMO |
-| `MuonUDSign` | `X ← X − η·sign(PE(sign(M)))` | sign |
+| `MuonSign` | `X ← X − η·sign(PE(sign(M)))` | sign |
 | `EF21-MuonUSign` | `g_est ← g_est + mean\|M−g_est\|·sign(M−g_est)`; `X ← X − η·PE(g_est)` | LMO |
-| `EF21-MuonUDSign` | uplink EF on `g_est` → exact `X ← X − η·PE(g_est)`; downlink EF compresses `X−W` into the broadcast model `W` | LMO |
+| `EF21-MuonSign` | uplink EF on `g_est` → exact `X ← X − η·PE(g_est)`; downlink EF compresses `X−W` into the broadcast model `W` | LMO |
 | `SignSGD` | `X ← X − η·sign(M)` | sign |
 | `Muon` | `X ← X − η·PE(M)` (reference, no compression; == record #40) | LMO |
 
-Sign-**terminated** steps (`SignMuon`, `MuonUDSign`, `SignSGD`) move every weight by `≈ η`
+Sign-**terminated** steps (`SignMuon`, `MuonSign`, `SignSGD`) move every weight by `≈ η`
 each step and use **no** fan-in lr scaling, so they need a **much smaller `η`** than the
 LMO-terminated methods. The defaults in `train_gpt.py:OPTIMIZER_CONFIG` reflect this but are
 only starting points (except `Muon`, which equals record #40 exactly: `lr=0.06`,
@@ -146,7 +146,7 @@ owning rank the true mean gradient; that rank runs the ordinary **centralized** 
 (momentum/LMO/sign/EF21 via `self.state[p]`); `all_gather` broadcasts the updated parameter.
 So the 1-bit "compression" is a property of the update **rule**, reproduced exactly, not of
 the wire transport — the honest distributed analog of the centralized algorithms the paper
-analyzes. `EF21-MuonUDSign` keeps an exact server model `X` in state and lets the live
+analyzes. `EF21-MuonSign` keeps an exact server model `X` in state and lets the live
 params be the sign-compressed broadcast model `W`; `swap_in_exact()`/`swap_out_exact()`
 expose `X` for validation (the scripts report val loss on `X`).
 

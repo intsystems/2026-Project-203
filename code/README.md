@@ -1,107 +1,127 @@
 # Code
 
-This repository contains source code for our paper. The code includes data processing, model building, and visualization of results.
+Source for the paper *SignMuon, MuonSign, and the Role of Error Feedback*.
+
+**→ [REPRODUCE.md](REPRODUCE.md) has the exact command for every table and figure
+in the paper.** Start there.
 
 > [!IMPORTANT]
-> We use jupyter notebooks for visualization purposes only. Please, keep your code in Python scripts.
+> Every command runs from this `code/` directory, which is the Python package root:
+> `python3 -m federated.main ...`, not `python3 federated/main.py`.
 
-## Installation
+## Layout
 
-Clone the repo:
+```
+code/
+├── REPRODUCE.md          exact commands per paper table/figure
+├── aggregate.py          collapses multi-seed runs into mean ± std
+├── common/               shared library
+│   ├── optimizers.py       the eight methods as torch.optim.Optimizer subclasses
+│   ├── models.py           CNN2, ResNet9, ResNet18
+│   └── utils.py            seeding, run dirs, metrics schema, parameter routing
+├── centralized/          single-node CIFAR-10 / MNIST
+│   ├── main.py             entry point
+│   ├── train.py            training loop, optimizer construction
+│   └── data.py             loaders
+├── federated/            all ten federated methods, one driver
+│   ├── main.py             entry point
+│   ├── algorithms.py       run_federated + the MethodSpec registry
+│   ├── data.py             partitioning and per-client loaders
+│   └── grid.py             early-stopped learning-rate search
+├── synthetic/
+│   └── benchmark.py        F(X) = ½⟨X, AXB⟩, grid + final modes
+├── counterexamples/      exact-LMO reproduction of Theorems 1–4 and the figures
+├── nanogpt/              modded-nanogpt speedrun adaptation (own README)
+├── tests/test_code.py    CPU-only test suite
+├── notebooks/            plotting only
+└── results/              all output (created on first run)
+```
+
+## Method names
+
+The code uses the paper's names throughout:
+
+| Name | Matrix-parameter step | Uplink | Downlink |
+| :--- | :--- | :--- | :--- |
+| `signmuon` | `sign(polar(M))` | 1 bit | exact |
+| `muonusign` | `polar(sign(M))` | 1 bit | exact |
+| `muonsign` | `sign(polar(sign(M)))` | 1 bit | 1 bit |
+| `ef21signmuon` | EF21 on `polar(M)` — **diverges**, Theorem 4 | 1 bit | exact |
+| `ef21muonusign` | `polar(g_est)`, `g_est ≈ M` | 1 bit | exact |
+| `ef21muonsign` | as above + downlink EF21-P | 1 bit | 1 bit |
+| `muon`, `signsgd`, `sgd`, `adam` | references | | |
+
+Older spellings (`signmuon_cl`, `signmuon_ef_21`, `signmuon_ef_ud`, `ef_usignmuon`,
+`ef_udsignmuon`) still resolve. **`MuonSign` changed meaning**: it used to name the
+sign-*before* method, which the paper now calls `MuonUSign`. There is deliberately
+no alias for the old spelling, because resolving it silently would swap the
+algorithm rather than just the label.
+
+The LMO is an **exact rank-truncated SVD** in `counterexamples/` (matching the
+theorem statements) and a **Newton–Schulz approximation** everywhere a network is
+trained (matching practice).
+
+## Conventions that apply to every method
+
+Enforced in one place, so that two runs differ *only* in the matrix-parameter rule.
+
+* **Parameter routing.** The LMO/sign rule applies to matrix parameters
+  (`ndim ≥ 2`, excluding the classification head). Biases, BatchNorm scales and the
+  head go to AdamW. In the federated driver this holds for every method, references
+  included. Centralized, `--head-adamw auto` gives the LMO methods this split while
+  `sgd`/`adam`/`signsgd` apply their single rule to all parameters (as published,
+  and what the paper's numbers used); `--head-adamw always` makes it uniform.
+* **Learning rate.** One cosine schedule for both the main and auxiliary rate.
+* **Weight decay** applied exactly once. Federated: decoupled on the server, so the
+  LMO sees the true gradient geometry. Centralized: folded into the gradient by
+  default (`decoupled_weight_decay=True` on the optimizer switches it).
+* **Momentum** is the EMA form `M = μM + (1−μ)G` of the paper's algorithm boxes,
+  trajectory-identical to the heavy-ball form of the main text (the two differ by a
+  constant factor and every method is positively homogeneous in `M`). `sgd` keeps
+  heavy-ball, since its step *is* the buffer.
+
+### Two caveats worth knowing
+
+* **BatchNorm in the federated setting.** Local models are discarded each round and
+  BatchNorm runs in inference mode during gradient accumulation, so the running
+  statistics are never updated from data — they stay at `(0, 1)` for the whole run.
+  BatchNorm therefore acts as a fixed normalization with learnable affine
+  parameters. Self-consistent, and what the reported numbers used;
+  `--live-bn-stats` changes it.
+* **`bfloat16` LMO.** The default matches the reference Muon implementation, but
+  bfloat16 carries ~3 decimal digits, so for methods that sign the LMO *output* an
+  entry of `polar(M)` near zero can flip. `--lmo-dtype float32` when the sign
+  pattern is the object of study.
+
+## Results and multi-seed runs
+
+A run writes to `results/{centralized,federated}/<run_name>/seed<seed>/`:
+
+* `metrics.json` — `{"config": {...}, "history": {"steps": [...], "test_acc": [...], ...}}`
+* `model.pt` — final weights plus the config
+
+`history` records the **x-axis explicitly** and stores only evaluated points, so
+curves from different seeds (or different `--eval_freq`) align pointwise. Nothing is
+deleted or forward-filled. Synthetic results go to
+`results/synthetic/<method>/{grid,final}.json`.
+
 ```bash
-git clone https://github.com/intsystems/2026-Project-203.git
-cd 2026-Project-203/code
+for s in 0 1 2 3 4; do python3 -m federated.main --seed $s ... ; done
+python3 -m aggregate --metric test_acc --csv summary.csv
 ```
 
-## How to run the code
-### Centralized setting
-The example of running code in the centralized setting:
+`aggregate.py` groups runs by configuration *minus* the seed (and minus
+device/data-path fields) and reports mean ± sample std.
+
+## Tests
+
+```bash
+python3 -m tests.test_code                    # torch, CPU only, seconds
+python3 -m counterexamples.problems           # Theorem 1-4 constants
+python3 -m counterexamples.verify_ns_oracle   # exact vs Newton-Schulz LMO
 ```
-python3 -m main --dataset cifar10 --optimizer signmuon --data data --device cuda:1 --epochs 50 
-```
-#### Main Settings
-| Argument | Default | Description |
-| :--- | :--- | :--- |
-| `--dataset` | *(Required)* | Dataset: `mnist`, `cifar10` |
-| `--optimizer` | `signmuon` | Optimizer: `signmuon`, `muon`, `signsgd`, `sgd`, `adam` |
-| `--data` | `./data` | Path to dataset directory |
-| `--download` | `False` | Download dataset if missing |
-| `--device` | `cpu` | Device for training (`cuda:0`, `cpu`, etc.) |
-| `--seed` | `0` | Random seed for reproducibility |
 
-#### Training Hyperparameters
-| Argument | Default | Description |
-| :--- | :--- | :--- |
-| `--epochs` | `10` | Number of training epochs |
-| `--batch-size` | `128` | Batch size for data loader |
-| `--lr` | `1e-3` | Learning rate for main optimizer parameters |
-| `--lr-aux` | `1e-3` | Learning rate for auxiliary parameters |
-| `--momentum` | `0.9` | momentum |
-| `--nesterov` | `False` | Enable Nesterov momentum |
-
-#### Muon/SignMuon Specific Parameters
-| Argument | Default | Description |
-| :--- | :--- | :--- |
-| `--ns-steps` | `5` | Number of Newton--Schulz iterations|
-| `--lambda-mult` | `1.0` | Step size multiplier for Muon/SignMuon |
-
-#### Other
-| Argument | Default | Description |
-| :--- | :--- | :--- |
-| `--weight-decay` | `5e-4` | Weight decay (Used for Adam/SGD; ignored by Muon/SignMuon internal logic if not specified) |
-| `--run-name` | `""` | Folder name for saving results in `./saves/` (auto-generated if empty) |
-
-### Federated setting
-The example of running code in the federated setting:
-```
-python3 -m federated_main --model cnn2 --dataset cifar10 --algorithm signmuon --rounds 2000 --n_parties 10 --n_steps 3 --batch_size 64 --device cuda:3 --eval_freq 100
-```
-#### Main Settings
-| Argument | Default | Description |
-| :--- | :--- | :--- |
-| `--dataset` | `cifar10` | Dataset: `mnist`, `cifar10` |
-| `--download`| `False` |	Download dataset automatically if not found locally |
-| `--model` | `cnn2` | Model architecture: `cnn2`, `resnet9` |
-| `--algorithm` | `signmuon` | Optimizer: `signmuon`, `muon`, `signsgd`, `sgd`, `adam` |
-| `--device` | `cpu` | Device for training (`cuda:0`, `cpu`, etc.) |
-| `--seed` | `0` | Random seed for reproducibility |
-
-#### Federated Learning Hyperparameters
-| Argument | Default | Description |
-| :--- | :--- | :--- |
-| `--rounds` | `10` | Number of communication rounds |
-| `--n_parties` | `10` | Number of clients |
-| `--n_steps` | `5` | Number of local optimizer steps per client per round |
-| `--batch_size` | `32` | Batch size on each client |
-| `--lr` | `1e-3` | Learning rate |
-| `--momentum` | `0.9` | Momentum |
-
-#### Muon/SignMuon Specific Parameters
-| Argument | Default | Description |
-| :--- | :--- | :--- |
-| `--ns_steps` | `5` | Number of Newton--Schulz iterations |
-| `--lambda_mult` | `1.0` | Step size multiplier |
-| `--no_norm_weight` | `False` | Disable weight normalization in Muon/SignMuon |
-
-#### Data Partitioning
-| Argument | Default | Description |
-| :--- | :--- | :--- |
-| `--partition` | `homo` | Data distribution type: `homo` (IID), `noniid-labeldir` (Non-IID) |
-| `--beta` | `0.5` | Dirichlet concentration parameter for Non-IID (smaller = more Non-IID) |
-
-#### Other
-| Argument | Default | Description |
-| :--- | :--- | :--- |
-| `--eval_freq` | `1` | Model evaluation frequency on test set (every N rounds) |
-| `--run_name` | `""` | Folder name for saving results (auto-generated if empty) |
-| `--weight_decay` | `5e-4` | Weight decay (Adam only) |
-| `--eps` | `1e-8` | Epsilon (Adam only) |
-
-### Results and Graphs
-The results of each run are saved to the `saves_federated/<run_name>/` folder (`saves/<run_name>/` for the centralized setting).
-
-Inside the folder you will find:
-*   `metrics.json`: History of metrics (accuracy, loss) over rounds.
-*   `model_global.pt`: Global model weights after the final round.
-
-To plot the results, use the Jupyter Notebook `federated_plot.ipynb` (or `plot.ipynb`).
+`tests/test_code.py`'s central check is that the federated driver with one client
+reproduces the corresponding centralized optimizer exactly, for all eight
+matrix-parameter rules — which is what keeps `federated/algorithms.py` and
+`common/optimizers.py` from drifting apart.

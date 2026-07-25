@@ -63,8 +63,8 @@ smo.polar_express = _exact_polar  # late-bound module global -> methods pick thi
 
 # (paper name in smo.OPTIMIZERS, reference class in ref.OPTIMIZERS)
 _PAIRS = [
-    "SignMuon", "EF21-SignMuon", "MuonUSign", "MuonUDSign",
-    "EF21-MuonUSign", "EF21-MuonUDSign", "SignSGD", "Muon",
+    "SignMuon", "EF21-SignMuon", "MuonUSign", "MuonSign",
+    "EF21-MuonUSign", "EF21-MuonSign", "SignSGD", "Muon",
 ]
 
 
@@ -104,7 +104,7 @@ def _check(name, eta, mu, T=25, dim=4, seed=0, atol=1e-6):
     assert xerr < atol, f"{name}: exact-model X mismatch (max abs {xerr:.2e}) at eta={eta}, mu={mu}"
     if Wr is not None:
         werr = float(np.max(np.abs(Wr - Wd)))
-        # W is EF21-MuonUDSign's 1-bit sign-compressed broadcast model:
+        # W is EF21-MuonSign's 1-bit sign-compressed broadcast model:
         #     W <- W + mean|X-W| * sign(X-W).
         # Its update rule is line-for-line the numpy reference (optimizers.py), but sign() is
         # discontinuous: when an entry of the residual X-W lands on a sign(0) tie, torch-fp and

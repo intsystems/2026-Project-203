@@ -1,0 +1,200 @@
+"""Aggregate multi-seed runs into mean +/- std curves and a summary table.
+
+    python3 -m aggregate                             # every run under results/
+    python3 -m aggregate --root results/federated     # one family
+    python3 -m aggregate --metric test_acc --csv summary.csv
+
+Runs are grouped by their *configuration minus the seed* (and minus fields that
+cannot affect the result, such as the device or the data directory), so a sweep
+of ``--seed 0 1 2 3 4`` collapses into one row. Curves are averaged pointwise on
+the intersection of the recorded step indices, which is why
+``utils.History`` stores the x-axis explicitly: without it, runs with different
+``eval_freq`` (or forward-filled un-evaluated rounds) would be silently
+misaligned.
+
+Nothing here writes into a run directory; aggregation is a pure read.
+"""
+
+from __future__ import annotations
+
+import argparse
+import csv
+import json
+import math
+from pathlib import Path
+from typing import Any, Dict, Iterable, List, Optional, Sequence, Tuple
+
+# Config fields that do not affect the trajectory (or that identify the run
+# rather than the experiment) and are therefore ignored when grouping.
+IGNORED_FIELDS = {"seed", "run_name", "device", "data", "datadir", "download"}
+
+
+def group_key(config: Dict[str, Any]) -> Tuple[Tuple[str, Any], ...]:
+    """Hashable identity of an experiment: the config minus per-run fields."""
+    return tuple(sorted((k, _hashable(v)) for k, v in config.items()
+                        if k not in IGNORED_FIELDS))
+
+
+def _hashable(v: Any) -> Any:
+    if isinstance(v, (list, tuple)):
+        return tuple(_hashable(x) for x in v)
+    if isinstance(v, dict):
+        return tuple(sorted((k, _hashable(x)) for k, x in v.items()))
+    return v
+
+
+def describe(config: Dict[str, Any]) -> str:
+    """Short human label for a group."""
+    parts = []
+    for key in ("dataset", "model", "algorithm", "optimizer", "n_parties",
+                "n_steps", "rounds", "epochs", "lr", "lr_aux", "momentum"):
+        if key in config and config[key] is not None:
+            parts.append(f"{key}={config[key]}")
+    return " ".join(parts)
+
+
+def load_runs(roots: Sequence[Path]) -> List[Dict[str, Any]]:
+    """Read every ``metrics.json`` under ``roots``."""
+    runs = []
+    for root in roots:
+        for path in sorted(Path(root).rglob("metrics.json")):
+            try:
+                with open(path, encoding="utf-8") as f:
+                    payload = json.load(f)
+            except (OSError, json.JSONDecodeError) as exc:
+                print(f"  ! skipping {path}: {exc}")
+                continue
+            config = payload.get("config", {})
+            history = payload.get("history", {})
+            if "steps" not in history:
+                # Pre-refactor format: one entry per round, no x-axis. Recover the
+                # x-axis as 0..n-1, which is correct only when eval_freq == 1.
+                length = max((len(v) for v in history.values() if isinstance(v, list)),
+                             default=0)
+                history = {"steps": list(range(length)), **history}
+                print(f"  ~ {path}: legacy history without 'steps'; assuming eval_freq=1")
+            runs.append({"path": path, "config": config, "history": history})
+    return runs
+
+
+def _mean_std(values: Iterable[float]) -> Tuple[float, float, int]:
+    vals = [v for v in values if v is not None and not (isinstance(v, float) and math.isnan(v))]
+    n = len(vals)
+    if n == 0:
+        return float("nan"), float("nan"), 0
+    mean = sum(vals) / n
+    if n == 1:
+        return mean, 0.0, 1
+    var = sum((v - mean) ** 2 for v in vals) / (n - 1)      # sample std
+    return mean, math.sqrt(var), n
+
+
+def aggregate_group(runs: Sequence[Dict[str, Any]], metric: str) -> Optional[Dict[str, Any]]:
+    """Pointwise mean/std of ``metric`` over the runs' common step indices."""
+    series = []
+    for run in runs:
+        hist = run["history"]
+        if metric not in hist:
+            continue
+        series.append(dict(zip(hist["steps"], hist[metric])))
+    if not series:
+        return None
+
+    common = set(series[0])
+    for s in series[1:]:
+        common &= set(s)
+    steps = sorted(common)
+    if not steps:
+        return None
+
+    means, stds, counts = [], [], []
+    for step in steps:
+        mean, std, n = _mean_std(s[step] for s in series)
+        means.append(mean)
+        stds.append(std)
+        counts.append(n)
+
+    return {"steps": steps, "mean": means, "std": stds, "n": counts[0] if counts else 0,
+            "n_runs": len(series)}
+
+
+def main() -> None:
+    p = argparse.ArgumentParser(description=__doc__,
+                                formatter_class=argparse.RawDescriptionHelpFormatter)
+    p.add_argument("--root", type=str, nargs="*", default=None,
+                   help="Directories to scan (default: the whole results/ tree)")
+    p.add_argument("--metric", type=str, default="test_acc",
+                   help="Metric to summarize (default: test_acc)")
+    p.add_argument("--csv", type=str, default=None, help="Write the summary table here")
+    p.add_argument("--curves", type=str, default=None,
+                   help="Write the full mean/std curves to this JSON file")
+    args = p.parse_args()
+
+    here = Path(__file__).resolve().parent
+    # Default: the whole results/ tree, plus the pre-reorganization directories so
+    # that runs made before the code was restructured are still picked up.
+    roots = [Path(r) for r in args.root] if args.root else [
+        here / "results", here / "saves", here / "saves_federated"]
+    roots = [r for r in roots if r.exists()]
+    if not roots:
+        print("No saves directories found.")
+        return
+
+    runs = load_runs(roots)
+    print(f"Found {len(runs)} run(s) under {', '.join(str(r) for r in roots)}\n")
+
+    groups: Dict[Tuple, List[Dict[str, Any]]] = {}
+    for run in runs:
+        groups.setdefault(group_key(run["config"]), []).append(run)
+
+    rows, curves = [], {}
+    for key, group in sorted(groups.items(), key=lambda kv: describe(kv[1][0]["config"])):
+        config = group[0]["config"]
+        label = describe(config)
+        seeds = sorted(r["config"].get("seed") for r in group)
+        agg = aggregate_group(group, args.metric)
+        if agg is None:
+            print(f"  ! {label}: metric {args.metric!r} absent")
+            continue
+        final_mean, final_std = agg["mean"][-1], agg["std"][-1]
+        rows.append({
+            "label": label,
+            "seeds": ",".join(str(s) for s in seeds),
+            "n_seeds": len(seeds),
+            f"final_{args.metric}_mean": final_mean,
+            f"final_{args.metric}_std": final_std,
+            "final_step": agg["steps"][-1],
+        })
+        curves[label] = agg
+
+    if not rows:
+        print("Nothing to aggregate.")
+        return
+
+    width = max(len(r["label"]) for r in rows)
+    print(f"{'experiment':<{width}}  seeds  {args.metric + ' (mean +/- std)':>26}")
+    print("-" * (width + 36))
+    for r in sorted(rows, key=lambda r: -r[f"final_{args.metric}_mean"]):
+        mean, std = r[f"final_{args.metric}_mean"], r[f"final_{args.metric}_std"]
+        print(f"{r['label']:<{width}}  {r['n_seeds']:>5}  {mean:>14.4f} +/- {std:<8.4f}")
+
+    if len(set(r["n_seeds"] for r in rows)) > 1:
+        print("\nNote: groups have different seed counts; std values are not comparable.")
+    if any(r["n_seeds"] == 1 for r in rows):
+        print("Note: single-seed groups report std = 0 (no dispersion measured).")
+
+    if args.csv:
+        with open(args.csv, "w", newline="", encoding="utf-8") as f:
+            writer = csv.DictWriter(f, fieldnames=list(rows[0]))
+            writer.writeheader()
+            writer.writerows(rows)
+        print(f"\nSummary written to {args.csv}")
+
+    if args.curves:
+        with open(args.curves, "w", encoding="utf-8") as f:
+            json.dump({"metric": args.metric, "curves": curves}, f, indent=2)
+        print(f"Curves written to {args.curves}")
+
+
+if __name__ == "__main__":
+    main()

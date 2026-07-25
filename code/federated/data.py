@@ -43,14 +43,30 @@ def load_full_datasets(dataset, datadir, download=False):
     return train_ds, test_ds, y_train, y_test
 
 
-def get_federated_loaders(train_ds, test_ds, train_map, test_map, n_parties, batch_size):
+def get_federated_loaders(train_ds, test_ds, train_map, test_map, n_parties, batch_size,
+                          seed=None, num_workers=0):
+    """Build one train/test DataLoader per client.
+
+    When ``seed`` is given, each client's shuffling is driven by its own seeded
+    ``torch.Generator`` (``seed + client_id``). This decouples the batch order
+    from the global RNG, so model initialization and data order are independently
+    reproducible and a multi-seed sweep varies both coherently.
+    """
     train_loaders = []
     test_loaders = []
-    
+
     for i in range(n_parties):
-        train_loaders.append(DataLoader(Subset(train_ds, train_map[i]), batch_size=batch_size, shuffle=True))
-        test_loaders.append(DataLoader(Subset(test_ds, test_map[i]), batch_size=batch_size, shuffle=False))
-    
+        generator = None
+        if seed is not None:
+            generator = torch.Generator()
+            generator.manual_seed(int(seed) + i)
+        train_loaders.append(DataLoader(
+            Subset(train_ds, train_map[i]), batch_size=batch_size, shuffle=True,
+            generator=generator, num_workers=num_workers))
+        test_loaders.append(DataLoader(
+            Subset(test_ds, test_map[i]), batch_size=batch_size, shuffle=False,
+            num_workers=num_workers))
+
     return train_loaders, test_loaders
 
 

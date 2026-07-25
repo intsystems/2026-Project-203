@@ -1,41 +1,106 @@
-import torch
+"""Centralized (single-node) implementations of the eight methods in the paper
+"SignMuon, MuonSign, and the Role of Error Feedback".
+
+Naming follows the paper exactly:
+
+===================  =========================================================
+Method               Matrix-parameter update ``d_t`` (step is ``X -= eta*d_t``)
+===================  =========================================================
+``Muon``             ``polar(M)``                       (full precision)
+``SignSGD``          ``sign(M)``                        (reference)
+``SignMuon``         ``sign(polar(M))``                 sign AFTER  the LMO
+``MuonUSign``        ``polar(sign(M))``                 sign BEFORE the LMO
+``MuonSign``         ``sign(polar(sign(M)))``           sign on BOTH sides
+``EF21SignMuon``     EF21 on ``polar(M)``               (diverges, Thm 4)
+``EF21MuonUSign``    ``polar(g_est)``, ``g_est ~ M``    uplink EF21
+``EF21MuonSign``     as above + downlink EF21-P on X    bidirectional EF21
+===================  =========================================================
+
+Here ``M`` is the effective momentum direction ``M_tilde`` and
+``polar(Y) = -A(Y) = U V^T`` is the Muon LMO direction.
+
+Momentum uses the EMA form of the paper's algorithm boxes,
+``M_t = mu*M_{t-1} + (1-mu)*G_t``, with the Nesterov look-ahead
+``M_tilde = (1-mu)*G_t + mu*M_t``. This is *exactly* equivalent to the
+heavy-ball form ``mu*M_{t-1} + G_t`` used in the paper's main text -- the two
+buffers differ by the constant factor ``(1-mu)`` and every method above is
+positively homogeneous in ``M`` (``sign``, ``polar`` and the EF21 recursion all
+commute with multiplication by a positive scalar), so the iterate trajectory is
+identical. The EMA form is used here only to match the pseudocode boxes.
+"""
+
+from __future__ import annotations
+
 from contextlib import contextmanager
+from typing import Optional
+
+import torch
+from torch import Tensor
 from torch.optim import Optimizer
+
+__all__ = [
+    "zeropower_via_newtonschulz5",
+    "muon_lmo",
+    "muon_orthogonalized_update",
+    "scaled_sign",
+    "Muon",
+    "SignSGD",
+    "SignMuon",
+    "MuonUSign",
+    "MuonSign",
+    "EF21SignMuon",
+    "EF21MuonUSign",
+    "EF21MuonSign",
+    "OPTIMIZERS",
+]
+
+# 5th-order Newton-Schulz coefficients of Algorithm 1 (Y <- a*Y - b*A*Y + c*A^2*Y).
+NS_COEFFS = (3.4445, 4.7750, 2.0315)
+
+
+# --------------------------------------------------------------------------
+# Building blocks
+# --------------------------------------------------------------------------
 
 
 def zeropower_via_newtonschulz5(
-        G: torch.Tensor, 
-        steps: int = 5,
-        eps=1e-8,
-        ):
-    """
-    Muon-style Newton–Schulz algorithm to approximate UV^T for a matrix G,
-    where G = USV^T is the SVD. 
-    Supports tensors with ndim >= 2
+    G: Tensor,
+    steps: int = 5,
+    eps: float = 1e-7,
+    dtype: Optional[torch.dtype] = torch.bfloat16,
+) -> Tensor:
+    """Approximate the orthogonal polar factor ``U V^T`` of ``G`` (Algorithm 1).
+
+    ``dtype`` is the working precision of the iteration. The default
+    ``bfloat16`` matches the reference Muon implementation and is what the
+    reported experiments used; pass ``dtype=None`` to iterate in the input dtype
+    (e.g. float32), which matters whenever the *sign pattern* of the result is
+    the quantity of interest -- bfloat16 carries ~3 decimal digits, so entries of
+    ``polar(G)`` close to zero can flip sign.
+
+    Supports tensors with ``ndim >= 2``; batched leading dimensions are allowed.
     """
     assert G.ndim >= 2, "Muon orthogonalization expects at least 2D tensors."
 
-    device = G.device
+    a, b, c = NS_COEFFS
 
-    # Newton–Schulz params
-    a, b, c = (3.4445, -4.7750, 2.0315)
+    # ``.to()`` is a no-op returning ``G`` itself when the dtype already matches,
+    # so clone before the in-place normalization below or we would scribble on
+    # the caller's gradient buffer.
+    X = G.to(dtype=dtype) if dtype is not None else G
+    if X is G:
+        X = X.clone()
 
-    # to adopt matrix X
-    X = G.to(dtype=torch.bfloat16)
     transposed = False
     if X.size(-2) > X.size(-1):
         X = X.mT
         transposed = True
 
-    # normalization matrix X
-    norm = X.norm(dim=(-2, -1), keepdim=True) + eps
-    X /= norm
+    X = X / (X.norm(dim=(-2, -1), keepdim=True) + eps)
 
-    # steps of Newton–Schulz algorithm
     for _ in range(steps):
         A = X @ X.mT
-        A2 = A @ A 
-        B = b * A + c * A2
+        B = -b * A + c * (A @ A)
         X = a * X + B @ X
 
     if transposed:
@@ -44,322 +109,75 @@ def zeropower_via_newtonschulz5(
     return X.to(device=G.device, dtype=G.dtype)
 
 
-def muon_orthogonalized_update(
-        grad: torch.Tensor, 
-        ns_steps: int = 5,
-        ):
-    """
-    Muon-style LMO direction for a gradient tensor.
+def muon_lmo(
+    grad: Tensor,
+    ns_steps: int = 5,
+    dtype: Optional[torch.dtype] = torch.bfloat16,
+    scale_aspect: bool = True,
+) -> Tensor:
+    """Muon LMO direction ``polar(grad) = -A(grad)`` for a parameter tensor.
 
-    - For 4D conv filters: flattens to [out_channels, *], applies NS, reshapes back.
-    - For 2D matrices: uses them directly.
-    - For 1D / scalars: returns grad unchanged.
+    * 4D convolution filters are flattened to ``[out_channels, -1]``, orthogonalized,
+      and reshaped back.
+    * 2D matrices are used directly.
+    * ``ndim < 2`` tensors are returned unchanged (no matrix structure to exploit).
+
+    ``scale_aspect`` applies Muon's aspect-ratio factor ``sqrt(max(1, m/n))``.
+    It is a practical heuristic, not part of the LMO itself: it rescales the step
+    and is therefore invisible to any method that signs the LMO *output*
+    (``SignMuon``, ``MuonSign``), but it does change the step of ``Muon``,
+    ``MuonUSign`` and ``EF21MuonUSign``. Set ``False`` for the exact
+    ``U V^T`` of the theory.
     """
     if grad.ndim < 2:
         return grad
 
-    if grad.ndim == 4:
-        # Conv filters: [out_channels, in_channels, kh, kw] -> [out_channels, *]
-        orig_shape = grad.shape
-        G = grad.view(len(grad), -1)
-    else:
-        G = grad
-        orig_shape = None
+    orig_shape = grad.shape if grad.ndim > 2 else None
+    G = grad.reshape(grad.shape[0], -1) if orig_shape is not None else grad
 
-    orth = zeropower_via_newtonschulz5(G, steps=ns_steps)
-    # Same scaling as Muon
-    orth = orth * max(1.0, orth.size(-2) / orth.size(-1)) ** 0.5
+    orth = zeropower_via_newtonschulz5(G, steps=ns_steps, dtype=dtype)
+    if scale_aspect:
+        orth = orth * max(1.0, orth.size(-2) / orth.size(-1)) ** 0.5
 
-    if orig_shape is not None:
-        orth = orth.view(orig_shape)
-
-    return orth
+    return orth.reshape(orig_shape) if orig_shape is not None else orth
 
 
-class SignMuon(Optimizer):
+# Backwards-compatible alias (the pre-refactor name).
+muon_orthogonalized_update = muon_lmo
+
+
+def scaled_sign(Y: Tensor) -> Tensor:
+    """Contractive 1-bit compressor ``mean|Y| * sign(Y)`` (the USign operator).
+
+    One bit per entry plus a single shared magnitude scalar per tensor.
     """
-    Centralized SignMuon optimizer.
-    LMO <-> Newton–Schulz + sign-comprassed
+    return Y.abs().mean() * torch.sign(Y)
 
-    For each parameter p:
-        m_t = μ m_{t-1} + g_t
-        d_t ≈ Muon-LMO(m_t)  (via muon_orthogonalized_update)
-        s_t = sign(d_t)
-        p_{t+1} = p_t - lr * lambda_mult * s_t
+
+# --------------------------------------------------------------------------
+# Shared optimizer skeleton
+# --------------------------------------------------------------------------
+
+
+class _BaseMethod(Optimizer):
+    """Momentum / weight-decay bookkeeping shared by every method.
+
+    Subclasses implement :meth:`_direction`, which maps the effective momentum
+    direction ``m_tilde`` to the step direction ``d_t`` (the update is always
+    ``p <- p - lr * lambda_mult * d_t``), and may override :meth:`_post_step`.
+
+    Weight decay
+    ------------
+    ``decoupled_weight_decay=False`` (the default) folds ``wd * p`` into the
+    gradient *before* the momentum buffer, which is what the reported
+    experiments used. ``True`` instead shrinks the parameter multiplicatively
+    (``p *= 1 - lr*wd``) and leaves the gradient -- and hence the LMO geometry --
+    untouched; this is the AdamW/Muon convention and what the federated driver
+    uses.
     """
-    def __init__(
-        self,
-        params,
-        lr: float = 1e-3,
-        momentum: float = 0.0,
-        nesterov: bool = False,
-        norm_weight: bool = False,
-        weight_decay=0.0, 
-        lambda_mult: float = 1.0,
-        ns_steps: int = 5,
-    ):
-        if lr < 0.0:
-            raise ValueError(f"Invalid learning rate: {lr}")
-        if momentum < 0.0:
-            raise ValueError(f"Invalid momentum value: {momentum}")
-        if nesterov and momentum <= 0:
-            raise ValueError("Nesterov momentum requires a positive momentum")
 
-        defaults = dict(
-            lr=lr, momentum=momentum, nesterov=nesterov,
-            norm_weight=norm_weight, weight_decay=weight_decay,
-            lambda_mult=lambda_mult, ns_steps=ns_steps
-        )
-        super().__init__(params, defaults)
-        
-    @torch.no_grad()
-    def step(self, closure=None):
-        loss = None
-        if closure is not None:
-            with torch.enable_grad():
-                loss = closure()
+    method_name = "base"
 
-        for group in self.param_groups:
-            lr = group["lr"]
-            momentum = group["momentum"]
-            nesterov = group["nesterov"]
-            wd = group["weight_decay"]
-            norm_weight = group["norm_weight"]
-            lambda_mult = group["lambda_mult"]
-            ns_steps = group["ns_steps"]
-
-            for p in group["params"]:
-                if p.grad is None:
-                    continue
-                if p.grad.is_sparse:
-                    raise RuntimeError("SignMuon does not support sparse gradients")
-                
-                g = p.grad
-                if wd != 0:
-                    g = g.add(p.data, alpha=wd)
-                state = self.state[p]
-                
-                # 1) momentum-сглаживание
-                if "momentum_buffer" not in state:
-                    state["momentum_buffer"] = torch.zeros_like(g)
-                buf = state["momentum_buffer"]
-                buf.mul_(momentum).add_(g)
-                m_t = g.add(buf, alpha=momentum) if nesterov else buf
-
-                # 2) нормализация веса
-                if norm_weight:
-                    norm = p.data.norm().clamp(min=1e-10)
-                    scale = (p.data.numel()**0.5) / norm
-                    p.data.mul_(scale)
-
-                # 3) LMO-направление через Newton–Schulz
-                d_t = muon_orthogonalized_update(m_t, ns_steps=ns_steps)
-                
-                # 4) sign‑компрессия Muon‑направления
-                s_t = d_t.sign()
-
-                # 5) шаг параметра: x_{t+1} = x_t - lr * lambda_mult * s_t
-                p.data.add_(s_t, alpha=-lr * lambda_mult)
-
-        return loss
-
-
-class MuonSign(Optimizer):
-    """
-    Centralized MuonSign optimizer (mirror image of SignMuon).
-    
-    For each parameter p:
-        m_t = μ m_{t-1} + g_t                       (momentum)
-        s_t = sign(m̃_t)                            (sign compression FIRST)
-        d_t ≈ Muon-LMO(s_t)  (via muon_orthogonalized_update)
-        p_{t+1} = p_t - lr * lambda_mult * d_t      (full LMO step)
-    """
-    def __init__(
-        self,
-        params,
-        lr: float = 1e-3,
-        momentum: float = 0.0,
-        nesterov: bool = False,
-        norm_weight: bool = False,
-        weight_decay=0.0,
-        lambda_mult: float = 1.0,
-        ns_steps: int = 5,
-    ):
-        if lr < 0.0:
-            raise ValueError(f"Invalid learning rate: {lr}")
-        if momentum < 0.0:
-            raise ValueError(f"Invalid momentum value: {momentum}")
-        if nesterov and momentum <= 0:
-            raise ValueError("Nesterov momentum requires a positive momentum")
-
-        defaults = dict(
-            lr=lr, momentum=momentum, nesterov=nesterov,
-            norm_weight=norm_weight, weight_decay=weight_decay,
-            lambda_mult=lambda_mult, ns_steps=ns_steps
-        )
-        super().__init__(params, defaults)
-
-    @torch.no_grad()
-    def step(self, closure=None):
-        loss = None
-        if closure is not None:
-            with torch.enable_grad():
-                loss = closure()
-
-        for group in self.param_groups:
-            lr = group["lr"]
-            momentum = group["momentum"]
-            nesterov = group["nesterov"]
-            wd = group["weight_decay"]
-            norm_weight = group["norm_weight"]
-            lambda_mult = group["lambda_mult"]
-            ns_steps = group["ns_steps"]
-
-            for p in group["params"]:
-                if p.grad is None:
-                    continue
-                if p.grad.is_sparse:
-                    raise RuntimeError("MuonSign does not support sparse gradients")
-
-                g = p.grad
-                if wd != 0:
-                    g = g.add(p.data, alpha=wd)
-                state = self.state[p]
-
-                # 1) momentum-сглаживание
-                if "momentum_buffer" not in state:
-                    state["momentum_buffer"] = torch.zeros_like(g)
-                buf = state["momentum_buffer"]
-                buf.mul_(momentum).add_(g)
-                m_t = g.add(buf, alpha=momentum) if nesterov else buf
-
-                # 2) нормализация веса
-                if norm_weight:
-                    norm = p.data.norm().clamp(min=1e-10)
-                    scale = (p.data.numel()**0.5) / norm
-                    p.data.mul_(scale)
-
-                # 3) sign-компрессия моментума (ДО LMO)
-                s_t = m_t.sign()
-
-                # 4) LMO-направление через Newton–Schulz от знаковой матрицы
-                d_t = muon_orthogonalized_update(s_t, ns_steps=ns_steps)
-
-                # 5) шаг параметра: x_{t+1} = x_t - lr * lambda_mult * d_t
-                p.data.add_(d_t, alpha=-lr * lambda_mult)
-
-        return loss
-
-
-class Muon(Optimizer):
-    """
-    Centralized Muon optimizer.
-    LMO <-> Newton–Schulz (Orthogonalized Momentum)
-
-    For each parameter p:
-        m_t = μ m_{t-1} + g_t
-        d_t ≈ Muon-LMO(m_t)  (via muon_orthogonalized_update)
-        p_{t+1} = p_t - lr * lambda_mult * d_t
-    """
-    def __init__(
-        self,
-        params,
-        lr: float = 1e-3,
-        momentum: float = 0.0,
-        nesterov: bool = False,
-        norm_weight: bool = False,
-        weight_decay: float = 0.0,
-        lambda_mult: float = 1.0,
-        ns_steps: int = 5,
-    ):
-        if lr < 0.0: 
-            raise ValueError(f"Invalid learning rate: {lr}")
-        if momentum < 0.0: 
-            raise ValueError(f"Invalid momentum value: {momentum}")
-        if weight_decay < 0.0:
-            raise ValueError(f"Invalid weight_decay value: {weight_decay}")
-
-        defaults = dict(
-            lr=lr, 
-            momentum=momentum, 
-            nesterov=nesterov,
-            norm_weight=norm_weight,
-            weight_decay=weight_decay,
-            lambda_mult=lambda_mult,
-            ns_steps=ns_steps
-        )
-        super().__init__(params, defaults)
-
-    @torch.no_grad()
-    def step(self, closure=None):
-        loss = None
-        if closure is not None:
-            with torch.enable_grad():
-                loss = closure()
-
-        for group in self.param_groups:
-            lr = group["lr"]
-            momentum = group["momentum"]
-            nesterov = group["nesterov"]
-            wd = group["weight_decay"]
-            norm_weight = group["norm_weight"]
-            lambda_mult = group["lambda_mult"]
-            ns_steps = group["ns_steps"]
-
-            for p in group["params"]:
-                if p.grad is None: 
-                    continue
-                if p.grad.is_sparse:
-                    raise RuntimeError("SignMuon does not support sparse gradients")
-                
-                g = p.grad
-                if wd != 0:
-                    g = g.add(p.data, alpha=wd)
-                state = self.state[p]
-                
-                # 1) momentum-сглаживание
-                if "momentum_buffer" not in state:
-                    state["momentum_buffer"] = torch.zeros_like(g)
-                buf = state["momentum_buffer"]
-                buf.mul_(momentum).add_(g)
-                m_t = g.add(buf, alpha=momentum) if nesterov else buf
-
-                # 2) нормализация веса
-                if norm_weight:
-                    norm = p.data.norm().clamp(min=1e-10)
-                    scale = (p.data.numel()**0.5) / norm
-                    p.data.mul_(scale)
-
-                # 3) LMO-направление через Newton–Schulz
-                d_t = muon_orthogonalized_update(m_t, ns_steps=ns_steps)
-                
-                # 4) шаг параметра
-                p.data.add_(d_t, alpha=-lr * lambda_mult)
-
-        return loss
-
-
-class EF_USignMuon(Optimizer):
-    """
-    Centralized EF-USignMuon optimizer.
-
-    Single-node reduction of Federated EF-USignMuon (= EF21-Muon with identity
-    downlink, Gruntkowska et al. 2025). Sign compression acts on the EF21
-    residual (the internal "uplink"); the parameter step is the FULL Muon LMO
-    of the reconstructed gradient estimator (NO sign on the step). Applying the
-    LMO to the (asymptotically exact) estimator rather than to sign(UV^T) is
-    what repairs the SignMuon divergence on the counterexample of Theorem 1.
-
-    For each parameter p:
-        m_t   = μ m_{t-1} + g_t                       (momentum)
-        Δ_t   = m_t - g_est                           (EF21 residual)
-        α_t   = mean(|Δ_t|)
-        g_est <- g_est + α_t * sign(Δ_t)              (EF21 estimator, scaled-sign)
-        
-        d_t   ≈ Muon-LMO(g_est)   (via muon_orthogonalized_update)
-       
-        p_{t+1} = p_t - lr * lambda_mult * d_t
-    """
     def __init__(
         self,
         params,
@@ -367,26 +185,50 @@ class EF_USignMuon(Optimizer):
         momentum: float = 0.0,
         nesterov: bool = False,
         weight_decay: float = 0.0,
+        decoupled_weight_decay: bool = False,
         lambda_mult: float = 1.0,
         ns_steps: int = 5,
+        lmo_dtype: Optional[torch.dtype] = torch.bfloat16,
+        scale_aspect: bool = True,
     ):
         if lr < 0.0:
             raise ValueError(f"Invalid learning rate: {lr}")
-        if momentum < 0.0:
-            raise ValueError(f"Invalid momentum value: {momentum}")
+        if not 0.0 <= momentum < 1.0:
+            raise ValueError(f"momentum must lie in [0, 1), got {momentum}")
         if weight_decay < 0.0:
             raise ValueError(f"Invalid weight_decay value: {weight_decay}")
+        if nesterov and momentum <= 0.0:
+            raise ValueError("Nesterov momentum requires a positive momentum")
 
         defaults = dict(
             lr=lr,
             momentum=momentum,
             nesterov=nesterov,
             weight_decay=weight_decay,
+            decoupled_weight_decay=decoupled_weight_decay,
             lambda_mult=lambda_mult,
             ns_steps=ns_steps,
+            lmo_dtype=lmo_dtype,
+            scale_aspect=scale_aspect,
         )
         super().__init__(params, defaults)
 
+    # -- hooks ------------------------------------------------------------
+    def _direction(self, m_tilde: Tensor, state: dict, group: dict) -> Tensor:
+        raise NotImplementedError
+
+    def _post_step(self, p, state: dict, group: dict) -> None:
+        """Called after ``p`` has been updated (used by the downlink EF loop)."""
+
+    def _lmo(self, Y: Tensor, group: dict) -> Tensor:
+        return muon_lmo(
+            Y,
+            ns_steps=group["ns_steps"],
+            dtype=group["lmo_dtype"],
+            scale_aspect=group["scale_aspect"],
+        )
+
+    # -- driver -----------------------------------------------------------
     @torch.no_grad()
     def step(self, closure=None):
         loss = None
@@ -396,168 +238,219 @@ class EF_USignMuon(Optimizer):
 
         for group in self.param_groups:
             lr = group["lr"]
-            momentum = group["momentum"]
+            mu = group["momentum"]
             nesterov = group["nesterov"]
             wd = group["weight_decay"]
+            decoupled = group["decoupled_weight_decay"]
             lambda_mult = group["lambda_mult"]
-            ns_steps = group["ns_steps"]
 
             for p in group["params"]:
                 if p.grad is None:
                     continue
                 if p.grad.is_sparse:
-                    raise RuntimeError("EF-USignMuon does not support sparse gradients")
+                    raise RuntimeError(f"{type(self).__name__} does not support sparse gradients")
 
+                state = self.state[p]
                 g = p.grad
-                if wd != 0:
-                    g = g.add(p.data, alpha=wd)
-                state = self.state[p]
 
-                # 1) momentum smoothing: m_t = μ m_{t-1} + g_t
+                # The bidirectional method differentiates the model the gradient
+                # was taken at (W = p.data) from the exact model X it advances.
+                ref = self._weight_decay_target(p, state)
+                if wd != 0 and not decoupled:
+                    g = g.add(ref, alpha=wd)
+
+                # 1) momentum (EMA form of the paper's algorithm boxes)
                 if "momentum_buffer" not in state:
                     state["momentum_buffer"] = torch.zeros_like(g)
                 buf = state["momentum_buffer"]
-                buf.mul_(momentum).add_(g)
-                m_t = g.add(buf, alpha=momentum) if nesterov else buf
+                buf.mul_(mu).add_(g, alpha=1.0 - mu)
+                m_tilde = g.mul(1.0 - mu).add_(buf, alpha=mu) if nesterov else buf
 
-                # 2) EF21 gradient estimator (scaled-sign compressor on the residual)
-                if "grad_estimator" not in state:
-                    state["grad_estimator"] = torch.zeros_like(g)
-                g_est = state["grad_estimator"]
-                delta = m_t - g_est
-                alpha = delta.abs().mean()
-                g_est.add_(alpha * torch.sign(delta))   # g_est <- g_est + α * sign(Δ)
+                # 2) method-specific step direction
+                d_t = self._direction(m_tilde, state, group)
 
-                # 3) Muon LMO step on the estimator (NO sign on the step)
-                d_t = muon_orthogonalized_update(g_est, ns_steps=ns_steps)
+                # 3) decoupled weight decay + parameter step
+                target = self._step_target(p, state)
+                if wd != 0 and decoupled:
+                    target.mul_(1.0 - lr * wd)
+                target.add_(d_t, alpha=-lr * lambda_mult)
 
-                # 4) parameter update
-                p.data.add_(d_t, alpha=-lr * lambda_mult)
+                self._post_step(p, state, group)
 
         return loss
 
+    # -- overridable notion of "the model" --------------------------------
+    def _weight_decay_target(self, p, state: dict) -> Tensor:
+        return p.data
 
-class EF_UDSignMuon(Optimizer):
+    def _step_target(self, p, state: dict) -> Tensor:
+        return p.data
+
+
+class _EF21Mixin:
+    """Scaled-sign EF21 estimator kept in the per-parameter state.
+
+    ``g_{t} = g_{t-1} + alpha_t * sign(Delta_t)`` with
+    ``Delta_t = target_t - g_{t-1}`` and ``alpha_t = mean|Delta_t|``: exactly the
+    compressor of Equation (16), applied to whichever ``target`` the method
+    tracks (the momentum for the MuonUSign family, the LMO output for
+    EF21-SignMuon).
     """
-    Centralized EF-UDSignMuon optimizer (bidirectional sign compression).
 
-    Faithful single-node reduction of EF21-Muon (Gruntkowska et al. 2025,
-    Algorithm 1) with the scaled-sign (1-bit) compressor applied on BOTH
-    channels, each carrying its own error-feedback buffer:
+    @staticmethod
+    def _ef21_update(target: Tensor, state: dict, key: str) -> Tensor:
+        if key not in state:
+            state[key] = torch.zeros_like(target)
+        est = state[key]
+        delta = target - est
+        est.add_(delta.abs().mean() * torch.sign(delta))
+        return est
 
-        C_up   on the gradient residual (m_t - g_est):   workers -> server
-        C_down on the model   increment (X - W):         server  -> workers
 
-        Uplink   EF (gradient):  g_est <- g_est + alpha_up  * sign(m_t - g_est)
-        Downlink EF (model):     W     <- W     + alpha_dn * sign(X_new - W)
+# --------------------------------------------------------------------------
+# Reference methods
+# --------------------------------------------------------------------------
 
-    For each parameter p:
-        g_t      = grad of f at W (= p.data)
-        m_t      = μ * m_{t-1} + g_t                      (momentum, heavy-ball)
-        Δ_t_up   = m_t - g_est
-        alpha_up = mean(|Δ_t_up|)
-        g_est    <- g_est + alpha_up  * sign(Δ_t_up)     (uplink, scaled-sign)
 
-        d_t      = Muon-LMO(g_est)
-        X_new    = X - lr * lambda_mult * d_t              (exact server step)
-        Δ_t_dn   = X_new - W
-        alpha_dn = mean(|Δ_t_dn|)
-        W        <- W + alpha_dn * sign(Δ_t_dn)         (downlink EF, scaled-sign)
+class Muon(_BaseMethod):
+    """Full-precision Muon: ``d_t = polar(M_tilde)``."""
+
+    method_name = "muon"
+
+    def _direction(self, m_tilde, state, group):
+        return self._lmo(m_tilde, group)
+
+
+class SignSGD(_BaseMethod):
+    """SignSGD with momentum: ``d_t = sign(M_tilde)``.
+
+    Applies to tensors of any shape (no matrix structure is used).
     """
-    def __init__(
-        self,
-        params,
-        lr: float = 1e-3,
-        momentum: float = 0.0,
-        nesterov: bool = False,
-        weight_decay: float = 0.0,
-        lambda_mult: float = 1.0,
-        ns_steps: int = 5,
-    ):
-        if lr < 0.0:
-            raise ValueError(f"Invalid learning rate: {lr}")
-        if momentum < 0.0:
-            raise ValueError(f"Invalid momentum value: {momentum}")
-        if weight_decay < 0.0:
-            raise ValueError(f"Invalid weight_decay value: {weight_decay}")
 
-        defaults = dict(
-            lr=lr,
-            momentum=momentum,
-            nesterov=nesterov,
-            weight_decay=weight_decay,
-            lambda_mult=lambda_mult,
-            ns_steps=ns_steps,
-        )
-        super().__init__(params, defaults)
+    method_name = "signsgd"
 
+    def _direction(self, m_tilde, state, group):
+        return torch.sign(m_tilde)
+
+
+# --------------------------------------------------------------------------
+# Sign around the LMO (Theorems 1-3: all three can diverge)
+# --------------------------------------------------------------------------
+
+
+class SignMuon(_BaseMethod):
+    """SignMuon -- sign AFTER the LMO: ``d_t = sign(polar(M_tilde))`` (Thm 1)."""
+
+    method_name = "signmuon"
+
+    def _direction(self, m_tilde, state, group):
+        return torch.sign(self._lmo(m_tilde, group))
+
+
+class MuonUSign(_BaseMethod):
+    """MuonUSign -- sign BEFORE the LMO: ``d_t = polar(sign(M_tilde))`` (Thm 2).
+
+    The uplink carries one bit per parameter; the LMO runs on the (uncompressed)
+    receiving side, so the step itself is full precision.
+    """
+
+    method_name = "muonusign"
+
+    def _direction(self, m_tilde, state, group):
+        return self._lmo(torch.sign(m_tilde), group)
+
+
+class MuonSign(_BaseMethod):
+    """MuonSign -- sign on BOTH sides: ``d_t = sign(polar(sign(M_tilde)))`` (Thm 3).
+
+    Both the uplink and the downlink cost one bit per parameter.
+    """
+
+    method_name = "muonsign"
+
+    def _direction(self, m_tilde, state, group):
+        return torch.sign(self._lmo(torch.sign(m_tilde), group))
+
+
+# --------------------------------------------------------------------------
+# Error-feedback methods
+# --------------------------------------------------------------------------
+
+
+class EF21SignMuon(_BaseMethod, _EF21Mixin):
+    """EF21 on the LMO *output* -- the method that still diverges (Theorem 4).
+
+    ``D_t = polar(M_tilde)`` is tracked by a scaled-sign EF21 estimator and the
+    step is ``d_t = d_est``. Included because the paper needs it as the
+    counterexample: a single shared magnitude ``alpha_t`` rescales all entries at
+    once, so a large sign-flipping off-diagonal pins ``alpha_t`` and the
+    estimate of a small target locks onto the wrong sign.
+    """
+
+    method_name = "ef21signmuon"
+
+    def _direction(self, m_tilde, state, group):
+        return self._ef21_update(self._lmo(m_tilde, group), state, "dir_estimator")
+
+
+class EF21MuonUSign(_BaseMethod, _EF21Mixin):
+    """EF21-MuonUSign -- EF21 on the momentum, full Muon LMO after it.
+
+    Single-node reduction of EF21-Muon (Gruntkowska et al., 2025) with the
+    scaled-sign compressor on the uplink and the identity on the downlink.
+    Compressing *before* the oracle is what restores the descent property:
+    ``g_est -> M_tilde`` and hence ``d_t -> polar(M_tilde)``.
+    """
+
+    method_name = "ef21muonusign"
+
+    def _direction(self, m_tilde, state, group):
+        g_est = self._ef21_update(m_tilde, state, "grad_estimator")
+        return self._lmo(g_est, group)
+
+
+class EF21MuonSign(_BaseMethod, _EF21Mixin):
+    """EF21-MuonSign -- bidirectional EF21 (scaled sign on both channels).
+
+    Two error-feedback loops:
+
+    * uplink, on the gradient residual: ``g_est += mean|M-g_est| * sign(M-g_est)``
+    * downlink, on the model increment: ``W += mean|X-W| * sign(X-W)``
+
+    ``p.data`` holds the *broadcast* model ``W`` -- so ``p.grad`` is the gradient
+    at ``W``, as the algorithm requires -- while the exact server model ``X``
+    lives in the ``exact_model`` state buffer. Use :meth:`using_exact` (or
+    :meth:`restore_exact`) to evaluate on ``X``, which is the iterate the
+    convergence theory bounds.
+    """
+
+    method_name = "ef21muonsign"
+
+    def _weight_decay_target(self, p, state):
+        return self._exact(p)
+
+    def _step_target(self, p, state):
+        return self._exact(p)
+
+    def _exact(self, p) -> Tensor:
+        state = self.state[p]
+        if "exact_model" not in state:
+            state["exact_model"] = p.data.clone()
+        return state["exact_model"]
+
+    def _direction(self, m_tilde, state, group):
+        g_est = self._ef21_update(m_tilde, state, "grad_estimator")
+        return self._lmo(g_est, group)
+
+    def _post_step(self, p, state, group):
+        # Downlink EF21-P: broadcast a scaled sign of the model shift X - W.
+        delta = state["exact_model"] - p.data
+        p.data.add_(delta.abs().mean() * torch.sign(delta))
+
+    # -- exposing the exact model ----------------------------------------
     @torch.no_grad()
-    def step(self, closure=None):
-        loss = None
-        if closure is not None:
-            with torch.enable_grad():
-                loss = closure()
-
-        for group in self.param_groups:
-            lr = group["lr"]
-            momentum = group["momentum"]
-            nesterov = group["nesterov"]
-            wd = group["weight_decay"]
-            lambda_mult = group["lambda_mult"]
-            ns_steps = group["ns_steps"]
-
-            for p in group["params"]:
-                if p.grad is None:
-                    continue
-                if p.grad.is_sparse:
-                    raise RuntimeError("EF-UDSignMuon does not support sparse gradients")
-
-                g = p.grad                       # grad of f at W (= p.data)
-                state = self.state[p]
-
-                # exact server model X (init = initial weights = W_0)
-                if "exact_model" not in state:
-                    state["exact_model"] = p.data.clone()
-                X = state["exact_model"]
-
-                # decoupled weight decay on the EXACT model (server side)
-                if wd != 0:
-                    g = g.add(X, alpha=wd)
-
-                # 1) momentum smoothing: m_t = mu * m_{t-1} + g_t
-                if "momentum_buffer" not in state:
-                    state["momentum_buffer"] = torch.zeros_like(g)
-                buf = state["momentum_buffer"]
-                buf.mul_(momentum).add_(g)
-                m_t = g.add(buf, alpha=momentum) if nesterov else buf
-
-                # 2) UPLINK error feedback (gradient estimator, scaled-sign)
-                if "grad_estimator" not in state:
-                    state["grad_estimator"] = torch.zeros_like(g)
-                g_est = state["grad_estimator"]
-                delta_up = m_t - g_est
-                alpha_up = delta_up.abs().mean()
-                g_est.add_(alpha_up * torch.sign(delta_up))   # g_est <- g_est + alpha_up * sign(Δ_t_up)
-
-                # 3) Muon LMO direction + exact server step on X
-                d_t = muon_orthogonalized_update(g_est, ns_steps=ns_steps)
-                X.add_(d_t, alpha=-lr * lambda_mult)          # X <- X - lr * lambda_mult * d_t
-
-                # 4) DOWNLINK error feedback (model increment, scaled-sign)
-                delta_dn = X - p.data                          # p.data = W (old broadcast)
-                alpha_dn = delta_dn.abs().mean()
-                p.data.add_(alpha_dn * torch.sign(delta_dn))   # W <- W + alpha_dn * sign(Δ_t_dn)
-
-        return loss
-
-    @torch.no_grad()
-    def restore_exact(self, params=None):
-        """Copy the exact server model ``X`` back into ``p.data``.
-
-        During training ``p.data`` holds the compressed broadcast model ``W``;
-        call this after training (before evaluation / checkpointing) to expose
-        the exact model ``X`` maintained in the ``exact_model`` state buffer.
-        """
+    def restore_exact(self, params=None) -> None:
+        """Copy the exact server model ``X`` back into ``p.data``, permanently."""
         groups = self.param_groups if params is None else [{"params": params}]
         for group in groups:
             for p in group["params"]:
@@ -567,13 +460,11 @@ class EF_UDSignMuon(Optimizer):
 
     @contextmanager
     def using_exact(self):
-        """Temporarily expose the exact model ``X`` in ``p.data``.
+        """Temporarily expose ``X`` in ``p.data``, restoring ``W`` afterwards.
 
-        Saves the broadcast model ``W``, copies ``X`` into ``p.data`` for the
-        duration of the ``with`` block, then restores ``W``. Wrap evaluation /
-        metric computation of an in-progress ``EF_UDSignMuon`` run so that
-        metrics are computed on the exact model while the ``W`` invariant
-        (gradient at ``W``) is preserved for subsequent training steps.
+        Wrap evaluation in this so metrics are computed on the exact model while
+        the invariant "``p.grad`` is the gradient at ``W``" survives for the next
+        training step.
         """
         saved = {}
         for group in self.param_groups:
@@ -589,65 +480,28 @@ class EF_UDSignMuon(Optimizer):
                 p.data.copy_(w)
 
 
+# --------------------------------------------------------------------------
+# Registry + deprecated aliases
+# --------------------------------------------------------------------------
 
-class SignSGD(Optimizer):
-    """
-    Standard SignSGD optimizer.
-    Momentum-based Sign Compression
+OPTIMIZERS = {
+    "signmuon": SignMuon,
+    "ef21signmuon": EF21SignMuon,
+    "muonusign": MuonUSign,
+    "muonsign": MuonSign,
+    "ef21muonusign": EF21MuonUSign,
+    "ef21muonsign": EF21MuonSign,
+    "muon": Muon,
+    "signsgd": SignSGD,
+}
 
-    For each parameter p:
-        g_t = g_t + weight_decay * p_t
-        m_t = μ m_{t-1} + g_t
-        s_t = sign(m_t)
-        p_{t+1} = p_t - lr * s_t
-    """
-    def __init__(
-            self, 
-            params, 
-            lr=1e-3,
-            momentum=0.0, 
-            nesterov=False, 
-            weight_decay=0.0
-        ):
-        if lr < 0.0: raise ValueError(f"Invalid learning rate: {lr}")
-        defaults = dict(lr=lr, momentum=momentum, nesterov=nesterov, weight_decay=weight_decay)
-        super().__init__(params, defaults)
+PAPER_METHODS = ["signmuon", "ef21signmuon", "muonusign", "muonsign",
+                 "ef21muonusign", "ef21muonsign"]
+REFERENCE_METHODS = ["muon", "signsgd"]
 
-    @torch.no_grad()
-    def step(self, closure=None):
-        loss = None
-        if closure is not None:
-            with torch.enable_grad():
-                loss = closure()
-
-        for group in self.param_groups:
-            lr = group["lr"]
-            momentum = group["momentum"]
-            nesterov = group["nesterov"]
-            weight_decay = group["weight_decay"]
-
-            for p in group["params"]:
-                if p.grad is None: continue
-                
-                g = p.grad
-                
-                # L2 регуляризация (weight decay)
-                if weight_decay != 0:
-                    g = g.add(p.data, alpha=weight_decay)
-                    
-                state = self.state[p]
-                
-                # Momentum
-                if momentum != 0:
-                    if "momentum_buffer" not in state:
-                        state["momentum_buffer"] = torch.zeros_like(g)
-                    buf = state["momentum_buffer"]
-                    buf.mul_(momentum).add_(g)
-                    m_t = g.add(buf, alpha=momentum) if nesterov else buf
-                else:
-                    m_t = g
-                    
-                # Sign-компрессия и шаг
-                p.data.add_(m_t.sign(), alpha=-lr)
-
-        return loss
+# Pre-refactor class names. ``MuonSign`` used to denote the sign-BEFORE method,
+# which the paper now calls MuonUSign -- the alias below is deliberately NOT
+# provided for that name, because silently resolving it to the new (both-sides)
+# ``MuonSign`` would change the algorithm rather than just the label.
+EF_USignMuon = EF21MuonUSign
+EF_UDSignMuon = EF21MuonSign

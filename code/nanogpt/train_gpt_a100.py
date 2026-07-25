@@ -164,7 +164,7 @@ mm_op.register_autograd(backward, setup_context=setup_context)
 # -> identical math on A100 and H100, and CPU-testable).  DistAdam (embeddings /
 # scalars / head / gates-as-Adam) is kept verbatim from record #40 below.
 from signmuon_optimizers import (  # noqa: E402
-    polar_express, OPTIMIZERS, PAPER_METHODS, EF21MuonUDSign,
+    polar_express, OPTIMIZERS, PAPER_METHODS, EF21MuonSign,
 )
 
 class DistAdam(torch.optim.Optimizer):
@@ -873,17 +873,17 @@ optimizer1 = DistAdam(
 # Record #40 drives (hidden_matrix_params + gate_params) with a single Muon (lr=0.06,
 # momentum=0.95, weight_decay=0.0 -- no cautious WD yet at #40). We keep that exact grouping
 # and make the *method* selectable via SIGNMUON_OPT=<name>. Sign-TERMINATED steps (SignMuon,
-# MuonUDSign, SignSGD) move every weight by ~= eff_lr each step with NO fan-in lr scaling, so
+# MuonSign, SignSGD) move every weight by ~= eff_lr each step with NO fan-in lr scaling, so
 # they need a MUCH smaller lr than the LMO-terminated methods (Muon, MuonUSign, the EF21-*
 # families). The non-Muon entries are only STARTING POINTS -- retune lr per method for a real run.
 OPTIMIZER_CONFIG = {
     "Muon":            dict(lr=0.06,   momentum=0.95, weight_decay=0.0),  # == record #40 exactly
     "MuonUSign":       dict(lr=0.06,   momentum=0.95, weight_decay=0.0),
     "EF21-MuonUSign":  dict(lr=0.06,   momentum=0.95, weight_decay=0.0),
-    "EF21-MuonUDSign": dict(lr=0.06,   momentum=0.95, weight_decay=0.0),
+    "EF21-MuonSign": dict(lr=0.06,   momentum=0.95, weight_decay=0.0),
     "EF21-SignMuon":   dict(lr=0.02,   momentum=0.95, weight_decay=0.0),
     "SignMuon":        dict(lr=3e-4,   momentum=0.95, weight_decay=0.0),
-    "MuonUDSign":      dict(lr=3e-4,   momentum=0.95, weight_decay=0.0),
+    "MuonSign":      dict(lr=3e-4,   momentum=0.95, weight_decay=0.0),
     "SignSGD":         dict(lr=1.5e-4, momentum=0.95, weight_decay=0.0),
 }
 opt_name = os.environ.get("SIGNMUON_OPT", "Muon")
@@ -1006,7 +1006,7 @@ for step in range(train_steps + 1):
         torch.cuda.synchronize()
         training_time_ms += 1000 * (time.perf_counter() - t0)
         model.eval()
-        # EF21-MuonUDSign trains a sign-compressed broadcast model W but tracks an exact server
+        # EF21-MuonSign trains a sign-compressed broadcast model W but tracks an exact server
         # model X; evaluate on X (the "true" progress) and restore W afterwards. No-op otherwise.
         eval_on_exact = hasattr(optimizer2, "swap_in_exact")
         if eval_on_exact:

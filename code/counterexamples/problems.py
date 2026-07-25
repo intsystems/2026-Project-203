@@ -65,8 +65,28 @@ def make_linear_problem(G: np.ndarray):
 # --------------------------------------------------------------------------
 
 
-def signmuon_counterexample():
+def signmuon_counterexample(sigma1: float = 1000.0):
     """Build the 4x4 gradient ``G`` on which SignMuon diverges.
+
+    ``G = sigma1 * u1 v1^T + O`` with ``O`` orthogonal and ``u1 = O v1``, so that
+    ``polar(G) = O`` for *every* ``sigma1 > 0`` while the sign pattern of ``O`` is
+    anticorrelated with the dominant component. The exact descent inner product is
+    the rational function
+
+        <G, sign(polar(G))> = (-43*sigma1 + 532) / 103,
+
+    negative for every ``sigma1 > 532/43 = 12.37``. At the paper's ``sigma1 = 1000``
+    this is ``-42468/103``.
+
+    Choosing ``sigma1``
+    -------------------
+    Any ``sigma1 > 12.37`` refutes descent for the **exact** oracle. Under the
+    *implemented* 5-step Newton-Schulz oracle the choice matters: ``sigma1 = 1000``
+    makes ``G`` so ill-conditioned (``cond = 1001``) that 5 steps cannot resolve the
+    ``O`` component at all, and the practical method *descends* on this instance.
+    ``sigma1 = 100`` ascends under the exact oracle **and** under Newton-Schulz for
+    every step count in ``{5, 6, 8, 10, 20}`` and both float32 and bfloat16, with
+    exact value ``-3768/103``. Run ``verify_ns_oracle.py`` to reproduce the table.
 
     Returns
     -------
@@ -82,9 +102,8 @@ def signmuon_counterexample():
     ], dtype=float)
     u1 = (1.0 / np.sqrt(309.0)) * np.array([10, -3, 10, 10], dtype=float).reshape(-1, 1)
     v1 = (1.0 / np.sqrt(309.0)) * np.array([10,  3, -10, 10], dtype=float).reshape(-1, 1)
-    sigma1 = 1000.0
-    G = sigma1 * (u1 @ v1.T) + O
-    return G, {"O": O, "u1": u1, "v1": v1, "sigma1": sigma1}
+    G = float(sigma1) * (u1 @ v1.T) + O
+    return G, {"O": O, "u1": u1, "v1": v1, "sigma1": float(sigma1)}
 
 
 # --------------------------------------------------------------------------
@@ -98,6 +117,23 @@ def muonsign_counterexample(eps: float = 1.0, M: float = 100.0):
     ``G = eps * S + (M - eps) * e4 e2^T`` (1-indexed), so ``sign(G) = S`` for
     every ``M > 0`` while the single entry ``G[4,2] = M`` is inflated to expose
     the lone sign mismatch between ``S`` and ``polar(S)``.
+
+    Choosing ``M``
+    --------------
+    The descent inner product is ``eps*<S,D> + (M-eps)*D[4,2]`` with
+    ``D`` the oracle output, so ascent needs ``M > eps*(1 + <S,D>/(-D[4,2]))``.
+    The mismatch ``D[4,2] < 0`` holds for the exact oracle *and* for Newton-Schulz
+    at every step count tested, but its magnitude is smaller under Newton-Schulz
+    (``-0.05`` at 5 steps vs ``-0.2425`` exact), which raises the threshold:
+
+        exact oracle          M > 42.7
+        Newton-Schulz, 5      M > 216.5   <-- the paper's M = 100 is BELOW this
+        Newton-Schulz, >= 6   M > 19.8
+
+    ``M = 100`` therefore refutes descent for MuonUSign only under the exact
+    oracle; ``M = 500`` refutes it under every oracle tested (exact value
+    ``-110.90``). MuonSign, which signs the oracle output, ascends at ``M = 100``
+    for every oracle already (value ``-76``; ``-476`` at ``M = 500``).
 
     Returns
     -------
@@ -304,7 +340,7 @@ def ef21_signmuon_counterexample(mu=0.0, nesterov=False):
 
 
 def _self_check():
-    from optimizers import muon_lmo
+    from counterexamples.optimizers import muon_lmo
 
     print("== Theorem 1 (SignMuon, 4x4) ==")
     G1, info1 = signmuon_counterexample()
@@ -324,7 +360,7 @@ def _self_check():
     print(f"  <G, LMO(G)>  (Muon)      = {np.sum(G2 * muon_lmo(G2)):+.3f}   (descends, > 0)")
 
     print("== Appendix (EF21-SignMuon, universal 2x2 construction) ==")
-    from optimizers import EF21SignMuon
+    from counterexamples.optimizers import EF21SignMuon
     settle, periods = 400, 500       # measure over whole 2-step periods
     print(f"  exact rate 49/480 = {49/480:.8f}; per-step rate over {periods} "
           f"periods after settling:")

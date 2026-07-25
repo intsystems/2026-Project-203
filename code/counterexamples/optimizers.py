@@ -5,8 +5,11 @@ Exact-SVD implementations of the eight optimizers studied in the paper
 Every method follows the corresponding pseudocode box in the paper verbatim,
 with two deliberate choices:
 
-  * the Muon LMO is computed with an **exact SVD** (rank-truncated ``U V^T``)
-    instead of the Newton-Schulz polynomial the paper uses in practice, and
+  * the Muon LMO defaults to an **exact SVD** (rank-truncated ``U V^T``), which is
+    what the theorems are stated about. Pass ``lmo=make_lmo("ns", steps=5)`` to
+    run the *implemented* Newton-Schulz oracle instead -- the two are NOT
+    interchangeable on these instances, see :func:`newton_schulz_lmo` and
+    ``verify_ns_oracle.py``; and
   * momentum is the EMA / heavy-ball form of the centralized algorithm boxes
     ``M_t = mu*M_{t-1} + (1-mu)*G_t`` with an optional Nesterov look-ahead
     ``M_tilde = (1-mu)*G_t + mu*M_t``.
@@ -26,7 +29,7 @@ Each optimizer owns its model state.  The driver loop is simply::
 
 ``grad_point()`` is where the (stochastic) gradient is evaluated and
 ``track_point()`` is the model whose objective value we plot.  For every method
-except EF21-MuonUDSign these coincide with the single model ``X``; the
+except EF21-MuonSign these coincide with the single model ``X``; the
 bidirectional method evaluates the gradient at the *compressed* broadcast model
 ``W`` while the tracked/exact model is ``X``.
 """
@@ -39,9 +42,61 @@ import numpy as np
 # Building blocks
 # --------------------------------------------------------------------------
 
-# Newton-Schulz coefficients kept only for reference / documentation; the exact
-# SVD path below is what the counterexamples use.
+# Newton-Schulz coefficients of the paper's Algorithm 1.
 NS_COEFFS = (3.4445, 4.7750, 2.0315)
+
+
+def bfloat16(x: np.ndarray) -> np.ndarray:
+    """Round a float32 array to bfloat16 precision and back.
+
+    NumPy has no bfloat16, so this truncates the mantissa to 8 bits with
+    round-to-nearest. It is a *pessimistic* model of torch's bfloat16, which
+    accumulates matmuls in float32.
+    """
+    a = np.asarray(x, dtype=np.float32).copy()
+    u = a.view(np.uint32)
+    u += 0x8000
+    u &= 0xFFFF0000
+    return u.view(np.float32).astype(np.float32)
+
+
+def newton_schulz_lmo(Y: np.ndarray, steps: int = 5, dtype: str = "float32",
+                      eps: float = 1e-7) -> np.ndarray:
+    r"""The *practical* LMO: ``steps`` iterations of the quintic of Algorithm 1.
+
+    This is what the torch code (and the reference Muon implementation) actually
+    runs, as opposed to the exact polar factor :func:`muon_lmo` the theorems are
+    stated about.
+
+    The two are **not** interchangeable on the counterexamples. The Muon quintic
+    is not a convergent iteration -- it is tuned to push singular values into a
+    band around 1 and then oscillates inside it -- so ``newton_schulz_lmo`` differs
+    from ``muon_lmo`` by an ``O(1)`` perturbation whose size and sign depend on
+    ``steps``. Whenever the quantity of interest is the *sign pattern* of the
+    output, an entry of the exact polar factor that is small in magnitude can
+    therefore flip. Use :mod:`verify_ns_oracle` to check a given instance against
+    both oracles before relying on it.
+    """
+    a, b, c = NS_COEFFS
+    cast = bfloat16 if dtype == "bfloat16" else (lambda z: np.asarray(z, np.float32))
+    X = cast(Y)
+    transposed = X.shape[-2] > X.shape[-1]
+    if transposed:
+        X = X.T
+    X = cast(X / (np.linalg.norm(X) + eps))
+    for _ in range(steps):
+        A = cast(X @ X.T)
+        X = cast(a * X + cast(-b * A + c * cast(A @ A)) @ X)
+    return (X.T if transposed else X).astype(np.float64)
+
+
+def make_lmo(oracle: str = "exact", steps: int = 5, dtype: str = "float32"):
+    """Return the LMO callable named by ``oracle`` (``"exact"`` or ``"ns"``)."""
+    if oracle == "exact":
+        return muon_lmo
+    if oracle == "ns":
+        return lambda Y: newton_schulz_lmo(Y, steps=steps, dtype=dtype)
+    raise ValueError(f"unknown oracle {oracle!r} (expected 'exact' or 'ns')")
 
 
 def muon_lmo(Y: np.ndarray, tol: float = 1e-9) -> np.ndarray:
@@ -97,11 +152,16 @@ class Optimizer:
 
     name = "Optimizer"
 
-    def __init__(self, shape, eta: float, mu: float = 0.8, nesterov: bool = False):
+    def __init__(self, shape, eta: float, mu: float = 0.8, nesterov: bool = False,
+                 lmo=None):
         self.shape = tuple(shape)
         self.eta = float(eta)
         self.mu = float(mu)
         self.nesterov = bool(nesterov)
+        # The LMO used by every method. Defaults to the exact polar factor, which
+        # is what the theorems are stated about; pass ``make_lmo("ns", steps=5)``
+        # to run the *implemented* Newton-Schulz oracle instead.
+        self.lmo = lmo if lmo is not None else muon_lmo
         self.X = np.zeros(self.shape)   # tracked / exact model
         self.M = np.zeros(self.shape)   # momentum buffer M_t
 
@@ -153,7 +213,7 @@ class Muon(Optimizer):
 
     def step(self, G):
         M_tilde = self._effective_direction(G)
-        self.X = self.X - self.eta * muon_lmo(M_tilde)
+        self.X = self.X - self.eta * self.lmo(M_tilde)
 
 
 # --------------------------------------------------------------------------
@@ -171,7 +231,7 @@ class SignMuon(Optimizer):
 
     def step(self, G):
         M_tilde = self._effective_direction(G)
-        D = muon_lmo(M_tilde)
+        D = self.lmo(M_tilde)
         self.X = self.X - self.eta * np.sign(D)
 
 
@@ -189,22 +249,22 @@ class MuonUSign(Optimizer):
     def step(self, G):
         M_tilde = self._effective_direction(G)
         s = np.sign(M_tilde)
-        D = muon_lmo(s)
+        D = self.lmo(s)
         self.X = self.X - self.eta * D
 
 
-class MuonUDSign(Optimizer):
-    """Algorithm ``alg:muon_udsign``: sign before *and* after the LMO.
+class MuonSign(Optimizer):
+    """Algorithm ``alg:muon_sign``: sign before *and* after the LMO.
 
     ``s_up = sign(M_tilde);  D = LMO(s_up);  X <- X - eta * sign(D)``.
     """
 
-    name = "MuonUDSign"
+    name = "MuonSign"
 
     def step(self, G):
         M_tilde = self._effective_direction(G)
         s_up = np.sign(M_tilde)
-        D = muon_lmo(s_up)
+        D = self.lmo(s_up)
         s_down = np.sign(D)
         self.X = self.X - self.eta * s_down
 
@@ -223,13 +283,13 @@ class EF21SignMuon(Optimizer):
 
     name = "EF21-SignMuon"
 
-    def __init__(self, shape, eta, mu=0.8, nesterov=False):
-        super().__init__(shape, eta, mu, nesterov)
+    def __init__(self, shape, eta, mu=0.8, nesterov=False, lmo=None):
+        super().__init__(shape, eta, mu, nesterov, lmo)
         self.d_est = np.zeros(self.shape)   # EF21 estimator of the LMO direction
 
     def step(self, G):
         M_tilde = self._effective_direction(G)
-        D = muon_lmo(M_tilde)
+        D = self.lmo(M_tilde)
         delta = D - self.d_est
         alpha = np.mean(np.abs(delta))
         self.d_est = self.d_est + alpha * np.sign(delta)
@@ -246,8 +306,8 @@ class EF21MuonUSign(Optimizer):
 
     name = "EF21-MuonUSign"
 
-    def __init__(self, shape, eta, mu=0.8, nesterov=False):
-        super().__init__(shape, eta, mu, nesterov)
+    def __init__(self, shape, eta, mu=0.8, nesterov=False, lmo=None):
+        super().__init__(shape, eta, mu, nesterov, lmo)
         self.g_est = np.zeros(self.shape)   # EF21 estimator of the momentum
 
     def step(self, G):
@@ -255,11 +315,11 @@ class EF21MuonUSign(Optimizer):
         delta = M_tilde - self.g_est
         alpha = np.mean(np.abs(delta))
         self.g_est = self.g_est + alpha * np.sign(delta)
-        D = muon_lmo(self.g_est)
+        D = self.lmo(self.g_est)
         self.X = self.X - self.eta * D
 
 
-class EF21MuonUDSign(Optimizer):
+class EF21MuonSign(Optimizer):
     """Algorithm ``central_alg_ud``: bidirectional EF21 (uplink + downlink).
 
     Uplink EF21 reconstructs the momentum estimator ``g_est`` (as in
@@ -269,10 +329,10 @@ class EF21MuonUDSign(Optimizer):
     objective is tracked on the exact server model ``X``.
     """
 
-    name = "EF21-MuonUDSign"
+    name = "EF21-MuonSign"
 
-    def __init__(self, shape, eta, mu=0.8, nesterov=False):
-        super().__init__(shape, eta, mu, nesterov)
+    def __init__(self, shape, eta, mu=0.8, nesterov=False, lmo=None):
+        super().__init__(shape, eta, mu, nesterov, lmo)
         self.g_est = np.zeros(self.shape)   # uplink EF21 estimator
         self.W = np.zeros(self.shape)       # compressed broadcast model
 
@@ -291,7 +351,7 @@ class EF21MuonUDSign(Optimizer):
         alpha_up = np.mean(np.abs(delta_up))
         self.g_est = self.g_est + alpha_up * np.sign(delta_up)
         # --- exact server step ---
-        D = muon_lmo(self.g_est)
+        D = self.lmo(self.g_est)
         self.X = self.X - self.eta * D
         # --- downlink EF21-P (compress the model shift into W) ---
         delta_dn = self.X - self.W
@@ -309,13 +369,13 @@ OPTIMIZERS = {
     "SignMuon":        SignMuon,
     "EF21-SignMuon":   EF21SignMuon,
     "MuonUSign":       MuonUSign,
-    "MuonUDSign":      MuonUDSign,
+    "MuonSign":      MuonSign,
     "EF21-MuonUSign":  EF21MuonUSign,
-    "EF21-MuonUDSign": EF21MuonUDSign,
+    "EF21-MuonSign": EF21MuonSign,
     "SignSGD":         SignSGD,
     "Muon":            Muon,
 }
 
-PAPER_METHODS = ["SignMuon", "EF21-SignMuon", "MuonUSign", "MuonUDSign",
-                 "EF21-MuonUSign", "EF21-MuonUDSign"]
+PAPER_METHODS = ["SignMuon", "EF21-SignMuon", "MuonUSign", "MuonSign",
+                 "EF21-MuonUSign", "EF21-MuonSign"]
 REFERENCE_METHODS = ["SignSGD", "Muon"]

@@ -37,9 +37,9 @@ is the exact polar factor; `sign` is elementwise; `scaled_sign(Y) = mean|Y|·sig
 | `SignMuon` | `sign(LMO(M̃))` — sign **after** LMO |
 | `EF21-SignMuon` | EF21 estimator of `LMO(M̃)` (scaled-sign on the residual) |
 | `MuonUSign` | `LMO(sign(M̃))` — sign **before** LMO (= MuonSign; LMO is scale-invariant) |
-| `MuonUDSign` | `sign(LMO(sign(M̃)))` — sign before *and* after LMO |
+| `MuonSign` | `sign(LMO(sign(M̃)))` — sign before *and* after LMO |
 | `EF21-MuonUSign` | `LMO(g_est)`, where `g_est` is a scaled-sign EF21 estimate of `M̃` |
-| `EF21-MuonUDSign` | as above + a second EF21-P loop compressing the downlink model shift |
+| `EF21-MuonSign` | as above + a second EF21-P loop compressing the downlink model shift |
 | `SignSGD` (ref) | `sign(M̃)` |
 | `Muon` (ref) | `LMO(M̃)` |
 
@@ -73,7 +73,7 @@ every other method (including the EF21 variants) descends.
 **Counterexample 2 — MuonSign / MuonUSign (Theorem 2, 5×5).** `sign(G) = S`,
 and `polar(S)` disagrees with `S` at exactly the one inflated entry, giving
 `⟨G, LMO(sign(G))⟩ = −13.888 < 0`. **MuonUSign** diverges — and so does
-**MuonUDSign** here (`−76`), since its downlink sign flips that same entry.
+**MuonSign** here (`−76`), since its downlink sign flips that same entry.
 All EF21 variants, `SignMuon`, `SignSGD`, and `Muon` descend.
 
 In both linear cases the Error-Feedback methods restore convergence, matching
