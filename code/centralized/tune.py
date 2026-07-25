@@ -118,7 +118,16 @@ def run_one(args, *, lr: float, lr_aux: float, lr_scaling: str,
     tail mean, not a single epoch, so the choice is not decided by one noisy
     evaluation. ``test_acc`` is parsed and recorded but is **never** used for
     selection; with ``split="tune"`` it is measured on 45k-trained models anyway.
+
+    The job identity is canonicalized here to include the **horizon, split and
+    seed**. Two runs of the same method at the same learning rate but different
+    epoch counts are different experiments, and a resume that treated them as one
+    would silently mix horizons inside a single selection -- so the caller cannot
+    forget to disambiguate them.
     """
+    last_k = min(args.last_k, max(1, epochs // 3))
+    tag = f"{tag}_e{epochs}_{split[0]}" + ("" if seed is None else f"s{seed}")
+
     cmd = [
         sys.executable, "-m", "centralized.main",
         "--dataset", args.dataset, "--model", args.model,
@@ -127,7 +136,7 @@ def run_one(args, *, lr: float, lr_aux: float, lr_scaling: str,
         "--epochs", str(epochs), "--batch-size", str(args.batch_size),
         "--lr", repr(lr), "--lr-aux", repr(lr_aux),
         "--momentum", str(args.momentum), "--weight-decay", str(args.weight_decay),
-        "--head-adamw", args.head_adamw, "--last-k", str(args.last_k),
+        "--head-adamw", args.head_adamw, "--last-k", str(last_k),
         "--device", args.device,
         "--seed", str(args.seed if seed is None else seed),
         "--data", args.data, "--num-workers", str(args.num_workers),
@@ -153,7 +162,8 @@ def run_one(args, *, lr: float, lr_aux: float, lr_scaling: str,
         print(f"FAILED (exit {proc.returncode}) {tail[:160]}")
         return None
 
-    out: Dict[str, float] = {"lr": lr, "lr_aux": lr_aux, "log": str(log_path)}
+    out: Dict[str, float] = {"lr": lr, "lr_aux": lr_aux, "epochs": epochs,
+                             "split": split, "log": str(log_path)}
     m_val = _SUMMARY_RE.search(text)
     m_test = _FINAL_RE.search(text)
     m_time = _EPOCH_TIME_RE.search(text)

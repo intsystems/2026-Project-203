@@ -1,18 +1,23 @@
 """One-command overnight run for the centralized ResNet-18 study.
 
     cd code
-    python3 -m centralized.overnight --device cuda:0 --budget-hours 8 --download
+    python3 -m centralized.overnight --device cuda:0 --budget-hours 0 \
+        --final-seeds 0 1 2 --download
 
 Watch the first ~6 minutes: it runs the CPU test suite, prints the per-layer
 learning-rate table, times two real epochs on *your* GPU, and then prints a
-schedule saying exactly which phases fit in the budget. Once the schedule appears
-you can go to bed. In the morning read ``results/overnight/REPORT.md``.
+schedule with a finish time per phase. Once the schedule appears you can leave it.
+
+``--budget-hours 0`` means **no deadline**: every phase runs to completion and only
+Ctrl-C stops the run. ``results/overnight/REPORT.md`` is rewritten after every phase
+and after every final run, so it can be read at any time *without* stopping
+anything. Ctrl-C stops cleanly and writes the report; a second Ctrl-C exits at once.
 
 Design for an unattended night
 ------------------------------
 * **Budget-aware.** Every phase is costed from the *measured* epoch time, and the
-  deadline is checked before each individual job, so the run stops cleanly instead
-  of being killed mid-way.
+  deadline is checked before each individual job, so a bounded run stops cleanly
+  instead of being killed mid-way. ``--budget-hours 0`` removes the deadline.
 * **Crash-isolated.** Each job is a subprocess; a failure is logged and the run
   continues. One diverging learning rate cannot take down the night.
 * **Resumable and incremental.** State is written to
@@ -20,9 +25,9 @@ Design for an unattended night
   everything already done.
 * **Priority-ordered.** The phases are ordered so that stopping early still leaves
   a usable result: the alpha decision first (cheapest, most theoretical value),
-  then eta_0 for every method, then finals **seed-major** -- seed 0 for all ten
-  methods before seed 1 -- so an interrupted night yields a complete 1-seed table
-  rather than a partial 3-seed one.
+  then eta_0 for every method, then finals **seed-major** -- every
+  parameterization at seed 0 before any of them reaches seed 1 -- so stopping early
+  yields a complete 1-seed table rather than a fragmentary 3-seed one.
 
 Phases
 ------
@@ -30,9 +35,12 @@ Phases
 1. ``gain``       ``--log-gain`` runs: does the accumulated update grow like
                   ``sqrt(t)`` (favouring ``unit-gain``) or ``t`` (favouring ``mup``)?
 2. ``alpha``      sweep ``power:ALPHA`` x eta_0 -> pick the exponent.
-3. ``aux``        is the optimal ``lr_aux`` method-independent? (off by default)
-4. ``lr``         eta_0 per method under the chosen rule, equal budget each.
+3. ``lr``         eta_0 per method under the chosen rule, equal budget each.
+4. ``verify``     re-run the top rates at the FINAL horizon: is the short-horizon
+                  ranking horizon-stable? (the assumption a short proxy makes)
 5. ``final``      full 50k training runs at the tuned values, seed-major.
+
+The ``lr_aux`` study is a separate tool: ``python3 -m centralized.tune --stage aux``.
 """
 
 from __future__ import annotations
@@ -65,8 +73,27 @@ _stop = {"requested": False}
 
 
 def _handle_sigint(signum, frame):        # pragma: no cover - interactive
+    if _stop["requested"]:
+        raise KeyboardInterrupt("second interrupt -- exiting now")
     _stop["requested"] = True
-    print("\n[interrupt] finishing the current job, then stopping cleanly...", flush=True)
+    print("\n[interrupt] stopping cleanly and writing the report. "
+          "Press Ctrl-C again to exit immediately.", flush=True)
+
+
+def record(state: Dict, tag: str, result) -> None:
+    """Record a job's outcome, then persist the state.
+
+    A job cut short by Ctrl-C is deliberately **not** recorded: ``--resume`` skips
+    any tag already present, so recording an interrupted run would silently retire
+    it. Genuine failures *are* recorded, because a configuration that diverges will
+    diverge again and re-running it only wastes the next night.
+    """
+    if result is None and _stop["requested"]:
+        print(f"  (interrupted before {tag} finished -- not recorded, "
+              f"--resume will retry it)")
+        return
+    state["jobs"][tag] = result
+    save_state(state)
 
 
 # --------------------------------------------------------------------------
@@ -97,19 +124,23 @@ class Budget:
 
     def __init__(self, hours: float):
         self.start = time.time()
-        self.deadline = self.start + hours * 3600.0
         self.hours = hours
+        #: ``hours <= 0`` means no deadline: every phase runs to completion and only
+        #: Ctrl-C stops the run.
+        self.unlimited = hours <= 0
+        self.deadline = float("inf") if self.unlimited else self.start + hours * 3600.0
 
     def left(self) -> float:
-        return self.deadline - time.time()
+        return float("inf") if self.unlimited else self.deadline - time.time()
 
     def fits(self, seconds: float) -> bool:
-        return self.left() > seconds
+        return self.unlimited or self.left() > seconds
 
     def report(self) -> str:
-        left = max(0.0, self.left())
-        return f"{timedelta(seconds=int(time.time() - self.start))} elapsed, " \
-               f"{timedelta(seconds=int(left))} left"
+        elapsed = timedelta(seconds=int(time.time() - self.start))
+        if self.unlimited:
+            return f"{elapsed} elapsed, no deadline (Ctrl-C to stop)"
+        return f"{elapsed} elapsed, {timedelta(seconds=int(max(0.0, self.left())))} left"
 
 
 # --------------------------------------------------------------------------
@@ -213,8 +244,7 @@ def phase_gain(args, state, budget, sec) -> None:
         r = run_one(_tune_args(args), lr=base, lr_aux=args.lr_aux,
                     lr_scaling=args.lr_scaling, method=method,
                     epochs=args.gain_epochs, tag=tag, extra=("--log-gain",))
-        state["jobs"][tag] = r
-        save_state(state)
+        record(state, tag, r)
 
 
 def phase_alpha(args, state, budget, sec) -> Optional[float]:
@@ -236,9 +266,9 @@ def phase_alpha(args, state, budget, sec) -> Optional[float]:
                   f"| {budget.report()}")
             r = run_one(_tune_args(args), lr=lr, lr_aux=args.lr_aux, lr_scaling=rule,
                         method=method, epochs=args.tune_epochs, tag=tag)
-            state["jobs"][tag] = r
-            results.setdefault(f"{alpha:g}", []).append(r)
-            save_state(state)
+            record(state, tag, r)
+            if r:
+                results.setdefault(f"{alpha:g}", []).append(r)
     return _alpha_verdict(results)
 
 
@@ -283,9 +313,9 @@ def phase_lr(args, state, budget, sec, rule: str) -> Dict[str, Dict]:
             r = run_one(_tune_args(args), lr=lr, lr_aux=args.lr_aux,
                         lr_scaling=rule, method=method, epochs=args.tune_epochs,
                         tag=tag, extra=extra)
-            state["jobs"][tag] = r
-            runs.append(r)
-            save_state(state)
+            record(state, tag, r)
+            if r:
+                runs.append(r)
         best = best_of(runs)
         if best:
             out[key]["best"] = best
@@ -303,6 +333,76 @@ def _lr_jobs(args):
         yield method, False
         if method in ("sgd", "adam") and not args.skip_baseline_variants:
             yield method, True
+
+
+def phase_verify(args, state, budget, sec, rule: str,
+                 tuned: Dict[str, Dict]) -> Dict[str, Dict]:
+    """Is the short-horizon learning-rate ranking horizon-stable?
+
+    Tuning at ``--tune-epochs`` and reporting at ``--final-epochs`` assumes the
+    ranking of learning rates does not depend on the horizon. That is an assumption,
+    and it is checkable: re-run the top-``k`` rates of a couple of methods at the
+    *final* horizon and see whether the winner moves.
+
+    Deliberately still on the **tuning split**, so ``val_acc`` is the comparison
+    metric at both horizons -- comparing short-horizon val against long-horizon test
+    would confound the horizon with the split and the metric.
+
+    If the winner holds, the proxy is validated and the paper can say so. If it
+    moves, the short-horizon tuning is unreliable and must be redone longer; that is
+    a result worth knowing before 12 final runs are built on it.
+    """
+    out: Dict[str, Dict] = state["phases"].setdefault("verify", {})
+    for method in args.verify_methods:
+        entry = tuned.get(method)
+        if not entry or not entry.get("runs"):
+            continue
+        short = sorted((r for r in entry["runs"] if r and "val_acc" in r),
+                       key=lambda r: -r["val_acc"])[:args.verify_top]
+        if len(short) < 2:
+            continue
+        long_runs = out.setdefault(method, {"short": short, "long": []})["long"]
+        for r in short:
+            tag = f"verify_{method}_{rule.replace(':', '')}_{r['lr']:.4g}"
+            if tag + f"_e{args.final_epochs}_t" in state["jobs"]:
+                continue
+            cost = job_cost(sec, args.final_epochs)
+            if not budget.fits(cost) or _stop["requested"]:
+                return out
+            print(f"[{stamp()}] verify/{method} at {args.final_epochs} ep "
+                  f"(~{cost/60:.0f} min) | {budget.report()}")
+            res = run_one(_tune_args(args), lr=r["lr"], lr_aux=args.lr_aux,
+                          lr_scaling=rule, method=method,
+                          epochs=args.final_epochs, tag=tag)
+            record(state, tag + f"_e{args.final_epochs}_t", res)
+            if res:
+                long_runs.append(res)
+
+    _verify_verdict(out, args)
+    return out
+
+
+def _verify_verdict(out: Dict[str, Dict], args) -> None:
+    if not out:
+        return
+    print("\n  --- horizon-stability verdict ---")
+    for method, d in out.items():
+        short, long = d.get("short", []), d.get("long", [])
+        if len(long) < 2:
+            print(f"    {method}: not enough long-horizon runs to judge")
+            continue
+        s_order = [r["lr"] for r in sorted(short, key=lambda r: -r["val_acc"])]
+        l_order = [r["lr"] for r in sorted(long, key=lambda r: -r["val_acc"])]
+        same = abs(s_order[0] - l_order[0]) < 1e-12
+        print(f"    {method}: best at {args.tune_epochs} ep = {s_order[0]:.4g}, "
+              f"at {args.final_epochs} ep = {l_order[0]:.4g}  "
+              f"-> {'STABLE' if same else 'MOVED'}")
+        if not same:
+            print(f"      the {args.tune_epochs}-epoch proxy picked the wrong rate "
+                  f"for this method; prefer the {args.final_epochs}-epoch winner and "
+                  f"treat the tuned table as provisional.")
+        d["stable"] = bool(same)
+        d["best_short"], d["best_long"] = s_order[0], l_order[0]
 
 
 def phase_final(args, state, budget, sec, rule: str, tuned: Dict[str, Dict]) -> None:
@@ -326,9 +426,11 @@ def phase_final(args, state, budget, sec, rule: str, tuned: Dict[str, Dict]) -> 
                         lr_scaling=rule, method=method, epochs=args.final_epochs,
                         tag=tag, split="full", seed=seed,
                         extra=("--scale-baselines",) if scaled else ())
-            state["jobs"][tag] = r
-            state["phases"].setdefault("final", {})[tag] = r
-            save_state(state)
+            record(state, tag, r)
+            if r:
+                state["phases"].setdefault("final", {})[tag] = r
+                save_state(state)
+                refresh_report(args, state, budget, sec, rule, None, tuned)
 
 
 # --------------------------------------------------------------------------
@@ -336,7 +438,7 @@ def phase_final(args, state, budget, sec, rule: str, tuned: Dict[str, Dict]) -> 
 # --------------------------------------------------------------------------
 
 
-def write_report(args, state, budget, sec, rule, alpha, tuned) -> None:
+def build_report(args, state, budget, sec, rule, alpha, tuned) -> str:
     lines = [
         "# Overnight run report",
         "",
@@ -389,6 +491,22 @@ def write_report(args, state, budget, sec, rule, alpha, tuned) -> None:
         lines += ["", "A `BOUNDARY` note means the optimum sat on a grid endpoint: "
                       "extend the grid and re-run that method before reporting it.", ""]
 
+    verify = state["phases"].get("verify", {})
+    if verify:
+        lines += ["## Horizon stability", "",
+                  f"Top-{args.verify_top} rates re-run at {args.final_epochs} epochs "
+                  f"(still on the tuning split, so `val_acc` is comparable):", "",
+                  "| method | best @ tune | best @ final | verdict |",
+                  "| :--- | ---: | ---: | :--- |"]
+        for m, d in verify.items():
+            if "best_short" not in d:
+                continue
+            lines.append(f"| `{m}` | {d['best_short']:.4g} | {d['best_long']:.4g} | "
+                         f"{'stable' if d.get('stable') else '**MOVED**'} |")
+        lines += ["", "If a winner moved, the short-horizon table is provisional for "
+                      "that family and the tuning should be redone at a longer "
+                      "horizon.", ""]
+
     finals = state["phases"].get("final", {})
     if finals:
         lines += ["## Final runs (full 50k, test set)", "",
@@ -422,12 +540,25 @@ def write_report(args, state, budget, sec, rule, alpha, tuned) -> None:
                   f"--device {args.device}",
                   "```", ""]
 
+    return "\n".join(lines)
+
+
+def refresh_report(args, state, budget, sec, rule, alpha, tuned, *,
+                   echo: bool = False) -> None:
+    """Rewrite ``REPORT.md`` from the current state.
+
+    Called after every phase and after every final run, so the report on disk is
+    always current: with no deadline the run may last all day, and you should be
+    able to read what has been found without stopping it.
+    """
+    text = build_report(args, state, budget, sec, rule, alpha, tuned)
     OUT_DIR.mkdir(parents=True, exist_ok=True)
-    REPORT_PATH.write_text("\n".join(lines), encoding="utf-8")
-    print("\n" + "=" * 78)
-    print("\n".join(lines))
-    print("=" * 78)
-    print(f"[{stamp()}] report written to {REPORT_PATH}")
+    REPORT_PATH.write_text(text, encoding="utf-8")
+    if echo:
+        print("\n" + "=" * 78)
+        print(text)
+        print("=" * 78)
+    print(f"[{stamp()}] report refreshed -> {REPORT_PATH}", flush=True)
 
 
 # --------------------------------------------------------------------------
@@ -439,7 +570,10 @@ def get_args():
     p = argparse.ArgumentParser(description=__doc__,
                                 formatter_class=argparse.RawDescriptionHelpFormatter)
     p.add_argument("--device", type=str, default="cuda:0")
-    p.add_argument("--budget-hours", type=float, default=8.0)
+    p.add_argument("--budget-hours", type=float, default=8.0,
+                   help="Wall-clock deadline. Pass 0 for NO deadline: every "
+                        "phase runs to completion and only Ctrl-C stops it "
+                        "(the report is written on the way out)")
     p.add_argument("--data", type=str, default="./data")
     p.add_argument("--download", action="store_true",
                    help="Download CIFAR-10 if missing (do this on the first run)")
@@ -464,16 +598,18 @@ def get_args():
 
     p.add_argument("--methods", nargs="*", default=ALL_METHODS)
     p.add_argument("--phases", nargs="*",
-                   default=["gain", "alpha", "lr", "final"],
-                   choices=["gain", "alpha", "aux", "lr", "final"],
-                   help="Which phases to run, in order (default omits 'aux')")
-    p.add_argument("--tune-epochs", type=int, default=6,
-                   help="Short proxy horizon for ranking learning rates. "
-                        "Raise to 10-15 if you have more than 8 h")
+                   default=["gain", "alpha", "lr", "verify", "final"],
+                   choices=["gain", "alpha", "lr", "verify", "final"],
+                   help="Which phases to run, in order. The lr_aux study is a "
+                        "separate tool: python3 -m centralized.tune --stage aux")
+    p.add_argument("--tune-epochs", type=int, default=15,
+                   help="Proxy horizon for ranking learning rates. The 'verify' "
+                        "phase checks that the ranking survives to --final-epochs; "
+                        "note --last-k is capped at epochs//3 so the selection "
+                        "metric is a genuine tail at any horizon")
     p.add_argument("--gain-epochs", type=int, default=20)
-    p.add_argument("--final-epochs", type=int, default=30,
-                   help="Epoch budget for the full-50k runs. The paper uses "
-                        "75; 30 is enough to rank the methods overnight")
+    p.add_argument("--final-epochs", type=int, default=75,
+                   help="Epoch budget for the full-50k runs; 75 matches the paper")
     p.add_argument("--final-seeds", nargs="*", type=int, default=[0],
                    help="Seed-major: all methods at seed 0, then seed 1, ... "
                         "so an interrupted night still leaves a complete table")
@@ -487,6 +623,11 @@ def get_args():
                    help="Each alpha needs its own eta_0 optimum found, or the "
                         "comparison is confounded by a badly chosen rate")
     p.add_argument("--alpha-method", type=str, default="signmuon")
+    p.add_argument("--verify-methods", nargs="*", default=["signmuon", "muon"],
+                   help="Methods whose top learning rates are re-run at "
+                        "--final-epochs to check horizon stability")
+    p.add_argument("--verify-top", type=int, default=3,
+                   help="How many of each method's best rates to re-run")
     p.add_argument("--skip-baseline-variants", action="store_true",
                    help="Do NOT additionally tune SGD/Adam under the sign rule "
                         "(by default both parameterizations are run and the better "
@@ -505,16 +646,22 @@ def print_schedule(args, sec: float, budget: Budget) -> None:
     n_alpha = len(args.alpha_grid) * args.alpha_points
     n_lr = sum(1 for _ in _lr_jobs(args)) * args.lr_points
     n_final = sum(1 for _ in _lr_jobs(args)) * len(args.final_seeds)
+    n_verify = len(args.verify_methods) * args.verify_top
     plan = [
         ("gain", 2, args.gain_epochs),
         ("alpha", n_alpha, args.tune_epochs),
         ("lr", n_lr, args.tune_epochs),
+        ("verify", n_verify, args.final_epochs),
         ("final", n_final, args.final_epochs),
     ]
     print("\n" + "=" * 78)
-    print(f"SCHEDULE  (budget {args.budget_hours:g} h, measured {sec:.1f} s/epoch)")
+    budget_desc = ("no deadline -- runs until Ctrl-C" if budget.unlimited
+                   else f"budget {args.budget_hours:g} h")
+    print(f"SCHEDULE  ({budget_desc}, measured {sec:.1f} s/epoch)")
     print("=" * 78)
-    print(f"  {'phase':<8}{'jobs':>6}{'epochs':>8}{'hours':>8}{'cumulative':>12}   fits?")
+    last_col = "done by" if budget.unlimited else "fits?"
+    print(f"  {'phase':<8}{'jobs':>6}{'epochs':>8}{'hours':>8}{'cumulative':>12}"
+          f"   {last_col}")
     cum = 0.0
     for name, n, ep in plan:
         if name not in args.phases:
@@ -522,9 +669,25 @@ def print_schedule(args, sec: float, budget: Budget) -> None:
             continue
         hrs = n * job_cost(sec, ep) / 3600.0
         cum += hrs
-        print(f"  {name:<8}{n:>6}{ep:>8}{hrs:>8.1f}{cum:>12.1f}   "
-              f"{'yes' if cum <= args.budget_hours else 'NO -- will be cut'}")
+        if budget.unlimited:
+            eta = (datetime.now() + timedelta(hours=cum)).strftime("%a %H:%M")
+            status = eta
+        else:
+            status = "yes" if cum <= args.budget_hours else "NO -- will be cut"
+        print(f"  {name:<8}{n:>6}{ep:>8}{hrs:>8.1f}{cum:>12.1f}   {status}")
     print("=" * 78)
+    if budget.unlimited:
+        eta = (datetime.now() + timedelta(hours=cum)).strftime("%a %H:%M")
+        print(f"  Everything runs to completion: {cum:.1f} h total, finishing around "
+              f"{eta}.")
+        print(f"  Ctrl-C at any point stops cleanly and writes the report. The report "
+              f"on disk is\n  refreshed after every phase and after every final run, so "
+              f"you can read it mid-run.")
+        print(f"  Finals are seed-major: all {sum(1 for _ in _lr_jobs(args))} "
+              f"parameterizations at seed {args.final_seeds[0]} first, then the next "
+              f"seed --\n  so stopping early leaves complete tables, never fragments.")
+        print(flush=True)
+        return
     if cum > args.budget_hours:
         final_h = (n_final * job_cost(sec, args.final_epochs) / 3600.0
                    if "final" in args.phases else 0.0)
@@ -591,30 +754,55 @@ def main() -> None:
     rule = args.lr_scaling
     alpha = None
     tuned: Dict[str, Dict] = {}
+    if budget.unlimited:
+        print(f"[{stamp()}] no deadline: every phase runs to completion. Ctrl-C stops "
+              f"cleanly and writes the report; the report on disk is refreshed after "
+              f"every phase, so you can read it at any time without stopping.")
 
-    if "gain" in args.phases:
-        print(f"\n{'=' * 78}\n[{stamp()}] PHASE gain\n{'=' * 78}")
-        phase_gain(args, state, budget, sec)
-    if "alpha" in args.phases and not _stop["requested"]:
-        print(f"\n{'=' * 78}\n[{stamp()}] PHASE alpha\n{'=' * 78}")
-        alpha = phase_alpha(args, state, budget, sec)
-        if alpha is not None:
-            # Use the measured exponent for everything downstream.
-            rule = {0.0: "legacy", 0.5: "unit-gain", 1.0: "mup"}.get(
-                round(alpha, 6), f"power:{alpha:g}")
-            print(f"\n  -> using rule '{rule}' for the remaining phases")
-            state["phases"]["chosen_rule"] = rule
-            save_state(state)
-    if "lr" in args.phases and not _stop["requested"]:
-        print(f"\n{'=' * 78}\n[{stamp()}] PHASE lr  (rule '{rule}')\n{'=' * 78}")
-        tuned = phase_lr(args, state, budget, sec, rule)
-    if "final" in args.phases and not _stop["requested"]:
-        print(f"\n{'=' * 78}\n[{stamp()}] PHASE final\n{'=' * 78}")
-        phase_final(args, state, budget, sec, rule, tuned or state["phases"].get("lr", {}))
+    def refresh(echo: bool = False) -> None:
+        refresh_report(args, state, budget, sec, rule, alpha,
+                       tuned or state["phases"].get("lr", {}), echo=echo)
 
-    save_state(state)
-    write_report(args, state, budget, sec, rule, alpha,
-                 tuned or state["phases"].get("lr", {}))
+    def banner(name: str, note: str = "") -> None:
+        print(f"\n{'=' * 78}\n[{stamp()}] PHASE {name}{note}\n{'=' * 78}", flush=True)
+
+    # A second Ctrl-C raises out of the handler; the report must still be written,
+    # so the phases run inside try/finally rather than being trusted to complete.
+    try:
+        if "gain" in args.phases:
+            banner("gain")
+            phase_gain(args, state, budget, sec)
+            refresh()
+        if "alpha" in args.phases and not _stop["requested"]:
+            banner("alpha")
+            alpha = phase_alpha(args, state, budget, sec)
+            if alpha is not None:
+                # Use the measured exponent for everything downstream.
+                rule = {0.0: "legacy", 0.5: "unit-gain", 1.0: "mup"}.get(
+                    round(alpha, 6), f"power:{alpha:g}")
+                print(f"\n  -> using rule '{rule}' for the remaining phases")
+                state["phases"]["chosen_rule"] = rule
+                save_state(state)
+            refresh()
+        if "lr" in args.phases and not _stop["requested"]:
+            banner("lr", f"  (rule '{rule}')")
+            tuned = phase_lr(args, state, budget, sec, rule)
+            refresh()
+        if "verify" in args.phases and not _stop["requested"]:
+            banner("verify", f"  (horizon stability, {args.final_epochs} epochs)")
+            phase_verify(args, state, budget, sec, rule,
+                         tuned or state["phases"].get("lr", {}))
+            refresh()
+        if "final" in args.phases and not _stop["requested"]:
+            banner("final", f"  ({args.final_epochs} epochs, full 50k, "
+                            f"seeds {args.final_seeds})")
+            phase_final(args, state, budget, sec, rule,
+                        tuned or state["phases"].get("lr", {}))
+    except KeyboardInterrupt:
+        print(f"\n[{stamp()}] interrupted -- writing the report from what completed.")
+    finally:
+        save_state(state)
+        refresh(echo=True)
 
 
 if __name__ == "__main__":

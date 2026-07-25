@@ -140,8 +140,11 @@ python3 -m centralized.main $COMMON --optimizer ef21muonsign  --lr 0.007 --lr-au
 
 ```bash
 cd code
-python3 -m centralized.overnight --device cuda:0 --budget-hours 8 --download
+python3 -m centralized.overnight --device cuda:0 --budget-hours 0     --final-seeds 0 1 2 --download
 ```
+
+`--budget-hours 0` means **no deadline**: every phase runs to completion and only
+Ctrl-C stops it. Pass a positive number instead to have it stop by itself.
 
 Watch the first ~6 minutes. It runs the CPU test suite, prints the per-layer
 learning-rate table, times two real epochs **on your GPU**, and then prints a
@@ -149,11 +152,12 @@ schedule saying exactly which phases fit the budget — for example, on an RTX A
 at ~30 s/epoch:
 
 ```
-  phase     jobs  epochs   hours  cumulative   fits?
-  gain         2      20     0.4         0.4   yes
-  alpha       15       6     1.0         1.4   yes
-  lr          48       6     3.3         4.7   yes
-  final       12      30     3.2         7.9   yes
+  phase     jobs  epochs   hours  cumulative   done by
+  gain         2      20     0.2         0.2   Sun 02:12
+  alpha       15      15     1.0         1.2   Sun 03:13
+  lr          48      15     3.3         4.5   Sun 06:29
+  verify       6      75     1.7         6.2   Sun 08:12
+  final       36      75    10.3        16.5   Sun 18:30
 ```
 
 Once the schedule appears you can leave it. In the morning read
@@ -165,14 +169,17 @@ Once the schedule appears you can leave it. In the morning read
   cannot take down the night;
 * **resumable** — state is written after every job; `--resume` continues where it
   stopped;
-* **priority-ordered** — the α measurement first, then η₀ for all methods, then
-  finals **seed-major** (all methods at seed 0 before seed 1), so an interrupted
-  night leaves a complete 1-seed table rather than a partial 3-seed one.
+* **priority-ordered** — the α measurement first, then η₀ for all methods, then a
+  horizon-stability check, then finals **seed-major** (all methods at seed 0 before
+  seed 1), so stopping early leaves complete tables rather than fragments;
+* **readable mid-run** — `REPORT.md` is rewritten after every phase and every final
+  run, so you never have to stop the job to see what it found.
 
 Useful variants: `--preflight-only` (just the checks and the schedule),
 `--dry-run`, `--phases lr final` (skip the α study once it is settled),
-`--final-seeds 0 1 2` and `--final-epochs 75` for the paper's real budget when you
-have the hours, `--deterministic` to disable cuDNN autotuning.
+`--phases gain alpha lr final` to skip the horizon check, `--deterministic` to
+disable cuDNN autotuning, `--resume` to continue an interrupted run (interrupted
+jobs are deliberately not recorded, so they are retried rather than retired).
 
 ### 4c. The rigorous protocol, stage by stage
 
