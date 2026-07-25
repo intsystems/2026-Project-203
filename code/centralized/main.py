@@ -41,9 +41,11 @@ class RunConfig:
     lmo_dtype: str
     lr_scaling: str
     scale_baselines: bool
+    constant_lr: bool
     head_adamw: str
     n_head_tensors: int
     weight_decay: float
+    weight_decay_mode: str
     split: str
     val_seed: int
     last_k: int
@@ -76,6 +78,15 @@ def get_params() -> argparse.ArgumentParser:
     p.add_argument("--momentum", type=float, default=0.9)
     p.add_argument("--nesterov", action="store_true")
     p.add_argument("--weight-decay", type=float, default=5e-4)
+    p.add_argument("--weight-decay-mode", type=str, default="coupled",
+                   choices=["coupled", "decoupled"],
+                   help="coupled (default): wd*X is added to the gradient, so it "
+                        "passes through the LMO -- what the paper's numbers used. "
+                        "decoupled: X *= 1 - lr*wd, leaving the LMO to see the "
+                        "true gradient geometry (the AdamW/Muon convention, and "
+                        "what the federated driver does). Decoupled decay is "
+                        "applied uniformly across layers, NOT scaled by the "
+                        "per-layer multiplier")
 
     # --- per-layer learning-rate scaling ---------------------------------
     p.add_argument("--lr-scaling", type=str, default="unit-gain",
@@ -111,6 +122,11 @@ def get_params() -> argparse.ArgumentParser:
     p.add_argument("--target-acc", type=float, default=90.0,
                    help="Report the epoch at which test accuracy first reaches this")
     p.add_argument("--num-workers", type=int, default=4, help="DataLoader workers")
+    p.add_argument("--constant-lr", action="store_true",
+                   help="Disable the cosine schedule. Required for the --log-gain "
+                        "diagnostic: with annealing the accumulated update saturates, "
+                        "so its growth exponent would measure the schedule rather "
+                        "than the coherence of successive steps")
     p.add_argument("--log-gain", action="store_true",
                    help="Record the realized gain of the accumulated update per layer "
                         "(the diagnostic that separates unit-gain from mup)")
@@ -152,9 +168,11 @@ def main() -> None:
         lmo_dtype=args.lmo_dtype,
         lr_scaling=args.lr_scaling,
         scale_baselines=bool(args.scale_baselines),
+        constant_lr=bool(args.constant_lr),
         head_adamw=args.head_adamw,
         n_head_tensors=args.n_head_tensors,
         weight_decay=args.weight_decay,
+        weight_decay_mode=args.weight_decay_mode,
         split=args.split,
         val_seed=args.val_seed,
         last_k=args.last_k,

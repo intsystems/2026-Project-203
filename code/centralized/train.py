@@ -184,6 +184,8 @@ def build_optimizers(model, args):
         momentum=args.momentum,
         nesterov=args.nesterov,
         weight_decay=args.weight_decay,
+        decoupled_weight_decay=getattr(args, "weight_decay_mode", "coupled")
+        == "decoupled",
         ns_steps=getattr(args, "ns_steps", 5),
         lmo_dtype=getattr(torch, getattr(args, "lmo_dtype", "bfloat16")),
         # The shape factor lives in ``lambda_mult`` below; applying it inside the
@@ -315,9 +317,19 @@ def train(args) -> Tuple[nn.Module, History]:
         print(f"Parameters: {info['n_matrix_params']:,} matrix (compressed) + "
               f"{info['n_aux_params']:,} auxiliary ({frac:.3f}% uncompressed)")
 
-    scheduler_main = torch.optim.lr_scheduler.CosineAnnealingLR(opt_main, T_max=args.epochs)
-    scheduler_aux = (torch.optim.lr_scheduler.CosineAnnealingLR(opt_aux, T_max=args.epochs)
-                     if opt_aux is not None else None)
+    # A constant rate is required by the --log-gain diagnostic: with annealing the
+    # accumulated update saturates, so a growth exponent in t would measure the
+    # schedule rather than the coherence of successive steps. Every other run
+    # anneals, since the schedule shape is part of the fixed epoch budget.
+    constant_lr = bool(getattr(args, "constant_lr", False))
+    scheduler_main = (None if constant_lr else
+                      torch.optim.lr_scheduler.CosineAnnealingLR(
+                          opt_main, T_max=args.epochs))
+    scheduler_aux = (None if constant_lr or opt_aux is None else
+                     torch.optim.lr_scheduler.CosineAnnealingLR(
+                         opt_aux, T_max=args.epochs))
+    if constant_lr:
+        print("Learning rate held CONSTANT (no cosine schedule)")
 
     log_gain = bool(getattr(args, "log_gain", False))
     snapshot = ({n: p.detach().clone() for n, p in model.named_parameters() if p.ndim >= 2}
@@ -347,7 +359,8 @@ def train(args) -> Tuple[nn.Module, History]:
         t0 = time.perf_counter()
         tr = train_epoch(model, train_dl, (opt_main, opt_aux), device)
 
-        scheduler_main.step()
+        if scheduler_main is not None:
+            scheduler_main.step()
         if scheduler_aux is not None:
             scheduler_aux.step()
 
@@ -390,6 +403,12 @@ def _summarize(history: History, args) -> None:
               f"(val {history.at('val_acc', best_val):.2f}%)")
         print(f"val_acc  mean of last {last_k:<4}: "
               f"{history.last_k_mean('val_acc', last_k):.2f}%   <-- tuning criterion")
+    else:
+        # Full-split runs train on all 50k, so there is no held-out validation set
+        # and no honest early-stopping number. Say so rather than quietly omitting
+        # the row: the primary metric is the fixed-budget tail mean anyway.
+        print("test_acc @ best-val epoch  : n/a (no validation split; "
+              "--split full trains on all 50k)")
     ep = history.steps_to_target("test_acc", target)
     print(f"epochs to {target:g}% test acc  : {ep if ep is not None else 'not reached'}")
     secs = history.values("epoch_seconds")

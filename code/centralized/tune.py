@@ -108,6 +108,22 @@ _EPOCH_TIME_RE = re.compile(r"median epoch time\s*:\s*([\d.]+)s")
 _TARGET_RE = re.compile(r"epochs to [\d.]+% test acc\s*:\s*(\d+)")
 
 
+def canonical_tag(tag: str, *, epochs: int, split: str = "tune",
+                  seed: Optional[int] = None) -> str:
+    """The unique identity of a job.
+
+    Two runs of the same method at the same learning rate but a different epoch
+    count, split or seed are *different experiments*. The identity must say so, or a
+    resume keyed on the tag would treat them as one and silently mix horizons inside
+    a single selection.
+
+    Callers must use this for their bookkeeping keys as well -- ``run_one`` applying
+    it internally is not enough, because the caller decides what to skip on resume
+    *before* ``run_one`` is reached.
+    """
+    return f"{tag}_e{epochs}_{split[0]}" + ("" if seed is None else f"s{seed}")
+
+
 def run_one(args, *, lr: float, lr_aux: float, lr_scaling: str,
             method: str, epochs: int, tag: str, split: str = "tune",
             seed: Optional[int] = None,
@@ -126,7 +142,7 @@ def run_one(args, *, lr: float, lr_aux: float, lr_scaling: str,
     forget to disambiguate them.
     """
     last_k = min(args.last_k, max(1, epochs // 3))
-    tag = f"{tag}_e{epochs}_{split[0]}" + ("" if seed is None else f"s{seed}")
+    tag = canonical_tag(tag, epochs=epochs, split=split, seed=seed)
 
     cmd = [
         sys.executable, "-m", "centralized.main",
@@ -162,8 +178,12 @@ def run_one(args, *, lr: float, lr_aux: float, lr_scaling: str,
         print(f"FAILED (exit {proc.returncode}) {tail[:160]}")
         return None
 
+    run_name = f"{'tune' if split == 'tune' else 'final'}_{tag}"
+    metrics = (results_root() / "centralized" / run_name /
+               f"seed{args.seed if seed is None else seed}" / "metrics.json")
     out: Dict[str, float] = {"lr": lr, "lr_aux": lr_aux, "epochs": epochs,
-                             "split": split, "log": str(log_path)}
+                             "split": split, "log": str(log_path),
+                             "metrics": str(metrics)}
     m_val = _SUMMARY_RE.search(text)
     m_test = _FINAL_RE.search(text)
     m_time = _EPOCH_TIME_RE.search(text)

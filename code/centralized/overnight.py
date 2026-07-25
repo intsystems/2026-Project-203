@@ -47,6 +47,7 @@ from __future__ import annotations
 
 import argparse
 import json
+import math
 import signal
 import subprocess
 import sys
@@ -60,7 +61,8 @@ from centralized.train import LMO_FAMILY
 from common.lr_scaling import FAMILY_SIGN, describe_rule, resolve_rule
 from common.utils import results_root
 from centralized.tune import (ALL_METHODS, LEGACY_ANCHORS, ROOT, SCALED_ANCHOR_BOOST,
-                              best_of, boundary_warning, geom_grid, run_one)
+                              best_of, boundary_warning, canonical_tag, geom_grid,
+                              run_one)
 
 OUT_DIR = results_root() / "overnight"
 STATE_PATH = OUT_DIR / "state.json"
@@ -230,9 +232,10 @@ def phase_gain(args, state, budget, sec) -> None:
     is the one measurement that decides the exponent without reference to accuracy.
     """
     for method in ("signmuon", "muon"):
-        tag = f"gain_{method}"
-        if tag in state["jobs"]:
+        key = canonical_tag(f"gain_{method}", epochs=args.gain_epochs)
+        if key in state["jobs"]:
             continue
+        tag = f"gain_{method}"
         cost = job_cost(sec, args.gain_epochs)
         if not budget.fits(cost) or _stop["requested"]:
             return
@@ -241,38 +244,60 @@ def phase_gain(args, state, budget, sec) -> None:
         base = LEGACY_ANCHORS[method]
         if LMO_FAMILY[method].family == FAMILY_SIGN:
             base *= SCALED_ANCHOR_BOOST.get(args.lr_scaling, 1.0)
+        # A third of the anchor: this is a diagnostic, not a performance run, and a
+        # constant (un-annealed) rate at the full anchor risks instability, which
+        # would corrupt the very series we are trying to fit.
+        base /= 3.0
         r = run_one(_tune_args(args), lr=base, lr_aux=args.lr_aux,
                     lr_scaling=args.lr_scaling, method=method,
-                    epochs=args.gain_epochs, tag=tag, extra=("--log-gain",))
-        record(state, tag, r)
+                    epochs=args.gain_epochs, tag=tag,
+                    extra=("--log-gain", "--constant-lr"))
+        record(state, key, r)
 
 
 def phase_alpha(args, state, budget, sec) -> Optional[float]:
-    """Sweep ``power:ALPHA`` x eta_0 on one sign-family method; return the winner."""
+    """Sweep ``power:ALPHA`` x eta_0 on one sign-family method; return the winner.
+
+    Each exponent gets its **own** eta_0 grid, anchored at ``fan_in^alpha`` for the
+    median layer, because the exponent changes what eta_0 means. Without that the
+    comparison would just be measuring whose anchor happened to be luckier.
+    """
     method = args.alpha_method
     results: Dict[str, List] = state["phases"].setdefault("alpha", {})
     for alpha in args.alpha_grid:
         rule = f"power:{alpha:g}"
-        # eta_0 anchor scales like fan_in^alpha at the median layer (fan_in ~ 1152).
         base = LEGACY_ANCHORS[method] * (1152.0 ** alpha)
-        for lr in geom_grid(base, decades=args.alpha_decades, points=args.alpha_points):
+        grid = geom_grid(base, decades=args.alpha_decades, points=args.alpha_points)
+        for lr in grid:
             tag = f"alpha{alpha:g}_{method}_lr{lr:.4g}"
-            if tag in state["jobs"]:
+            key = canonical_tag(tag, epochs=args.tune_epochs)
+            if key in state["jobs"]:
                 continue
             cost = job_cost(sec, args.tune_epochs)
             if not budget.fits(cost) or _stop["requested"]:
-                return _alpha_verdict(results)
+                return _alpha_verdict(results, state)
             print(f"[{stamp()}] alpha={alpha:g} {method} (~{cost/60:.0f} min) "
                   f"| {budget.report()}")
             r = run_one(_tune_args(args), lr=lr, lr_aux=args.lr_aux, lr_scaling=rule,
                         method=method, epochs=args.tune_epochs, tag=tag)
-            record(state, tag, r)
             if r:
                 results.setdefault(f"{alpha:g}", []).append(r)
-    return _alpha_verdict(results)
+            record(state, key, r)          # persists the append too
+
+        # An exponent whose own optimum sits on the edge of its grid would lose the
+        # comparison for the wrong reason: flag it rather than ranking it.
+        best_a = best_of(results.get(f"{alpha:g}", []))
+        if best_a is not None:
+            warn = boundary_warning(best_a, grid)
+            if warn:
+                print(f"  alpha={alpha:g}{warn}")
+                state["phases"].setdefault("alpha_boundary", {})[f"{alpha:g}"] = warn.strip()
+                save_state(state)
+    return _alpha_verdict(results, state)
 
 
-def _alpha_verdict(results: Dict[str, List]) -> Optional[float]:
+def _alpha_verdict(results: Dict[str, List],
+                   state: Optional[Dict] = None) -> Optional[float]:
     scored = []
     for alpha, runs in results.items():
         best = best_of(runs)
@@ -284,6 +309,10 @@ def _alpha_verdict(results: Dict[str, List]) -> Optional[float]:
     print("\n  --- alpha verdict ---")
     for alpha, best in scored:
         print(f"    alpha={alpha:<4g} val {best['val_acc']:.2f}%  (lr={best['lr']:.4g})")
+    flagged = (state or {}).get("phases", {}).get("alpha_boundary", {})
+    if flagged:
+        print(f"    NOTE: grid boundary hit for alpha in {sorted(flagged)} -- those "
+              f"rows are not comparable until their grids are widened.")
     if len(scored) > 1 and scored[0][1]["val_acc"] - scored[1][1]["val_acc"] < 0.3:
         print("    gap < 0.3% -> not decisive on this architecture (ResNet-18 has "
               "little shape diversity); prefer the --log-gain measurement.")
@@ -303,7 +332,8 @@ def phase_lr(args, state, budget, sec, rule: str) -> Dict[str, Dict]:
         runs = out.setdefault(key, {"runs": [], "grid": grid})["runs"]
         for lr in grid:
             tag = f"lr_{key.replace('+', '_')}_{rule.replace(':', '')}_{lr:.4g}"
-            if tag in state["jobs"]:
+            jkey = canonical_tag(tag, epochs=args.tune_epochs)
+            if jkey in state["jobs"]:
                 continue
             cost = job_cost(sec, args.tune_epochs)
             if not budget.fits(cost) or _stop["requested"]:
@@ -313,7 +343,7 @@ def phase_lr(args, state, budget, sec, rule: str) -> Dict[str, Dict]:
             r = run_one(_tune_args(args), lr=lr, lr_aux=args.lr_aux,
                         lr_scaling=rule, method=method, epochs=args.tune_epochs,
                         tag=tag, extra=extra)
-            record(state, tag, r)
+            record(state, jkey, r)
             if r:
                 runs.append(r)
         best = best_of(runs)
@@ -328,10 +358,21 @@ def phase_lr(args, state, budget, sec, rule: str) -> Dict[str, Dict]:
 
 
 def _lr_jobs(args):
-    """``(method, scale_baselines)`` pairs. SGD/Adam are run both ways."""
+    """``(method, scale_baselines)`` pairs.
+
+    **Adam** is additionally run under the sign-family rule: its step is
+    approximately a sign step (``|s_ij| ~ 1``) and muP does prescribe a per-layer
+    rate for it, so reporting the better of the two removes any suspicion that the
+    baseline was handicapped.
+
+    **SGD deliberately is not.** Its step is ``eta * m``, whose Frobenius norm is
+    data-dependent, so *no* static multiplier corresponds to the unit-gain criterion
+    -- applying the sign rule to SGD would be an arbitrary rescaling dressed up as a
+    parameterization. The honest comparator is SGD as practitioners run it.
+    """
     for method in args.methods:
         yield method, False
-        if method in ("sgd", "adam") and not args.skip_baseline_variants:
+        if method == "adam" and not args.skip_baseline_variants:
             yield method, True
 
 
@@ -364,7 +405,8 @@ def phase_verify(args, state, budget, sec, rule: str,
         long_runs = out.setdefault(method, {"short": short, "long": []})["long"]
         for r in short:
             tag = f"verify_{method}_{rule.replace(':', '')}_{r['lr']:.4g}"
-            if tag + f"_e{args.final_epochs}_t" in state["jobs"]:
+            key = canonical_tag(tag, epochs=args.final_epochs)
+            if key in state["jobs"]:
                 continue
             cost = job_cost(sec, args.final_epochs)
             if not budget.fits(cost) or _stop["requested"]:
@@ -374,7 +416,7 @@ def phase_verify(args, state, budget, sec, rule: str,
             res = run_one(_tune_args(args), lr=r["lr"], lr_aux=args.lr_aux,
                           lr_scaling=rule, method=method,
                           epochs=args.final_epochs, tag=tag)
-            record(state, tag + f"_e{args.final_epochs}_t", res)
+            record(state, key, res)
             if res:
                 long_runs.append(res)
 
@@ -414,8 +456,9 @@ def phase_final(args, state, budget, sec, rule: str, tuned: Dict[str, Dict]) -> 
             best = tuned.get(key, {}).get("best")
             if not best:
                 continue
-            tag = f"{key.replace('+', '_')}_{rule.replace(':', '')}_s{seed}"
-            if tag in state["jobs"]:
+            tag = f"{key.replace('+', '_')}_{rule.replace(':', '')}"
+            jkey = canonical_tag(tag, epochs=args.final_epochs, split="full", seed=seed)
+            if jkey in state["jobs"]:
                 continue
             cost = job_cost(sec, args.final_epochs, split="full")
             if not budget.fits(cost) or _stop["requested"]:
@@ -426,9 +469,9 @@ def phase_final(args, state, budget, sec, rule: str, tuned: Dict[str, Dict]) -> 
                         lr_scaling=rule, method=method, epochs=args.final_epochs,
                         tag=tag, split="full", seed=seed,
                         extra=("--scale-baselines",) if scaled else ())
-            record(state, tag, r)
+            record(state, jkey, r)
             if r:
-                state["phases"].setdefault("final", {})[tag] = r
+                state["phases"].setdefault("final", {})[jkey] = r
                 save_state(state)
                 refresh_report(args, state, budget, sec, rule, None, tuned)
 
@@ -436,6 +479,41 @@ def phase_final(args, state, budget, sec, rule: str, tuned: Dict[str, Dict]) -> 
 # --------------------------------------------------------------------------
 # Report
 # --------------------------------------------------------------------------
+
+
+def _fit_gain_slope(job: Dict):
+    """Least-squares slope of ``log(gain_median)`` against ``log(epoch)``.
+
+    Returns ``(slope, r_squared, n_points)`` or ``None`` if the series is missing.
+    Reads the run's own ``metrics.json`` rather than re-deriving anything, and skips
+    epoch 0 where the accumulated update is identically zero.
+    """
+    path = job.get("metrics")
+    if not path or not Path(path).exists():
+        return None
+    try:
+        payload = json.loads(Path(path).read_text(encoding="utf-8"))
+    except (OSError, json.JSONDecodeError):
+        return None
+    hist = payload.get("history", {})
+    steps, vals = hist.get("steps") or [], hist.get("gain_median") or []
+    pts = [(s, v) for s, v in zip(steps, vals)
+           if s and v and isinstance(v, (int, float)) and v > 0]
+    if len(pts) < 4:
+        return None
+    xs = [math.log(s) for s, _ in pts]
+    ys = [math.log(v) for _, v in pts]
+    n = len(xs)
+    mx, my = sum(xs) / n, sum(ys) / n
+    sxx = sum((x - mx) ** 2 for x in xs)
+    if sxx <= 0:
+        return None
+    slope = sum((x - mx) * (y - my) for x, y in zip(xs, ys)) / sxx
+    intercept = my - slope * mx
+    ss_res = sum((y - (slope * x + intercept)) ** 2 for x, y in zip(xs, ys))
+    ss_tot = sum((y - my) ** 2 for y in ys)
+    r2 = 1.0 - ss_res / ss_tot if ss_tot > 0 else float("nan")
+    return slope, r2, n
 
 
 def build_report(args, state, budget, sec, rule, alpha, tuned) -> str:
@@ -456,17 +534,28 @@ def build_report(args, state, budget, sec, rule, alpha, tuned) -> str:
 
     gain = {k: v for k, v in state["jobs"].items() if k.startswith("gain_") and v}
     if gain:
-        lines += ["## Gain diagnostic", "",
-                  "Growth of `||X_t - X_0||_F / sqrt(fan_out)`. Per-layer detail is at "
-                  "the end of each log; the recorded series are `gain_min/median/max`.",
-                  ""]
-        for k, v in gain.items():
-            lines.append(f"* `{k}` -> log `{Path(v['log']).name}`, "
-                         f"val {v.get('val_acc', float('nan')):.2f}%")
-        lines += ["",
-                  "**How to read it:** fit `log(gain_median)` against `log(epoch)`. A "
-                  "slope near 0.5 supports `unit-gain` (alpha=1/2); near 1.0 supports "
-                  "`mup` (alpha=1).", ""]
+        lines += ["## Gain diagnostic (measures the exponent directly)", "",
+                  "Growth of the accumulated update's RMS gain "
+                  "`||X_t - X_0||_F / sqrt(fan_out)` against the epoch count, at a "
+                  "**constant** learning rate (with annealing the accumulation "
+                  "saturates and the slope would measure the schedule instead).",
+                  "",
+                  "A slope near **0.5** means successive sign steps stay incoherent, "
+                  "supporting `unit-gain` (alpha=1/2); near **1.0** means they align, "
+                  "supporting `mup` (alpha=1).", "",
+                  "| run | fitted slope | R^2 | epochs used | reading |",
+                  "| :--- | ---: | ---: | ---: | :--- |"]
+        for k, v in sorted(gain.items()):
+            fit = _fit_gain_slope(v)
+            if fit is None:
+                lines.append(f"| `{k}` | - | - | - | series unavailable "
+                             f"(see `{Path(v['log']).name}`) |")
+                continue
+            slope, r2, n = fit
+            reading = ("incoherent -> alpha=1/2" if slope < 0.7 else
+                       "aligned -> alpha=1" if slope > 0.85 else "between 1/2 and 1")
+            lines.append(f"| `{k}` | {slope:.3f} | {r2:.3f} | {n} | {reading} |")
+        lines.append("")
 
     if alpha is not None:
         lines += ["## Alpha sweep", "",
@@ -522,11 +611,26 @@ def build_report(args, state, budget, sec, rule, alpha, tuned) -> str:
 
     done = sum(1 for v in state["jobs"].values() if v)
     failed = sum(1 for v in state["jobs"].values() if not v)
-    lines += ["## Next steps", "",
+    lines += ["## What this run did NOT establish", "",
+              f"* **`lr_aux` was fixed at {args.lr_aux:g}**, not tuned, and not verified "
+              f"to be method-independent. The auxiliary group is AdamW on the same "
+              f"parameters for every method, so its optimum should not depend on the "
+              f"matrix rule -- but that is an argument, not a measurement. Check it "
+              f"with `python3 -m centralized.tune --stage aux`.",
+              f"* **Momentum ({args.momentum:g}) and weight decay "
+              f"({args.weight_decay:g}) were held fixed** for every method, so this is "
+              f"a comparison at equal momentum, not at each method's own optimum.",
+              "* **Weight decay is coupled** by default (added to the gradient, so it "
+              "passes through the LMO). The federated driver uses *decoupled* decay; "
+              "`--weight-decay-mode decoupled` makes the two consistent, at the cost "
+              "of changing these numbers.",
+              "* **A gap smaller than the seed spread is not a result.** Add seeds with "
+              "`--resume` and aggregate before claiming one.",
+              "",
+              "## Next steps", "",
               f"{done} jobs completed, {failed} failed. Resume with:", "",
               "```bash",
-              f"python3 -m centralized.overnight --device {args.device} "
-              f"--budget-hours 8 --resume",
+              f"python3 -m centralized.overnight --device {args.device} --resume",
               "```", ""]
     if not finals:
         lines += ["No final runs completed. With the tuned eta_0 above, launch them "
@@ -570,8 +674,8 @@ def get_args():
     p = argparse.ArgumentParser(description=__doc__,
                                 formatter_class=argparse.RawDescriptionHelpFormatter)
     p.add_argument("--device", type=str, default="cuda:0")
-    p.add_argument("--budget-hours", type=float, default=8.0,
-                   help="Wall-clock deadline. Pass 0 for NO deadline: every "
+    p.add_argument("--budget-hours", type=float, default=0.0,
+                   help="Wall-clock deadline; 0 (the default) means NO deadline -- every "
                         "phase runs to completion and only Ctrl-C stops it "
                         "(the report is written on the way out)")
     p.add_argument("--data", type=str, default="./data")
