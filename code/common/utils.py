@@ -133,6 +133,60 @@ class History:
                 return val
         return None
 
+    def values(self, key: str) -> List[float]:
+        """Recorded (non-``None``) values of one series, in step order."""
+        return [v for v in (self.series.get(key) or []) if v is not None]
+
+    def last_k_mean(self, key: str, k: int = 5) -> Optional[float]:
+        """Mean of the final ``k`` recorded values.
+
+        The primary reported metric: averaging the tail removes the
+        epoch-to-epoch fluctuation that makes a single final-epoch number a
+        coin flip between two close methods, at zero extra compute.
+        """
+        vals = self.values(key)
+        if not vals:
+            return None
+        tail = vals[-max(1, k):]
+        return sum(tail) / len(tail)
+
+    def argbest(self, key: str, mode: str = "max") -> Optional[int]:
+        """Step index at which ``key`` is best. Used for early stopping on *val*."""
+        col = self.series.get(key)
+        if not col:
+            return None
+        pairs = [(s, v) for s, v in zip(self.steps, col) if v is not None]
+        if not pairs:
+            return None
+        pick = max if mode == "max" else min
+        return pick(pairs, key=lambda sv: sv[1])[0]
+
+    def at(self, key: str, step: int) -> Optional[float]:
+        """Value of ``key`` at a given step, or ``None``."""
+        col = self.series.get(key)
+        if not col:
+            return None
+        for s, v in zip(self.steps, col):
+            if s == step:
+                return v
+        return None
+
+    def steps_to_target(self, key: str, target: float, mode: str = "ge") -> Optional[int]:
+        """First step at which ``key`` reaches ``target`` (``None`` if never).
+
+        Separates *speed* from *final quality*: two methods can share a final
+        accuracy while one gets there in half the epochs.
+        """
+        col = self.series.get(key)
+        if not col:
+            return None
+        for s, v in zip(self.steps, col):
+            if v is None:
+                continue
+            if (mode == "ge" and v >= target) or (mode == "le" and v <= target):
+                return s
+        return None
+
     def to_dict(self) -> Dict[str, Any]:
         return {"steps": list(self.steps), **{k: list(v) for k, v in self.series.items()}}
 

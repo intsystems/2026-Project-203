@@ -17,12 +17,14 @@ code/
 ├── aggregate.py          collapses multi-seed runs into mean ± std
 ├── common/               shared library
 │   ├── optimizers.py       the eight methods as torch.optim.Optimizer subclasses
+│   ├── lr_scaling.py       derived per-layer learning-rate rules
 │   ├── models.py           CNN2, ResNet9, ResNet18
 │   └── utils.py            seeding, run dirs, metrics schema, parameter routing
 ├── centralized/          single-node CIFAR-10 / MNIST
 │   ├── main.py             entry point
 │   ├── train.py            training loop, optimizer construction
-│   └── data.py             loaders
+│   ├── tune.py             equal-budget, validation-only LR search
+│   └── data.py             loaders, incl. the 45k/5k tuning split
 ├── federated/            all ten federated methods, one driver
 │   ├── main.py             entry point
 │   ├── algorithms.py       run_federated + the MethodSpec registry
@@ -71,7 +73,10 @@ Enforced in one place, so that two runs differ *only* in the matrix-parameter ru
   included. Centralized, `--head-adamw auto` gives the LMO methods this split while
   `sgd`/`adam`/`signsgd` apply their single rule to all parameters (as published,
   and what the paper's numbers used); `--head-adamw always` makes it uniform.
-* **Learning rate.** One cosine schedule for both the main and auxiliary rate.
+* **Learning rate.** One cosine schedule for both the main and auxiliary rate. In
+  the centralized setting `--lr-scaling` additionally sets a *derived* per-layer
+  multiplier, `η_layer = η₀·λ(family, shape)`, so that only the shape-free `η₀` is
+  ever tuned — see below.
 * **Weight decay** applied exactly once. Federated: decoupled on the server, so the
   LMO sees the true gradient geometry. Centralized: folded into the gradient by
   default (`decoupled_weight_decay=True` on the optimizer switches it).
@@ -79,6 +84,24 @@ Enforced in one place, so that two runs differ *only* in the matrix-parameter ru
   trajectory-identical to the heavy-ball form of the main text (the two differ by a
   constant factor and every method is positively homogeneous in `M`). `sgd` keeps
   heavy-ball, since its step *is* the buffer.
+
+### Per-layer learning rates
+
+The six methods produce step matrices from two families with different norms, so one
+global rate cannot be right for both families and across layers at once. The rule is
+*derived*, from the criterion that an update's RMS gain `γ(A)=‖A‖_F/√fan_out` should
+be a fixed fraction of the initialization's:
+
+| family | methods | `‖s‖_F` | multiplier |
+| :--- | :--- | :--- | :--- |
+| `lmo` | Muon, MuonUSign, EF21-Muon{USign,Sign}, EF21-SignMuon | `√min(m,n)` | `√max(1, m/n)` |
+| `sign` | SignMuon, MuonSign, SignSGD | `√(mn)` | `1/√fan_in` |
+
+The first row is the aspect factor already in the reference Muon implementation — the
+criterion *derives* it, which is the main evidence that it is the right criterion. The
+second row is its missing counterpart. `python3 -m common.lr_scaling` lists the
+alternatives (`mup`, `mishra-analysis`, `power:α,β`) and what each assumes;
+`--measure` and `--compare` are the supporting diagnostics.
 
 ### Two caveats worth knowing
 
@@ -119,6 +142,7 @@ device/data-path fields) and reports mean ± sample std.
 python3 -m tests.test_code                    # torch, CPU only, seconds
 python3 -m counterexamples.problems           # Theorem 1-4 constants
 python3 -m counterexamples.verify_ns_oracle   # exact vs Newton-Schulz LMO
+python3 -m common.lr_scaling --measure        # the sign-step operator norm
 ```
 
 `tests/test_code.py`'s central check is that the federated driver with one client

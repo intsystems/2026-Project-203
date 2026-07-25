@@ -41,6 +41,35 @@ Conventions shared by every method (this uniformity is the point of the module)
   exception is ``sgd``, whose step *is* the momentum buffer and which therefore
   keeps the heavy-ball convention of ``torch.optim.SGD``.
 
+TODO: per-layer learning-rate scaling is NOT applied here yet
+-------------------------------------------------------------
+The centralized path now derives a per-layer multiplier
+``eta_layer = eta_0 * lambda(family, shape)`` from the unit-gain criterion (see
+``common/lr_scaling.py``): ``sqrt(max(1, m/n))`` for the LMO family and
+``1/sqrt(fan_in)`` for the sign family. **This driver still uses one global
+learning rate for every layer**, i.e. the ``legacy`` rule.
+
+The two families are exactly the same here, so the same rule applies verbatim and
+the fix is small:
+
+1. ``run_federated`` takes ``lr_scaling`` and resolves it via
+   ``common.lr_scaling.resolve_rule``.
+2. In the server block, replace ``current_lr`` with
+   ``current_lr * layer_multiplier(rule, family, params[n].shape)``, where
+   ``family`` comes from the ``MethodSpec`` -- ``FAMILY_SIGN`` when the step is a
+   sign (``downlink == "sign"`` or ``lmo == "none"`` with a sign uplink), else
+   ``FAMILY_LMO``. Cleanest is to add a ``family`` field to ``MethodSpec`` rather
+   than infer it.
+3. Set ``scale_aspect=False`` in the two ``muon_lmo`` calls, since the aspect
+   factor then lives in the multiplier instead (as it does centrally).
+4. The multiplier is a deterministic function of the layer shape, known to server
+   and clients alike, so it costs **nothing** in communication and does not affect
+   the 1-bit claim. Worth saying explicitly in the paper.
+
+Deferred deliberately: the federated tables are being re-run anyway (see
+``REVIEW_NOTES.md`` section 4) and doing this at the same time would confound two
+changes. Apply it before the federated re-run, not during.
+
 BatchNorm
 ---------
 ``freeze_bn_stats=True`` (the default, and the behaviour of the original code)

@@ -944,6 +944,71 @@ Figure~\ref{fig:exp_3} (together with Table~\ref{tab:exp_3} in the main text) re
 \end{figure*}
 
 
+\subsection{Per-Layer Step Sizes: the Unit-Gain Rule}\label{app:lrscale}
+
+Our theory, like that of \citet{mishra2026signmuon}, is stated for a single matrix, where one scalar step size suffices. A network has layers of very different shapes, and the methods of \eqref{eq:three_placements} produce step matrices from \emph{two} families whose norms scale differently with shape. A single global $\eta$ therefore cannot be simultaneously correct for both families and across layers. This is not a gap between theory and practice that we must tolerate: the layer-wise LMO framework to which our convergence result reduces \citep{riabinin2025gluon,gruntkowska2025error} already carries per-layer norms $\|\cdot\|_{(\ell)}$, smoothness constants $L_\ell$ and radii. What follows instantiates that radius rather than leaving it constant.
+
+\paragraph{The two families.} For a parameter reshaped to $\mathbf{X}\in\mathbb{R}^{m\times n}$ ($m$ = fan-out, $n$ = fan-in, $r=\operatorname{rank}=\min(m,n)$ generically), the step matrices are
+\begin{equation}
+\label{eq:two_families}
+\begin{aligned}
+\text{\textsc{lmo} family } &(\text{Muon, MuonUSign, EF21-Muon}\{\text{USign},\text{Sign}\}): &&\mathbf{s}=\mathbf{U}\mathbf{V}^\top, \\
+\text{\textsc{sign} family } &(\text{SignMuon, MuonSign, SignSGD}): &&\mathbf{s}\in\{\pm1\}^{m\times n}.
+\end{aligned}
+\end{equation}
+Both have \emph{exactly} known Frobenius norms: $\|\mathbf{U}\mathbf{V}^\top\|_F^2=\operatorname{tr}(\mathbf{V}\mathbf{U}^\top\mathbf{U}\mathbf{V}^\top)=\operatorname{tr}(\mathbf{V}^\top\mathbf{V})=r$, so $\|\mathbf{s}\|_F=\sqrt{r}$; and a $\pm1$ matrix has $\|\mathbf{s}\|_F=\sqrt{mn}$.
+
+\paragraph{The criterion.} Define the \emph{RMS gain} of $\mathbf{A}\in\mathbb{R}^{m\times n}$, i.e.\ how much it amplifies a generic input in root-mean-square terms, with $\operatorname{rms}(\mathbf{v}):=\|\mathbf{v}\|/\sqrt{\dim}$:
+\begin{equation}
+\label{eq:gain_def}
+\gamma(\mathbf{A})^2:=\frac{\mathbb{E}_{\mathbf{u}}\!\left[\operatorname{rms}(\mathbf{A}\mathbf{u})^2\right]}{\mathbb{E}_{\mathbf{u}}\!\left[\operatorname{rms}(\mathbf{u})^2\right]},\qquad \mathbf{u}\sim\mathcal{N}(\mathbf{0},\mathbf{I}_n).
+\end{equation}
+Since $\mathbb{E}\|\mathbf{A}\mathbf{u}\|^2=\operatorname{tr}(\mathbf{A}^\top\mathbf{A})=\|\mathbf{A}\|_F^2$ and $\mathbb{E}\|\mathbf{u}\|^2=n$, \eqref{eq:gain_def} evaluates in closed form:
+\begin{equation}
+\label{eq:gain_identity}
+\gamma(\mathbf{A})=\frac{\|\mathbf{A}\|_F}{\sqrt{m}} .
+\end{equation}
+No random-matrix theory and no distributional fitting enter; the single modelling assumption is that $\mathbf{u}$ is isotropic \emph{and independent of} $\mathbf{A}$, which we return to below.
+
+Every standard fan-in-scaled initialization has \emph{shape-independent} gain. For He normal ($\sigma^2=2/n$), $\|\mathbf{X}\|_F=\sigma\sqrt{mn}=\sqrt{2m}$, so $\gamma(\mathbf{X})=\sqrt{2}$; for PyTorch's default Kaiming-uniform convolution ($\sigma^2=1/(3n)$), $\gamma(\mathbf{X})=1/\sqrt{3}$. Either way a constant. Requiring the update's gain to be a fixed fraction of the weight's is therefore simply the requirement that \emph{the per-step gain be the same on every layer}, and by \eqref{eq:gain_identity} that is one formula:
+\begin{equation}
+\label{eq:unit_gain}
+\boxed{\ \eta_\ell=\eta_0\,\lambda_\ell,\qquad \lambda_\ell=\frac{\sqrt{m}}{\|\mathbf{s}\|_F}\ }
+\end{equation}
+which gives $\gamma(\eta_\ell\mathbf{s})=\eta_0$ exactly, for every shape and both families -- so $\eta_0$ \emph{is} the per-step RMS gain. Substituting the two Frobenius norms of \eqref{eq:two_families},
+\begin{equation}
+\label{eq:unit_gain_closed}
+\lambda_\ell^{\textsc{lmo}}=\sqrt{\max\!\left(1,\tfrac{m}{n}\right)},
+\qquad
+\lambda_\ell^{\textsc{sign}}=\frac{1}{\sqrt{n}}=\frac{1}{\sqrt{\text{fan-in}}} .
+\end{equation}
+
+\paragraph{Why we believe \eqref{eq:unit_gain_closed}.} The first expression is exactly the aspect-ratio factor $\sqrt{\max(1,m/n)}$ present in the reference Muon implementation \citep{jordan2024muon}, which was introduced as a practical heuristic. The unit-gain criterion \emph{derives} it, and also explains why Muon's step size is known to transfer across widths: its step has $\gamma=\eta$ independently of $n$, so no fan-in correction is needed. The second expression is the counterpart the sign family has never been given. Only $\eta_0$ is tuned, and it is now a shape-free quantity; the shape dependence is fixed a priori.
+
+Two consequences are worth recording. First, $\lambda_\ell$ is a deterministic function of the layer shape, known to server and clients alike, so per-layer step sizes cost \emph{nothing} in communication and leave the one-bit-per-parameter budget untouched. Second, on the CIFAR ResNet-18 of our experiments $\lambda_\ell^{\textsc{sign}}$ spans a factor of $13$ across layers (from $1/\sqrt{27}$ at the stem to $1/\sqrt{4608}$ in the last stage), so a single global rate is necessarily a compromise: roughly correct for the middle of the network, several-fold too large at the stem and too small at the end. The \textsc{lmo} family is spared this, which is one reason full-precision Muon is easier to tune than its sign-compressed variants.
+
+\paragraph{The one open exponent.} Writing $\lambda_\ell^{\textsc{sign}}=n^{-\alpha}$, the unit-gain rule is $\alpha=\tfrac12$. Identity \eqref{eq:gain_identity} requires the input to be independent of $\mathbf{A}$, which is the right model for a \emph{single} step; if the \emph{accumulated} update $\sum_t\eta\mathbf{s}_t$ correlates with the activations, its gain can be as large as $\|\mathbf{A}\|_{\mathrm{op}}\sqrt{n/m}=\Theta(\eta n)$ rather than $\Theta(\eta\sqrt{n})$, giving $\alpha=1$ -- the classical $\mu$P rule $\eta\propto 1/\text{fan-in}$ for sign-like (Adam-type) updates \citep{yang2021tuning}. Thus $\alpha\in[\tfrac12,1]$ interpolates between an incoherent and a fully aligned accumulation, and the endpoint is an empirical question rather than a modelling choice. Two measurements bear on it. At the single-step level we find $\|\operatorname{sign}(\operatorname{polar}(\mathbf{M}))\|_{\mathrm{op}}=0.93\,(\sqrt{m}+\sqrt{n})$ to within $8\%$ at every ResNet-18 layer shape, i.e.\ a single sign step is spectrally \emph{incoherent}, not rank-one aligned; and we track the realized gain $\|\mathbf{X}_t-\mathbf{X}_0\|_F/\sqrt{m}$ during training, whose growth exponent in $t$ separates the two regimes directly.
+
+\paragraph{Comparison with concurrent work.} \citet{mishra2026signmuon} analyse the normalized update $\mathbf{D}_t=\bar{\mathbf{S}}_t/\sqrt{mn}$, justified by $\|\mathbf{D}_t\|_{\mathrm{op}}\le\|\mathbf{D}_t\|_F=1$ under their spectral-norm smoothness assumption, and remark that updating with $\bar{\mathbf{S}}_t$ directly is equivalent after absorbing $\sqrt{mn}$ into $\eta_t$. That equivalence holds for a single matrix but not across layers of differing shape, and their algorithm applies no shape factor, so their experiments use a single global rate as well. The substitution is also loose in a shape-dependent way: since $\|\operatorname{sign}(\operatorname{polar}(\mathbf{M}))\|_{\mathrm{op}}\approx\sqrt{m}+\sqrt{n}$, the bound $\sqrt{mn}$ overstates the operator norm by a factor growing like $\sqrt{\min(m,n)}$ -- from $3.7\times$ at the stem to $18.1\times$ in the last stage of a ResNet-18 -- so the induced spectral trust region drifts roughly fivefold across the network instead of remaining flat.
+
+\begin{table}[!t]
+\centering\small
+\setlength{\tabcolsep}{4pt}
+\begin{tabular}{@{}llll@{}}
+\toprule
+\textbf{Rule} & \textbf{\textsc{lmo}} & \textbf{\textsc{sign}} & \textbf{Equalizes} \\
+\midrule
+global ($\alpha\!=\!0$) & $1$ & $1$ & nothing \\
+Muon default & $\sqrt{\max(1,\tfrac{m}{n})}$ & $1$ & \textsc{lmo} gain only \\
+\textbf{unit gain} & $\sqrt{\max(1,\tfrac{m}{n})}$ & $n^{-1/2}$ & per-step gain, both families \\
+$\mu$P ($\alpha\!=\!1$) & $\sqrt{\max(1,\tfrac{m}{n})}$ & $n^{-1}$ & gain of the aligned accumulation \\
+\citet{mishra2026signmuon} & $r^{-1/2}$ & $(mn)^{-1/2}$ & $\|\mathbf{s}\|_F$ (their analysis) \\
+\bottomrule
+\end{tabular}
+\caption{Per-layer step-size multipliers $\lambda_\ell$. Only $\eta_0$ is tuned; $\lambda_\ell$ is fixed a priori by the shape. The rules differ only in the \textsc{sign} family, and the \textsc{lmo} column of the unit-gain rule coincides with the factor already used in practice \citep{jordan2024muon} -- which is our main evidence that \eqref{eq:gain_def} is the right criterion.}
+\label{tab:lrscale}
+\end{table}
+
 \subsection{Algorithms}\label{app:alg}
 
 \begin{algorithm}[!t]

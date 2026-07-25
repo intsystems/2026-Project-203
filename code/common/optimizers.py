@@ -38,6 +38,8 @@ import torch
 from torch import Tensor
 from torch.optim import Optimizer
 
+from common.lr_scaling import FAMILY_LMO, FAMILY_SIGN
+
 __all__ = [
     "zeropower_via_newtonschulz5",
     "muon_lmo",
@@ -52,6 +54,8 @@ __all__ = [
     "EF21MuonUSign",
     "EF21MuonSign",
     "OPTIMIZERS",
+    "FAMILY_LMO",
+    "FAMILY_SIGN",
 ]
 
 # 5th-order Newton-Schulz coefficients of Algorithm 1 (Y <- a*Y - b*A*Y + c*A^2*Y).
@@ -177,6 +181,9 @@ class _BaseMethod(Optimizer):
     """
 
     method_name = "base"
+    #: Step family, see ``common.lr_scaling``. Together with the parameter shape
+    #: this fixes the per-layer learning-rate multiplier.
+    family = FAMILY_LMO
 
     def __init__(
         self,
@@ -316,6 +323,7 @@ class Muon(_BaseMethod):
     """Full-precision Muon: ``d_t = polar(M_tilde)``."""
 
     method_name = "muon"
+    family = FAMILY_LMO
 
     def _direction(self, m_tilde, state, group):
         return self._lmo(m_tilde, group)
@@ -328,6 +336,7 @@ class SignSGD(_BaseMethod):
     """
 
     method_name = "signsgd"
+    family = FAMILY_SIGN
 
     def _direction(self, m_tilde, state, group):
         return torch.sign(m_tilde)
@@ -342,6 +351,7 @@ class SignMuon(_BaseMethod):
     """SignMuon -- sign AFTER the LMO: ``d_t = sign(polar(M_tilde))`` (Thm 1)."""
 
     method_name = "signmuon"
+    family = FAMILY_SIGN
 
     def _direction(self, m_tilde, state, group):
         return torch.sign(self._lmo(m_tilde, group))
@@ -355,6 +365,7 @@ class MuonUSign(_BaseMethod):
     """
 
     method_name = "muonusign"
+    family = FAMILY_LMO
 
     def _direction(self, m_tilde, state, group):
         return self._lmo(torch.sign(m_tilde), group)
@@ -367,6 +378,7 @@ class MuonSign(_BaseMethod):
     """
 
     method_name = "muonsign"
+    family = FAMILY_SIGN
 
     def _direction(self, m_tilde, state, group):
         return torch.sign(self._lmo(torch.sign(m_tilde), group))
@@ -388,6 +400,7 @@ class EF21SignMuon(_BaseMethod, _EF21Mixin):
     """
 
     method_name = "ef21signmuon"
+    family = FAMILY_LMO
 
     def _direction(self, m_tilde, state, group):
         return self._ef21_update(self._lmo(m_tilde, group), state, "dir_estimator")
@@ -403,6 +416,7 @@ class EF21MuonUSign(_BaseMethod, _EF21Mixin):
     """
 
     method_name = "ef21muonusign"
+    family = FAMILY_LMO
 
     def _direction(self, m_tilde, state, group):
         g_est = self._ef21_update(m_tilde, state, "grad_estimator")
@@ -425,6 +439,7 @@ class EF21MuonSign(_BaseMethod, _EF21Mixin):
     """
 
     method_name = "ef21muonsign"
+    family = FAMILY_LMO
 
     def _weight_decay_target(self, p, state):
         return self._exact(p)

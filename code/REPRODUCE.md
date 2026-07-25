@@ -116,38 +116,171 @@ adds the loss and gradient-norm curves that **Figure 4** plots
 ## 4. Centralized CIFAR-10 (Table 2, Figure 2)
 
 ResNet-18, 75 epochs, batch 128, momentum 0.9, cosine-annealed learning rate.
-**~2 h per run.** The hyperparameters below are exactly Table 2 (`tab:cifar_central`).
+
+### 4a. Reproducing the published table
+
+The hyperparameters below are exactly Table 2 (`tab:cifar_central`), under the
+`legacy` per-layer rule and `--head-adamw auto`, which is what produced them.
 
 ```bash
 COMMON="--dataset cifar10 --model resnet18 --epochs 75 --batch-size 128 \
-        --momentum 0.9 --data ./data --device cuda:0 --seed 0"
+        --momentum 0.9 --lr-scaling legacy --head-adamw auto \
+        --data ./data --device cuda:0 --seed 0"
 
 python3 -m centralized.main $COMMON --optimizer signmuon      --lr 0.001 --lr-aux 0.0001
-python3 -m centralized.main $COMMON --optimizer muonusign     --lr 0.001 --lr-aux 0.0001
-python3 -m centralized.main $COMMON --optimizer muonsign      --lr 0.001 --lr-aux 0.0001
 python3 -m centralized.main $COMMON --optimizer muon          --lr 0.015 --lr-aux 0.001
 python3 -m centralized.main $COMMON --optimizer sgd           --lr 0.015 --lr-aux 0.001
 python3 -m centralized.main $COMMON --optimizer signsgd       --lr 0.001 --lr-aux 0.0001
 python3 -m centralized.main $COMMON --optimizer adam          --lr 0.001 --lr-aux 0.0001
 python3 -m centralized.main $COMMON --optimizer ef21muonusign --lr 0.008 --lr-aux 0.001
 python3 -m centralized.main $COMMON --optimizer ef21muonsign  --lr 0.007 --lr-aux 0.001
-python3 -m centralized.main $COMMON --optimizer ef21signmuon  --lr 0.008 --lr-aux 0.001
 ```
+
+### 4b. One command for the whole protocol
+
+```bash
+cd code
+python3 -m centralized.overnight --device cuda:0 --budget-hours 8 --download
+```
+
+Watch the first ~6 minutes. It runs the CPU test suite, prints the per-layer
+learning-rate table, times two real epochs **on your GPU**, and then prints a
+schedule saying exactly which phases fit the budget — for example, on an RTX A4000
+at ~30 s/epoch:
+
+```
+  phase     jobs  epochs   hours  cumulative   fits?
+  gain         2      20     0.4         0.4   yes
+  alpha       15       6     1.0         1.4   yes
+  lr          48       6     3.3         4.7   yes
+  final       12      30     3.2         7.9   yes
+```
+
+Once the schedule appears you can leave it. In the morning read
+`results/overnight/REPORT.md`. Properties that matter for an unattended run:
+
+* **budget-aware** — every phase is costed from the *measured* epoch time and the
+  deadline is checked before each job, so it stops cleanly instead of being killed;
+* **crash-isolated** — each job is a subprocess, so one diverging learning rate
+  cannot take down the night;
+* **resumable** — state is written after every job; `--resume` continues where it
+  stopped;
+* **priority-ordered** — the α measurement first, then η₀ for all methods, then
+  finals **seed-major** (all methods at seed 0 before seed 1), so an interrupted
+  night leaves a complete 1-seed table rather than a partial 3-seed one.
+
+Useful variants: `--preflight-only` (just the checks and the schedule),
+`--dry-run`, `--phases lr final` (skip the α study once it is settled),
+`--final-seeds 0 1 2` and `--final-epochs 75` for the paper's real budget when you
+have the hours, `--deterministic` to disable cuDNN autotuning.
+
+### 4c. The rigorous protocol, stage by stage
+
+Four properties, enforced by the code rather than by discipline:
+
+1. **No test-set tuning.** All selection runs use `--split tune`, a fixed 45k/5k
+   partition (`--val-seed`, independent of `--seed` so every method sees the same
+   split), and select on `val_acc` averaged over the last `--last-k` epochs.
+2. **Equal budget.** `centralized/tune.py` gives every method the same number of
+   configurations on a *multiplicatively* anchored grid, and **flags an optimum that
+   lands on a grid endpoint** instead of reporting it.
+3. **Per-layer learning rates are derived, not tuned.** `--lr-scaling` sets
+   `η_layer = η₀ · λ(family, shape)` analytically; only `η₀` is searched, and it is
+   a shape-free quantity. See §4c.
+4. **`--head-adamw always`** so the only difference between two rows is the matrix
+   rule.
+
+```bash
+TUNE="--dataset cifar10 --model resnet18 --epochs 20 --head-adamw always \
+      --device cuda:0 --data ./data"
+
+# Stage 1 (~2 GPU-h): is the optimal auxiliary rate method-independent?
+#   Two anchor methods spanning an order of magnitude in eta_0, 4x4 grid each.
+#   AGREE -> fix one lr_aux globally and report that it was verified.
+python3 -m centralized.tune --stage aux $TUNE --lr-scaling unit-gain
+
+# Stage 2 (~2 GPU-h): which per-layer exponent? alpha in {0, 1/2, 1}
+python3 -m centralized.tune --stage alpha $TUNE --method signmuon
+
+# Stage 3 (~10 GPU-h): eta_0 per method, 11 configs each (7 coarse + 4 fine)
+python3 -m centralized.tune --stage lr $TUNE --lr-scaling unit-gain --lr-aux <stage-1>
+
+# Finals: 3 seeds, full 50k, fixed 75-epoch budget
+for m in signmuon muonusign muonsign ef21signmuon ef21muonusign ef21muonsign \
+         muon signsgd sgd adam; do
+  for s in 0 1 2; do
+    python3 -m centralized.main --dataset cifar10 --model resnet18 --epochs 75 \
+      --optimizer $m --lr-scaling unit-gain --head-adamw always \
+      --lr <tuned> --lr-aux <stage-1> --seed $s --device cuda:0 --data ./data
+  done
+done
+python3 -m aggregate --root results/centralized --metric test_acc --csv table2.csv
+```
+
+Use the **same seed set for every method**, so seed *k* means the same
+initialization and data order everywhere and the comparison is *paired* — far more
+powerful than unpaired at n=3. Adopt the decision rule up front: **claim a gap only
+when it exceeds the paired std**, otherwise write "indistinguishable".
 
 `muonusign`, `muonsign` and `ef21signmuon` are **not in Table 2** — MuonUSign is the
 `-` row, and the other two were not run. `ef21signmuon` is the method Theorem 4 says
-diverges, so it is worth including as a predicted-failure baseline.
+diverges, so it belongs in the table as a predicted-failure baseline.
 
-Each run writes `results/centralized/cifar10_resnet18_<optimizer>/seed0/`
-(`metrics.json` + `model.pt`). **Figure 2** (`train_loss_resnet.png`,
-`test_acc_resnet.png`) comes from
-[notebooks/plot_centralized.ipynb](notebooks/plot_centralized.ipynb).
+### 4d. Which `--lr-scaling`?
 
-> `--head-adamw auto` (the default) reproduces the paper: the LMO methods route
-> biases/BatchNorm/head to AdamW while `sgd`, `adam` and `signsgd` apply their single
-> rule to all parameters, as published. `--head-adamw always` makes the treatment
-> identical for every method — strictly more apples-to-apples, but it changes the
-> baseline numbers.
+The rules and what they assume are documented in
+[common/lr_scaling.py](common/lr_scaling.py); `python3 -m common.lr_scaling` lists
+them and `--compare` prints their per-layer profiles.
+
+| rule | sign family | LMO family | note |
+| :--- | :--- | :--- | :--- |
+| `legacy` | `η₀` | `η₀·√max(1,m/n)` | what the paper's numbers used |
+| `none` | `η₀` | `η₀` | also what Mishra et al.'s Algorithm 1 runs |
+| **`unit-gain`** | `η₀/√fan_in` | `η₀·√max(1,m/n)` | **derived; recommended** |
+| `mup` | `η₀/fan_in` | `η₀·√max(1,m/n)` | assumes accumulated steps align |
+| `mishra-analysis` | `η₀/√(mn)` | `η₀/√min(m,n)` | the normalization in their *proof* |
+
+`unit-gain` follows from one criterion — the update's RMS gain
+`γ(A)=‖A‖_F/√fan_out` should be a fixed fraction of the initialization's — and its
+strongest validation is that the same criterion **derives** the `√max(1,m/n)` factor
+already in the reference Muon implementation. `mup` applies the criterion to the
+*accumulated* update assuming alignment; two measurements decide between them:
+
+```bash
+python3 -m common.lr_scaling --measure     # single step: incoherent, favours unit-gain
+python3 -m centralized.main ... --log-gain # accumulated: sqrt(t) growth -> unit-gain,
+                                           #              linear t     -> mup
+```
+
+> **Caveat to report.** ResNet-18 is a weak instrument for the exponent: 12 of its 20
+> conv layers have `fan_in/fan_out = 9` exactly and hold ~63% of the parameters, so
+> `α` is identified only through the transition and 1×1-downsample layers. Confirm on
+> a second architecture, or rely on `--log-gain`, before treating a small val gap as
+> decisive.
+
+### 4e. Epochs and the reported metric
+
+Fix the budget at 75 epochs — the cosine schedule anneals to zero there, so it is
+self-consistent rather than an arbitrary cut — and report, per run:
+
+| metric | role |
+| :--- | :--- |
+| test accuracy, mean of the last `--last-k` epochs | **primary** |
+| test accuracy at the best-`val_acc` epoch | early stopping, done properly |
+| train accuracy | underfitting diagnostic (SignSGD reaches only ~93% train) |
+| test loss | report with the explanation below |
+| epochs to `--target-acc` | separates *speed* from final quality |
+| median epoch time, uncompressed-parameter fraction | cost of the method |
+
+All of these are printed in a `--- summary ---` block at the end of every run, so a
+log alone fills a table row.
+
+**On the test-loss/accuracy divergence:** test cross-entropy rises after epoch ≈40
+while test accuracy keeps improving. That is the standard overconfidence regime once
+train accuracy saturates near 100% — the loss on misclassified points grows while the
+decision boundary still improves. It is not a bug and not a reason to early-stop on
+test. Designate test accuracy the primary metric *a priori*, say so in one sentence,
+and report the loss anyway.
 
 ## 5. Federated CIFAR-10 (Tables 4–5, Figures 5–6)
 

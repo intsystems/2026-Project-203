@@ -1,24 +1,38 @@
 """Centralized training for CIFAR-10 / MNIST, shared by every optimizer.
 
-Consolidates the former ``train_cifar.py`` and ``train_mnist.py`` (which were
-~90% identical but had drifted: only one of them had the cosine schedule, only
-one excluded the classification head from the LMO rule, and one returned a
-*string* on an unknown optimizer name, which then blew up on tuple unpacking).
+Protocol (see ``REPRODUCE.md`` for the commands)
+-----------------------------------------------
+* **Parameter routing.** Matrix parameters (``ndim >= 2``, excluding the
+  classification head) get the LMO/sign rule; biases, BatchNorm scales and the
+  head get AdamW. With ``--head-adamw always`` this holds for *every* method,
+  baselines included, so the only difference between two runs is the matrix rule.
+* **Per-layer learning rate.** ``eta_layer = eta_0 * lambda(family, shape)`` with
+  ``lambda`` set analytically by ``common.lr_scaling`` -- derived, not tuned. Only
+  ``eta_0`` is tuned, and it is a shape-free quantity. The shape factor is applied
+  as a per-parameter-group multiplier, so ``scale_aspect`` is switched **off**
+  inside the LMO to avoid counting the aspect ratio twice.
+* **Model selection.** Tuning reads ``val_acc`` from a held-out split; the reported
+  test number is the tail mean of the last ``--last-k`` epochs at a fixed epoch
+  budget, never an early stop on test.
 
-Parameter routing follows the paper: matrix parameters (``ndim >= 2``, excluding
-the classification head) get the LMO/sign rule; biases, BatchNorm scales and the
-head get AdamW. See ``--head-adamw`` for how the non-LMO baselines are treated.
+Metrics per epoch: ``train_loss/acc``, ``val_loss/acc`` (when tuning),
+``test_loss/acc``, ``epoch_seconds``, and -- with ``--log-gain`` -- the realized gain
+of the accumulated update, which is what distinguishes the ``unit-gain`` and
+``mup`` scaling rules empirically.
 """
 
 from __future__ import annotations
 
+import math
 import time
-from typing import Optional, Tuple
+from typing import Dict, Optional, Tuple
 
 import torch
 import torch.nn as nn
 
-from centralized.data import cifar10_loaders, mnist_loaders
+from centralized.data import DEFAULT_VAL_SEED, build_loaders
+from common.lr_scaling import (FAMILY_SIGN, describe_rule, layer_multiplier,
+                               resolve_rule)
 from common.models import CNN2, ResNet9, ResNet18
 from common.optimizers import (
     EF21MuonSign,
@@ -32,8 +46,8 @@ from common.optimizers import (
 )
 from common.utils import History, resolve_device, split_param_names
 
-# Methods implemented in optimizers.py, i.e. everything that follows the paper's
-# matrix-parameter template. The remaining choices (sgd, adam) come from torch.
+#: Methods implemented in ``common.optimizers``, i.e. everything following the
+#: paper's matrix-parameter template. ``sgd``/``adam`` come from torch.
 LMO_FAMILY = {
     "signmuon": SignMuon,
     "ef21signmuon": EF21SignMuon,
@@ -47,17 +61,12 @@ LMO_FAMILY = {
 
 OPTIMIZER_CHOICES = list(LMO_FAMILY) + ["sgd", "adam"]
 
-# ``signsgd`` is in LMO_FAMILY (it is implemented here) but does not use the LMO,
-# so under ``--head-adamw auto`` it is treated like the other baselines: one rule
-# for every parameter, which is the algorithm as published.
+#: Methods that use the LMO. ``signsgd`` is implemented here but takes no LMO, so
+#: under ``--head-adamw auto`` it is treated like the other baselines.
 MATRIX_RULE_METHODS = {"signmuon", "ef21signmuon", "muonusign", "muonsign",
                        "ef21muonusign", "ef21muonsign", "muon"}
 
-# Legacy spellings.
-ALIASES = {
-    "ef_usignmuon": "ef21muonusign",
-    "ef_udsignmuon": "ef21muonsign",
-}
+ALIASES = {"ef_usignmuon": "ef21muonusign", "ef_udsignmuon": "ef21muonsign"}
 
 
 def resolve_optimizer_name(name: str) -> str:
@@ -80,7 +89,8 @@ def train_epoch(model, loader, optimizers, device) -> Tuple[float, float]:
 
     opt_main, opt_aux = optimizers
     for x, y in loader:
-        x, y = x.to(device), y.to(device)
+        x = x.to(device, non_blocking=True)
+        y = y.to(device, non_blocking=True)
         for opt in (opt_main, opt_aux):
             if opt is not None:
                 opt.zero_grad(set_to_none=True)
@@ -107,7 +117,8 @@ def eval_epoch(model, loader, device) -> Tuple[float, float]:
     total_loss = correct = total = 0.0
 
     for x, y in loader:
-        x, y = x.to(device), y.to(device)
+        x = x.to(device, non_blocking=True)
+        y = y.to(device, non_blocking=True)
         out = model(x)
         total_loss += criterion(out, y).item()
         correct += (out.argmax(dim=1) == y).sum().item()
@@ -132,42 +143,40 @@ def evaluate(model, loader, device, opt_main=None) -> Tuple[float, float]:
 
 
 # --------------------------------------------------------------------------
-# Optimizer construction
+# Optimizer construction, with per-layer scaling
 # --------------------------------------------------------------------------
 
 
 def build_optimizers(model, args):
-    """Return ``(opt_main, opt_aux)``.
+    """Return ``(opt_main, opt_aux, info)``.
+
+    ``opt_main`` carries **one parameter group per matrix parameter**, each with
+    its own ``lambda_mult`` from the scaling rule. ``CosineAnnealingLR`` scales
+    every group's ``base_lr`` independently, so the schedule is unaffected.
 
     ``--head-adamw``:
 
-    * ``auto`` (default) -- the LMO methods put matrix parameters under their own
-      rule and biases/BatchNorm/head under AdamW; ``sgd``, ``adam`` and
-      ``signsgd`` apply their single rule to every parameter, as published. This
-      reproduces the numbers currently in the paper.
-    * ``always`` -- every method, baselines included, gets the AdamW auxiliary
-      group, so the *only* difference between runs is the matrix rule. This is
-      the strictly apples-to-apples setting.
+    * ``auto`` -- the LMO methods put matrix parameters under their own rule and
+      biases/BatchNorm/head under AdamW; ``sgd``, ``adam`` and ``signsgd`` apply
+      their single rule to every parameter, as published.
+    * ``always`` -- every method gets the AdamW auxiliary group, so the only
+      difference between runs is the matrix rule. The apples-to-apples setting.
     * ``never`` -- no auxiliary group at all.
     """
     name = resolve_optimizer_name(args.optimizer)
+    rule = resolve_rule(getattr(args, "lr_scaling", "unit-gain"))
     n_head = getattr(args, "n_head_tensors", 2)
     matrix_names, aux_names = split_param_names(model, n_head)
 
     mode = getattr(args, "head_adamw", "auto")
-    if mode == "auto":
-        split = name in MATRIX_RULE_METHODS
-    elif mode == "always":
-        split = True
-    else:
-        split = False
+    split = (name in MATRIX_RULE_METHODS) if mode == "auto" else (mode == "always")
 
     named = dict(model.named_parameters())
     if split:
-        main_params = [named[n] for n in matrix_names]
+        main_names = list(matrix_names)
         aux_params = [named[n] for n in aux_names]
     else:
-        main_params = [p for p in model.parameters() if p.requires_grad]
+        main_names = [n for n, p in model.named_parameters() if p.requires_grad]
         aux_params = []
 
     common = dict(
@@ -175,24 +184,63 @@ def build_optimizers(model, args):
         momentum=args.momentum,
         nesterov=args.nesterov,
         weight_decay=args.weight_decay,
-        lambda_mult=getattr(args, "lambda_mult", 1.0),
         ns_steps=getattr(args, "ns_steps", 5),
         lmo_dtype=getattr(torch, getattr(args, "lmo_dtype", "bfloat16")),
+        # The shape factor lives in ``lambda_mult`` below; applying it inside the
+        # LMO as well would count the aspect ratio twice.
+        scale_aspect=False,
     )
 
+    info: Dict[str, object] = {"rule": rule.name, "multipliers": {}, "family": None,
+                               "shapes": []}
+
     if name in LMO_FAMILY:
-        opt_main = LMO_FAMILY[name](main_params, **common)
-    elif name == "sgd":
-        opt_main = torch.optim.SGD(main_params, lr=args.lr, momentum=args.momentum,
-                                   nesterov=args.nesterov, weight_decay=args.weight_decay)
-    elif name == "adam":
-        opt_main = torch.optim.Adam(main_params, lr=args.lr, weight_decay=args.weight_decay)
-    else:                                                    # unreachable
-        raise ValueError(f"Unhandled optimizer {name!r}")
+        cls = LMO_FAMILY[name]
+        groups = []
+        for n in main_names:
+            p = named[n]
+            # 1-D parameters have no matrix structure (the LMO is the identity on
+            # them), so no shape rule applies. They only reach here when the
+            # auxiliary group is disabled.
+            lam = layer_multiplier(rule, cls.family, tuple(p.shape)) if p.ndim >= 2 else 1.0
+            groups.append({"params": [p], "lambda_mult": lam, "name": n})
+            info["multipliers"][n] = lam
+        opt_main = cls(groups, **common)
+        info["family"] = cls.family
+        info["shapes"] = [(n, tuple(named[n].shape)) for n in main_names
+                          if named[n].ndim >= 2]
+    else:
+        # torch's SGD/Adam have no ``lambda_mult``, so when the baselines are scaled
+        # the multiplier is folded straight into each group's ``lr``. That is exactly
+        # equivalent (CosineAnnealingLR anneals every group from its own base_lr); the
+        # only difference is that ``lr`` is then already shape-adjusted in the logs.
+        scale = bool(getattr(args, "scale_baselines", False))
+        groups = []
+        for n in main_names:
+            p = named[n]
+            lam = (layer_multiplier(rule, FAMILY_SIGN, tuple(p.shape))
+                   if scale and p.ndim >= 2 else 1.0)
+            groups.append({"params": [p], "lr": args.lr * lam, "name": n})
+            info["multipliers"][n] = lam
+        if scale:
+            # Adam's step is approximately a sign step (|s_ij| ~ 1), so the sign-family
+            # rule is the consistent choice when the baselines are scaled at all.
+            info["family"] = FAMILY_SIGN
+            info["shapes"] = [(n, tuple(named[n].shape)) for n in main_names
+                              if named[n].ndim >= 2]
+        if name == "sgd":
+            opt_main = torch.optim.SGD(groups, lr=args.lr, momentum=args.momentum,
+                                       nesterov=args.nesterov,
+                                       weight_decay=args.weight_decay)
+        else:
+            opt_main = torch.optim.Adam(groups, lr=args.lr,
+                                        weight_decay=args.weight_decay)
 
     opt_aux = (torch.optim.AdamW(aux_params, lr=args.lr_aux, weight_decay=0.0)
                if aux_params else None)
-    return opt_main, opt_aux
+    info["n_matrix_params"] = sum(named[n].numel() for n in main_names)
+    info["n_aux_params"] = sum(p.numel() for p in aux_params)
+    return opt_main, opt_aux, info
 
 
 def build_model(dataset: str, model_name: str) -> nn.Module:
@@ -202,11 +250,34 @@ def build_model(dataset: str, model_name: str) -> nn.Module:
         if model_name == "resnet9":
             return ResNet9(num_classes=10)
         return CNN2(in_channels=3, input_size=32, out_dim=10)
-    if model_name in ("resnet9",):
+    if model_name == "resnet9":
         raise ValueError("ResNet9 is hardcoded for 3 input channels (CIFAR).")
     if model_name == "resnet18":
         return ResNet18(in_channels=1, num_classes=10)
     return CNN2(in_channels=1, input_size=28, n_kernels=32, out_dim=10)
+
+
+# --------------------------------------------------------------------------
+# Gain diagnostics
+# --------------------------------------------------------------------------
+
+
+@torch.no_grad()
+def accumulated_gain(model, snapshot: Dict[str, torch.Tensor]) -> Dict[str, float]:
+    """Realized RMS gain of the accumulated update, per matrix parameter.
+
+    ``gamma(A) = ||A||_F / sqrt(fan_out)`` -- exactly the quantity
+    ``common.lr_scaling`` reasons about. Tracking it against the epoch count
+    settles the one open modelling question in the scaling rule: growth like
+    ``sqrt(t)`` means successive sign steps stay incoherent (favouring
+    ``unit-gain``), growth like ``t`` means they align (favouring ``mup``).
+    """
+    out = {}
+    for n, p in model.named_parameters():
+        if n not in snapshot:
+            continue
+        out[n] = float((p.detach() - snapshot[n]).norm() / math.sqrt(p.shape[0]))
+    return out
 
 
 # --------------------------------------------------------------------------
@@ -217,53 +288,110 @@ def build_model(dataset: str, model_name: str) -> nn.Module:
 def train(args) -> Tuple[nn.Module, History]:
     """Train for ``args.epochs`` and return ``(model, History)``.
 
-    The history is step-indexed by epoch, with epoch 0 recording the metrics of
-    the untrained model.
+    The history is indexed by epoch; epoch 0 records the untrained model.
     """
     device = resolve_device(args.device)
     seed = getattr(args, "seed", None)
+    split = getattr(args, "split", "full")
 
-    if args.dataset == "cifar10":
-        train_dl, test_dl = cifar10_loaders(
-            args.data, batch_size=args.batch_size, download=args.download, seed=seed)
-    else:
-        train_dl, test_dl = mnist_loaders(
-            args.data, batch_size=args.batch_size, download=args.download, seed=seed)
+    train_dl, val_dl, test_dl = build_loaders(
+        args.dataset, args.data, batch_size=args.batch_size,
+        download=args.download, seed=seed, split=split,
+        val_seed=getattr(args, "val_seed", DEFAULT_VAL_SEED),
+        num_workers=getattr(args, "num_workers", 4),
+    )
 
     model = build_model(args.dataset, args.model).to(device)
-    opt_main, opt_aux = build_optimizers(model, args)
+    opt_main, opt_aux, info = build_optimizers(model, args)
+
+    rule = resolve_rule(getattr(args, "lr_scaling", "unit-gain"))
+    if info["family"] and info["shapes"]:
+        print(describe_rule(rule, info["family"], info["shapes"]))
+    n_all = info["n_matrix_params"] + info["n_aux_params"]
+    if n_all:
+        frac = 100.0 * info["n_aux_params"] / n_all
+        # The auxiliary group is transmitted uncompressed, so this fraction is what
+        # turns "1 bit/param" into "1 bit/param + eps".
+        print(f"Parameters: {info['n_matrix_params']:,} matrix (compressed) + "
+              f"{info['n_aux_params']:,} auxiliary ({frac:.3f}% uncompressed)")
 
     scheduler_main = torch.optim.lr_scheduler.CosineAnnealingLR(opt_main, T_max=args.epochs)
     scheduler_aux = (torch.optim.lr_scheduler.CosineAnnealingLR(opt_aux, T_max=args.epochs)
                      if opt_aux is not None else None)
 
-    # Accuracies are recorded in *percent*, matching the federated driver, so that
-    # aggregate.py can compare and average the two without unit surprises.
-    history = History()
-    loss_tr, acc_tr = evaluate(model, train_dl, device, opt_main)
-    loss_te, acc_te = evaluate(model, test_dl, device, opt_main)
-    history.record(0, train_loss=loss_tr, train_acc=100 * acc_tr,
-                   test_loss=loss_te, test_acc=100 * acc_te)
-    print(f"Epoch 0/{args.epochs} | train loss {loss_tr:.4f}, acc {100 * acc_tr:.2f}% "
-          f"| test loss {loss_te:.4f}, acc {100 * acc_te:.2f}%")
+    log_gain = bool(getattr(args, "log_gain", False))
+    snapshot = ({n: p.detach().clone() for n, p in model.named_parameters() if p.ndim >= 2}
+                if log_gain else {})
+
+    history = History()          # accuracies in percent, matching the federated driver
+
+    def _record(epoch: int, tr: Tuple[float, float], extra: Optional[dict] = None) -> None:
+        loss_te, acc_te = evaluate(model, test_dl, device, opt_main)
+        values = {"train_loss": tr[0], "train_acc": 100 * tr[1],
+                  "test_loss": loss_te, "test_acc": 100 * acc_te}
+        if val_dl is not None:
+            loss_va, acc_va = evaluate(model, val_dl, device, opt_main)
+            values.update(val_loss=loss_va, val_acc=100 * acc_va)
+        if extra:
+            values.update(extra)
+        history.record(epoch, **values)
+        msg = (f"Epoch {epoch}/{args.epochs} | train loss {tr[0]:.4f}, "
+               f"acc {100 * tr[1]:.2f}% | test loss {loss_te:.4f}, acc {100 * acc_te:.2f}%")
+        if val_dl is not None:
+            msg += f" | val acc {values['val_acc']:.2f}%"
+        print(msg, flush=True)
+
+    _record(0, evaluate(model, train_dl, device, opt_main))
 
     for epoch in range(1, args.epochs + 1):
         t0 = time.perf_counter()
-        loss_tr, acc_tr = train_epoch(model, train_dl, (opt_main, opt_aux), device)
+        tr = train_epoch(model, train_dl, (opt_main, opt_aux), device)
 
         scheduler_main.step()
         if scheduler_aux is not None:
             scheduler_aux.step()
 
-        loss_te, acc_te = evaluate(model, test_dl, device, opt_main)
-        history.record(epoch, train_loss=loss_tr, train_acc=100 * acc_tr,
-                       test_loss=loss_te, test_acc=100 * acc_te)
-        print(f"Epoch {epoch}/{args.epochs} | {time.perf_counter() - t0:.2f}s "
-              f"| train loss {loss_tr:.4f}, acc {100 * acc_tr:.2f}% "
-              f"| test loss {loss_te:.4f}, acc {100 * acc_te:.2f}%")
+        extra = {"epoch_seconds": time.perf_counter() - t0}
+        if log_gain:
+            gains = sorted(accumulated_gain(model, snapshot).values())
+            if gains:
+                # Summary series only, to keep metrics.json small; the per-layer
+                # detail is printed once at the end.
+                extra.update(gain_min=gains[0], gain_median=gains[len(gains) // 2],
+                             gain_max=gains[-1])
+        _record(epoch, tr, extra)
 
     # Leave the caller holding the exact model, not the compressed broadcast one.
     if hasattr(opt_main, "restore_exact"):
         opt_main.restore_exact()
 
+    if log_gain:
+        print("\nAccumulated-update gain, ||X_T - X_0||_F / sqrt(fan_out), per parameter:")
+        for n, g in accumulated_gain(model, snapshot).items():
+            print(f"  {n:<42}{g:>12.5g}")
+
+    _summarize(history, args)
     return model, history
+
+
+def _summarize(history: History, args) -> None:
+    """Print the reported metrics, so a log alone is enough to fill a table row."""
+    last_k = getattr(args, "last_k", 5)
+    target = getattr(args, "target_acc", 90.0)
+    print("\n--- summary ---")
+    print(f"test_acc final              : {history.last('test_acc'):.2f}%")
+    tail = history.last_k_mean("test_acc", last_k)
+    if tail is not None:
+        print(f"test_acc mean of last {last_k:<4}: {tail:.2f}%   <-- primary metric")
+    best_val = history.argbest("val_acc", "max")
+    if best_val is not None:
+        print(f"test_acc @ best-val epoch {best_val:<3}: "
+              f"{history.at('test_acc', best_val):.2f}%  "
+              f"(val {history.at('val_acc', best_val):.2f}%)")
+        print(f"val_acc  mean of last {last_k:<4}: "
+              f"{history.last_k_mean('val_acc', last_k):.2f}%   <-- tuning criterion")
+    ep = history.steps_to_target("test_acc", target)
+    print(f"epochs to {target:g}% test acc  : {ep if ep is not None else 'not reached'}")
+    secs = history.values("epoch_seconds")
+    if secs:
+        print(f"median epoch time           : {sorted(secs)[len(secs) // 2]:.2f}s")

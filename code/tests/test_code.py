@@ -225,12 +225,16 @@ def test_theorems23_exact_oracle():
     assert abs(float((G * torch.sign(D)).sum()) - (-76.0)) < 1e-9  # MuonSign, Thm 3
 
 
-def test_practical_oracle_needs_the_larger_constants():
-    """The counterexamples under the *implemented* Newton-Schulz oracle.
+def test_exact_and_newton_schulz_oracles_differ_on_the_instances():
+    """Regression test for a measured fact, not a defect.
 
-    Theorem 1 at the published sigma1=1000, and Theorem 2 at the published M=100,
-    do NOT ascend with 5 Newton-Schulz steps; sigma1=100 and M=500 do. Theorem 3
-    ascends either way. See ``counterexamples/verify_ns_oracle.py``.
+    The theorems are stated for the exact LMO and the counterexample code runs the
+    exact LMO; networks are trained with Newton-Schulz, as practitioners do. The
+    two oracles are different maps, and on these instances they disagree: at the
+    published constants (sigma1=1000, M=100) the 5-step oracle does not ascend for
+    Theorems 1-2, while sigma1=100 / M=500 ascend under both. Theorem 3 is
+    oracle-robust. Pinned here so the numbers cannot drift; see
+    ``counterexamples/verify_ns_oracle.py``.
     """
     def after(G):                       # SignMuon
         return float((G * torch.sign(muon_lmo(G.float(), 5, torch.float32, False))).sum())
@@ -241,13 +245,13 @@ def test_practical_oracle_needs_the_larger_constants():
     def both(G, S):                     # MuonSign
         return float((G * torch.sign(muon_lmo(S.float(), 5, torch.float32, False)).double()).sum())
 
-    assert after(_signmuon_instance(1000.0)[0]) > 0, "expected the known failure at sigma1=1000"
-    assert after(_signmuon_instance(100.0)[0]) < 0, "sigma1=100 should ascend at 5 NS steps"
+    assert after(_signmuon_instance(1000.0)[0]) > 0, "sigma1=1000 does not ascend at 5 NS steps"
+    assert after(_signmuon_instance(100.0)[0]) < 0, "sigma1=100 ascends at 5 NS steps"
 
     G100, S = _muonsign_instance(100.0)
     G500, _ = _muonsign_instance(500.0)
-    assert before(G100, S) > 0, "expected the known failure at M=100"
-    assert before(G500, S) < 0, "M=500 should ascend at 5 NS steps"
+    assert before(G100, S) > 0, "M=100 does not ascend at 5 NS steps"
+    assert before(G500, S) < 0, "M=500 ascends at 5 NS steps"
     assert both(G100, S) < 0 and both(G500, S) < 0, "Theorem 3 is oracle-robust"
 
 
@@ -394,6 +398,199 @@ def test_ef21_estimator_tracks_a_constant_target():
 # --------------------------------------------------------------------------
 # Plumbing
 # --------------------------------------------------------------------------
+
+
+# --------------------------------------------------------------------------
+# Per-layer learning-rate scaling
+# --------------------------------------------------------------------------
+
+
+def test_unit_gain_reproduces_the_shipped_muon_factor():
+    """The criterion's strongest validation.
+
+    Applying the unit-gain criterion to an LMO step must reproduce
+    ``sqrt(max(1, fan_out/fan_in))``, the aspect factor in the reference Muon
+    implementation. If this failed, the criterion would be ad hoc.
+    """
+    from common.lr_scaling import FAMILY_LMO, layer_multiplier, resolve_rule
+
+    ug, legacy = resolve_rule("unit-gain"), resolve_rule("legacy")
+    for shape in [(64, 3, 3, 3), (512, 512, 3, 3), (512, 256, 1, 1), (10, 512)]:
+        a = layer_multiplier(ug, FAMILY_LMO, shape)
+        b = layer_multiplier(legacy, FAMILY_LMO, shape)
+        m, n = shape[0], math.prod(shape[1:]) if len(shape) > 1 else 1
+        assert abs(a - b) < 1e-12, (shape, a, b)
+        assert abs(a - math.sqrt(max(1.0, m / n))) < 1e-12
+
+
+def test_unit_gain_equalizes_the_per_step_gain_exactly():
+    """The invariant the whole rule exists to enforce.
+
+    ``unit-gain`` is exactly ``lambda = sqrt(fan_out)/||s||_F``, so the per-step RMS
+    gain ``gamma(eta_0 * lambda * s) = eta_0 * lambda * ||s||_F / sqrt(fan_out)``
+    equals ``eta_0`` on *every* layer and in *both* families. If this ever fails the
+    rule has been mis-implemented.
+    """
+    from common.lr_scaling import (FAMILY_LMO, FAMILY_SIGN, RESNET18_SHAPES,
+                                   resolve_rule)
+
+    rule = resolve_rule("unit-gain")
+    for _, m, n in RESNET18_SHAPES:
+        for family, s_fro in ((FAMILY_LMO, math.sqrt(min(m, n))),
+                              (FAMILY_SIGN, math.sqrt(m * n))):
+            lam = rule.multiplier(family, m, n)
+            assert abs(lam - math.sqrt(m) / s_fro) < 1e-12, (m, n, family)
+            gain = lam * s_fro / math.sqrt(m)
+            assert abs(gain - 1.0) < 1e-12, (m, n, family, gain)
+
+
+def test_initialization_gain_is_shape_independent():
+    """The rule's premise: a fan-in-scaled init has the same gain at every shape, so
+    the constant of proportionality is absorbed into eta_0 rather than varying."""
+    from common.lr_scaling import RESNET18_SHAPES
+
+    for _, m, n in RESNET18_SHAPES:
+        he = math.sqrt(2 / n) * math.sqrt(m * n) / math.sqrt(m)          # He normal
+        torch_default = (1 / math.sqrt(3 * n)) * math.sqrt(m * n) / math.sqrt(m)
+        assert abs(he - math.sqrt(2)) < 1e-12
+        assert abs(torch_default - 1 / math.sqrt(3)) < 1e-12
+
+
+def test_unit_gain_sign_family_is_inverse_sqrt_fan_in():
+    """And it must be independent of fan-out, which is what the algebra says."""
+    from common.lr_scaling import FAMILY_SIGN, layer_multiplier, resolve_rule
+
+    rule = resolve_rule("unit-gain")
+    for shape in [(64, 3, 3, 3), (512, 512, 3, 3), (128, 64, 1, 1)]:
+        n = math.prod(shape[1:])
+        assert abs(layer_multiplier(rule, FAMILY_SIGN, shape) - 1 / math.sqrt(n)) < 1e-12
+    # same fan-in, different fan-out => same multiplier
+    a = layer_multiplier(rule, FAMILY_SIGN, (64, 64, 3, 3))
+    b = layer_multiplier(rule, FAMILY_SIGN, (512, 64, 3, 3))
+    assert abs(a - b) < 1e-12
+
+
+def test_power_presets_match_named_rules():
+    from common.lr_scaling import FAMILY_SIGN, layer_multiplier, resolve_rule
+
+    shape = (256, 128, 3, 3)
+    for spec, named in [("power:0.5", "unit-gain"), ("power:1", "mup"),
+                        ("power:0.5,0.5", "mishra-analysis"), ("power:0", "none")]:
+        a = layer_multiplier(resolve_rule(spec), FAMILY_SIGN, shape)
+        b = layer_multiplier(resolve_rule(named), FAMILY_SIGN, shape)
+        assert abs(a - b) < 1e-12, (spec, named, a, b)
+
+
+def test_rms_gain_identity():
+    """``gamma(A) = ||A||_F / sqrt(m)`` really is the RMS gain, and the two families
+    have the exact Frobenius norms the derivation assumes."""
+    torch.manual_seed(7)
+    m, n = 40, 90
+    M = torch.randn(m, n)
+    P = exact_polar(M).float()
+    assert abs(float(P.norm()) - math.sqrt(min(m, n))) < 1e-4       # ||UV^T||_F = sqrt(r)
+    S = torch.sign(P)
+    assert abs(float(S.norm()) - math.sqrt(m * n)) < 1e-4           # +-1 entries
+
+    # rms(A u) / rms(u) -> ||A||_F / sqrt(m) in expectation
+    u = torch.randn(n, 2048)
+    for A in (P, S):
+        emp = float((A @ u).norm() / math.sqrt(m)) / float(u.norm() / math.sqrt(n))
+        pred = float(A.norm()) / math.sqrt(m)
+        assert abs(emp - pred) / pred < 0.05, (emp, pred)
+
+
+def test_lambda_mult_equals_folding_the_factor_into_the_lmo():
+    """Putting the aspect factor in ``lambda_mult`` (with ``scale_aspect=False``)
+    is exactly equivalent to leaving it inside the LMO -- so the refactor that
+    moved it out cannot have changed any Muon-family result."""
+    torch.manual_seed(11)
+    # Both regimes: fan_out > fan_in (factor sqrt(2) != 1, so the test bites) and
+    # fan_out < fan_in (factor clipped to 1).
+    for shape in [(16, 2, 2, 2), (20, 5), (64, 64, 3, 3)]:
+        n = math.prod(shape[1:])
+        lam = math.sqrt(max(1.0, shape[0] / n))
+        grads = [torch.randn(*shape) for _ in range(4)]
+
+        p_in = nn.Parameter(torch.zeros(*shape))
+        opt_in = Muon([p_in], lr=0.1, momentum=0.5, lmo_dtype=torch.float32,
+                      scale_aspect=True)
+        p_out = nn.Parameter(torch.zeros(*shape))
+        opt_out = Muon([{"params": [p_out], "lambda_mult": lam}], lr=0.1, momentum=0.5,
+                       lmo_dtype=torch.float32, scale_aspect=False)
+
+        for g in grads:
+            p_in.grad, p_out.grad = g.clone(), g.clone()
+            opt_in.step()
+            opt_out.step()
+            assert torch.allclose(p_in, p_out, atol=1e-6), \
+                f"{shape} (lambda={lam:.4f}): {(p_in - p_out).abs().max()}"
+        assert p_in.abs().sum() > 0, "the test must actually take steps"
+
+
+def test_optimizer_families_are_tagged():
+    from common.lr_scaling import FAMILY_LMO, FAMILY_SIGN
+
+    expected = {
+        SignMuon: FAMILY_SIGN, MuonSign: FAMILY_SIGN, SignSGD: FAMILY_SIGN,
+        Muon: FAMILY_LMO, MuonUSign: FAMILY_LMO, EF21SignMuon: FAMILY_LMO,
+        EF21MuonUSign: FAMILY_LMO, EF21MuonSign: FAMILY_LMO,
+    }
+    for cls, fam in expected.items():
+        assert cls.family == fam, (cls.__name__, cls.family, fam)
+
+
+def test_build_optimizers_assigns_one_group_per_matrix_param():
+    import argparse
+
+    from centralized.train import build_optimizers
+
+    args = argparse.Namespace(
+        optimizer="signmuon", lr=0.1, lr_aux=0.01, momentum=0.9, nesterov=False,
+        weight_decay=0.0, ns_steps=5, lmo_dtype="float32", lr_scaling="unit-gain",
+        head_adamw="always", n_head_tensors=2)
+    model = TinyNet()
+    opt_main, opt_aux, info = build_optimizers(model, args)
+
+    assert len(opt_main.param_groups) == 1                  # TinyNet has one matrix
+    group = opt_main.param_groups[0]
+    assert group["name"] == "fc1.weight"
+    assert abs(group["lambda_mult"] - 1 / math.sqrt(6)) < 1e-12    # fan_in = 6
+    assert group["scale_aspect"] is False, "the factor must not be applied twice"
+    assert opt_aux is not None and len(opt_aux.param_groups[0]["params"]) == 3
+    assert info["rule"] == "unit-gain" and info["family"] == "sign"
+
+
+# --------------------------------------------------------------------------
+# Protocol: validation split and metric helpers
+# --------------------------------------------------------------------------
+
+
+def test_val_split_is_disjoint_and_seed_stable():
+    from centralized.data import _split_indices
+
+    tr1, va1 = _split_indices(50_000, 5_000, val_seed=12345)
+    tr2, va2 = _split_indices(50_000, 5_000, val_seed=12345)
+    assert (tr1 == tr2).all() and (va1 == va2).all(), "split must be deterministic"
+    assert len(va1) == 5_000 and len(tr1) == 45_000
+    assert not (set(tr1.tolist()) & set(va1.tolist())), "train and val must be disjoint"
+
+    _, va3 = _split_indices(50_000, 5_000, val_seed=999)
+    assert set(va1.tolist()) != set(va3.tolist()), "a different val_seed must differ"
+
+
+def test_history_selection_helpers():
+    h = History()
+    for step, (va, te) in enumerate([(80.0, 79.0), (85.0, 84.0), (83.0, 90.0),
+                                     (84.0, 86.0), (84.5, 87.0)]):
+        h.record(step, val_acc=va, test_acc=te)
+
+    assert h.argbest("val_acc", "max") == 1          # best val, not best test
+    assert h.at("test_acc", 1) == 84.0               # the number you'd report
+    assert abs(h.last_k_mean("test_acc", 3) - (90.0 + 86.0 + 87.0) / 3) < 1e-12
+    assert h.steps_to_target("test_acc", 86.0) == 2
+    assert h.steps_to_target("test_acc", 99.0) is None
+    assert h.values("val_acc") == [80.0, 85.0, 83.0, 84.0, 84.5]
 
 
 def test_split_param_names():
