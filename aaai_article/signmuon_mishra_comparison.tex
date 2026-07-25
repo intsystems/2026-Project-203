@@ -1,0 +1,90 @@
+% =====================================================================
+%  Comparison with the concurrent convergence claim of Mishra, Trivedi
+%  and Kumar (2026) for SignMuon.  Drop-in appendix subsection for
+%  v2_SignMuon_AAAI.tex.  Self-contained: refers only to this paper's
+%  Theorem~\ref{th:1}, Proposition~\ref{prop:reduction}, the linear
+%  objective~\eqref{eq:lin_obj}, and \citet{mishra2026signmuon}.
+% =====================================================================
+\subsection{Comparison with the convergence claim for SignMuon}\label{app:mishra}
+
+Concurrently, \citet{mishra2026signmuon} introduced the same sign-after-LMO
+method under the name \emph{Sign-Muon}, with update direction
+$\mathbf{S}_t=\operatorname{sign}(\operatorname{polar}(\mathbf{M}_t))$ rescaled
+to $\mathbf{D}_t=\mathbf{S}_t/\sqrt{mn}$; this coincides with the SignMuon step
+of Section~\ref{sec:theory} after absorbing $1/\sqrt{mn}$ into $\eta$. For this
+method they establish an $\mathcal{O}(1/\sqrt{T})$ stationarity guarantee. We
+show that this guarantee does not contradict Theorem~\ref{th:1}: the finalized
+rate is proved for a different update direction, and for $\mathbf{D}_t$ their
+bound is uninformative on the instance of Theorem~\ref{th:1}.
+
+Their analysis controls the stationarity proxy
+$\mathcal{G}_T=\tfrac1T\sum_{t}\mathbb{E}[\|\mathbf{g}_t\|_1/\sqrt{mn}]$, where
+$\mathbf{g}_t=\nabla f(\mathbf{W}_t)$, through the per-entry sign-error
+probabilities $q_{ij,t}=\Pr(\mathbf{S}_{t,ij}\neq
+\operatorname{sign}(\mathbf{g}_{t,ij})\mid\mathbf{W}_t)$, in two steps. First,
+for an arbitrary sign oracle $\mathbf{S}_t$ they derive
+\begin{equation}\label{eq:mishra_generic}
+\begin{aligned}
+\mathcal{G}_T
+&\le
+\frac{f(\mathbf{W}_0)-f^\ast}{\eta T}
++\frac{L_\ast}{2}\,\eta\\
+&\quad+\underbrace{\frac{2}{T}\sum_{t}\mathbb{E}\!\left[\frac{1}{\sqrt{mn}}\sum_{i,j}|\mathbf{g}_{t,ij}|\,q_{ij,t}\right]}_{=:\,R_T}.
+\end{aligned}
+\end{equation}
+Inequality~\eqref{eq:mishra_generic} applies in particular to
+$\mathbf{S}_t=\operatorname{sign}(\operatorname{polar}(\mathbf{M}_t))$, but with
+the residual $R_T$ left unbounded. Second, the rate is obtained by estimating
+$R_T$, and this estimate is derived \emph{only} for the gradient-sign oracle
+$\mathbf{S}_t=\operatorname{sign}(\widetilde{\mathbf{G}}_t)$, where
+$\widetilde{\mathbf{G}}_t$ is an unbiased stochastic gradient with
+coordinatewise variance $\operatorname{Var}(\widetilde{\mathbf{G}}_{t,ij}\mid
+\mathbf{W}_t)\le\sigma_{ij}^2/n_b$ and $n_b$ the mini-batch size. In that case a
+Markov--Jensen argument yields $|\mathbf{g}_{t,ij}|\,q_{ij,t}\le
+\sigma_{ij}/\sqrt{n_b}$, hence
+$R_T=\mathcal{O}(\|\sigma\|_1/\sqrt{mn\,n_b})$ with
+$\|\sigma\|_1=\sum_{i,j}\sigma_{ij}$, which vanishes as $n_b\to\infty$.
+
+This estimate bounds $q_{ij,t}$ by the noise level $\sigma_{ij}/\sqrt{n_b}$ and
+is therefore specific to $\operatorname{sign}(\widetilde{\mathbf{G}}_t)$, whose
+only source of sign error is gradient noise. It does not extend to the
+polar-sign oracle: even with exact gradients ($\sigma_{ij}=0$) the latter
+satisfies $q_{ij,t}=\mathbf{1}[\operatorname{sign}(\operatorname{polar}
+(\mathbf{g}_t))_{ij}\neq\operatorname{sign}(\mathbf{g}_{t,ij})]$, which need not
+vanish. Consequently the finalized $\mathcal{O}(1/\sqrt{T})$ guarantee holds for
+the gradient-sign update $\mathbf{S}_t=\operatorname{sign}(\widetilde{\mathbf{G}}_t)$,
+whose direction never invokes the polar factor, and not for the LMO-based
+direction $\operatorname{sign}(\operatorname{polar}(\mathbf{M}_t))$ to which it
+is attributed.
+
+On the instance of Theorem~\ref{th:1} the residual $R_T$ is not merely
+unbounded: it exceeds $\mathcal{G}_T$. Consider the linear
+objective~\eqref{eq:lin_obj} with the $4\times4$ gradient $\mathbf{G}$ of
+Theorem~\ref{th:1}. By Proposition~\ref{prop:reduction} one has
+$\mathbf{g}_t\equiv\mathbf{G}$ and
+$\operatorname{polar}(\mathbf{M}_t)=\operatorname{polar}(\mathbf{G})$ at every
+iteration, so the oracle is deterministic and the inner-product identity
+$\mathbb{E}[\langle\mathbf{g}_t,\mathbf{D}_t\rangle\mid\mathbf{W}_t]=
+\tfrac1{\sqrt{mn}}\sum_{ij}|\mathbf{g}_{t,ij}|(1-2q_{ij,t})$ underlying
+\eqref{eq:mishra_generic} reduces to
+\begin{equation}\label{eq:mishra_identity}
+\sum_{i,j}|\mathbf{G}_{ij}|\,(1-2q_{ij})
+=\bigl\langle \mathbf{G},\operatorname{sign}(\operatorname{polar}(\mathbf{G}))\bigr\rangle
+=-\tfrac{42468}{103}<0 .
+\end{equation}
+Therefore $\sum_{ij}|\mathbf{G}_{ij}|\,q_{ij}>\tfrac12\|\mathbf{G}\|_1$, and at
+every iteration
+\begin{equation}\label{eq:mishra_dominates}
+\frac{2}{\sqrt{mn}}\sum_{i,j}|\mathbf{G}_{ij}|\,q_{ij}
+\;>\;
+\frac{\|\mathbf{G}\|_1}{\sqrt{mn}}
+\;=\;\mathcal{G}_t .
+\end{equation}
+The unestimated term $R_T$ in~\eqref{eq:mishra_generic} thus strictly exceeds
+the left-hand side, so the bound reduces to
+$\mathcal{G}_T\le(\text{nonnegative})+R_T$ with $R_T>\mathcal{G}_T$ and imposes
+no constraint on $\mathcal{G}_T$. In agreement, \eqref{eq:mishra_identity}
+yields the exact per-step increase
+$f(\mathbf{X}_{t+1})-f(\mathbf{X}_t)=-\eta\langle\mathbf{G},\mathbf{D}_t\rangle
+=\tfrac{\eta}{4}\cdot\tfrac{42468}{103}>0$ for every $\eta>0$, which is the
+divergence established in Theorem~\ref{th:1}.

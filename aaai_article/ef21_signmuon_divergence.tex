@@ -1,0 +1,333 @@
+% =====================================================================
+%  Divergence of EF21-SignMuon (Theorem th:ef_div).
+%  Drop-in appendix subsection for v2_SignMuon_AAAI.tex (double-column).
+%  Structure: Theorem -> Proof idea (narrative) -> Proof in three labelled
+%  parts (rescaling; the limit cycle; the realization).  Exact rational
+%  arithmetic; the construction and its all-method comparison are implemented
+%  in code/counterexamples/problems.py (figure via run_counterexamples.py).
+% =====================================================================
+\providecommand{\smat}[4]{\bigl(\begin{smallmatrix}#1&#2\\#3&#4\end{smallmatrix}\bigr)}
+
+\subsection{Proof of Theorem~\ref{th:ef_div} (Divergence of EF21-SignMuon)}\label{app:proof_th4}
+
+Recall from the main text that EF21-SignMuon (Algorithm~\ref{ef21_signmuon})
+does not descend along the LMO output
+$\mathbf D_t=\operatorname{polar}(\tilde{\mathbf M}_t)$ itself, but along the
+error-feedback estimate $\mathbf d_t^{\mathrm{est}}$ of \eqref{eq:efsm_est},
+followed by $\mathbf X_t=\mathbf X_{t-1}-\eta\,\mathbf d_t^{\mathrm{est}}$. A
+\emph{single} magnitude $\alpha_t$ rescales the signs of \emph{all} entries at
+once; this coupling is what the counterexample exploits. We now prove
+Theorem~\ref{th:ef_div}.
+
+\begin{figure*}[t]
+\centering
+\includegraphics[width=\textwidth]{images/counterexamples/ef21_signmuon_counterexample.pdf}
+\caption{All eight methods on the $2\times2$ instance of Theorem~\ref{th:ef_div}
+(normalized units, $\eta=1$, $\mu=0$). \emph{Left:} full scale --- EF21-SignMuon
+is the only method whose objective increases, rising at the exact rate
+$\tfrac{49}{480}$ per step. \emph{Right:} the same runs magnified to the band of
+the seven remaining methods (EF21-SignMuon leaves the frame): SignMuon,
+MuonUSign, MuonSign, EF21-MuonUSign, EF21-MuonSign, SignSGD and Muon all
+decrease and stay bounded. By Lemma~\ref{lem:efsm_reduction} the EF21-SignMuon
+trajectory is the same for every $\mu\in[0,1)$ and both momentum variants, so
+the single run shown is representative of all of them.}
+\label{fig:ef21_divergence}
+\end{figure*}
+
+\subsubsection*{Proof idea}
+Picture the target $\mathbf D_t$ as a $2\times2$ matrix whose off-diagonal is
+large and \emph{flips sign every step}, while its diagonal is a small constant.
+The estimator \eqref{eq:efsm_est} rescales all four signs by the same
+$\alpha_t$, so the flipping off-diagonal pins $\alpha_t$ at $\Theta(1)$, which
+exceeds the small diagonal target. The diagonal of $\mathbf d_t^{\mathrm{est}}$
+therefore never settles: it oscillates with $\Theta(1)$ amplitude, and its
+time-average has the sign \emph{opposite} to the target. Being an average over
+an oscillation, this bias depends only on the oscillation's phase, which
+one-bit sign feedback cannot correct. It pushes one entry of $\mathbf X_t$
+monotonically to infinity (Figure~\ref{fig:ef21_divergence}).
+
+Two observations make the result independent of the parameters. First, the step
+size and smoothness only rescale the orbit, so we may fix $\eta=1$ and one value
+of $L$.
+Second, the divergence lives entirely in the estimator's response to a fixed
+target sequence; momentum affects only \emph{how the gradients are sourced},
+not the targets. A single explicit trajectory thus settles all
+$(L,\eta,\mu,\text{variant})$ at once. The mechanism is not degeneracy: the
+matrices driving it have condition number $\tfrac{16}{9}$ throughout.
+
+Accordingly the proof has three parts. Part~1 rescales the problem to remove
+$L$ and $\eta$. Part~2 isolates the dynamical core: for one fixed sequence of
+LMO targets, the estimator provably converges to a limit cycle whose diagonal
+has the wrong sign. Part~3 exhibits a concrete smooth function whose gradients
+generate that target sequence, for every $\mu$ and either momentum variant.
+
+\subsubsection*{Proof}
+
+\paragraph{Part 1: rescaling.}
+\begin{lemma}[Scale reduction]\label{lem:efsm_reduction}
+If $\tilde f$ is $\tilde L$-smooth with EF21-SignMuon iterates
+$\tilde{\mathbf X}_t$ at step size $1$, then
+$f(\mathbf X):=\tfrac{L\eta^2}{\tilde L}\,\tilde f(\mathbf X/\eta)$ is $L$-smooth
+and its run at step size $\eta$ (same $\mu$, same variant, from $\mathbf 0$)
+satisfies $\mathbf X_t=\eta\,\tilde{\mathbf X}_t$ and
+$f(\mathbf X_t)=\tfrac{L\eta^2}{\tilde L}\,\tilde f(\tilde{\mathbf X}_t)$.
+\end{lemma}
+\paragraph{Proof.}
+$\nabla f(\mathbf X)=\tfrac{L\eta}{\tilde L}\nabla\tilde f(\mathbf X/\eta)$, so
+$f$ is $L$-smooth. Suppose $\mathbf X_s=\eta\tilde{\mathbf X}_s$ for $s<t$: the
+two gradients then differ by the positive factor $\tfrac{L\eta}{\tilde L}$,
+which $\mathbf M_t$ and $\tilde{\mathbf M}_t$ (positive combinations of past
+gradients) inherit and $\operatorname{polar}$ discards. Hence $\mathbf D_t$ and
+$\mathbf d_t^{\mathrm{est}}$ match the normalized run, and
+$\mathbf X_t=\eta\tilde{\mathbf X}_t$. $\blacksquare$
+\noindent
+So it suffices to exhibit, for each $(\mu,\text{variant})$, a $C^\infty$
+$\tilde L$-smooth $\tilde f$ on which the \emph{normalized} run ($\eta=1$) obeys
+\eqref{eq:exact_rate}; that $\tilde f$ may be taken bounded below
+(Assumption~\ref{as:1}) is shown afterwards (Remark~\ref{rem:efsm_bdd}). We fix
+$\eta=1$ from now on.
+
+\paragraph{Part 2: the estimator's limit cycle.}
+The dynamical core of the proof is the behavior of the estimator
+\eqref{eq:efsm_est} on the fixed target sequence
+\begin{equation}\label{eq:target_seq}
+\mathbf D_1=\mathbf S_1,\quad \mathbf D_2=\mathbf S_2,\quad
+\mathbf D_t=\bar{\mathbf D}^{(-1)^t}\ (t\ge3),
+\end{equation}
+\begin{equation}\label{eq:targets}
+\begin{gathered}
+\bar{\mathbf D}^{\pm}=\smat{7/25}{\pm24/25}{\pm24/25}{-7/25},\\
+\mathbf S_1=\smat{-4/5}{3/5}{-3/5}{-4/5},\quad
+\mathbf S_2=\smat{3/5}{-4/5}{0}{0}.
+\end{gathered}
+\end{equation}
+The divergence originates in the tail ($t\ge3$): the reflections
+$\bar{\mathbf D}^{\pm}$ share the diagonal $(\tfrac7{25},-\tfrac7{25})$, while
+their off-diagonal $\pm\tfrac{24}{25}$ reverses sign at every step. The rotation
+$\mathbf S_1$ and the rank-one $\mathbf S_2$ form a two-step preamble whose only
+role is to place the estimator in the divergent phase of the cycle.
+
+\begin{lemma}[Wrong-sign limit cycle]\label{lem:efsm_cycle}
+On the targets \eqref{eq:target_seq}, the recursion \eqref{eq:efsm_est} from
+$\mathbf d_0^{\mathrm{est}}=\mathbf 0$ enters at $t=3$ the exact period-two cycle
+$\mathbf d_t^{\mathrm{est}}=\mathbf d_B$ (odd $t$), $\mathbf d_A$ (even $t$),
+where
+\begin{equation}\label{eq:dcycle}
+\mathbf d_B=\tfrac1{200}\smat{-61}{-201}{-61}{-61},\qquad
+\mathbf d_A=\tfrac1{200}\smat{131}{-9}{131}{131}.
+\end{equation}
+Its $(2,2)$-entry averages $\tfrac12\bigl((\mathbf d_A)_{22}+(\mathbf d_B)_{22}\bigr)
+=+\tfrac7{40}$, opposite in sign to every target value
+$(\mathbf D_t)_{22}=-\tfrac7{25}$.
+\end{lemma}
+\paragraph{Proof.}
+Substituting \eqref{eq:target_seq} into \eqref{eq:efsm_est} gives the values
+\begin{equation}\label{eq:efsm_table}
+\renewcommand{\arraystretch}{1.25}
+\begin{array}{c|cccc}
+t & 1 & 2 & 3 & 4\ (\text{then }2\text{-periodic})\\\hline
+\alpha_t & \tfrac7{10} & \tfrac{21}{20} & \tfrac{131}{200} & \tfrac{24}{25}\\
+\mathbf d_t^{\mathrm{est}} & \tfrac1{10}\smat{-7}{7}{-7}{-7}
+ & \tfrac1{20}\smat{7}{-7}{7}{7} & \mathbf d_B & \mathbf d_A
+\end{array}
+\end{equation}
+Each residual $\mathbf D_t-\mathbf d_{t-1}^{\mathrm{est}}$ has strictly nonzero
+entries, so the signs are unambiguous; e.g.\ at $t=3$ it is
+$\tfrac1{100}\smat{-7}{-61}{-131}{-63}$, all negative. From $t=3$ the targets
+are $2$-periodic and the pair $(\mathbf d_B,\mathbf d_A)$ reproduces itself:
+$\bar{\mathbf D}^{+}-\mathbf d_B$ and $-(\bar{\mathbf D}^{-}-\mathbf d_A)$ are
+both entrywise positive with mean $\tfrac{24}{25}$, so
+$\mathbf d_B+\tfrac{24}{25}\mathbf J=\mathbf d_A$ and
+$\mathbf d_A-\tfrac{24}{25}\mathbf J=\mathbf d_B$ ($\mathbf J$ all-ones). $\blacksquare$
+
+\medskip\noindent
+Since $\mathbf X_t=\mathbf X_{t-1}-\mathbf d_t^{\mathrm{est}}$ (recall
+$\eta=1$), over one period the $(2,2)$-coordinate changes by
+$-(\mathbf d_A+\mathbf d_B)_{22}=-\tfrac7{20}$. Consequently a term $-\gamma
+W_{22}$ in $\tilde f$, with $\gamma:=\tfrac7{12}$, increases by
+$\gamma\cdot\tfrac7{20}=\tfrac{49}{240}$ per period. This is the divergence,
+provided a genuine smooth function produces the targets \eqref{eq:target_seq};
+Part~3 constructs one.
+
+\paragraph{Part 3: realization by a smooth function.}
+Fix $(\mu,\text{variant})$ and set $\gamma=\tfrac7{12}$, $\nu=\tfrac1{1+2\mu}$,
+and
+\begin{equation}\label{eq:Amu}
+\begin{gathered}
+A=\frac{1+\mu}{1-\mu}\ \text{(standard)},\\
+A=\frac{1+\mu}{(1-\mu)(1+2\mu)}\ \text{(Nesterov)}.
+\end{gathered}
+\end{equation}
+We build $\tilde f=g+\sum_{k=1}^{3}b_k$ from a periodic-plus-linear
+\emph{field} $g$ and three \emph{localized corrections} $b_k$, all explicit.
+
+\emph{The field} is
+\begin{equation}\label{eq:field}
+g(\mathbf W)=-\gamma\,W_{22}+A\,\Phi_1(W_{12})+A\,\Phi_2(W_{21}),
+\end{equation}
+where $\Phi_i(w)=\int_0^{w}\psi_i$ and $\psi_i\colon\mathbb R\to[-1,1]$ is a
+fixed $C^\infty$, $p_i$-periodic function with $\int_0^{p_i}\psi_i=0$,
+\[
+p_1=\tfrac{21}{20},\quad p_2=\tfrac7{20},\qquad \delta=\tfrac1{100},
+\]
+equal to $+1$ on $[\rho_i^{+}\!-\delta,\rho_i^{+}\!+\delta]$ and $-1$ on
+$[\rho_i^{-}\!-\delta,\rho_i^{-}\!+\delta]$ (mod $p_i$), where
+\[
+\rho_1^{+}=\tfrac{131}{200},\ \rho_1^{-}=\tfrac{140}{200};\qquad
+\rho_2^{+}=\tfrac{61}{200},\ \rho_2^{-}=0.
+\]
+The two bands are disjoint mod $p_i$ (their centers are $\tfrac9{200}>2\delta$
+apart), so such a $\psi_i$ exists; the zero-mean condition, met by balancing the
+rest of the period, makes $\Phi_i$ periodic (hence bounded). On each band
+$\Phi_i'=\psi_i=\pm1$ exactly.
+
+\emph{The corrections} pin the first three gradients. Fix once a $C^\infty$
+cutoff $\phi\colon\mathbb R\to[0,1]$ with $\phi\equiv1$ on $[0,\tfrac12]$ and
+$\phi\equiv0$ on $[1,\infty)$, put $r=\tfrac1{50}$, and set
+\begin{equation}\label{eq:bump}
+b_k(\mathbf W)=\bigl\langle\mathbf C_k,\,\mathbf W-\mathbf Z_k\bigr\rangle\,
+\phi\!\bigl(\|\mathbf W-\mathbf Z_k\|_F/r\bigr),
+\end{equation}
+centered at the first three iterates (from Lemma~\ref{lem:efsm_cycle})
+\[
+\mathbf Z_1=\mathbf 0,\quad
+\mathbf Z_2=\tfrac1{10}\smat{7}{-7}{7}{7},\quad
+\mathbf Z_3=\tfrac1{20}\smat{7}{-7}{7}{7}.
+\]
+Each $b_k$ is $C^\infty$, supported in $\{\|\mathbf W-\mathbf Z_k\|_F\le r\}$;
+since its linear factor vanishes at $\mathbf Z_k$ while $\phi(0)=1$,
+$\nabla b_k(\mathbf Z_k)=\mathbf C_k$. We choose
+$\mathbf C_k:=\hat{\mathbf G}_k-\nabla g(\mathbf Z_k)$ with the explicit
+$\hat{\mathbf G}_k$ of \eqref{eq:transient} below, so that
+$\nabla\tilde f(\mathbf Z_k)=\hat{\mathbf G}_k$. Every term of $\tilde f$ has a
+bounded Hessian, so $\tilde f$ is $C^\infty$ and $\tilde L$-smooth for a finite
+$\tilde L(\mu,\text{variant})$.
+
+\begin{lemma}[Realization]\label{lem:efsm_realize}
+For every $\mu\in[0,1)$ and either variant, EF21-SignMuon on this $\tilde f$
+($\eta=1$, from $\mathbf 0$) generates exactly the targets
+\eqref{eq:target_seq}.
+\end{lemma}
+\paragraph{Proof.}
+\emph{The required gradients.} Momentum is a causal, positive-weight linear
+filter of the gradients, and we invert it. Define the \emph{transient
+gradients}
+\begin{equation}\label{eq:transient}
+\hat{\mathbf G}_t=\frac{\mathbf M_t-\mu\mathbf M_{t-1}}{1-\mu}\quad(t=1,2,3;\ \mathbf M_0=\mathbf 0)
+\end{equation}
+and the \emph{field gradient}
+$\mathbf G^{\pm}=\smat{0}{\pm A}{\pm A}{-\gamma}$, where the prescribed buffer
+values $\mathbf M_{1,2,3}$ are given below. With
+$\bar{\mathbf M}^{\pm}=\smat{0}{\pm1}{\pm1}{-\gamma}$, the factorization
+\begin{equation}\label{eq:polarM}
+\begin{gathered}
+\bar{\mathbf M}^{\pm}
+=\bar{\mathbf D}^{\pm}\,\smat{24/25}{\mp7/25}{\mp7/25}{337/300}\\
+(\text{second factor }\succ0,\ \det=1)
+\end{gathered}
+\end{equation}
+shows $\operatorname{polar}(\bar{\mathbf M}^{\pm})=\bar{\mathbf D}^{\pm}$, with
+singular values $\tfrac34,\tfrac43$ (the condition number $\tfrac{16}9$ of the
+idea).
+
+\emph{Standard momentum} ($\tilde{\mathbf M}_t=\mathbf M_t$). Take
+$\mathbf M_1=\mathbf S_1$, $\mathbf M_2=\mathbf S_2$,
+$\mathbf M_3=\bar{\mathbf M}^{-}$; then $\hat{\mathbf G}_{1,2,3}$ are the
+explicit matrices \eqref{eq:transient}. Feeding $\mathbf G^{(-1)^t}$ for $t\ge4$
+keeps $\mathbf M_t=\bar{\mathbf M}^{(-1)^t}$, because
+$(1-\mu)\mathbf G^{\pm}=\bar{\mathbf M}^{\pm}-\mu\bar{\mathbf M}^{\mp}$ with $A$
+as in \eqref{eq:Amu}. As $\operatorname{polar}(\mathbf S_1)=\mathbf S_1$
+(orthogonal) and $\operatorname{polar}(\mathbf S_2)=\mathbf S_2$ (rank one),
+\eqref{eq:polarM} yields the targets \eqref{eq:target_seq}.
+
+\emph{Nesterov momentum} ($\tilde{\mathbf M}_t=(1+\mu)\mathbf M_t-\mu\mathbf M_{t-1}$).
+Take $\mathbf M_1=\tfrac1{1+\mu}\mathbf S_1\mathbf H_1$,
+$\mathbf M_2=\tfrac1{1+\mu}(\mathbf S_2+\mu\mathbf M_1)$,
+$\mathbf M_3=\bar{\mathbf M}'^{-}$ and $\mathbf M_t=\bar{\mathbf M}'^{(-1)^t}$
+($t\ge4$), where $\bar{\mathbf M}'^{\pm}=\smat{0}{\pm\nu}{\pm\nu}{-\gamma}$,
+$\mathbf H_1=\operatorname{diag}(1,1+T)$, and
+\[
+T=\Bigl(\tfrac{140(1+\mu)^2}{1+2\mu}-44\Bigr)\tfrac{1+\mu}{117\mu}>0 .
+\]
+Then $\tilde{\mathbf M}_1=\mathbf S_1\mathbf H_1$ and
+$\tilde{\mathbf M}_2=\mathbf S_2$ have polar factors $\mathbf S_1,\mathbf S_2$,
+and $\tilde{\mathbf M}_t=\bar{\mathbf M}^{(-1)^t}$ for $t\ge4$ (since
+$\nu(1+2\mu)=1$). The one nontrivial step is $t=3$: with
+$\mathbf H_3:=\bar{\mathbf D}^{-}\tilde{\mathbf M}_3$ (so
+$\tilde{\mathbf M}_3=\bar{\mathbf D}^{-}\mathbf H_3$, the reflection being an
+involution), the stated $T$ is exactly the value making $\mathbf H_3$ symmetric,
+and $\mathbf H_3\succ0$ for all $\mu\in(0,1)$: under $\mu=\tfrac{s}{1+s}$ ($s>0$)
+the numerators of its two leading minors are polynomials in $s$ with
+nonnegative coefficients. Hence
+$\operatorname{polar}(\tilde{\mathbf M}_3)=\bar{\mathbf D}^{-}$, completing
+\eqref{eq:target_seq}.
+
+\emph{The function delivers these gradients.} It remains to verify
+$\nabla\tilde f(\tilde{\mathbf X}_{t-1})=\hat{\mathbf G}_t$ for $t\le3$ and
+$=\mathbf G^{(-1)^t}$ for $t\ge4$. By Lemma~\ref{lem:efsm_cycle} the iterates
+$\tilde{\mathbf X}_0,\tilde{\mathbf X}_1,\tilde{\mathbf X}_2$ are exactly the
+centers $\mathbf Z_1,\mathbf Z_2,\mathbf Z_3$, where
+$\nabla\tilde f=\hat{\mathbf G}_{1,2,3}$ by construction. The three balls are
+disjoint ($\|\mathbf Z_j-\mathbf Z_k\|_F\ge\tfrac7{10}>2r$), and every later
+iterate has $(1,2)$-entry $\ge\tfrac{131}{200}$ while the centers have it
+$\le0$, so no ball is re-entered. For $t\ge4$ the query lies in the field,
+where
+\[
+\nabla g(\mathbf W)=\begin{pmatrix}0 & A\psi_1(W_{12})\\ A\psi_2(W_{21}) & -\gamma\end{pmatrix}.
+\]
+The period shift $\tilde{\mathbf X}_{t+2}-\tilde{\mathbf X}_t
+=-(\mathbf d_A+\mathbf d_B)$ advances $W_{12}$ by $+p_1$ and $W_{21}$ by $-p_2$
+(one full period each), so the off-diagonal coordinates keep the residues
+$\rho_i^{+}$ at odd indices and $\rho_i^{-}$ at even indices; there
+$\psi_i=\pm1$, giving $\nabla g=\mathbf G^{(-1)^t}$. $\blacksquare$
+
+\paragraph{Proof of Theorem~\ref{th:ef_div}.}
+By Lemma~\ref{lem:efsm_realize} the normalized run produces the targets
+\eqref{eq:target_seq}, so by Lemma~\ref{lem:efsm_cycle} its estimator locks onto
+the wrong-sign cycle and $\tilde{\mathbf X}_{t+2}-\tilde{\mathbf X}_t$ is a
+constant shift. Along it $\Phi_1,\Phi_2$ return to their values and the
+corrections $b_k$ vanish, so only the linear term acts:
+$\tilde f(\tilde{\mathbf X}_{t+2})-\tilde f(\tilde{\mathbf X}_t)
+=-\gamma(-\tfrac7{20})=\tfrac{49}{240}>0$. By Lemma~\ref{lem:efsm_reduction},
+$f$ then obeys \eqref{eq:exact_rate} with $c=\tfrac{49}{240\tilde L}$. As
+$(L,\eta,\mu,\text{variant})$ were arbitrary, no rule $\eta=\eta(L,\mu)$ can
+prevent divergence. $\blacksquare$
+
+\begin{remark}[Boundedness below]\label{rem:efsm_bdd}
+Only the linear term $-\gamma W_{22}$ makes $\tilde f$ unbounded below, and only
+as $W_{22}\to+\infty$ --- a region the iterates never enter, since
+$(\tilde{\mathbf X}_t)_{22}\le\tfrac7{10}$ throughout (it decreases after the
+transient). Replacing $-\gamma W_{22}$ by any $C^\infty$ function that agrees
+with it on $\{W_{22}\le1\}$ and is constant on $\{W_{22}\ge2\}$ therefore leaves
+the whole trajectory --- and \eqref{eq:exact_rate} --- unchanged while making
+$\tilde f$ bounded below (Assumption~\ref{as:1}); the theorem is stated with
+this modification in force.
+\end{remark}
+
+\begin{figure*}[t]
+\centering
+\includegraphics[width=\textwidth]{images/counterexamples/ef21_signmuon_momentum.pdf}
+\caption{Momentum does not rescue EF21-SignMuon. For each momentum coefficient
+$\mu$ and variant, EF21-SignMuon is run on the corresponding instance of
+Theorem~\ref{th:ef_div} and $f(\mathbf X_t)-f(\mathbf X_0)$ is plotted;
+\emph{left:} standard momentum, \emph{right:} Nesterov. Every setting diverges
+at the common rate $\tfrac{49}{480}$ (dotted). Subtracting $f(\mathbf X_0)$
+removes the only genuinely $\mu$-dependent offset (the field constant $A(\mu)$
+scales a bounded periodic term); what remains is a bounded transient, largest as
+$\mu\to1$, on top of the shared linear divergence.}
+\label{fig:ef21_momentum}
+\end{figure*}
+
+\begin{remark}[Verification]\label{rem:efsm_scope}
+The construction is checked in two independent ways: symbolically, in exact
+rational arithmetic, and numerically, by running the float64 reference
+implementation of Algorithm~\ref{ef21_signmuon} on the assembled $\tilde f$.
+Figure~\ref{fig:ef21_divergence} confirms that at $\mu=0$ EF21-SignMuon is the
+only one of the eight methods that diverges, the others
+(SignMuon, MuonUSign, MuonSign, EF21-MuonUSign, EF21-MuonSign, SignSGD, Muon)
+staying bounded; Figure~\ref{fig:ef21_momentum} confirms that EF21-SignMuon
+diverges at the exact rate $\tfrac{49}{480}$ for every
+$\mu\in\{0,\tfrac12,0.9,0.95,0.99\}$ under both standard and Nesterov momentum, as the
+reduction predicts (\texttt{code/counterexamples/\allowbreak problems.py},
+\texttt{code/counterexamples/\allowbreak plot\_ef21\_momentum.py}).
+\end{remark}

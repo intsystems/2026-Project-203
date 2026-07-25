@@ -1,0 +1,19 @@
+# Dependencies for the record-#40 NanoGPT-speedrun port of the SignMuon/EF21 optimizers.
+# Mirrors the upstream KellerJordan/modded-nanogpt requirements (latest repo), which is
+# what the 8xH100 build (train_gpt.py, Flash Attention 3 + FP8) needs.
+#
+# The single-A100 build (train_gpt_a100.py) does NOT need `kernels` (it uses torch's
+# FlexAttention instead of the Hopper-only FA3 kernel) but the extra package is harmless.
+#
+# Note: record #40 itself was validated around torch 2.9.0.dev; we pin the current
+# upstream torch==2.10. If FlexAttention / FA3 behave oddly, try the record's torch.
+
+numpy
+tqdm
+torch==2.10
+huggingface-hub          # data/cached_fineweb10B.py download
+kernels                  # Flash Attention 3 fetch (8xH100 build only)
+setuptools
+typing-extensions==4.15.0
+datasets                 # only needed to re-tokenize FineWeb from scratch (data/fineweb.py)
+tiktoken                 # only needed to re-tokenize FineWeb from scratch

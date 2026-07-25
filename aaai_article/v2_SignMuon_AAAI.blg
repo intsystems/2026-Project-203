@@ -1,0 +1,50 @@
+This is BibTeX, Version 0.99d
+Capacity: max_strings=200000, hash_size=200000, hash_prime=170003
+The top-level auxiliary file: v2_SignMuon_AAAI.aux
+Reallocating 'name_of_file' (item size: 1) to 9 items.
+The style file: aaai2027.bst
+Reallocating 'name_of_file' (item size: 1) to 11 items.
+Database file #1: references.bib
+Warning--empty journal in krizhevsky2009cifar
+You've used 24 entries,
+            2840 wiz_defined-function locations,
+            705 strings with 9414 characters,
+and the built_in function-call counts, 16517 in all, are:
+= -- 1239
+> -- 1196
+< -- 3
++ -- 441
+- -- 414
+* -- 1314
+:= -- 2866
+add.period$ -- 98
+call.type$ -- 24
+change.case$ -- 224
+chr.to.int$ -- 25
+cite$ -- 25
+duplicate$ -- 1000
+empty$ -- 860
+format.name$ -- 481
+if$ -- 3050
+int.to.chr$ -- 1
+int.to.str$ -- 1
+missing$ -- 229
+newline$ -- 123
+num.names$ -- 100
+pop$ -- 547
+preamble$ -- 1
+purify$ -- 216
+quote$ -- 0
+skip$ -- 456
+stack$ -- 0
+substring$ -- 415
+swap$ -- 540
+text.length$ -- 3
+text.prefix$ -- 0
+top$ -- 0
+type$ -- 216
+warning$ -- 1
+while$ -- 108
+width$ -- 0
+write$ -- 300
+(There was 1 warning)
