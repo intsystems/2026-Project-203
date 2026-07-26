@@ -20,8 +20,11 @@ hyperparameter tuning**. See "Why record #40" below.
 | `signmuon_optimizers.py` | The eight optimizers. **Single source of truth, shared by both training scripts**, pure-torch (Polar Express LMO, no Triton), unit-testable off-GPU. |
 | `train_gpt.py` | The **8×H100** script: record #40 verbatim (Flash Attention 3 + FP8) with a `SIGNMUON_OPT=` selector. Use for the final runs. |
 | `train_gpt_a100.py` | The **single-A100** build. Identical to `train_gpt.py` except the two Hopper-only pieces (FA3, FP8) are swapped for Ampere-safe equivalents. Every difference is a `# ===== [A100 DIFF #k] ...` banner. |
-| `test_signmuon_optimizers.py` | Portable CPU test: each optimizer's update recurrence == the numpy paper reference (`../counterexamples/optimizers.py`). |
-| `test_distributed_sharding.py` | gloo/CPU test: the sharded `step()` == a single-process centralized run. |
+| `test_signmuon_optimizers.py` | Portable CPU test: each optimizer's update recurrence == the numpy paper reference (`../counterexamples/optimizers.py`), **and** the per-layer LR multipliers (== record #40's aspect factor for the LMO family, unit gain for both families, agreement with `../common/lr_scaling.py`). |
+| `test_distributed_sharding.py` | gloo/CPU test: the sharded `step()` == a single-process centralized run, over both padding regimes. |
+| `run_all.sh` | Launches the eight hero runs, one per optimizer, at their starting learning rates. |
+| `parse_logs.py` | Raw logs -> `runs.csv` (one row per run) + `steps.csv` (tidy per-step) + `runs.json`. |
+| `plot_runs.py` | loss-vs-steps and loss-vs-time comparison figures from `steps.csv`. |
 | `data/cached_fineweb10B.py` | Downloads the pre-tokenized FineWeb-10B GPT-2 tokens (same stream for every record). |
 | `requirements.txt` | Python deps (mirrors upstream; `torch==2.10`). |
 | `train_gpt_rec40_reference.py` | The **verbatim record-#40 source** (from its run log), for provenance / diffing. Not wired to the optimizer knob. |
@@ -46,20 +49,64 @@ scalars and the LM head always use `DistAdam`, as in every Muon speedrun; the sm
 attention/smear/skip **gates** ride with the selected optimizer, exactly as in #40):
 
 ```bash
-# --- final run on 8×H100 (record #40, FA3 + FP8) ---
+# --- all eight, one run each, at their starting LRs (this is the main experiment) ---
+bash run_all.sh
+NANOGPT_ITERS=200 bash run_all.sh        # cheap smoke pass first -- do this once
+
+# --- a single method on 8×H100 (record #40, FA3 + FP8) ---
 SIGNMUON_OPT=EF21-MuonUSign torchrun --standalone --nproc_per_node=8 train_gpt.py
 
 # --- single A100 (imitates the 8×H100 run; ~8× slower wall-clock, same curves) ---
 SIGNMUON_OPT=EF21-MuonUSign python train_gpt_a100.py
-#   or:  SIGNMUON_OPT=EF21-MuonUSign torchrun --standalone --nproc_per_node=1 train_gpt_a100.py
+#   or:  NPROC=1 SCRIPT=train_gpt_a100.py bash run_all.sh
 ```
 
 Valid `SIGNMUON_OPT`: `SignMuon`, `EF21-SignMuon`, `MuonUSign`, `MuonSign`,
 `EF21-MuonUSign`, `EF21-MuonSign`, `SignSGD`, `Muon` (default `Muon`).
-Sweep overrides: `SIGNMUON_LR`, `SIGNMUON_MOMENTUM`, `SIGNMUON_WD`.
+
+| env var | meaning |
+|---|---|
+| `SIGNMUON_LR`, `SIGNMUON_MOMENTUM`, `SIGNMUON_WD` | override the method's hyperparameters |
+| `SIGNMUON_LR_SCALING` | per-layer rule: `unit-gain` (default), `semantic`, `mup`, `legacy`, `none` |
+| `SIGNMUON_RUN_ID` | override the log name (default `<Opt>_lr<lr>_<hash>`) |
+| `NANOGPT_ITERS`, `NANOGPT_VAL_EVERY` | shorten a run / change the validation cadence |
+| `LOG_DIR`, `DATA_PATH` | where logs are written / where the `.bin` shards live |
 
 Each logged run records `train_gpt*.py` **and** `signmuon_optimizers.py` verbatim, so a
-log fully reproduces the optimizer definitions even though they are imported.
+log fully reproduces the optimizer definitions even though they are imported. It also
+carries a machine-readable `RUNMETA {...}` / `RUNEND {...}` JSON header, the per-layer
+LR multiplier table, **per-step training loss**, and the usual validation points.
+A run whose loss goes non-finite logs `DIVERGED` and stops -- that is a result, not a
+crash, and the analysis tooling reports it as such.
+
+## Analysis
+
+```bash
+python parse_logs.py logs -o results          # -> results/{runs,steps}.csv, runs.json
+python plot_runs.py results/steps.csv -o figures
+python plot_runs.py results/steps.csv -o figures --both-themes --anytime --minutes
+```
+
+`parse_logs.py` prints a summary table (final/best val loss, wall-clock, ms/step,
+diverged) and writes:
+
+* `runs.csv` -- one row per run, including `steps_to_<target>` / `ms_to_<target>`
+  (linearly interpolated between validation points, so the number does not depend on
+  where the coarse validation grid happens to fall);
+* `steps.csv` -- tidy `run_id, optimizer, lr, lr_scaling, step, wallclock_ms,
+  train_loss, val_loss`, one row per logged step;
+* `runs.json` -- the same plus the raw `RUNMETA`/`RUNEND` dicts.
+
+`plot_runs.py` writes four figures (PDF + PNG): {validation, training} loss vs
+{steps, wall-clock}. **Steps** compares the methods as *optimizers* (same data, same
+number of updates); **wall-clock** compares them as *systems*, on the speedrun's own
+`train_time` clock, with validation and compilation excluded. The default is the raw
+curve, not the running-minimum "anytime best" envelope used in some published
+figures -- an envelope is monotone by construction and hides exactly the instability
+the sign methods are being tested for; `--anytime` overlays it dashed if you want the
+comparison. `--metric perplexity` relabels to `exp(loss)`; `--only Muon SignMuon`
+restricts the figure.
+
 
 ## How the single A100 imitates 8×H100
 
@@ -117,18 +164,60 @@ rule is verbatim the centralized algorithm boxes of the paper and their numpy re
 |------|--------|------------|
 | `SignMuon` | `X ← X − η·sign(PE(M))` | sign |
 | `EF21-SignMuon` | `d_est ← d_est + mean\|D−d_est\|·sign(D−d_est)`, `D=PE(M)`; `X ← X − η·d_est` | LMO |
-| `MuonUSign` (= MuonSign) | `X ← X − η·PE(sign(M))` | LMO |
+| `MuonUSign` | `X ← X − η·PE(sign(M))` | LMO |
 | `MuonSign` | `X ← X − η·sign(PE(sign(M)))` | sign |
 | `EF21-MuonUSign` | `g_est ← g_est + mean\|M−g_est\|·sign(M−g_est)`; `X ← X − η·PE(g_est)` | LMO |
 | `EF21-MuonSign` | uplink EF on `g_est` → exact `X ← X − η·PE(g_est)`; downlink EF compresses `X−W` into the broadcast model `W` | LMO |
 | `SignSGD` | `X ← X − η·sign(M)` | sign |
 | `Muon` | `X ← X − η·PE(M)` (reference, no compression; == record #40) | LMO |
 
-Sign-**terminated** steps (`SignMuon`, `MuonSign`, `SignSGD`) move every weight by `≈ η`
-each step and use **no** fan-in lr scaling, so they need a **much smaller `η`** than the
-LMO-terminated methods. The defaults in `train_gpt.py:OPTIMIZER_CONFIG` reflect this but are
-only starting points (except `Muon`, which equals record #40 exactly: `lr=0.06`,
-`momentum=0.95`, `weight_decay=0.0`). **Retune `η` per method for a real run.**
+## Per-layer learning rates, and why one `η₀` fits all eight
+
+The two families produce step matrices whose norms scale *differently* with shape, so a
+single global `η` cannot be right for both. The paper's appendix (`app:lrscale`) fixes
+this with the **unit-gain** criterion: the RMS gain of a step matrix `s ∈ R^{m×n}` on an
+isotropic input is exactly `γ(s) = ‖s‖_F / √m`, so demanding equal per-step gain on every
+layer gives one formula, `λ = √fan_out / ‖s‖_F`, and two closed forms:
+
+| family | methods | `‖s‖_F` | `λ` |
+|---|---|---|---|
+| `lmo` | `Muon`, `MuonUSign`, `EF21-MuonUSign`, `EF21-MuonSign`, `EF21-SignMuon` | `√min(m,n)` | `√max(1, m/n)` |
+| `sign` | `SignMuon`, `MuonSign`, `SignSGD` | `√(mn)` | `1/√fan_in` |
+
+Two things make this the right default here:
+
+1. **The `lmo` line *is* record #40.** `√max(1, m/n)` is character-for-character Keller
+   Jordan's shipped aspect factor, which record #40 computes as
+   `max(1, p.size(-2)/p.size(-1))**0.5`. On every shape #40 uses — gates `[1,12]` and
+   `[6,12]`, the attention blocks `[768,768]`, the MLP matrices `[768,3072]` — the two
+   agree exactly (all evaluate to `1.0`), so **`Muon` here is the record verbatim**. A test
+   pins this (`test_lmo_family_matches_record40_aspect_factor`).
+2. **`η₀` now means one thing for all eight methods:** the per-step RMS gain. At
+   `η₀ = 0.06` every method takes the same per-entry RMS step on every layer — e.g.
+   `1.08e-3` on the MLP matrices, `1.73e-2` on the gates — whether the step is
+   `PE(·)` or `± 1`. This is what makes a learning rate transferable between the
+   reference and the methods under study, and it is why the sign family's starting `η`
+   is `0.03` rather than the `3e-4` an unscaled implementation needs.
+
+**Starting learning rates** (`train_gpt.py:OPTIMIZER_CONFIG`, all "round" to one
+significant digit):
+
+| methods | `η₀` | reason |
+|---|---|---|
+| `Muon`, `MuonUSign`, `EF21-MuonUSign`, `EF21-MuonSign`, `EF21-SignMuon` | **0.06** | record #40's own value; the anchor |
+| `SignMuon`, `MuonSign`, `SignSGD` | **0.03** | same RMS gain, but a `±1` step is spectrally more aggressive: `‖λ·sign(·)‖_op / ‖λ·PE(·)‖_op ≈ 1.4` (MLP) to `1.9` (attention), so start at half |
+
+Sweep along the round ladder `0.01, 0.02, 0.03, 0.05, 0.1, 0.2` from there
+(`SIGNMUON_LR=0.1 SIGNMUON_OPT=SignMuon torchrun ...`). The multiplier table actually in
+force is printed into every log.
+
+**One inherited caveat.** The rule reads `(fan_out, fan_in)` off the *stored* tensor, and
+record #40 stores the MLP `c_fc` transposed (`[dim, hdim]`, used as `x @ c_fc`) so it can
+share a `reduce_scatter` with the attention weight. For `c_fc` the semantic fan-in/fan-out
+are therefore swapped, and both families get a 2× smaller multiplier there than a
+`[fan_out, fan_in]` reading would give. That is what record #40 itself does for Muon, so it
+is the default; `SIGNMUON_LR_SCALING=semantic` corrects it (and thereby moves the Muon
+baseline off the record), and `none`/`legacy`/`mup` are there for the ablation.
 
 **Merged attention weight.** Record #40 stores Q/K/V/O in one `[hdim, 4·dim]` parameter but
 always uses it as `.view(4, hdim, dim)`. The optimizer therefore orthogonalizes the four
@@ -155,12 +244,23 @@ expose `X` for validation (the scripts report val loss on `X`).
 Both tests run on CPU with only `torch` (+ `numpy` for the math test); no GPUs.
 
 ```bash
-# 1) update recurrence == numpy paper reference (../counterexamples/optimizers.py)
+# 1) update recurrence == numpy paper reference (../counterexamples/optimizers.py),
+#    plus the per-layer LR multipliers
 SIGNMUON_NO_COMPILE=1 python test_signmuon_optimizers.py
 
-# 2) sharded step() == single-process centralized run (gloo, 4 ranks)
-python test_distributed_sharding.py          # or: python test_distributed_sharding.py 2
+# 2) sharded step() == single-process centralized run.  Runs a PORTABLE simulation of
+#    world sizes 1/2/4/8 first (no gloo, no multiprocessing -- works on Windows), then
+#    the real-collectives gloo test if the platform supports it.
+python test_distributed_sharding.py          # SIGNMUON_SKIP_GLOO=1 for the simulation only
 ```
+
+Run **both** before renting the machine — test (2) covers the two padding regimes that
+record #40's real parameter counts hit on 8 ranks (a group shorter than `world_size`, and
+a group of 10 spanning two chunks the second of which is partial). A rank that owns a
+parameter in an early chunk but nothing in the last one needs a *fresh* scratch buffer for
+the padded `reduce_scatter`; reusing the earlier one silently zeroes an already-averaged
+gradient, which on 8 GPUs would have frozen six of the ten `attn_gate` matrices for the
+whole run without any error message.
 
 ## Why record #40 (and not the current NorMuon record)
 

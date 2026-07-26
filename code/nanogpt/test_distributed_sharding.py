@@ -88,10 +88,23 @@ def _install_gloo_shims():
 
 # --- deterministic, rank-independent parameters and gradients -----------------
 def _make_params():
-    """5 params over two shapes (3 of (5,5), 2 of (4,4)); the counts are not
-    multiples of world_size in {2,4}, so padding is exercised."""
+    """9 params over two shapes (7 of (5,5), 2 of (4,4)).
+
+    The counts are chosen so both padding regimes are exercised for
+    ``world_size`` in {2, 4}:
+
+    * 2 of (4,4): a group SHORTER than world_size (>=4), so some ranks own
+      nothing at all in the group's single chunk;
+    * 7 of (5,5): a group spanning SEVERAL chunks whose LAST one is partial
+      (ws=2 -> 2/2/2/1, ws=4 -> 4/3). This is the case that catches a rank
+      which owns something in an early chunk but nothing in the last one: if
+      the padded chunk's reduce_scatter reuses that rank's earlier output
+      buffer instead of a fresh scratch tensor, it silently zeroes an already
+      averaged gradient. Record #40's real shapes hit exactly this (10
+      attn_gate params on 8 ranks).
+    """
     g = torch.Generator().manual_seed(1234)
-    shapes = [(5, 5), (5, 5), (5, 5), (4, 4), (4, 4)]
+    shapes = [(5, 5)] * 7 + [(4, 4)] * 2
     return [torch.empty(s, dtype=torch.float64).uniform_(-0.1, 0.1, generator=g) for s in shapes]
 
 
@@ -154,9 +167,9 @@ def _worker(rank, world_size):
         max_err = max(float((a - b).abs().max()) for a, b in zip(ref, got))
         ok = max_err < ATOL
         if rank == 0:
-            print(f"  {'OK  ' if ok else 'FAIL'} {name:<16} world_size={world_size}  max|Δ|={max_err:.2e}")
+            print(f"  {'OK  ' if ok else 'FAIL'} {name:<16} world_size={world_size}  max|diff|={max_err:.2e}")
         if not ok:
-            failures.append(f"{name}: max|Δ|={max_err:.2e} >= {ATOL}")
+            failures.append(f"{name}: max|diff|={max_err:.2e} >= {ATOL}")
 
     dist.barrier()
     dist.destroy_process_group()
@@ -164,9 +177,144 @@ def _worker(rank, world_size):
         raise AssertionError(f"[rank {rank}] {len(failures)} sharding mismatch(es):\n" + "\n".join(failures))
 
 
+# =============================================================================
+# Portable single-process simulation (no gloo, no multiprocessing)
+# =============================================================================
+# gloo is not available on every platform -- notably it refuses to initialise on
+# Windows ("unsupported gloo device") -- and the sharding logic is exactly the
+# part most worth testing before renting GPUs. So simulate the world instead of
+# spawning it.
+#
+# The simulation is exact for THIS test's setup, where every rank holds the same
+# gradient for every parameter:
+#   * reduce_scatter(out, in_list, AVG) then reduces to  out <- in_list[rank],
+#   * all_gather is just "take each parameter's value from its owning rank",
+# so a world can be replayed as `world_size` independent single-process runs
+# (each on its own copy of the parameters, each doing only its own rank's work)
+# followed by a merge that picks every parameter from its owner. That is
+# precisely what the collectives would have produced.
+#
+# It reproduces the failure mode a naive implementation has: in the padded final
+# chunk of a group, a rank that owns nothing must reduce_scatter into a FRESH
+# scratch buffer. Reusing the previous chunk's buffer aliases a parameter that
+# rank *does* own and zeroes its already-averaged gradient, which shows up here
+# as that parameter not being updated.
+
+
+class _FakeDist:
+    """Stand-in for ``torch.distributed`` replaying one rank of a world."""
+
+    def __init__(self, world_size):
+        self.world_size = world_size
+        self.rank = 0
+
+    def get_rank(self):
+        return self.rank
+
+    def get_world_size(self):
+        return self.world_size
+
+    def reduce_scatter(self, output, input_list, op=None, async_op=False):
+        # identical inputs on every rank => the average is input_list[rank]
+        output.copy_(input_list[self.rank])
+        return _DoneWork()
+
+    def all_gather(self, tensor_list, tensor, async_op=False):
+        return _DoneWork()      # the merge below stands in for the broadcast
+
+    class ReduceOp:
+        AVG = "avg"
+        SUM = "sum"
+
+
+def _owner_of(opt, params, world_size):
+    """global parameter index -> the rank that owns it, from the group layout."""
+    pos = {id(p): i for i, p in enumerate(params)}
+    owner = {}
+    for group in opt.param_groups:
+        gp = group["params"]
+        for base_i in range(0, len(gp), world_size):
+            for r in range(world_size):
+                if base_i + r < len(gp):
+                    owner[pos[id(gp[base_i + r])]] = r
+    assert len(owner) == len(params), "every parameter must have exactly one owner"
+    return owner
+
+
+def _simulated_final(cls, world_size, lr, mu, wd):
+    """Replay a ``world_size``-rank run: every rank steps, then the owners'
+    parameters are broadcast to every replica (which is what all_gather does)."""
+    import signmuon_optimizers as smo
+
+    fake = _FakeDist(world_size)
+    real_dist = smo.dist
+    smo.dist = fake
+    try:
+        replicas = [_make_params() for _ in range(world_size)]
+        opts = [cls(ps, lr=lr, momentum=mu, weight_decay=wd) for ps in replicas]
+        owner = _owner_of(opts[0], replicas[0], world_size)
+        n = len(replicas[0])
+        for t in range(T_STEPS):
+            for r in range(world_size):
+                for i, p in enumerate(replicas[r]):
+                    p.grad = _grad(t, i, tuple(p.shape))
+                fake.rank = r
+                opts[r].step()
+            # all_gather: each parameter's value comes from its owning rank
+            merged = [replicas[owner[i]][i].detach().clone() for i in range(n)]
+            for r in range(world_size):
+                for i in range(n):
+                    replicas[r][i].detach().copy_(merged[i])
+        return [p.detach().clone() for p in replicas[0]]
+    finally:
+        smo.dist = real_dist
+
+
+def _run_simulated(world_sizes=(1, 2, 4, 8)):
+    import signmuon_optimizers as smo
+    smo.polar_express = _exact_polar
+
+    lr, mu, wd = 0.1, 0.9, 0.0
+    failures = []
+    for world_size in world_sizes:
+        for name, cls in smo.OPTIMIZERS.items():
+            torch.manual_seed(0)
+            ref = _reference_final(name, cls, lr, mu, wd)
+            torch.manual_seed(0)
+            got = _simulated_final(cls, world_size, lr, mu, wd)
+            max_err = max(float((a - b).abs().max()) for a, b in zip(ref, got))
+            ok = max_err < ATOL
+            print(f"  {'OK  ' if ok else 'FAIL'} {name:<16} world_size={world_size}  "
+                  f"max|diff|={max_err:.2e}")
+            if not ok:
+                failures.append(f"{name} (world_size={world_size}): max|diff|={max_err:.2e}")
+    assert not failures, (f"{len(failures)} sharding mismatch(es):\n" + "\n".join(failures))
+
+
+def test_sharding_simulated():
+    """pytest entry point for the portable simulation."""
+    _run_simulated()
+
+
 def main():
     world_size = int(sys.argv[1]) if len(sys.argv) > 1 else 4
-    print(f"Distributed sharding test (gloo, world_size={world_size}, {T_STEPS} steps)...\n")
+
+    print(f"Portable sharding simulation ({len(_make_params())} params, "
+          f"{T_STEPS} steps, world sizes 1/2/4/8)...\n")
+    _run_simulated()
+    print("\nSimulated sharded step() matches the centralized reference. PASS.\n")
+
+    if os.environ.get("SIGNMUON_SKIP_GLOO") == "1":
+        return
+    print(f"Real-collectives test (gloo, world_size={world_size})...\n")
+    try:
+        dist.init_process_group(backend="gloo", rank=0, world_size=1,
+                                init_method="tcp://127.0.0.1:29518")
+        dist.destroy_process_group()
+    except Exception as exc:                     # e.g. Windows: no gloo device
+        print(f"  SKIPPED: gloo unavailable here ({type(exc).__name__}: {exc}).")
+        print("  Run this on the Linux server before the real runs.")
+        return
     mp.spawn(_worker, args=(world_size,), nprocs=world_size, join=True)
     print("\nSharded step() matches the centralized reference for every optimizer. PASS.")
 

@@ -14,16 +14,23 @@ Strategy
   (routed through numpy) so both sides use the *identical* orthogonalization;
   any discrepancy is then a bug in the update recurrence, not the LMO
   approximation.
-* Drive both with the same fixed random gradient sequence on SQUARE matrices
-  (so the Muon fan-in lr scaling equals 1 and matches the reference's plain eta),
-  weight_decay = 0, Nesterov momentum (the optimizer's only momentum form).
+* Drive both with the same fixed random gradient sequence on SQUARE matrices and
+  ``lr_scaling="none"`` (so every per-layer multiplier is 1 and the step matches
+  the reference's plain eta), weight_decay = 0, Nesterov momentum (the
+  optimizer's only momentum form).
 * We call ``update_param`` directly (the centralized core), bypassing the
   collectives -- those are exercised by ``test_distributed_sharding.py``.
+
+A second test pins the per-layer LR scaling itself: that it reproduces record
+#40 / Keller Jordan's aspect factor for the LMO family, that it equalizes the
+per-step RMS gain across shapes and families, and that it agrees with the
+repo-level ``code/common/lr_scaling.py``.
 
 Run:  SIGNMUON_NO_COMPILE=1 python test_signmuon_optimizers.py
       (or: pytest test_signmuon_optimizers.py)
 """
 
+import math
 import os
 import sys
 from pathlib import Path
@@ -83,7 +90,10 @@ def _run_distributed_core(name, grads, eta, mu):
     parameter, starting from X_0 = W_0 = 0 to match the reference."""
     cls = smo.OPTIMIZERS[name]
     p = torch.zeros(grads[0].shape, dtype=torch.float64)
-    opt = cls([p], lr=eta, momentum=mu, weight_decay=0.0)
+    # lr_scaling="none": the numpy reference implements the bare algorithm box
+    # with a single global eta, so switch the per-layer multiplier off to compare
+    # the recurrences themselves (the multipliers are tested separately below).
+    opt = cls([p], lr=eta, momentum=mu, weight_decay=0.0, lr_scaling="none")
     group = opt.param_groups[0]
     for G in grads:
         p.grad = torch.from_numpy(G.astype(np.float64)).clone()
@@ -140,7 +150,109 @@ def test_update_math_matches_reference():
     assert not failures, f"{len(failures)} mismatch(es):\n" + "\n".join(failures)
 
 
+# --------------------------------------------------------------------------
+# Per-layer LR scaling
+# --------------------------------------------------------------------------
+
+# The parameter shapes record #40 actually hands to the hidden-matrix optimizer,
+# with model_dim=768, hdim=3072, num_heads=6 (see GPT.__init__ in train_gpt.py).
+_REC40_SHAPES = [
+    ("smear_gate.weight", (1, 12), None),
+    ("attn_gate.weight", (6, 12), None),
+    ("blocks.attn.qkvo_w", (768, 3072), "attn"),   # used as 4 x [768, 768]
+    ("blocks.mlp.c_fc", (768, 3072), "mlp"),
+    ("blocks.mlp.c_proj", (768, 3072), "mlp"),
+]
+
+
+def _tagged(shape, module):
+    p = torch.zeros(shape)
+    if module is not None:
+        p.module = module
+    return p
+
+
+def test_lmo_family_matches_record40_aspect_factor():
+    """The LMO multiplier must be Keller Jordan's / record #40's shipped factor.
+
+    Record #40's Muon computes ``max(1, p.size(-2) / p.size(-1)) ** 0.5`` on the
+    STORED parameter. Our rule computes it on the shape the LMO actually operates
+    on (the four [hdim, dim] blocks for the merged attention weight). Those must
+    coincide on every shape #40 uses, or the reference `Muon` here is not the
+    record's Muon.
+    """
+    for name, shape, module in _REC40_SHAPES:
+        p = _tagged(shape, module)
+        rec40 = max(1.0, p.size(-2) / p.size(-1)) ** 0.5
+        for rule in ("unit-gain", "legacy", "mup"):
+            got = smo.layer_multiplier(p, smo.FAMILY_LMO, rule)
+            assert abs(got - rec40) < 1e-12, (
+                f"{name} rule={rule}: lmo lambda {got} != record #40's {rec40}")
+        print(f"  OK   {name:<22} {str(shape):<14} lmo lambda = {rec40:.6g}  (== record #40)")
+
+
+def test_unit_gain_equalizes_the_per_step_gain():
+    """One eta_0 means one per-step RMS gain, for every shape and both families.
+
+    gamma(s) = ||s||_F / sqrt(fan_out) exactly, with ||polar||_F = sqrt(min(m,n))
+    and ||+-1||_F = sqrt(m n). unit-gain must drive gamma(eta_0 * lambda * s) to
+    eta_0 in both rows -- that is what makes a learning rate comparable across
+    the eight methods.
+    """
+    eta0 = 0.06
+    for name, shape, module in _REC40_SHAPES:
+        p = _tagged(shape, module)
+        m, n = smo.lmo_shape(p)
+        lam_lmo = smo.layer_multiplier(p, smo.FAMILY_LMO, "unit-gain")
+        lam_sign = smo.layer_multiplier(p, smo.FAMILY_SIGN, "unit-gain")
+        gain_lmo = eta0 * lam_lmo * math.sqrt(min(m, n)) / math.sqrt(m)
+        gain_sign = eta0 * lam_sign * math.sqrt(m * n) / math.sqrt(m)
+        assert abs(gain_lmo - eta0) < 1e-12, f"{name}: lmo gain {gain_lmo} != {eta0}"
+        assert abs(gain_sign - eta0) < 1e-12, f"{name}: sign gain {gain_sign} != {eta0}"
+        print(f"  OK   {name:<22} lambda_lmo={lam_lmo:<8.5g} lambda_sign={lam_sign:<10.5g}"
+              f" gain={gain_lmo:.4g}")
+
+
+def test_agrees_with_common_lr_scaling():
+    """This module duplicates ``code/common/lr_scaling.py`` (a log must be
+    self-contained); the two must not drift apart."""
+    from common import lr_scaling as cls_
+
+    for rule in ("unit-gain", "mup", "legacy", "none"):
+        ref_rule = cls_.resolve_rule(rule)
+        for name, shape, module in _REC40_SHAPES:
+            p = _tagged(shape, module)
+            m, n = smo.lmo_shape(p)
+            for family in (smo.FAMILY_LMO, smo.FAMILY_SIGN):
+                got = smo.layer_multiplier(p, family, rule)
+                want = ref_rule.multiplier(family, m, n)
+                assert abs(got - want) < 1e-12, (
+                    f"{rule}/{family}/{name}: nanogpt {got} != common/lr_scaling {want}")
+        print(f"  OK   rule '{rule}' agrees with common/lr_scaling.py")
+
+
+def test_semantic_rule_only_moves_the_transposed_mlp_matrix():
+    """`semantic` corrects record #40's transposed `c_fc` storage and nothing else."""
+    for name, shape, module in _REC40_SHAPES:
+        p = _tagged(shape, module)
+        m, n = smo.lmo_shape(p)
+        p.fan_out_sem, p.fan_in_sem = (n, m) if name.endswith("c_fc") else (m, n)
+        for family in (smo.FAMILY_LMO, smo.FAMILY_SIGN):
+            a = smo.layer_multiplier(p, family, "unit-gain")
+            b = smo.layer_multiplier(p, family, "semantic")
+            if name.endswith("c_fc"):
+                assert abs(b / a - 2.0) < 1e-12, f"{name}/{family}: expected 2x, got {b / a}"
+            else:
+                assert abs(a - b) < 1e-12, f"{name}/{family}: semantic moved it ({a} -> {b})"
+    print("  OK   'semantic' == 'unit-gain' except a 2x on the transposed c_fc")
+
+
 if __name__ == "__main__":
     print("Verifying distributed optimizer cores against the numpy paper reference...\n")
     test_update_math_matches_reference()
-    print("\nAll optimizer update recurrences match the reference. PASS.")
+    print("\nVerifying per-layer LR scaling...\n")
+    test_lmo_family_matches_record40_aspect_factor()
+    test_unit_gain_equalizes_the_per_step_gain()
+    test_agrees_with_common_lr_scaling()
+    test_semantic_rule_only_moves_the_transposed_mlp_matrix()
+    print("\nAll optimizer update recurrences and LR multipliers match. PASS.")

@@ -11,12 +11,17 @@ from the earlier classic-record port.
 
     SignMuon         sign AFTER the LMO          X <- X - eta * sign(PE(M))
     EF21-SignMuon    EF21 on the LMO direction   X <- X - eta * d_est,  d_est ~ PE(M)
-    MuonUSign        sign BEFORE the LMO         X <- X - eta * PE(sign(M))     (== MuonSign)
-    MuonSign       sign BEFORE and AFTER LMO   X <- X - eta * sign(PE(sign(M)))
+    MuonUSign        sign BEFORE the LMO         X <- X - eta * PE(sign(M))
+    MuonSign         sign BEFORE and AFTER LMO   X <- X - eta * sign(PE(sign(M)))
     EF21-MuonUSign   EF21 on the momentum        X <- X - eta * PE(g_est), g_est ~ M
-    EF21-MuonSign  bidirectional EF21          exact X step + sign-compressed broadcast W
+    EF21-MuonSign    bidirectional EF21          exact X step + sign-compressed broadcast W
     SignSGD          sign of the momentum        X <- X - eta * sign(M)
     Muon             reference (no compression)  X <- X - eta * PE(M)
+
+Every method's learning rate is per-layer scaled so that one ``eta_0`` means the
+same thing (the per-step RMS gain) for all eight -- see "Per-layer learning-rate
+scaling" below.  For the LMO family that scaling IS record #40's own aspect
+factor, so ``Muon`` here is the record verbatim.
 
 Here ``M`` is the (Nesterov) heavy-ball momentum of the *averaged* gradient and
 ``PE`` is the Muon Polar-Express orthogonalization (approximate polar factor).
@@ -86,6 +91,7 @@ trajectory -- see train_gpt_a100.py.
 
 from __future__ import annotations
 
+import math
 import os
 
 import torch
@@ -106,6 +112,12 @@ __all__ = [
     "EF21MuonSign",
     "OPTIMIZERS",
     "PAPER_METHODS",
+    "FAMILY_LMO",
+    "FAMILY_SIGN",
+    "LR_SCALING_RULES",
+    "lmo_shape",
+    "layer_multiplier",
+    "describe_lr_scaling",
 ]
 
 # ---------------------------------------------------------------------------
@@ -169,6 +181,153 @@ zeropower_via_newtonschulz5 = polar_express
 
 
 # ---------------------------------------------------------------------------
+# Per-layer learning-rate scaling (unit gain).
+#
+# Self-contained mirror of ``code/common/lr_scaling.py`` -- kept duplicated on
+# purpose: every logged run prints this file verbatim, so a log must define its
+# own learning rates without reference to the rest of the repo.
+# ``test_signmuon_optimizers.py`` asserts the two implementations agree.
+#
+# The criterion (paper appendix "Per-Layer Step Sizes").  The RMS gain of a step
+# matrix ``s in R^{m x n}`` acting on an isotropic input is exactly
+# ``gamma(s) = ||s||_F / sqrt(m)``.  Requiring the same per-step gain on every
+# layer gives one formula, ``lambda = sqrt(fan_out) / ||s||_F``, and the two
+# families have exact Frobenius norms:
+#
+#     lmo  step ``U V^T``:  ||s||_F = sqrt(min(m, n))  ->  lambda = sqrt(max(1, m/n))
+#     sign step ``+-1``:    ||s||_F = sqrt(m n)        ->  lambda = 1 / sqrt(n)
+#
+# The first line is *exactly* the aspect factor shipped in Keller Jordan's Muon
+# and used verbatim by record #40 (`max(1, p.size(-2)/p.size(-1))**0.5`), so the
+# reference ``Muon`` here is bit-identical to the record; the second line is the
+# counterpart the sign family never had (record #40 has no sign family).  Because
+# both lines equalize the same quantity, ONE learning rate ``eta_0`` -- the
+# per-step RMS gain -- is directly comparable across all eight methods.
+#
+# Caveat, inherited from record #40: the rule reads ``(m, n) = (fan_out, fan_in)``
+# off the stored tensor, and record #40 stores the MLP ``c_fc`` transposed
+# (``[dim, hdim]``, used as ``x @ c_fc``) so it can share a reduce_scatter with
+# the attention weight.  For ``c_fc`` the semantic fan_out/fan_in are therefore
+# swapped, and both families get a 2x smaller multiplier than a
+# ``[fan_out, fan_in]`` reading would give.  This is what record #40 itself does
+# for Muon, so it is the default here; ``lr_scaling="semantic"`` corrects it
+# (using the ``fan_out_sem`` / ``fan_in_sem`` tags the model attaches) as an
+# ablation that changes the Muon baseline away from the record.
+# ---------------------------------------------------------------------------
+
+FAMILY_LMO = "lmo"      # final step is polar(.):   ||s||_F = sqrt(min(m, n))
+FAMILY_SIGN = "sign"    # final step has +-1 entries: ||s||_F = sqrt(m n)
+
+
+def lmo_shape(p: Tensor) -> tuple[int, int]:
+    """``(m, n)`` of the matrix the LMO actually operates on.
+
+    Record #40 stores Q/K/V/O merged as ``[hdim, 4*dim]`` but the model -- and
+    therefore the LMO, see :meth:`_DistributedMatrixOptimizer._lmo` -- uses it as
+    four ``[hdim, dim]`` blocks, so the per-layer multiplier must be computed on
+    the block shape, not the merged one.
+    """
+    m, n = int(p.shape[-2]), int(p.shape[-1])
+    if getattr(p, "module", None) == "attn":
+        n //= 4
+    return m, n
+
+
+def semantic_shape(p: Tensor) -> tuple[int, int]:
+    """``(fan_out, fan_in)`` of the linear map the parameter implements.
+
+    Falls back to :func:`lmo_shape` for parameters the model did not tag.
+    """
+    m = getattr(p, "fan_out_sem", None)
+    n = getattr(p, "fan_in_sem", None)
+    if m is None or n is None:
+        return lmo_shape(p)
+    return int(m), int(n)
+
+
+def _aspect(m: int, n: int) -> float:
+    return math.sqrt(max(1.0, m / n))
+
+
+def _unit_gain(family: str, m: int, n: int) -> float:
+    return _aspect(m, n) if family == FAMILY_LMO else 1.0 / math.sqrt(n)
+
+
+def _mup(family: str, m: int, n: int) -> float:
+    return _aspect(m, n) if family == FAMILY_LMO else 1.0 / n
+
+
+def _legacy(family: str, m: int, n: int) -> float:
+    return _aspect(m, n) if family == FAMILY_LMO else 1.0
+
+
+def _no_scaling(family: str, m: int, n: int) -> float:
+    return 1.0
+
+
+#: name -> (shape accessor, multiplier(family, m, n), one-line description)
+LR_SCALING_RULES = {
+    "unit-gain": (lmo_shape, _unit_gain,
+                  "lmo: sqrt(max(1,m/n)) (== record #40 / Keller Jordan);  sign: 1/sqrt(fan_in)"),
+    "semantic": (semantic_shape, _unit_gain,
+                 "as unit-gain but on the SEMANTIC (fan_out, fan_in); changes Muon vs record #40"),
+    "mup": (lmo_shape, _mup,
+            "lmo: sqrt(max(1,m/n));  sign: 1/fan_in  (assumes accumulated sign steps align)"),
+    "legacy": (lmo_shape, _legacy,
+               "lmo: sqrt(max(1,m/n));  sign: 1  (one global rate for sign steps)"),
+    "none": (lmo_shape, _no_scaling,
+             "lambda = 1 everywhere (what Mishra et al., Algorithm 1 does)"),
+}
+
+
+def layer_multiplier(p: Tensor, family: str, rule: str = "unit-gain") -> float:
+    """Per-layer multiplier ``lambda`` for one parameter (``eta_layer = eta_0 * lambda``)."""
+    try:
+        shape_of, mult, _ = LR_SCALING_RULES[rule]
+    except KeyError:
+        raise ValueError(
+            f"unknown lr_scaling rule {rule!r}; choose from {sorted(LR_SCALING_RULES)}") from None
+    m, n = shape_of(p)
+    return mult(family, m, n)
+
+
+def describe_lr_scaling(optimizer: "_DistributedMatrixOptimizer",
+                        names: dict | None = None) -> str:
+    """Table of the per-layer multipliers in force, for the run log.
+
+    An unlogged per-layer learning rate is an unreproducible one, and the spread
+    is the number a reader will want. ``names`` optionally maps ``id(param)`` to
+    a human-readable parameter name.
+    """
+    import re
+
+    names = names or {}
+    rule = optimizer.lr_scaling
+    family = optimizer.family
+    lines = [f"per-layer LR scaling '{rule}' (family={family}): {LR_SCALING_RULES[rule][2]}",
+             f"  {'parameter':<32}{'stored':>15}{'lmo m':>8}{'lmo n':>8}{'lambda':>13}{'count':>7}"]
+    seen: dict[tuple, int] = {}
+    for group in optimizer.param_groups:
+        for p in group["params"]:
+            m, n = lmo_shape(p)
+            lam = layer_multiplier(p, family, rule)
+            # collapse the per-block index so 22 identical MLP matrices are one row
+            name = re.sub(r"\.\d+\.", ".*.", names.get(id(p), getattr(p, "module", "?")))
+            key = (name, tuple(p.shape), m, n, round(lam, 12))
+            seen[key] = seen.get(key, 0) + 1
+    mults = []
+    for (name, stored, m, n, lam), count in seen.items():
+        mults.append(lam)
+        lines.append(f"  {name:<32}{str(list(stored)):>15}{m:>8}{n:>8}{lam:>13.6g}{count:>7}")
+    if mults:
+        lo, hi = min(mults), max(mults)
+        lines.append(f"  spread {hi / lo:.2f}x   (min {lo:.6g}, max {hi:.6g})")
+        lines.append("  eta_layer = lr * lambda * p.lr_mul; for the lmo family lambda is "
+                     "record #40's own aspect factor")
+    return "\n".join(lines)
+
+
+# ---------------------------------------------------------------------------
 # Shared distributed base: reduce_scatter -> owning-rank update -> all_gather.
 # ---------------------------------------------------------------------------
 
@@ -182,13 +341,19 @@ class _DistributedMatrixOptimizer(Optimizer):
     require equal shapes) are valid.
     """
 
-    #: scale the step by ``max(1, fan_out / fan_in) ** 0.5`` (Muon/Gluon
-    #: convention). True for methods whose final step is an orthogonal (LMO)
-    #: direction; False for sign-terminated steps whose entries are already ~=1.
-    FAN_IN_LR = True
+    #: Step family (see the per-layer LR scaling section above). ``FAMILY_LMO``
+    #: for methods whose final step is an orthogonal (LMO) direction,
+    #: ``FAMILY_SIGN`` for sign-terminated steps whose entries are already ~= 1.
+    #: Together with the parameter shape this fixes the per-layer multiplier.
+    family = FAMILY_LMO
 
-    def __init__(self, params, lr, weight_decay=0.0, momentum=0.95, **extra):
+    def __init__(self, params, lr, weight_decay=0.0, momentum=0.95,
+                 lr_scaling="unit-gain", **extra):
         params = list(params)
+        if lr_scaling not in LR_SCALING_RULES:
+            raise ValueError(f"unknown lr_scaling {lr_scaling!r}; "
+                             f"choose from {sorted(LR_SCALING_RULES)}")
+        self.lr_scaling = lr_scaling
         defaults = dict(lr=lr, weight_decay=weight_decay, momentum=momentum)
         defaults.update(extra)
         # one param-group per unique shape (equal-shape lists for the collectives)
@@ -197,6 +362,10 @@ class _DistributedMatrixOptimizer(Optimizer):
         for size in sorted(sizes):  # sorted => identical group order on every rank
             param_groups.append(dict(params=[p for p in params if p.shape == size]))
         super().__init__(param_groups, defaults)
+        # lambda is a pure function of (rule, family, shape); cache it so the
+        # per-step cost is a dict lookup rather than a sqrt per parameter.
+        self._lambda = {id(p): layer_multiplier(p, self.family, lr_scaling)
+                        for g in self.param_groups for p in g["params"]}
 
     # ---- centralized math helpers (single parameter, no collectives) -------
 
@@ -220,6 +389,14 @@ class _DistributedMatrixOptimizer(Optimizer):
             return d.reshape(m.shape)
         return polar_express(m)
 
+    def lambda_of(self, p: Tensor) -> float:
+        """Per-layer multiplier for ``p`` (see the LR-scaling section above)."""
+        lam = self._lambda.get(id(p))
+        if lam is None:  # parameter added after construction (not used by the scripts)
+            lam = layer_multiplier(p, self.family, self.lr_scaling)
+            self._lambda[id(p)] = lam
+        return lam
+
     def _effective_grad(self, grad: Tensor, group: dict, state: dict) -> Tensor:
         """Nesterov heavy-ball momentum, identical to the upstream Muon:
 
@@ -237,10 +414,12 @@ class _DistributedMatrixOptimizer(Optimizer):
         return grad.lerp_(buf, momentum)
 
     def _eff_lr(self, p: Tensor, group: dict) -> float:
-        # Record #40 computes the fan-in scale on the stored parameter shape
-        # (for its 768x3072 hidden matrices this evaluates to 1.0).
-        scale = max(1.0, p.size(-2) / p.size(-1)) ** 0.5 if self.FAN_IN_LR else 1.0
-        return group["lr"] * scale * getattr(p, "lr_mul", 1.0)
+        # eta_layer = eta_0 * lambda(family, shape) * p.lr_mul.  For the LMO
+        # family lambda is Muon's shipped aspect factor, so `Muon` here steps
+        # exactly as record #40 does; the sign family gets its 1/sqrt(fan_in)
+        # counterpart, which makes eta_0 mean the same thing for all eight
+        # methods (the per-step RMS gain).
+        return group["lr"] * self.lambda_of(p) * getattr(p, "lr_mul", 1.0)
 
     def _decoupled_weight_decay(self, target: Tensor, p: Tensor, group: dict) -> None:
         """AdamW-style decoupled decay applied to ``target`` (usually ``p``, but
@@ -272,11 +451,21 @@ class _DistributedMatrixOptimizer(Optimizer):
         # Phase 1: average each parameter's gradient onto its owning rank.
         for group in self.param_groups:
             params: list[Tensor] = group["params"]
-            grad = torch.empty_like(params[-1])
+            assert all(p.grad is not None for p in params), (
+                f"{type(self).__name__}.step(): some parameters have no .grad; "
+                "every parameter in a group must take part in the collective")
             grad_pad = [p.grad for p in params] + [torch.zeros_like(params[-1])] * world_size
             for base_i in range(0, len(params), world_size):
                 if base_i + rank < len(params):
                     grad = params[base_i + rank].grad
+                else:
+                    # This rank owns nothing in the (padded) final chunk, but it
+                    # must still take part in the collective. It needs a FRESH
+                    # scratch buffer: reusing the previous chunk's `grad` would
+                    # alias a parameter this rank *does* own and overwrite that
+                    # parameter's freshly averaged gradient with padding zeros
+                    # before phase 2 ever reads it.
+                    grad = torch.empty_like(params[-1])
                 reduce_scatter_futures.append(
                     dist.reduce_scatter(
                         grad, grad_pad[base_i:base_i + world_size],
@@ -311,7 +500,7 @@ class _DistributedMatrixOptimizer(Optimizer):
 class Muon(_DistributedMatrixOptimizer):
     """Reference full-precision Muon: ``X <- X - eta * PE(M)``."""
 
-    FAN_IN_LR = True
+    family = FAMILY_LMO
 
     def update_param(self, p, group):
         state = self.state[p]
@@ -324,7 +513,7 @@ class Muon(_DistributedMatrixOptimizer):
 class SignSGD(_DistributedMatrixOptimizer):
     """SignSGD with momentum: ``X <- X - eta * sign(M)`` (no LMO)."""
 
-    FAN_IN_LR = False
+    family = FAMILY_SIGN
 
     def update_param(self, p, group):
         state = self.state[p]
@@ -345,7 +534,7 @@ class SignMuon(_DistributedMatrixOptimizer):
     direction can destroy the descent property.
     """
 
-    FAN_IN_LR = False
+    family = FAMILY_SIGN
 
     def update_param(self, p, group):
         state = self.state[p]
@@ -356,14 +545,16 @@ class SignMuon(_DistributedMatrixOptimizer):
 
 
 class MuonUSign(_DistributedMatrixOptimizer):
-    """MuonUSign (a.k.a. MuonSign) -- sign BEFORE the LMO:
-    ``s = sign(M);  X <- X - eta * PE(s)``.
+    """MuonUSign -- sign BEFORE the LMO: ``s = sign(M);  X <- X - eta * PE(s)``.
 
-    The LMO is scale-invariant, so the scaled-sign ``mean|M| * sign(M)`` gives an
-    identical direction -- MuonUSign == MuonSign.
+    The LMO is positively homogeneous of degree zero, so compressing with the
+    scaled sign ``mean|M| * sign(M)`` instead of the bare ``sign(M)`` gives the
+    identical direction: the "U" (unscaled) and scaled variants of the *uplink*
+    compressor coincide here.  This is NOT ``MuonSign``, which signs the LMO
+    output as well (see below).
     """
 
-    FAN_IN_LR = True
+    family = FAMILY_LMO
 
     def update_param(self, p, group):
         state = self.state[p]
@@ -378,7 +569,7 @@ class MuonSign(_DistributedMatrixOptimizer):
     ``s = sign(M);  D = PE(s);  X <- X - eta * sign(D)``.
     """
 
-    FAN_IN_LR = False
+    family = FAMILY_SIGN
 
     def update_param(self, p, group):
         state = self.state[p]
@@ -404,7 +595,7 @@ class EF21SignMuon(_DistributedMatrixOptimizer):
     Tracks the (discontinuous) LMO direction with a contractive 1-bit estimator.
     """
 
-    FAN_IN_LR = True
+    family = FAMILY_LMO
 
     def update_param(self, p, group):
         state = self.state[p]
@@ -432,7 +623,7 @@ class EF21MuonUSign(_DistributedMatrixOptimizer):
     to a sign is what restores convergence on the Theorem-1 counterexample.
     """
 
-    FAN_IN_LR = True
+    family = FAMILY_LMO
 
     def update_param(self, p, group):
         state = self.state[p]
@@ -468,7 +659,7 @@ class EF21MuonSign(_DistributedMatrixOptimizer):
     :meth:`swap_in_exact` for evaluation. Weight decay acts on the exact model.
     """
 
-    FAN_IN_LR = True
+    family = FAMILY_LMO
 
     def update_param(self, p, group):
         state = self.state[p]
@@ -555,9 +746,9 @@ OPTIMIZERS = {
     "SignMuon":        SignMuon,
     "EF21-SignMuon":   EF21SignMuon,
     "MuonUSign":       MuonUSign,
-    "MuonSign":      MuonSign,
+    "MuonSign":        MuonSign,
     "EF21-MuonUSign":  EF21MuonUSign,
-    "EF21-MuonSign": EF21MuonSign,
+    "EF21-MuonSign":   EF21MuonSign,
     "SignSGD":         SignSGD,
     "Muon":            Muon,
 }

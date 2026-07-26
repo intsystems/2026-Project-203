@@ -5,6 +5,7 @@ with open(__file__) as f:
     code = f.read()  # read the code of this file ASAP, for logging
 import copy
 import glob
+import json
 import math
 import threading
 import time
@@ -120,6 +121,7 @@ mm_op.register_autograd(backward, setup_context=setup_context)
 # scalars / head / gates-as-Adam) is kept verbatim from record #40 below.
 from signmuon_optimizers import (  # noqa: E402
     polar_express, OPTIMIZERS, PAPER_METHODS, EF21MuonSign,
+    LR_SCALING_RULES, describe_lr_scaling,
 )
 
 class DistAdam(torch.optim.Optimizer):
@@ -698,7 +700,7 @@ class Hyperparameters:
     cooldown_frac: int = 0.45  # fraction of training spent cooling down the learning rate
     momentum_cd_steps = 50  # number of iterations for muon momentum cooldown
     # evaluation and logging
-    run_id: str = f"new/{uuid.uuid4()}"
+    run_id: str = ""  # filled in below: "<opt>_lr<lr>_<short uuid>"
     val_loss_every: int = 250  # every how many steps to evaluate val loss? 0 for only at the end
     save_checkpoint: bool = False
     # attention masking
@@ -712,6 +714,63 @@ args = Hyperparameters()
 data_path = os.environ.get("DATA_PATH", ".")
 args.train_files = os.path.join(data_path, args.train_files)
 args.val_files = os.path.join(data_path, args.val_files)
+
+# -----------------------------------------------------------------------------
+# Which of the paper's methods drives the hidden matrices, and with what
+# hyperparameters.  Resolved BEFORE logging starts so the run id, and therefore
+# the log filename, names the experiment.
+#
+# Record #40 drives (hidden_matrix_params + gate_params) with a single Muon
+# (lr=0.06, momentum=0.95, weight_decay=0.0 -- no cautious WD yet at #40). That
+# grouping is kept exactly; only the *method* changes.
+#
+# Why these learning rates.  The per-layer multipliers in signmuon_optimizers.py
+# (rule "unit-gain") make eta_0 mean ONE thing for every method: the per-step RMS
+# gain of the update.  For the LMO family the multiplier IS record #40's aspect
+# factor, so `Muon` at 0.06 is the record verbatim; the sign family's
+# 1/sqrt(fan_in) multiplier then puts its steps at the same RMS scale, which is
+# why 0.06 -- not 3e-4 -- is the right starting anchor for them too.  The one
+# systematic difference left is spectral: a sign step is entrywise uniform, so
+# ||lambda*sign(.)||_op is ~1.4x (mlp) to ~1.9x (attn) larger than the LMO step's
+# 1.0 at equal eta_0.  Hence the sign-terminated methods start at HALF the anchor.
+#
+# All values are deliberately "round" (one significant digit) so a later sweep
+# moves along a clean ladder: 0.01, 0.02, 0.03, 0.05, 0.1, 0.2.
+_ANCHOR_LR = 0.06        # record #40's Muon learning rate
+OPTIMIZER_CONFIG = {
+    # --- LMO-terminated: step is polar(.), ||s||_op = 1 -> the anchor itself ---
+    "Muon":           dict(lr=_ANCHOR_LR, momentum=0.95, weight_decay=0.0),  # == record #40
+    "MuonUSign":      dict(lr=_ANCHOR_LR, momentum=0.95, weight_decay=0.0),
+    "EF21-MuonUSign": dict(lr=_ANCHOR_LR, momentum=0.95, weight_decay=0.0),
+    "EF21-MuonSign":  dict(lr=_ANCHOR_LR, momentum=0.95, weight_decay=0.0),
+    "EF21-SignMuon":  dict(lr=_ANCHOR_LR, momentum=0.95, weight_decay=0.0),
+    # --- sign-terminated: entrywise-uniform step, ~1.4-1.9x the spectral norm ---
+    "SignMuon":       dict(lr=0.03,       momentum=0.95, weight_decay=0.0),
+    "MuonSign":       dict(lr=0.03,       momentum=0.95, weight_decay=0.0),
+    "SignSGD":        dict(lr=0.03,       momentum=0.95, weight_decay=0.0),
+}
+opt_name = os.environ.get("SIGNMUON_OPT", "Muon")
+assert opt_name in OPTIMIZERS, f"unknown SIGNMUON_OPT={opt_name!r}; choose from {list(OPTIMIZERS)}"
+opt_cfg = dict(OPTIMIZER_CONFIG[opt_name])
+# optional env overrides for hyperparameter sweeps
+if "SIGNMUON_LR" in os.environ:        opt_cfg["lr"] = float(os.environ["SIGNMUON_LR"])
+if "SIGNMUON_MOMENTUM" in os.environ:  opt_cfg["momentum"] = float(os.environ["SIGNMUON_MOMENTUM"])
+if "SIGNMUON_WD" in os.environ:        opt_cfg["weight_decay"] = float(os.environ["SIGNMUON_WD"])
+opt_cfg["lr_scaling"] = os.environ.get("SIGNMUON_LR_SCALING", "unit-gain")
+assert opt_cfg["lr_scaling"] in LR_SCALING_RULES, (
+    f"unknown SIGNMUON_LR_SCALING={opt_cfg['lr_scaling']!r}; "
+    f"choose from {sorted(LR_SCALING_RULES)}")
+# shorten the run for smoke tests / cheap LR probes (full length by default)
+if "NANOGPT_ITERS" in os.environ:
+    args.num_iterations = int(os.environ["NANOGPT_ITERS"])
+if "NANOGPT_VAL_EVERY" in os.environ:
+    args.val_loss_every = int(os.environ["NANOGPT_VAL_EVERY"])
+muon_momentum_target = opt_cfg["momentum"]  # final value of the momentum warmup/cooldown
+
+# Self-describing run id: the log filename alone identifies the experiment.
+args.run_id = os.environ.get(
+    "SIGNMUON_RUN_ID",
+    f"{opt_name}_lr{opt_cfg['lr']:g}_{uuid.uuid4().hex[:8]}")
 
 # torchrun sets these env variables
 rank = int(os.environ["RANK"])
@@ -727,10 +786,13 @@ master_process = (rank == 0) # this process will do logging, checkpointing etc.
 
 # begin logging
 logfile = None
+run_id = args.run_id
 if master_process:
-    run_id = args.run_id
-    os.makedirs("logs", exist_ok=True)
-    logfile = f"logs/{run_id}.txt"
+    logfile = os.path.join(os.environ.get("LOG_DIR", "logs"), f"{run_id}.txt")
+    # `run_id` may contain a directory component, so create the *parent of the
+    # logfile*, not just "logs" (record #40's default id was "new/<uuid>", which
+    # crashed here on a fresh checkout because logs/new/ never got created).
+    os.makedirs(os.path.dirname(logfile) or ".", exist_ok=True)
     print(logfile)
 def print0(s, console=False):
     if master_process:
@@ -788,33 +850,36 @@ optimizer1 = DistAdam(
     weight_decay=0.0,
 )
 # --- Hidden-matrix optimizer: one of the paper's methods (see signmuon_optimizers.py) ---
-# Record #40 drives (hidden_matrix_params + gate_params) with a single Muon (lr=0.06,
-# momentum=0.95, weight_decay=0.0 -- no cautious WD yet at #40). We keep that exact grouping
-# and make the *method* selectable via SIGNMUON_OPT=<name>. Sign-TERMINATED steps (SignMuon,
-# MuonSign, SignSGD) move every weight by ~= eff_lr each step with NO fan-in lr scaling, so
-# they need a MUCH smaller lr than the LMO-terminated methods (Muon, MuonUSign, the EF21-*
-# families). The non-Muon entries are only STARTING POINTS -- retune lr per method for a real run.
-OPTIMIZER_CONFIG = {
-    "Muon":            dict(lr=0.06,   momentum=0.95, weight_decay=0.0),  # == record #40 exactly
-    "MuonUSign":       dict(lr=0.06,   momentum=0.95, weight_decay=0.0),
-    "EF21-MuonUSign":  dict(lr=0.06,   momentum=0.95, weight_decay=0.0),
-    "EF21-MuonSign": dict(lr=0.06,   momentum=0.95, weight_decay=0.0),
-    "EF21-SignMuon":   dict(lr=0.02,   momentum=0.95, weight_decay=0.0),
-    "SignMuon":        dict(lr=3e-4,   momentum=0.95, weight_decay=0.0),
-    "MuonSign":      dict(lr=3e-4,   momentum=0.95, weight_decay=0.0),
-    "SignSGD":         dict(lr=1.5e-4, momentum=0.95, weight_decay=0.0),
-}
-opt_name = os.environ.get("SIGNMUON_OPT", "Muon")
-assert opt_name in OPTIMIZERS, f"unknown SIGNMUON_OPT={opt_name!r}; choose from {list(OPTIMIZERS)}"
-opt_cfg = dict(OPTIMIZER_CONFIG[opt_name])
-# optional env overrides for hyperparameter sweeps
-if "SIGNMUON_LR" in os.environ:        opt_cfg["lr"] = float(os.environ["SIGNMUON_LR"])
-if "SIGNMUON_MOMENTUM" in os.environ:  opt_cfg["momentum"] = float(os.environ["SIGNMUON_MOMENTUM"])
-if "SIGNMUON_WD" in os.environ:        opt_cfg["weight_decay"] = float(os.environ["SIGNMUON_WD"])
-muon_momentum_target = opt_cfg["momentum"]  # final value of the momentum warmup/cooldown
+# The method and its hyperparameters were resolved above (before logging started, so the
+# run id names the experiment); OPTIMIZER_CONFIG documents why each learning rate is what
+# it is.  `Muon` here is record #40 verbatim.
 optimizer2 = OPTIMIZERS[opt_name](hidden_matrix_params + gate_params, **opt_cfg)
-print0(f"hidden-matrix optimizer: {opt_name}  config={opt_cfg}", console=True)
 optimizers = [optimizer1, optimizer2]
+
+# --- machine-readable run header (one JSON line; parse_logs.py reads this) ----
+_param_names = {id(p): n for n, p in model.named_parameters()}
+print0("RUNMETA " + json.dumps(dict(
+    run_id=run_id,
+    script=os.path.basename(__file__),
+    optimizer=opt_name,
+    family=type(optimizer2).family,
+    lr=opt_cfg["lr"],
+    momentum=opt_cfg["momentum"],
+    weight_decay=opt_cfg["weight_decay"],
+    lr_scaling=opt_cfg["lr_scaling"],
+    adam_lr=optimizer1.param_groups[0]["lr"],
+    num_iterations=args.num_iterations,
+    iteration_extension=args.iteration_extension,
+    train_steps=args.num_iterations + args.iteration_extension,
+    val_loss_every=args.val_loss_every,
+    world_size=world_size,
+    grad_accum_steps=grad_accum_steps,
+    train_batch_size=args.train_batch_size,
+    tokens_per_step=args.train_batch_size,
+    torch=torch.version.__version__,
+)), console=True)
+print0(f"hidden-matrix optimizer: {opt_name}  config={opt_cfg}", console=True)
+print0(describe_lr_scaling(optimizer2, _param_names))
 for opt in optimizers:
     for group in opt.param_groups:
         group["initial_lr"] = group["lr"]
@@ -904,6 +969,35 @@ torch.cuda.synchronize()
 t0 = time.perf_counter()
 # begin training
 train_steps = args.num_iterations + args.iteration_extension
+
+# --- per-step train loss, logged for free -------------------------------------
+# Record #40 logs only the 10 validation points, which is too coarse to compare
+# eight optimizers on. The training loss is already computed every step, so park
+# it in a GPU buffer (a device-to-device copy: NO host sync, NO collective, so the
+# hot loop and its wall-clock are unperturbed) and read the buffer out only inside
+# the validation block, where the clock is stopped anyway. One all_reduce per
+# validation turns the rank-local losses into the global mean.
+train_loss_buf = torch.zeros(train_steps, device=device)
+train_loss_flushed = 0
+
+def flush_train_losses(upto: int) -> bool:
+    """Emit the buffered per-step train losses in ``[flushed, upto)``.
+
+    Returns True if any of them is non-finite. Every rank runs the same
+    all_reduce and sees the same values, so a divergence abort stays collective.
+    """
+    global train_loss_flushed
+    if upto <= train_loss_flushed:
+        return False
+    chunk = train_loss_buf[train_loss_flushed:upto].clone()
+    dist.all_reduce(chunk, op=dist.ReduceOp.AVG)
+    values = chunk.tolist()
+    for i, v in enumerate(values):
+        print0(f"step:{train_loss_flushed + i} train_loss:{v:.6f}")
+    train_loss_flushed = upto
+    return not all(math.isfinite(v) for v in values)
+
+diverged = False
 ws_short, ws_long = get_ws(0)
 for step in range(train_steps + 1):
     last_step = (step == train_steps)
@@ -919,6 +1013,7 @@ for step in range(train_steps + 1):
         # stop the clock
         torch.cuda.synchronize()
         training_time_ms += 1000 * (time.perf_counter() - t0)
+        diverged |= flush_train_losses(step)
         model.eval()
         # EF21-MuonSign trains a sign-compressed broadcast model W but tracks an exact server
         # model X; evaluate on X (the "true" progress) and restore W afterwards. No-op otherwise.
@@ -939,6 +1034,14 @@ for step in range(train_steps + 1):
         if eval_on_exact:
             optimizer2.swap_out_exact()
         print0(f"step:{step}/{train_steps} val_loss:{val_loss:.4f} train_time:{training_time_ms:.0f}ms step_avg:{training_time_ms/max(step, 1):.2f}ms", console=True)
+        # Several of the paper's methods are proved to diverge (Thms 1-4) and this
+        # is a paid GPU: once the loss is NaN/Inf nothing more is learned, so stop.
+        # The decision is identical on every rank (both quantities are all_reduced).
+        diverged |= not math.isfinite(val_loss.item())
+        if diverged:
+            print0(f"DIVERGED step:{step}/{train_steps} -- non-finite loss, aborting run",
+                   console=True)
+            break
         model.train()
         # start the clock again
         torch.cuda.synchronize()
@@ -955,7 +1058,10 @@ for step in range(train_steps + 1):
     # --------------- TRAINING SECTION -----------------
     for _ in range(grad_accum_steps):
         inputs, targets, cum_seqlens = next(train_loader)
-        model(inputs, targets, cum_seqlens, ws_short, ws_long).backward()
+        loss = model(inputs, targets, cum_seqlens, ws_short, ws_long)
+        loss.backward()
+        # device-to-device accumulate; never read on the host until the flush
+        train_loss_buf[step] += loss.detach() / grad_accum_steps
     update_optimizer_params(step, optimizer1, optimizer2)
     # only step Adam every other step
     if step%2==0:
@@ -973,4 +1079,13 @@ for step in range(train_steps + 1):
 
 print0(f"peak memory allocated: {torch.cuda.max_memory_allocated() // 1024 // 1024} MiB "
        f"reserved: {torch.cuda.max_memory_reserved() // 1024 // 1024} MiB", console=True)
+print0("RUNEND " + json.dumps(dict(
+    run_id=run_id,
+    optimizer=opt_name,
+    lr=opt_cfg["lr"],
+    diverged=bool(diverged),
+    last_step=int(step),
+    train_time_ms=round(training_time_ms, 1),
+    peak_memory_mib=torch.cuda.max_memory_allocated() // 1024 // 1024,
+)), console=True)
 dist.destroy_process_group()
