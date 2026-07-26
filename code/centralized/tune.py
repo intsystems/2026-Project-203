@@ -76,41 +76,110 @@ SCALED_ANCHOR_BOOST: Dict[str, float] = {
     "mishra-analysis": 384.0,   # ~sqrt(m n) at the median layer
 }
 
-AUX_GRID = [1e-4, 3e-4, 1e-3, 3e-3]
+AUX_GRID = [1e-4, 2e-4, 5e-4, 1e-3, 2e-3]
 ALPHA_GRID = [0.0, 0.5, 1.0]
 
+# --------------------------------------------------------------------------
+# The round grid
+# --------------------------------------------------------------------------
+#
+# Every learning rate the driver tries is a 1-2-5 lattice point: a mantissa from
+# ``ROUND_MANTISSAS`` times a power of ten. Three reasons this is worth pinning
+# down rather than letting a log-spaced grid land wherever it lands:
+#
+# 1. A tuned value is quotable. The paper's tables carry ``0.03``, not
+#    ``0.03231652035047826``, and a reader can re-run it from the table.
+# 2. Extension stays on the same lattice, so a widened grid is still one uniform
+#    sweep -- the property the old geometric extension preserved by accident of
+#    its own spacing and lost as soon as two extensions used different strides.
+# 3. Two methods anchored at slightly different places snap to the *same* grid,
+#    so the equal-budget claim is exact rather than approximate.
+#
+# The lattice spacing is 2x-2.5x (mean 2.15x), i.e. three points per decade,
+# which is finer than the 4.64x the previous four-point/two-decade default used.
 
-def geom_grid(anchor: float, decades: float, points: int) -> List[float]:
-    """``points`` values log-spaced symmetrically around ``anchor``."""
-    if points < 2:
-        return [anchor]
-    lo = math.log10(anchor) - decades
-    step = 2 * decades / (points - 1)
-    return [10 ** (lo + i * step) for i in range(points)]
+ROUND_MANTISSAS = (1.0, 2.0, 5.0)
+
+
+def lattice_value(k: int) -> float:
+    """The ``k``-th 1-2-5 lattice point; ``k=0`` is ``1.0``, and ``k`` may be negative.
+
+    Python's floor division and modulo agree in sign, so negative ``k`` walks the
+    lattice downwards without a special case: ``k=-1`` is ``0.5``, ``k=-3`` is
+    ``0.1``. The result is re-parsed at six significant digits so the value has a
+    clean decimal repr and reaches ``centralized.main`` as ``0.02`` rather than
+    ``0.020000000000000004``.
+    """
+    return float(f"{ROUND_MANTISSAS[k % 3] * 10.0 ** (k // 3):.6g}")
+
+
+def lattice_index(x: float) -> int:
+    """Index of the lattice point closest to ``x`` in log space."""
+    if x <= 0:
+        raise ValueError(f"learning rate must be positive; got {x}")
+    approx = 3 * math.log10(x)
+    target = math.log10(x)
+    candidates = range(math.floor(approx) - 2, math.ceil(approx) + 3)
+    return min(candidates, key=lambda k: abs(math.log10(lattice_value(k)) - target))
+
+
+def round_grid(anchor: float, points: int) -> List[float]:
+    """``points`` consecutive lattice values centred on the one nearest ``anchor``.
+
+    ``points`` alone fixes the span: three lattice points per decade, so seven
+    points is a little over two decades. There is deliberately no ``decades``
+    argument -- the lattice sets the resolution, and letting a caller ask for both
+    a span and a point count would reintroduce the off-lattice strides this exists
+    to remove.
+    """
+    if points < 1:
+        return [float(f"{anchor:.6g}")]
+    k0 = lattice_index(anchor)
+    half = (points - 1) // 2
+    return [lattice_value(k0 - half + i) for i in range(points)]
 
 
 def extend_grid(grid: Sequence[float], *, low: bool, points: int = 2) -> List[float]:
-    """Continue ``grid``'s geometric spacing ``points`` further past one endpoint.
+    """Continue ``grid`` ``points`` lattice steps past one endpoint.
 
     An optimum sitting on an endpoint is not an optimum -- the grid simply ran out
-    before the objective turned over. Extending preserves the spacing, so the
-    widened grid is still one uniform log-scale sweep and every method keeps the
-    same relative resolution per decade searched.
+    before the objective turned over. Extension walks the same lattice, so however
+    many rounds it takes, the union is still one uniform sweep and every method
+    keeps the same resolution per decade searched.
     """
     g = sorted(grid)
-    if len(g) < 2:
-        return list(g)
-    ratio = g[1] / g[0]
+    if not g:
+        return []
     if low:
-        return sorted([g[0] / ratio ** (i + 1) for i in range(points)] + g)
-    return sorted(g + [g[-1] * ratio ** (i + 1) for i in range(points)])
+        k = lattice_index(g[0])
+        return sorted([lattice_value(k - i - 1) for i in range(points)] + g)
+    k = lattice_index(g[-1])
+    return sorted(g + [lattice_value(k + i + 1) for i in range(points)])
 
 
 def refine_grid(best: float, factor: float = 2.0, points: int = 4) -> List[float]:
-    """``points`` values geometrically around ``best``, spanning ``factor`` either way."""
-    half = (points - 1) / 2
-    ratio = factor ** (1.0 / max(half, 1))
-    return [best * ratio ** (i - half) for i in range(points)]
+    """The lattice neighbours of ``best``.
+
+    The 1-2-5 lattice is the finest round resolution available, so there is no
+    sub-lattice refinement to do: a "fine" stage below 2x would have to emit
+    off-lattice values. This returns the immediate neighbours instead, which fills
+    in points a strided or extended coarse grid may have skipped and is a no-op
+    otherwise -- callers dedupe against the state file. ``factor`` is accepted for
+    signature compatibility and ignored.
+    """
+    k = lattice_index(best)
+    half = max(1, (points - 1) // 2)
+    return [lattice_value(k - half + i) for i in range(2 * half + 1)]
+
+
+def geom_grid(anchor: float, decades: float, points: int) -> List[float]:
+    """Deprecated: log-spaced grid, kept so external callers do not break.
+
+    Snaps onto the lattice, so it no longer returns off-lattice values; ``decades``
+    is honoured only to the nearest lattice step.
+    """
+    steps = max(1, round(2 * decades * 3))
+    return round_grid(anchor, min(points, steps + 1))
 
 
 # --------------------------------------------------------------------------

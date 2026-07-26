@@ -23,27 +23,51 @@ Design for an unattended night
 * **Resumable and incremental.** State is written to
   ``results/overnight/state.json`` after every job, and ``--resume`` skips
   everything already done.
-* **Priority-ordered.** The phases are ordered so that stopping early still leaves
-  a usable result: the alpha decision first (cheapest, most theoretical value),
-  then eta_0 for every method, then finals **seed-major** -- every
-  parameterization at seed 0 before any of them reaches seed 1 -- so stopping early
-  yields a complete 1-seed table rather than a fragmentary 3-seed one.
+* **Priority-ordered.** The phases are ordered so that stopping early costs the
+  least: the diagnostic and eta_0 first, then the headline table, then the two
+  ablations. Finals are **seed-major** -- every parameterization at seed 0 before
+  any of them reaches seed 1 -- so an early stop yields a complete 1-seed table
+  rather than a fragmentary 3-seed one. Put another way, a night that runs short
+  loses the ablations and the error bars, never the table itself.
+
+Every learning rate tried is a **1-2-5 lattice point** (``tune.round_grid``), so a
+tuned value is quotable as ``0.02`` rather than ``0.0172354775``, grid extension
+stays on the same lattice however many rounds it takes, and two methods anchored
+at slightly different places search the *same* grid.
 
 Phases
 ------
 0. ``preflight``  CPU tests, scaling tables, 2-epoch timing.
-1. ``gain``       ``--log-gain`` runs: does the accumulated update grow like
-                  ``sqrt(t)`` (favouring ``unit-gain``) or ``t`` (favouring ``mup``)?
-2. ``alpha``      sweep ``power:ALPHA`` x eta_0 -> pick the exponent.
-3. ``lr``         eta_0 per method under the chosen rule, equal budget each.
+1. ``gain``       ``--log-gain`` runs at a CONSTANT step size: does the accumulated
+                  update grow like ``sqrt(t)`` (alpha = 1/2, ``unit-gain``) or like
+                  ``t`` (alpha = 1, ``mup``)? Annealing would let the accumulation
+                  saturate and the fit would measure the schedule, so this phase
+                  passes ``--constant-lr`` and its runs must never be compared with
+                  scheduled ones.
+2. ``lr``         eta_0 per method under the chosen rule, equal budget each.
+3. ``final``      full 50k training runs at the tuned values, seed-major.
 4. ``verify``     re-run the top rates at the FINAL horizon: is the short-horizon
                   ranking horizon-stable? (the assumption a short proxy makes)
-5. ``final``      full 50k training runs at the tuned values, seed-major.
-6. ``wd``         re-run the best few methods with weight decay switched on. The
+5. ``wd``         re-run the best few methods with weight decay switched on. The
                   primary table is unregularized -- that is the setting the theorems
                   analyse, the one the nanoGPT record #40 config uses, and the one
                   Mishra et al.'s own sweep selects -- so this phase supplies the
                   regularized number and shows whether the ordering moves.
+
+``alpha`` (sweep ``power:ALPHA`` x eta_0) is available but no longer in the default
+list. At a single width alpha is largely absorbed into eta_0, so the sweep came out
+flat to within 0.3% and cannot decide the exponent; phase 1 measures it directly.
+Pass ``--phases gain alpha lr final verify wd`` to run it anyway.
+
+One rule per results tree
+-------------------------
+``--lr-scaling`` and ``--weight-decay-mode`` are independent flags, and nothing
+stops two invocations with different settings from writing into the same
+``results/centralized``. They are recorded per run, so nothing is corrupted -- but
+a later reader comparing across invocations can easily attribute a weight-decay
+difference to the scaling rule. ``centralized.export_article`` refuses to compare
+groups that differ in more than the rule; if you deliberately want two arms, keep
+them in separate result trees.
 
 The ``lr_aux`` study is a separate tool: ``python3 -m centralized.tune --stage aux``.
 """
@@ -67,7 +91,7 @@ from common.lr_scaling import FAMILY_SIGN, describe_rule, resolve_rule
 from common.utils import results_root
 from centralized.tune import (ALL_METHODS, LEGACY_ANCHORS, ROOT, SCALED_ANCHOR_BOOST,
                               best_of, boundary_warning, canonical_tag, extend_grid,
-                              geom_grid, run_one)
+                              round_grid, run_one)
 
 OUT_DIR = results_root() / "overnight"
 STATE_PATH = OUT_DIR / "state.json"
@@ -237,7 +261,7 @@ def phase_gain(args, state, budget, sec) -> None:
     ``unit-gain``); linear ``t`` growth means they align (alpha = 1, ``mup``). This
     is the one measurement that decides the exponent without reference to accuracy.
     """
-    for method in ("signmuon", "muon"):
+    for method in args.gain_methods:
         key = canonical_tag(f"gain_{method}", epochs=args.gain_epochs)
         if key in state["jobs"]:
             continue
@@ -273,7 +297,7 @@ def phase_alpha(args, state, budget, sec) -> Optional[float]:
     for alpha in args.alpha_grid:
         rule = f"power:{alpha:g}"
         base = LEGACY_ANCHORS[method] * (1152.0 ** alpha)
-        grid = geom_grid(base, decades=args.alpha_decades, points=args.alpha_points)
+        grid = round_grid(base, points=args.alpha_points)
         for lr in grid:
             tag = f"alpha{alpha:g}_{method}_lr{lr:.4g}"
             key = canonical_tag(tag, epochs=args.tune_epochs)
@@ -338,8 +362,7 @@ def phase_lr(args, state, budget, sec, rule: str) -> Dict[str, Dict]:
         runs = entry["runs"]
         # A resumed run inherits the grid an earlier round had already widened to,
         # so the extension budget is not spent twice on the same method.
-        grid = entry.get("grid") or geom_grid(base, decades=args.lr_decades,
-                                              points=args.lr_points)
+        grid = entry.get("grid") or round_grid(base, points=args.lr_points)
         entry["grid"] = grid
         for extension in range(args.lr_extend_rounds + 1):
             for lr in grid:
@@ -824,7 +847,7 @@ def get_args():
 
     p.add_argument("--methods", nargs="*", default=ALL_METHODS)
     p.add_argument("--phases", nargs="*",
-                   default=["gain", "alpha", "lr", "verify", "final", "wd"],
+                   default=["gain", "lr", "final", "verify", "wd"],
                    choices=["gain", "alpha", "lr", "verify", "final", "wd"],
                    help="Which phases to run, in order. The lr_aux study is a "
                         "separate tool: python3 -m centralized.tune --stage aux")
@@ -834,22 +857,33 @@ def get_args():
                         "note --last-k is capped at epochs//3 so the selection "
                         "metric is a genuine tail at any horizon")
     p.add_argument("--gain-epochs", type=int, default=20)
+    p.add_argument("--gain-methods", nargs="*",
+                   default=["signmuon", "muonsign", "signsgd", "muon"],
+                   help="Methods to run the --log-gain diagnostic on. The exponent "
+                        "is only open for the SIGN family -- for the LMO family "
+                        "unit-gain and mup are the same multiplier -- so the sign "
+                        "three are the measurement and muon is the reference.")
     p.add_argument("--final-epochs", type=int, default=75,
                    help="Epoch budget for the full-50k runs; 75 matches the paper")
-    p.add_argument("--final-seeds", nargs="*", type=int, default=[0],
+    p.add_argument("--final-seeds", nargs="*", type=int, default=[0, 1, 2],
                    help="Seed-major: all methods at seed 0, then seed 1, ... "
                         "so an interrupted night still leaves a complete table")
-    p.add_argument("--lr-points", type=int, default=4)
-    p.add_argument("--lr-decades", type=float, default=1.0)
+    p.add_argument("--lr-points", type=int, default=5,
+                   help="Lattice points per method: 3 per decade, so 5 spans "
+                        "~1.3 decades and 7 spans ~2.")
+    # Retired by the 1-2-5 lattice, which fixes the resolution at three points
+    # per decade. Kept as an explicit error rather than deleted: a stale script
+    # passing it would otherwise get a silently different grid than it asked for.
+    p.add_argument("--lr-decades", type=float, default=None,
+                   help=argparse.SUPPRESS)
     p.add_argument("--alpha-grid", nargs="*", type=float, default=[0.0, 0.5, 1.0],
                    help="0 is the paper's current global LR (the control), "
                         "1/2 is unit-gain, 1 is mup")
     p.add_argument("--alpha-points", type=int, default=5)
-    p.add_argument("--alpha-decades", type=float, default=1.0,
-                   help="Each alpha needs its own eta_0 optimum found, or the "
-                        "comparison is confounded by a badly chosen rate")
+    p.add_argument("--alpha-decades", type=float, default=None,
+                   help=argparse.SUPPRESS)
     p.add_argument("--alpha-method", type=str, default="signmuon")
-    p.add_argument("--lr-extend-rounds", type=int, default=2,
+    p.add_argument("--lr-extend-rounds", type=int, default=4,
                    help="When a method's optimum lands on a grid endpoint, widen the "
                         "grid in that direction and re-tune, up to this many times. "
                         "0 restores the old behaviour of reporting the endpoint with "
@@ -875,7 +909,18 @@ def get_args():
                    help="Continue even if the CPU test suite fails")
     p.add_argument("--dry-run", action="store_true",
                    help="Print the schedule and exit without training")
-    return p.parse_args()
+    args = p.parse_args()
+    # Retired by the 1-2-5 lattice. Rejected rather than ignored: a night launched
+    # from a stale script would otherwise search a grid it did not ask for, and the
+    # only symptom would be a differently-tuned eta_0 twelve hours later.
+    for dead, replacement in (("lr_decades", "--lr-points"),
+                              ("alpha_decades", "--alpha-points")):
+        if getattr(args, dead) is not None:
+            p.error(f"--{dead.replace('_', '-')} was retired when the grid moved "
+                    f"onto the 1-2-5 lattice, which fixes the resolution at three "
+                    f"points per decade. Use {replacement} to set the span "
+                    f"(5 points ~ 1.3 decades, 7 ~ 2).")
+    return args
 
 
 def print_schedule(args, sec: float, budget: Budget) -> None:

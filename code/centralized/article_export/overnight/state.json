@@ -1,0 +1,2347 @@
+{
+  "jobs": {
+    "gain_signmuon_e20_t": {
+      "lr": 0.011333333333333334,
+      "lr_aux": 0.001,
+      "epochs": 20,
+      "split": "tune",
+      "log": "/home/legeartis/SignMuon/code/results/tuning_logs/gain_signmuon_e20_t.log",
+      "metrics": "/home/legeartis/SignMuon/code/results/centralized/tune_gain_signmuon_e20_t/seed0/metrics.json",
+      "val_acc": 91.07,
+      "test_acc": 91.41,
+      "epoch_seconds": 13.01,
+      "epochs_to_target": 8
+    },
+    "gain_muon_e20_t": {
+      "lr": 0.005,
+      "lr_aux": 0.001,
+      "epochs": 20,
+      "split": "tune",
+      "log": "/home/legeartis/SignMuon/code/results/tuning_logs/gain_muon_e20_t.log",
+      "metrics": "/home/legeartis/SignMuon/code/results/centralized/tune_gain_muon_e20_t/seed0/metrics.json",
+      "val_acc": 91.03,
+      "test_acc": 91.04,
+      "epoch_seconds": 12.97,
+      "epochs_to_target": 11
+    },
+    "alpha0_signmuon_lr0.0001_e15_t": {
+      "lr": 0.0001,
+      "lr_aux": 0.001,
+      "epochs": 15,
+      "split": "tune",
+      "log": "/home/legeartis/SignMuon/code/results/tuning_logs/alpha0_signmuon_lr0.0001_e15_t.log",
+      "metrics": "/home/legeartis/SignMuon/code/results/centralized/tune_alpha0_signmuon_lr0.0001_e15_t/seed0/metrics.json",
+      "val_acc": 91.91,
+      "test_acc": 91.59,
+      "epoch_seconds": 13.03,
+      "epochs_to_target": 8
+    },
+    "alpha0_signmuon_lr0.0003162_e15_t": {
+      "lr": 0.00031622776601683794,
+      "lr_aux": 0.001,
+      "epochs": 15,
+      "split": "tune",
+      "log": "/home/legeartis/SignMuon/code/results/tuning_logs/alpha0_signmuon_lr0.0003162_e15_t.log",
+      "metrics": "/home/legeartis/SignMuon/code/results/centralized/tune_alpha0_signmuon_lr0.0003162_e15_t/seed0/metrics.json",
+      "val_acc": 92.8,
+      "test_acc": 92.76,
+      "epoch_seconds": 13.02,
+      "epochs_to_target": 7
+    },
+    "alpha0_signmuon_lr0.001_e15_t": {
+      "lr": 0.001,
+      "lr_aux": 0.001,
+      "epochs": 15,
+      "split": "tune",
+      "log": "/home/legeartis/SignMuon/code/results/tuning_logs/alpha0_signmuon_lr0.001_e15_t.log",
+      "metrics": "/home/legeartis/SignMuon/code/results/centralized/tune_alpha0_signmuon_lr0.001_e15_t/seed0/metrics.json",
+      "val_acc": 92.88,
+      "test_acc": 93.1,
+      "epoch_seconds": 13.03,
+      "epochs_to_target": 7
+    },
+    "alpha0_signmuon_lr0.003162_e15_t": {
+      "lr": 0.0031622776601683794,
+      "lr_aux": 0.001,
+      "epochs": 15,
+      "split": "tune",
+      "log": "/home/legeartis/SignMuon/code/results/tuning_logs/alpha0_signmuon_lr0.003162_e15_t.log",
+      "metrics": "/home/legeartis/SignMuon/code/results/centralized/tune_alpha0_signmuon_lr0.003162_e15_t/seed0/metrics.json",
+      "val_acc": 93.14,
+      "test_acc": 92.99,
+      "epoch_seconds": 13.02,
+      "epochs_to_target": 7
+    },
+    "alpha0_signmuon_lr0.01_e15_t": {
+      "lr": 0.01,
+      "lr_aux": 0.001,
+      "epochs": 15,
+      "split": "tune",
+      "log": "/home/legeartis/SignMuon/code/results/tuning_logs/alpha0_signmuon_lr0.01_e15_t.log",
+      "metrics": "/home/legeartis/SignMuon/code/results/centralized/tune_alpha0_signmuon_lr0.01_e15_t/seed0/metrics.json",
+      "val_acc": 92.93,
+      "test_acc": 93.11,
+      "epoch_seconds": 13.04,
+      "epochs_to_target": 7
+    },
+    "alpha0.5_signmuon_lr0.003394_e15_t": {
+      "lr": 0.0033941125496954275,
+      "lr_aux": 0.001,
+      "epochs": 15,
+      "split": "tune",
+      "log": "/home/legeartis/SignMuon/code/results/tuning_logs/alpha0.5_signmuon_lr0.003394_e15_t.log",
+      "metrics": "/home/legeartis/SignMuon/code/results/centralized/tune_alpha0.5_signmuon_lr0.003394_e15_t/seed0/metrics.json",
+      "val_acc": 91.87,
+      "test_acc": 91.72,
+      "epoch_seconds": 13.02,
+      "epochs_to_target": 9
+    },
+    "alpha0.5_signmuon_lr0.01073_e15_t": {
+      "lr": 0.010733126291998988,
+      "lr_aux": 0.001,
+      "epochs": 15,
+      "split": "tune",
+      "log": "/home/legeartis/SignMuon/code/results/tuning_logs/alpha0.5_signmuon_lr0.01073_e15_t.log",
+      "metrics": "/home/legeartis/SignMuon/code/results/centralized/tune_alpha0.5_signmuon_lr0.01073_e15_t/seed0/metrics.json",
+      "val_acc": 93.0,
+      "test_acc": 93.2,
+      "epoch_seconds": 13.05,
+      "epochs_to_target": 7
+    },
+    "alpha0.5_signmuon_lr0.03394_e15_t": {
+      "lr": 0.03394112549695427,
+      "lr_aux": 0.001,
+      "epochs": 15,
+      "split": "tune",
+      "log": "/home/legeartis/SignMuon/code/results/tuning_logs/alpha0.5_signmuon_lr0.03394_e15_t.log",
+      "metrics": "/home/legeartis/SignMuon/code/results/centralized/tune_alpha0.5_signmuon_lr0.03394_e15_t/seed0/metrics.json",
+      "val_acc": 93.17,
+      "test_acc": 93.07,
+      "epoch_seconds": 13.04,
+      "epochs_to_target": 7
+    },
+    "alpha0.5_signmuon_lr0.1073_e15_t": {
+      "lr": 0.10733126291998989,
+      "lr_aux": 0.001,
+      "epochs": 15,
+      "split": "tune",
+      "log": "/home/legeartis/SignMuon/code/results/tuning_logs/alpha0.5_signmuon_lr0.1073_e15_t.log",
+      "metrics": "/home/legeartis/SignMuon/code/results/centralized/tune_alpha0.5_signmuon_lr0.1073_e15_t/seed0/metrics.json",
+      "val_acc": 93.09,
+      "test_acc": 92.98,
+      "epoch_seconds": 13.03,
+      "epochs_to_target": 7
+    },
+    "alpha0.5_signmuon_lr0.3394_e15_t": {
+      "lr": 0.3394112549695428,
+      "lr_aux": 0.001,
+      "epochs": 15,
+      "split": "tune",
+      "log": "/home/legeartis/SignMuon/code/results/tuning_logs/alpha0.5_signmuon_lr0.3394_e15_t.log",
+      "metrics": "/home/legeartis/SignMuon/code/results/centralized/tune_alpha0.5_signmuon_lr0.3394_e15_t/seed0/metrics.json",
+      "val_acc": 93.22,
+      "test_acc": 93.1,
+      "epoch_seconds": 13.03,
+      "epochs_to_target": 7
+    },
+    "alpha1_signmuon_lr0.1152_e15_t": {
+      "lr": 0.11520000000000002,
+      "lr_aux": 0.001,
+      "epochs": 15,
+      "split": "tune",
+      "log": "/home/legeartis/SignMuon/code/results/tuning_logs/alpha1_signmuon_lr0.1152_e15_t.log",
+      "metrics": "/home/legeartis/SignMuon/code/results/centralized/tune_alpha1_signmuon_lr0.1152_e15_t/seed0/metrics.json",
+      "val_acc": 91.84,
+      "test_acc": 92.25,
+      "epoch_seconds": 13.03,
+      "epochs_to_target": 9
+    },
+    "alpha1_signmuon_lr0.3643_e15_t": {
+      "lr": 0.36429438645139733,
+      "lr_aux": 0.001,
+      "epochs": 15,
+      "split": "tune",
+      "log": "/home/legeartis/SignMuon/code/results/tuning_logs/alpha1_signmuon_lr0.3643_e15_t.log",
+      "metrics": "/home/legeartis/SignMuon/code/results/centralized/tune_alpha1_signmuon_lr0.3643_e15_t/seed0/metrics.json",
+      "val_acc": 93.12,
+      "test_acc": 92.98,
+      "epoch_seconds": 13.03,
+      "epochs_to_target": 7
+    },
+    "alpha1_signmuon_lr1.152_e15_t": {
+      "lr": 1.1520000000000001,
+      "lr_aux": 0.001,
+      "epochs": 15,
+      "split": "tune",
+      "log": "/home/legeartis/SignMuon/code/results/tuning_logs/alpha1_signmuon_lr1.152_e15_t.log",
+      "metrics": "/home/legeartis/SignMuon/code/results/centralized/tune_alpha1_signmuon_lr1.152_e15_t/seed0/metrics.json",
+      "val_acc": 93.42,
+      "test_acc": 92.94,
+      "epoch_seconds": 13.03,
+      "epochs_to_target": 7
+    },
+    "alpha1_signmuon_lr3.643_e15_t": {
+      "lr": 3.6429438645139736,
+      "lr_aux": 0.001,
+      "epochs": 15,
+      "split": "tune",
+      "log": "/home/legeartis/SignMuon/code/results/tuning_logs/alpha1_signmuon_lr3.643_e15_t.log",
+      "metrics": "/home/legeartis/SignMuon/code/results/centralized/tune_alpha1_signmuon_lr3.643_e15_t/seed0/metrics.json",
+      "val_acc": 93.12,
+      "test_acc": 92.84,
+      "epoch_seconds": 13.05,
+      "epochs_to_target": 7
+    },
+    "alpha1_signmuon_lr11.52_e15_t": {
+      "lr": 11.520000000000001,
+      "lr_aux": 0.001,
+      "epochs": 15,
+      "split": "tune",
+      "log": "/home/legeartis/SignMuon/code/results/tuning_logs/alpha1_signmuon_lr11.52_e15_t.log",
+      "metrics": "/home/legeartis/SignMuon/code/results/centralized/tune_alpha1_signmuon_lr11.52_e15_t/seed0/metrics.json",
+      "val_acc": 92.69,
+      "test_acc": 92.97,
+      "epoch_seconds": 13.03,
+      "epochs_to_target": 6
+    },
+    "lr_signmuon_mup_0.1152_e15_t": {
+      "lr": 0.11520000000000002,
+      "lr_aux": 0.001,
+      "epochs": 15,
+      "split": "tune",
+      "log": "/home/legeartis/SignMuon/code/results/tuning_logs/lr_signmuon_mup_0.1152_e15_t.log",
+      "metrics": "/home/legeartis/SignMuon/code/results/centralized/tune_lr_signmuon_mup_0.1152_e15_t/seed0/metrics.json",
+      "val_acc": 92.2,
+      "test_acc": 92.04,
+      "epoch_seconds": 13.05,
+      "epochs_to_target": 9
+    },
+    "lr_signmuon_mup_0.5347_e15_t": {
+      "lr": 0.5347110336321922,
+      "lr_aux": 0.001,
+      "epochs": 15,
+      "split": "tune",
+      "log": "/home/legeartis/SignMuon/code/results/tuning_logs/lr_signmuon_mup_0.5347_e15_t.log",
+      "metrics": "/home/legeartis/SignMuon/code/results/centralized/tune_lr_signmuon_mup_0.5347_e15_t/seed0/metrics.json",
+      "val_acc": 93.45,
+      "test_acc": 93.11,
+      "epoch_seconds": 13.03,
+      "epochs_to_target": 7
+    },
+    "lr_signmuon_mup_2.482_e15_t": {
+      "lr": 2.48190876291673,
+      "lr_aux": 0.001,
+      "epochs": 15,
+      "split": "tune",
+      "log": "/home/legeartis/SignMuon/code/results/tuning_logs/lr_signmuon_mup_2.482_e15_t.log",
+      "metrics": "/home/legeartis/SignMuon/code/results/centralized/tune_lr_signmuon_mup_2.482_e15_t/seed0/metrics.json",
+      "val_acc": 93.04,
+      "test_acc": 93.15,
+      "epoch_seconds": 13.03,
+      "epochs_to_target": 7
+    },
+    "lr_signmuon_mup_11.52_e15_t": {
+      "lr": 11.520000000000001,
+      "lr_aux": 0.001,
+      "epochs": 15,
+      "split": "tune",
+      "log": "/home/legeartis/SignMuon/code/results/tuning_logs/lr_signmuon_mup_11.52_e15_t.log",
+      "metrics": "/home/legeartis/SignMuon/code/results/centralized/tune_lr_signmuon_mup_11.52_e15_t/seed0/metrics.json",
+      "val_acc": 93.23,
+      "test_acc": 93.19,
+      "epoch_seconds": 13.04,
+      "epochs_to_target": 7
+    },
+    "lr_muonusign_mup_0.0015_e15_t": {
+      "lr": 0.0015000000000000005,
+      "lr_aux": 0.001,
+      "epochs": 15,
+      "split": "tune",
+      "log": "/home/legeartis/SignMuon/code/results/tuning_logs/lr_muonusign_mup_0.0015_e15_t.log",
+      "metrics": "/home/legeartis/SignMuon/code/results/centralized/tune_lr_muonusign_mup_0.0015_e15_t/seed0/metrics.json",
+      "val_acc": 88.28,
+      "test_acc": 88.7,
+      "epoch_seconds": 13.01
+    },
+    "lr_muonusign_mup_0.006962_e15_t": {
+      "lr": 0.006962383250419168,
+      "lr_aux": 0.001,
+      "epochs": 15,
+      "split": "tune",
+      "log": "/home/legeartis/SignMuon/code/results/tuning_logs/lr_muonusign_mup_0.006962_e15_t.log",
+      "metrics": "/home/legeartis/SignMuon/code/results/centralized/tune_lr_muonusign_mup_0.006962_e15_t/seed0/metrics.json",
+      "val_acc": 92.36,
+      "test_acc": 92.24,
+      "epoch_seconds": 13.01,
+      "epochs_to_target": 8
+    },
+    "lr_muonusign_mup_0.03232_e15_t": {
+      "lr": 0.03231652035047826,
+      "lr_aux": 0.001,
+      "epochs": 15,
+      "split": "tune",
+      "log": "/home/legeartis/SignMuon/code/results/tuning_logs/lr_muonusign_mup_0.03232_e15_t.log",
+      "metrics": "/home/legeartis/SignMuon/code/results/centralized/tune_lr_muonusign_mup_0.03232_e15_t/seed0/metrics.json",
+      "val_acc": 92.33,
+      "test_acc": 91.84,
+      "epoch_seconds": 13.01,
+      "epochs_to_target": 8
+    },
+    "lr_muonusign_mup_0.15_e15_t": {
+      "lr": 0.15000000000000005,
+      "lr_aux": 0.001,
+      "epochs": 15,
+      "split": "tune",
+      "log": "/home/legeartis/SignMuon/code/results/tuning_logs/lr_muonusign_mup_0.15_e15_t.log",
+      "metrics": "/home/legeartis/SignMuon/code/results/centralized/tune_lr_muonusign_mup_0.15_e15_t/seed0/metrics.json",
+      "val_acc": 92.7,
+      "test_acc": 92.13,
+      "epoch_seconds": 13.05,
+      "epochs_to_target": 8
+    },
+    "lr_muonusign_mup_0.6962_e15_t": {
+      "lr": 0.6962383250419169,
+      "lr_aux": 0.001,
+      "epochs": 15,
+      "split": "tune",
+      "log": "/home/legeartis/SignMuon/code/results/tuning_logs/lr_muonusign_mup_0.6962_e15_t.log",
+      "metrics": "/home/legeartis/SignMuon/code/results/centralized/tune_lr_muonusign_mup_0.6962_e15_t/seed0/metrics.json",
+      "val_acc": 92.02,
+      "test_acc": 92.04,
+      "epoch_seconds": 13.02,
+      "epochs_to_target": 9
+    },
+    "lr_muonusign_mup_3.232_e15_t": {
+      "lr": 3.2316520350478246,
+      "lr_aux": 0.001,
+      "epochs": 15,
+      "split": "tune",
+      "log": "/home/legeartis/SignMuon/code/results/tuning_logs/lr_muonusign_mup_3.232_e15_t.log",
+      "metrics": "/home/legeartis/SignMuon/code/results/centralized/tune_lr_muonusign_mup_3.232_e15_t/seed0/metrics.json",
+      "val_acc": 92.37,
+      "test_acc": 92.04,
+      "epoch_seconds": 13.02,
+      "epochs_to_target": 9
+    },
+    "lr_muonsign_mup_0.1152_e15_t": {
+      "lr": 0.11520000000000002,
+      "lr_aux": 0.001,
+      "epochs": 15,
+      "split": "tune",
+      "log": "/home/legeartis/SignMuon/code/results/tuning_logs/lr_muonsign_mup_0.1152_e15_t.log",
+      "metrics": "/home/legeartis/SignMuon/code/results/centralized/tune_lr_muonsign_mup_0.1152_e15_t/seed0/metrics.json",
+      "val_acc": 90.95,
+      "test_acc": 90.4,
+      "epoch_seconds": 13.1,
+      "epochs_to_target": 12
+    },
+    "lr_muonsign_mup_0.5347_e15_t": {
+      "lr": 0.5347110336321922,
+      "lr_aux": 0.001,
+      "epochs": 15,
+      "split": "tune",
+      "log": "/home/legeartis/SignMuon/code/results/tuning_logs/lr_muonsign_mup_0.5347_e15_t.log",
+      "metrics": "/home/legeartis/SignMuon/code/results/centralized/tune_lr_muonsign_mup_0.5347_e15_t/seed0/metrics.json",
+      "val_acc": 90.24,
+      "test_acc": 90.33,
+      "epoch_seconds": 13.08,
+      "epochs_to_target": 12
+    },
+    "lr_muonsign_mup_2.482_e15_t": {
+      "lr": 2.48190876291673,
+      "lr_aux": 0.001,
+      "epochs": 15,
+      "split": "tune",
+      "log": "/home/legeartis/SignMuon/code/results/tuning_logs/lr_muonsign_mup_2.482_e15_t.log",
+      "metrics": "/home/legeartis/SignMuon/code/results/centralized/tune_lr_muonsign_mup_2.482_e15_t/seed0/metrics.json",
+      "val_acc": 90.22,
+      "test_acc": 90.21,
+      "epoch_seconds": 13.07,
+      "epochs_to_target": 12
+    },
+    "lr_muonsign_mup_11.52_e15_t": {
+      "lr": 11.520000000000001,
+      "lr_aux": 0.001,
+      "epochs": 15,
+      "split": "tune",
+      "log": "/home/legeartis/SignMuon/code/results/tuning_logs/lr_muonsign_mup_11.52_e15_t.log",
+      "metrics": "/home/legeartis/SignMuon/code/results/centralized/tune_lr_muonsign_mup_11.52_e15_t/seed0/metrics.json",
+      "val_acc": 89.16,
+      "test_acc": 89.39,
+      "epoch_seconds": 13.07,
+      "epochs_to_target": 15
+    },
+    "lr_muonsign_mup_0.005347_e15_t": {
+      "lr": 0.005347110336321924,
+      "lr_aux": 0.001,
+      "epochs": 15,
+      "split": "tune",
+      "log": "/home/legeartis/SignMuon/code/results/tuning_logs/lr_muonsign_mup_0.005347_e15_t.log",
+      "metrics": "/home/legeartis/SignMuon/code/results/centralized/tune_lr_muonsign_mup_0.005347_e15_t/seed0/metrics.json",
+      "val_acc": 70.5,
+      "test_acc": 70.93,
+      "epoch_seconds": 13.06
+    },
+    "lr_muonsign_mup_0.02482_e15_t": {
+      "lr": 0.02481908762916731,
+      "lr_aux": 0.001,
+      "epochs": 15,
+      "split": "tune",
+      "log": "/home/legeartis/SignMuon/code/results/tuning_logs/lr_muonsign_mup_0.02482_e15_t.log",
+      "metrics": "/home/legeartis/SignMuon/code/results/centralized/tune_lr_muonsign_mup_0.02482_e15_t/seed0/metrics.json",
+      "val_acc": 85.0,
+      "test_acc": 85.67,
+      "epoch_seconds": 13.07
+    },
+    "lr_ef21signmuon_mup_0.0008_e15_t": {
+      "lr": 0.0008000000000000004,
+      "lr_aux": 0.001,
+      "epochs": 15,
+      "split": "tune",
+      "log": "/home/legeartis/SignMuon/code/results/tuning_logs/lr_ef21signmuon_mup_0.0008_e15_t.log",
+      "metrics": "/home/legeartis/SignMuon/code/results/centralized/tune_lr_ef21signmuon_mup_0.0008_e15_t/seed0/metrics.json",
+      "val_acc": 87.46,
+      "test_acc": 87.28,
+      "epoch_seconds": 13.38
+    },
+    "lr_ef21signmuon_mup_0.003713_e15_t": {
+      "lr": 0.003713271066890223,
+      "lr_aux": 0.001,
+      "epochs": 15,
+      "split": "tune",
+      "log": "/home/legeartis/SignMuon/code/results/tuning_logs/lr_ef21signmuon_mup_0.003713_e15_t.log",
+      "metrics": "/home/legeartis/SignMuon/code/results/centralized/tune_lr_ef21signmuon_mup_0.003713_e15_t/seed0/metrics.json",
+      "val_acc": 92.44,
+      "test_acc": 92.17,
+      "epoch_seconds": 13.36,
+      "epochs_to_target": 8
+    },
+    "lr_ef21signmuon_mup_0.01724_e15_t": {
+      "lr": 0.017235477520255074,
+      "lr_aux": 0.001,
+      "epochs": 15,
+      "split": "tune",
+      "log": "/home/legeartis/SignMuon/code/results/tuning_logs/lr_ef21signmuon_mup_0.01724_e15_t.log",
+      "metrics": "/home/legeartis/SignMuon/code/results/centralized/tune_lr_ef21signmuon_mup_0.01724_e15_t/seed0/metrics.json",
+      "val_acc": 93.17,
+      "test_acc": 93.07,
+      "epoch_seconds": 13.36,
+      "epochs_to_target": 7
+    },
+    "lr_ef21signmuon_mup_0.08_e15_t": {
+      "lr": 0.08000000000000003,
+      "lr_aux": 0.001,
+      "epochs": 15,
+      "split": "tune",
+      "log": "/home/legeartis/SignMuon/code/results/tuning_logs/lr_ef21signmuon_mup_0.08_e15_t.log",
+      "metrics": "/home/legeartis/SignMuon/code/results/centralized/tune_lr_ef21signmuon_mup_0.08_e15_t/seed0/metrics.json",
+      "val_acc": 92.78,
+      "test_acc": 92.91,
+      "epoch_seconds": 13.36,
+      "epochs_to_target": 8
+    },
+    "lr_ef21muonusign_mup_0.0008_e15_t": {
+      "lr": 0.0008000000000000004,
+      "lr_aux": 0.001,
+      "epochs": 15,
+      "split": "tune",
+      "log": "/home/legeartis/SignMuon/code/results/tuning_logs/lr_ef21muonusign_mup_0.0008_e15_t.log",
+      "metrics": "/home/legeartis/SignMuon/code/results/centralized/tune_lr_ef21muonusign_mup_0.0008_e15_t/seed0/metrics.json",
+      "val_acc": 87.08,
+      "test_acc": 86.79,
+      "epoch_seconds": 13.37
+    },
+    "lr_ef21muonusign_mup_0.003713_e15_t": {
+      "lr": 0.003713271066890223,
+      "lr_aux": 0.001,
+      "epochs": 15,
+      "split": "tune",
+      "log": "/home/legeartis/SignMuon/code/results/tuning_logs/lr_ef21muonusign_mup_0.003713_e15_t.log",
+      "metrics": "/home/legeartis/SignMuon/code/results/centralized/tune_lr_ef21muonusign_mup_0.003713_e15_t/seed0/metrics.json",
+      "val_acc": 92.33,
+      "test_acc": 92.25,
+      "epoch_seconds": 13.37,
+      "epochs_to_target": 8
+    },
+    "lr_ef21muonusign_mup_0.01724_e15_t": {
+      "lr": 0.017235477520255074,
+      "lr_aux": 0.001,
+      "epochs": 15,
+      "split": "tune",
+      "log": "/home/legeartis/SignMuon/code/results/tuning_logs/lr_ef21muonusign_mup_0.01724_e15_t.log",
+      "metrics": "/home/legeartis/SignMuon/code/results/centralized/tune_lr_ef21muonusign_mup_0.01724_e15_t/seed0/metrics.json",
+      "val_acc": 92.6,
+      "test_acc": 92.63,
+      "epoch_seconds": 13.37,
+      "epochs_to_target": 8
+    },
+    "lr_ef21muonusign_mup_0.08_e15_t": {
+      "lr": 0.08000000000000003,
+      "lr_aux": 0.001,
+      "epochs": 15,
+      "split": "tune",
+      "log": "/home/legeartis/SignMuon/code/results/tuning_logs/lr_ef21muonusign_mup_0.08_e15_t.log",
+      "metrics": "/home/legeartis/SignMuon/code/results/centralized/tune_lr_ef21muonusign_mup_0.08_e15_t/seed0/metrics.json",
+      "val_acc": 92.59,
+      "test_acc": 92.42,
+      "epoch_seconds": 13.38,
+      "epochs_to_target": 8
+    },
+    "lr_ef21muonsign_mup_0.0007_e15_t": {
+      "lr": 0.0007000000000000001,
+      "lr_aux": 0.001,
+      "epochs": 15,
+      "split": "tune",
+      "log": "/home/legeartis/SignMuon/code/results/tuning_logs/lr_ef21muonsign_mup_0.0007_e15_t.log",
+      "metrics": "/home/legeartis/SignMuon/code/results/centralized/tune_lr_ef21muonsign_mup_0.0007_e15_t/seed0/metrics.json",
+      "val_acc": 85.43,
+      "test_acc": 85.96,
+      "epoch_seconds": 13.77
+    },
+    "lr_ef21muonsign_mup_0.003249_e15_t": {
+      "lr": 0.003249112183528945,
+      "lr_aux": 0.001,
+      "epochs": 15,
+      "split": "tune",
+      "log": "/home/legeartis/SignMuon/code/results/tuning_logs/lr_ef21muonsign_mup_0.003249_e15_t.log",
+      "metrics": "/home/legeartis/SignMuon/code/results/centralized/tune_lr_ef21muonsign_mup_0.003249_e15_t/seed0/metrics.json",
+      "val_acc": 91.77,
+      "test_acc": 91.98,
+      "epoch_seconds": 13.77,
+      "epochs_to_target": 9
+    },
+    "lr_ef21muonsign_mup_0.01508_e15_t": {
+      "lr": 0.015081042830223186,
+      "lr_aux": 0.001,
+      "epochs": 15,
+      "split": "tune",
+      "log": "/home/legeartis/SignMuon/code/results/tuning_logs/lr_ef21muonsign_mup_0.01508_e15_t.log",
+      "metrics": "/home/legeartis/SignMuon/code/results/centralized/tune_lr_ef21muonsign_mup_0.01508_e15_t/seed0/metrics.json",
+      "val_acc": 92.79,
+      "test_acc": 92.48,
+      "epoch_seconds": 13.76,
+      "epochs_to_target": 8
+    },
+    "lr_ef21muonsign_mup_0.07_e15_t": {
+      "lr": 0.07000000000000002,
+      "lr_aux": 0.001,
+      "epochs": 15,
+      "split": "tune",
+      "log": "/home/legeartis/SignMuon/code/results/tuning_logs/lr_ef21muonsign_mup_0.07_e15_t.log",
+      "metrics": "/home/legeartis/SignMuon/code/results/centralized/tune_lr_ef21muonsign_mup_0.07_e15_t/seed0/metrics.json",
+      "val_acc": 92.59,
+      "test_acc": 92.58,
+      "epoch_seconds": 13.76,
+      "epochs_to_target": 8
+    },
+    "lr_muon_mup_0.0015_e15_t": {
+      "lr": 0.0015000000000000005,
+      "lr_aux": 0.001,
+      "epochs": 15,
+      "split": "tune",
+      "log": "/home/legeartis/SignMuon/code/results/tuning_logs/lr_muon_mup_0.0015_e15_t.log",
+      "metrics": "/home/legeartis/SignMuon/code/results/centralized/tune_lr_muon_mup_0.0015_e15_t/seed0/metrics.json",
+      "val_acc": 90.54,
+      "test_acc": 90.31,
+      "epoch_seconds": 12.94,
+      "epochs_to_target": 12
+    },
+    "lr_muon_mup_0.006962_e15_t": {
+      "lr": 0.006962383250419168,
+      "lr_aux": 0.001,
+      "epochs": 15,
+      "split": "tune",
+      "log": "/home/legeartis/SignMuon/code/results/tuning_logs/lr_muon_mup_0.006962_e15_t.log",
+      "metrics": "/home/legeartis/SignMuon/code/results/centralized/tune_lr_muon_mup_0.006962_e15_t/seed0/metrics.json",
+      "val_acc": 93.15,
+      "test_acc": 92.95,
+      "epoch_seconds": 12.97,
+      "epochs_to_target": 7
+    },
+    "lr_muon_mup_0.03232_e15_t": {
+      "lr": 0.03231652035047826,
+      "lr_aux": 0.001,
+      "epochs": 15,
+      "split": "tune",
+      "log": "/home/legeartis/SignMuon/code/results/tuning_logs/lr_muon_mup_0.03232_e15_t.log",
+      "metrics": "/home/legeartis/SignMuon/code/results/centralized/tune_lr_muon_mup_0.03232_e15_t/seed0/metrics.json",
+      "val_acc": 93.5,
+      "test_acc": 93.11,
+      "epoch_seconds": 12.95,
+      "epochs_to_target": 7
+    },
+    "lr_muon_mup_0.15_e15_t": {
+      "lr": 0.15000000000000005,
+      "lr_aux": 0.001,
+      "epochs": 15,
+      "split": "tune",
+      "log": "/home/legeartis/SignMuon/code/results/tuning_logs/lr_muon_mup_0.15_e15_t.log",
+      "metrics": "/home/legeartis/SignMuon/code/results/centralized/tune_lr_muon_mup_0.15_e15_t/seed0/metrics.json",
+      "val_acc": 93.13,
+      "test_acc": 93.29,
+      "epoch_seconds": 12.96,
+      "epochs_to_target": 6
+    },
+    "lr_signsgd_mup_0.1152_e15_t": {
+      "lr": 0.11520000000000002,
+      "lr_aux": 0.001,
+      "epochs": 15,
+      "split": "tune",
+      "log": "/home/legeartis/SignMuon/code/results/tuning_logs/lr_signsgd_mup_0.1152_e15_t.log",
+      "metrics": "/home/legeartis/SignMuon/code/results/centralized/tune_lr_signsgd_mup_0.1152_e15_t/seed0/metrics.json",
+      "val_acc": 89.16,
+      "test_acc": 89.42,
+      "epoch_seconds": 10.89
+    },
+    "lr_signsgd_mup_0.5347_e15_t": {
+      "lr": 0.5347110336321922,
+      "lr_aux": 0.001,
+      "epochs": 15,
+      "split": "tune",
+      "log": "/home/legeartis/SignMuon/code/results/tuning_logs/lr_signsgd_mup_0.5347_e15_t.log",
+      "metrics": "/home/legeartis/SignMuon/code/results/centralized/tune_lr_signsgd_mup_0.5347_e15_t/seed0/metrics.json",
+      "val_acc": 88.06,
+      "test_acc": 88.17,
+      "epoch_seconds": 10.89
+    },
+    "lr_signsgd_mup_2.482_e15_t": {
+      "lr": 2.48190876291673,
+      "lr_aux": 0.001,
+      "epochs": 15,
+      "split": "tune",
+      "log": "/home/legeartis/SignMuon/code/results/tuning_logs/lr_signsgd_mup_2.482_e15_t.log",
+      "metrics": "/home/legeartis/SignMuon/code/results/centralized/tune_lr_signsgd_mup_2.482_e15_t/seed0/metrics.json",
+      "val_acc": 86.1,
+      "test_acc": 86.26,
+      "epoch_seconds": 10.9
+    },
+    "lr_signsgd_mup_11.52_e15_t": {
+      "lr": 11.520000000000001,
+      "lr_aux": 0.001,
+      "epochs": 15,
+      "split": "tune",
+      "log": "/home/legeartis/SignMuon/code/results/tuning_logs/lr_signsgd_mup_11.52_e15_t.log",
+      "metrics": "/home/legeartis/SignMuon/code/results/centralized/tune_lr_signsgd_mup_11.52_e15_t/seed0/metrics.json",
+      "val_acc": 84.96,
+      "test_acc": 85.39,
+      "epoch_seconds": 10.9
+    },
+    "lr_signsgd_mup_0.005347_e15_t": {
+      "lr": 0.005347110336321924,
+      "lr_aux": 0.001,
+      "epochs": 15,
+      "split": "tune",
+      "log": "/home/legeartis/SignMuon/code/results/tuning_logs/lr_signsgd_mup_0.005347_e15_t.log",
+      "metrics": "/home/legeartis/SignMuon/code/results/centralized/tune_lr_signsgd_mup_0.005347_e15_t/seed0/metrics.json",
+      "val_acc": 72.89,
+      "test_acc": 73.52,
+      "epoch_seconds": 10.92
+    },
+    "lr_signsgd_mup_0.02482_e15_t": {
+      "lr": 0.02481908762916731,
+      "lr_aux": 0.001,
+      "epochs": 15,
+      "split": "tune",
+      "log": "/home/legeartis/SignMuon/code/results/tuning_logs/lr_signsgd_mup_0.02482_e15_t.log",
+      "metrics": "/home/legeartis/SignMuon/code/results/centralized/tune_lr_signsgd_mup_0.02482_e15_t/seed0/metrics.json",
+      "val_acc": 86.57,
+      "test_acc": 86.83,
+      "epoch_seconds": 10.91
+    },
+    "lr_sgd_mup_0.0015_e15_t": {
+      "lr": 0.0015000000000000005,
+      "lr_aux": 0.001,
+      "epochs": 15,
+      "split": "tune",
+      "log": "/home/legeartis/SignMuon/code/results/tuning_logs/lr_sgd_mup_0.0015_e15_t.log",
+      "metrics": "/home/legeartis/SignMuon/code/results/centralized/tune_lr_sgd_mup_0.0015_e15_t/seed0/metrics.json",
+      "val_acc": 84.47,
+      "test_acc": 85.13,
+      "epoch_seconds": 10.98
+    },
+    "lr_sgd_mup_0.006962_e15_t": {
+      "lr": 0.006962383250419168,
+      "lr_aux": 0.001,
+      "epochs": 15,
+      "split": "tune",
+      "log": "/home/legeartis/SignMuon/code/results/tuning_logs/lr_sgd_mup_0.006962_e15_t.log",
+      "metrics": "/home/legeartis/SignMuon/code/results/centralized/tune_lr_sgd_mup_0.006962_e15_t/seed0/metrics.json",
+      "val_acc": 88.35,
+      "test_acc": 88.88,
+      "epoch_seconds": 10.99
+    },
+    "lr_sgd_mup_0.03232_e15_t": {
+      "lr": 0.03231652035047826,
+      "lr_aux": 0.001,
+      "epochs": 15,
+      "split": "tune",
+      "log": "/home/legeartis/SignMuon/code/results/tuning_logs/lr_sgd_mup_0.03232_e15_t.log",
+      "metrics": "/home/legeartis/SignMuon/code/results/centralized/tune_lr_sgd_mup_0.03232_e15_t/seed0/metrics.json",
+      "val_acc": 88.93,
+      "test_acc": 89.06,
+      "epoch_seconds": 11.0
+    },
+    "lr_sgd_mup_0.15_e15_t": {
+      "lr": 0.15000000000000005,
+      "lr_aux": 0.001,
+      "epochs": 15,
+      "split": "tune",
+      "log": "/home/legeartis/SignMuon/code/results/tuning_logs/lr_sgd_mup_0.15_e15_t.log",
+      "metrics": "/home/legeartis/SignMuon/code/results/centralized/tune_lr_sgd_mup_0.15_e15_t/seed0/metrics.json",
+      "val_acc": 87.34,
+      "test_acc": 87.43,
+      "epoch_seconds": 10.99
+    },
+    "lr_adam_mup_0.0001_e15_t": {
+      "lr": 0.0001,
+      "lr_aux": 0.001,
+      "epochs": 15,
+      "split": "tune",
+      "log": "/home/legeartis/SignMuon/code/results/tuning_logs/lr_adam_mup_0.0001_e15_t.log",
+      "metrics": "/home/legeartis/SignMuon/code/results/centralized/tune_lr_adam_mup_0.0001_e15_t/seed0/metrics.json",
+      "val_acc": 86.9,
+      "test_acc": 86.76,
+      "epoch_seconds": 11.44
+    },
+    "lr_adam_mup_0.0004642_e15_t": {
+      "lr": 0.00046415888336127773,
+      "lr_aux": 0.001,
+      "epochs": 15,
+      "split": "tune",
+      "log": "/home/legeartis/SignMuon/code/results/tuning_logs/lr_adam_mup_0.0004642_e15_t.log",
+      "metrics": "/home/legeartis/SignMuon/code/results/centralized/tune_lr_adam_mup_0.0004642_e15_t/seed0/metrics.json",
+      "val_acc": 89.9,
+      "test_acc": 89.99,
+      "epoch_seconds": 11.43,
+      "epochs_to_target": 13
+    },
+    "lr_adam_mup_0.002154_e15_t": {
+      "lr": 0.002154434690031882,
+      "lr_aux": 0.001,
+      "epochs": 15,
+      "split": "tune",
+      "log": "/home/legeartis/SignMuon/code/results/tuning_logs/lr_adam_mup_0.002154_e15_t.log",
+      "metrics": "/home/legeartis/SignMuon/code/results/centralized/tune_lr_adam_mup_0.002154_e15_t/seed0/metrics.json",
+      "val_acc": 88.25,
+      "test_acc": 88.7,
+      "epoch_seconds": 11.42
+    },
+    "lr_adam_mup_0.01_e15_t": {
+      "lr": 0.01,
+      "lr_aux": 0.001,
+      "epochs": 15,
+      "split": "tune",
+      "log": "/home/legeartis/SignMuon/code/results/tuning_logs/lr_adam_mup_0.01_e15_t.log",
+      "metrics": "/home/legeartis/SignMuon/code/results/centralized/tune_lr_adam_mup_0.01_e15_t/seed0/metrics.json",
+      "val_acc": 88.17,
+      "test_acc": 88.06,
+      "epoch_seconds": 11.42
+    },
+    "lr_adam_scaled_mup_0.1152_e15_t": {
+      "lr": 0.11520000000000002,
+      "lr_aux": 0.001,
+      "epochs": 15,
+      "split": "tune",
+      "log": "/home/legeartis/SignMuon/code/results/tuning_logs/lr_adam_scaled_mup_0.1152_e15_t.log",
+      "metrics": "/home/legeartis/SignMuon/code/results/centralized/tune_lr_adam_scaled_mup_0.1152_e15_t/seed0/metrics.json",
+      "val_acc": 87.38,
+      "test_acc": 87.74,
+      "epoch_seconds": 11.43
+    },
+    "lr_adam_scaled_mup_0.5347_e15_t": {
+      "lr": 0.5347110336321922,
+      "lr_aux": 0.001,
+      "epochs": 15,
+      "split": "tune",
+      "log": "/home/legeartis/SignMuon/code/results/tuning_logs/lr_adam_scaled_mup_0.5347_e15_t.log",
+      "metrics": "/home/legeartis/SignMuon/code/results/centralized/tune_lr_adam_scaled_mup_0.5347_e15_t/seed0/metrics.json",
+      "val_acc": 89.4,
+      "test_acc": 89.22,
+      "epoch_seconds": 11.42
+    },
+    "lr_adam_scaled_mup_2.482_e15_t": {
+      "lr": 2.48190876291673,
+      "lr_aux": 0.001,
+      "epochs": 15,
+      "split": "tune",
+      "log": "/home/legeartis/SignMuon/code/results/tuning_logs/lr_adam_scaled_mup_2.482_e15_t.log",
+      "metrics": "/home/legeartis/SignMuon/code/results/centralized/tune_lr_adam_scaled_mup_2.482_e15_t/seed0/metrics.json",
+      "val_acc": 87.7,
+      "test_acc": 87.77,
+      "epoch_seconds": 11.44
+    },
+    "lr_adam_scaled_mup_11.52_e15_t": {
+      "lr": 11.520000000000001,
+      "lr_aux": 0.001,
+      "epochs": 15,
+      "split": "tune",
+      "log": "/home/legeartis/SignMuon/code/results/tuning_logs/lr_adam_scaled_mup_11.52_e15_t.log",
+      "metrics": "/home/legeartis/SignMuon/code/results/centralized/tune_lr_adam_scaled_mup_11.52_e15_t/seed0/metrics.json",
+      "val_acc": 86.7,
+      "test_acc": 86.9,
+      "epoch_seconds": 11.43
+    },
+    "verify_signmuon_mup_0.5347_e75_t": {
+      "lr": 0.5347110336321922,
+      "lr_aux": 0.001,
+      "epochs": 75,
+      "split": "tune",
+      "log": "/home/legeartis/SignMuon/code/results/tuning_logs/verify_signmuon_mup_0.5347_e75_t.log",
+      "metrics": "/home/legeartis/SignMuon/code/results/centralized/tune_verify_signmuon_mup_0.5347_e75_t/seed0/metrics.json",
+      "val_acc": 94.35,
+      "test_acc": 94.11,
+      "epoch_seconds": 13.0,
+      "epochs_to_target": 10
+    },
+    "verify_signmuon_mup_11.52_e75_t": {
+      "lr": 11.520000000000001,
+      "lr_aux": 0.001,
+      "epochs": 75,
+      "split": "tune",
+      "log": "/home/legeartis/SignMuon/code/results/tuning_logs/verify_signmuon_mup_11.52_e75_t.log",
+      "metrics": "/home/legeartis/SignMuon/code/results/centralized/tune_verify_signmuon_mup_11.52_e75_t/seed0/metrics.json",
+      "val_acc": 94.04,
+      "test_acc": 94.27,
+      "epoch_seconds": 13.0,
+      "epochs_to_target": 9
+    },
+    "verify_signmuon_mup_2.482_e75_t": {
+      "lr": 2.48190876291673,
+      "lr_aux": 0.001,
+      "epochs": 75,
+      "split": "tune",
+      "log": "/home/legeartis/SignMuon/code/results/tuning_logs/verify_signmuon_mup_2.482_e75_t.log",
+      "metrics": "/home/legeartis/SignMuon/code/results/centralized/tune_verify_signmuon_mup_2.482_e75_t/seed0/metrics.json",
+      "val_acc": 94.37,
+      "test_acc": 94.27,
+      "epoch_seconds": 13.01,
+      "epochs_to_target": 8
+    },
+    "verify_muon_mup_0.03232_e75_t": {
+      "lr": 0.03231652035047826,
+      "lr_aux": 0.001,
+      "epochs": 75,
+      "split": "tune",
+      "log": "/home/legeartis/SignMuon/code/results/tuning_logs/verify_muon_mup_0.03232_e75_t.log",
+      "metrics": "/home/legeartis/SignMuon/code/results/centralized/tune_verify_muon_mup_0.03232_e75_t/seed0/metrics.json",
+      "val_acc": 94.78,
+      "test_acc": 94.08,
+      "epoch_seconds": 12.95,
+      "epochs_to_target": 8
+    },
+    "verify_muon_mup_0.006962_e75_t": {
+      "lr": 0.006962383250419168,
+      "lr_aux": 0.001,
+      "epochs": 75,
+      "split": "tune",
+      "log": "/home/legeartis/SignMuon/code/results/tuning_logs/verify_muon_mup_0.006962_e75_t.log",
+      "metrics": "/home/legeartis/SignMuon/code/results/centralized/tune_verify_muon_mup_0.006962_e75_t/seed0/metrics.json",
+      "val_acc": 94.18,
+      "test_acc": 94.08,
+      "epoch_seconds": 12.97,
+      "epochs_to_target": 7
+    },
+    "verify_muon_mup_0.15_e75_t": {
+      "lr": 0.15000000000000005,
+      "lr_aux": 0.001,
+      "epochs": 75,
+      "split": "tune",
+      "log": "/home/legeartis/SignMuon/code/results/tuning_logs/verify_muon_mup_0.15_e75_t.log",
+      "metrics": "/home/legeartis/SignMuon/code/results/centralized/tune_verify_muon_mup_0.15_e75_t/seed0/metrics.json",
+      "val_acc": 94.19,
+      "test_acc": 94.1,
+      "epoch_seconds": 12.96,
+      "epochs_to_target": 9
+    },
+    "signmuon_mup_e75_fs0": {
+      "lr": 0.5347110336321922,
+      "lr_aux": 0.001,
+      "epochs": 75,
+      "split": "full",
+      "log": "/home/legeartis/SignMuon/code/results/tuning_logs/signmuon_mup_e75_fs0.log",
+      "metrics": "/home/legeartis/SignMuon/code/results/centralized/final_signmuon_mup_e75_fs0/seed0/metrics.json",
+      "test_acc": 94.27,
+      "epoch_seconds": 14.45,
+      "epochs_to_target": 7
+    },
+    "muonusign_mup_e75_fs0": {
+      "lr": 0.15000000000000005,
+      "lr_aux": 0.001,
+      "epochs": 75,
+      "split": "full",
+      "log": "/home/legeartis/SignMuon/code/results/tuning_logs/muonusign_mup_e75_fs0.log",
+      "metrics": "/home/legeartis/SignMuon/code/results/centralized/final_muonusign_mup_e75_fs0/seed0/metrics.json",
+      "test_acc": 93.94,
+      "epoch_seconds": 14.44,
+      "epochs_to_target": 10
+    },
+    "muonsign_mup_e75_fs0": {
+      "lr": 0.11520000000000002,
+      "lr_aux": 0.001,
+      "epochs": 75,
+      "split": "full",
+      "log": "/home/legeartis/SignMuon/code/results/tuning_logs/muonsign_mup_e75_fs0.log",
+      "metrics": "/home/legeartis/SignMuon/code/results/centralized/final_muonsign_mup_e75_fs0/seed0/metrics.json",
+      "test_acc": 93.34,
+      "epoch_seconds": 14.5,
+      "epochs_to_target": 16
+    },
+    "ef21signmuon_mup_e75_fs0": {
+      "lr": 0.017235477520255074,
+      "lr_aux": 0.001,
+      "epochs": 75,
+      "split": "full",
+      "log": "/home/legeartis/SignMuon/code/results/tuning_logs/ef21signmuon_mup_e75_fs0.log",
+      "metrics": "/home/legeartis/SignMuon/code/results/centralized/final_ef21signmuon_mup_e75_fs0/seed0/metrics.json",
+      "test_acc": 94.54,
+      "epoch_seconds": 14.82,
+      "epochs_to_target": 10
+    },
+    "ef21muonusign_mup_e75_fs0": {
+      "lr": 0.017235477520255074,
+      "lr_aux": 0.001,
+      "epochs": 75,
+      "split": "full",
+      "log": "/home/legeartis/SignMuon/code/results/tuning_logs/ef21muonusign_mup_e75_fs0.log",
+      "metrics": "/home/legeartis/SignMuon/code/results/centralized/final_ef21muonusign_mup_e75_fs0/seed0/metrics.json",
+      "test_acc": 94.05,
+      "epoch_seconds": 14.83,
+      "epochs_to_target": 10
+    },
+    "ef21muonsign_mup_e75_fs0": {
+      "lr": 0.015081042830223186,
+      "lr_aux": 0.001,
+      "epochs": 75,
+      "split": "full",
+      "log": "/home/legeartis/SignMuon/code/results/tuning_logs/ef21muonsign_mup_e75_fs0.log",
+      "metrics": "/home/legeartis/SignMuon/code/results/centralized/final_ef21muonsign_mup_e75_fs0/seed0/metrics.json",
+      "test_acc": 94.26,
+      "epoch_seconds": 15.26,
+      "epochs_to_target": 10
+    },
+    "muon_mup_e75_fs0": {
+      "lr": 0.03231652035047826,
+      "lr_aux": 0.001,
+      "epochs": 75,
+      "split": "full",
+      "log": "/home/legeartis/SignMuon/code/results/tuning_logs/muon_mup_e75_fs0.log",
+      "metrics": "/home/legeartis/SignMuon/code/results/centralized/final_muon_mup_e75_fs0/seed0/metrics.json",
+      "test_acc": 94.46,
+      "epoch_seconds": 14.38,
+      "epochs_to_target": 10
+    },
+    "signsgd_mup_e75_fs0": {
+      "lr": 0.11520000000000002,
+      "lr_aux": 0.001,
+      "epochs": 75,
+      "split": "full",
+      "log": "/home/legeartis/SignMuon/code/results/tuning_logs/signsgd_mup_e75_fs0.log",
+      "metrics": "/home/legeartis/SignMuon/code/results/centralized/final_signsgd_mup_e75_fs0/seed0/metrics.json",
+      "test_acc": 92.93,
+      "epoch_seconds": 12.08,
+      "epochs_to_target": 23
+    },
+    "sgd_mup_e75_fs0": {
+      "lr": 0.03231652035047826,
+      "lr_aux": 0.001,
+      "epochs": 75,
+      "split": "full",
+      "log": "/home/legeartis/SignMuon/code/results/tuning_logs/sgd_mup_e75_fs0.log",
+      "metrics": "/home/legeartis/SignMuon/code/results/centralized/final_sgd_mup_e75_fs0/seed0/metrics.json",
+      "test_acc": 93.11,
+      "epoch_seconds": 12.18,
+      "epochs_to_target": 22
+    },
+    "adam_mup_e75_fs0": {
+      "lr": 0.00046415888336127773,
+      "lr_aux": 0.001,
+      "epochs": 75,
+      "split": "full",
+      "log": "/home/legeartis/SignMuon/code/results/tuning_logs/adam_mup_e75_fs0.log",
+      "metrics": "/home/legeartis/SignMuon/code/results/centralized/final_adam_mup_e75_fs0/seed0/metrics.json",
+      "test_acc": 93.38,
+      "epoch_seconds": 12.67,
+      "epochs_to_target": 20
+    },
+    "adam_scaled_mup_e75_fs0": {
+      "lr": 0.5347110336321922,
+      "lr_aux": 0.001,
+      "epochs": 75,
+      "split": "full",
+      "log": "/home/legeartis/SignMuon/code/results/tuning_logs/adam_scaled_mup_e75_fs0.log",
+      "metrics": "/home/legeartis/SignMuon/code/results/centralized/final_adam_scaled_mup_e75_fs0/seed0/metrics.json",
+      "test_acc": 93.11,
+      "epoch_seconds": 12.68,
+      "epochs_to_target": 23
+    },
+    "wd_muon_mup_e75_fs0": {
+      "lr": 0.03231652035047826,
+      "lr_aux": 0.001,
+      "epochs": 75,
+      "split": "full",
+      "log": "/home/legeartis/SignMuon/code/results/tuning_logs/wd_muon_mup_e75_fs0.log",
+      "metrics": "/home/legeartis/SignMuon/code/results/centralized/final_wd_muon_mup_e75_fs0/seed0/metrics.json",
+      "test_acc": 94.4,
+      "epoch_seconds": 14.44,
+      "epochs_to_target": 10
+    },
+    "wd_signmuon_mup_e75_fs0": {
+      "lr": 0.5347110336321922,
+      "lr_aux": 0.001,
+      "epochs": 75,
+      "split": "full",
+      "log": "/home/legeartis/SignMuon/code/results/tuning_logs/wd_signmuon_mup_e75_fs0.log",
+      "metrics": "/home/legeartis/SignMuon/code/results/centralized/final_wd_signmuon_mup_e75_fs0/seed0/metrics.json",
+      "test_acc": 94.86,
+      "epoch_seconds": 14.49,
+      "epochs_to_target": 10
+    },
+    "wd_ef21signmuon_mup_e75_fs0": {
+      "lr": 0.017235477520255074,
+      "lr_aux": 0.001,
+      "epochs": 75,
+      "split": "full",
+      "log": "/home/legeartis/SignMuon/code/results/tuning_logs/wd_ef21signmuon_mup_e75_fs0.log",
+      "metrics": "/home/legeartis/SignMuon/code/results/centralized/final_wd_ef21signmuon_mup_e75_fs0/seed0/metrics.json",
+      "test_acc": 94.62,
+      "epoch_seconds": 14.87,
+      "epochs_to_target": 10
+    }
+  },
+  "phases": {
+    "alpha": {
+      "0": [
+        {
+          "lr": 0.0001,
+          "lr_aux": 0.001,
+          "epochs": 15,
+          "split": "tune",
+          "log": "/home/legeartis/SignMuon/code/results/tuning_logs/alpha0_signmuon_lr0.0001_e15_t.log",
+          "metrics": "/home/legeartis/SignMuon/code/results/centralized/tune_alpha0_signmuon_lr0.0001_e15_t/seed0/metrics.json",
+          "val_acc": 91.91,
+          "test_acc": 91.59,
+          "epoch_seconds": 13.03,
+          "epochs_to_target": 8
+        },
+        {
+          "lr": 0.00031622776601683794,
+          "lr_aux": 0.001,
+          "epochs": 15,
+          "split": "tune",
+          "log": "/home/legeartis/SignMuon/code/results/tuning_logs/alpha0_signmuon_lr0.0003162_e15_t.log",
+          "metrics": "/home/legeartis/SignMuon/code/results/centralized/tune_alpha0_signmuon_lr0.0003162_e15_t/seed0/metrics.json",
+          "val_acc": 92.8,
+          "test_acc": 92.76,
+          "epoch_seconds": 13.02,
+          "epochs_to_target": 7
+        },
+        {
+          "lr": 0.001,
+          "lr_aux": 0.001,
+          "epochs": 15,
+          "split": "tune",
+          "log": "/home/legeartis/SignMuon/code/results/tuning_logs/alpha0_signmuon_lr0.001_e15_t.log",
+          "metrics": "/home/legeartis/SignMuon/code/results/centralized/tune_alpha0_signmuon_lr0.001_e15_t/seed0/metrics.json",
+          "val_acc": 92.88,
+          "test_acc": 93.1,
+          "epoch_seconds": 13.03,
+          "epochs_to_target": 7
+        },
+        {
+          "lr": 0.0031622776601683794,
+          "lr_aux": 0.001,
+          "epochs": 15,
+          "split": "tune",
+          "log": "/home/legeartis/SignMuon/code/results/tuning_logs/alpha0_signmuon_lr0.003162_e15_t.log",
+          "metrics": "/home/legeartis/SignMuon/code/results/centralized/tune_alpha0_signmuon_lr0.003162_e15_t/seed0/metrics.json",
+          "val_acc": 93.14,
+          "test_acc": 92.99,
+          "epoch_seconds": 13.02,
+          "epochs_to_target": 7
+        },
+        {
+          "lr": 0.01,
+          "lr_aux": 0.001,
+          "epochs": 15,
+          "split": "tune",
+          "log": "/home/legeartis/SignMuon/code/results/tuning_logs/alpha0_signmuon_lr0.01_e15_t.log",
+          "metrics": "/home/legeartis/SignMuon/code/results/centralized/tune_alpha0_signmuon_lr0.01_e15_t/seed0/metrics.json",
+          "val_acc": 92.93,
+          "test_acc": 93.11,
+          "epoch_seconds": 13.04,
+          "epochs_to_target": 7
+        }
+      ],
+      "0.5": [
+        {
+          "lr": 0.0033941125496954275,
+          "lr_aux": 0.001,
+          "epochs": 15,
+          "split": "tune",
+          "log": "/home/legeartis/SignMuon/code/results/tuning_logs/alpha0.5_signmuon_lr0.003394_e15_t.log",
+          "metrics": "/home/legeartis/SignMuon/code/results/centralized/tune_alpha0.5_signmuon_lr0.003394_e15_t/seed0/metrics.json",
+          "val_acc": 91.87,
+          "test_acc": 91.72,
+          "epoch_seconds": 13.02,
+          "epochs_to_target": 9
+        },
+        {
+          "lr": 0.010733126291998988,
+          "lr_aux": 0.001,
+          "epochs": 15,
+          "split": "tune",
+          "log": "/home/legeartis/SignMuon/code/results/tuning_logs/alpha0.5_signmuon_lr0.01073_e15_t.log",
+          "metrics": "/home/legeartis/SignMuon/code/results/centralized/tune_alpha0.5_signmuon_lr0.01073_e15_t/seed0/metrics.json",
+          "val_acc": 93.0,
+          "test_acc": 93.2,
+          "epoch_seconds": 13.05,
+          "epochs_to_target": 7
+        },
+        {
+          "lr": 0.03394112549695427,
+          "lr_aux": 0.001,
+          "epochs": 15,
+          "split": "tune",
+          "log": "/home/legeartis/SignMuon/code/results/tuning_logs/alpha0.5_signmuon_lr0.03394_e15_t.log",
+          "metrics": "/home/legeartis/SignMuon/code/results/centralized/tune_alpha0.5_signmuon_lr0.03394_e15_t/seed0/metrics.json",
+          "val_acc": 93.17,
+          "test_acc": 93.07,
+          "epoch_seconds": 13.04,
+          "epochs_to_target": 7
+        },
+        {
+          "lr": 0.10733126291998989,
+          "lr_aux": 0.001,
+          "epochs": 15,
+          "split": "tune",
+          "log": "/home/legeartis/SignMuon/code/results/tuning_logs/alpha0.5_signmuon_lr0.1073_e15_t.log",
+          "metrics": "/home/legeartis/SignMuon/code/results/centralized/tune_alpha0.5_signmuon_lr0.1073_e15_t/seed0/metrics.json",
+          "val_acc": 93.09,
+          "test_acc": 92.98,
+          "epoch_seconds": 13.03,
+          "epochs_to_target": 7
+        },
+        {
+          "lr": 0.3394112549695428,
+          "lr_aux": 0.001,
+          "epochs": 15,
+          "split": "tune",
+          "log": "/home/legeartis/SignMuon/code/results/tuning_logs/alpha0.5_signmuon_lr0.3394_e15_t.log",
+          "metrics": "/home/legeartis/SignMuon/code/results/centralized/tune_alpha0.5_signmuon_lr0.3394_e15_t/seed0/metrics.json",
+          "val_acc": 93.22,
+          "test_acc": 93.1,
+          "epoch_seconds": 13.03,
+          "epochs_to_target": 7
+        }
+      ],
+      "1": [
+        {
+          "lr": 0.11520000000000002,
+          "lr_aux": 0.001,
+          "epochs": 15,
+          "split": "tune",
+          "log": "/home/legeartis/SignMuon/code/results/tuning_logs/alpha1_signmuon_lr0.1152_e15_t.log",
+          "metrics": "/home/legeartis/SignMuon/code/results/centralized/tune_alpha1_signmuon_lr0.1152_e15_t/seed0/metrics.json",
+          "val_acc": 91.84,
+          "test_acc": 92.25,
+          "epoch_seconds": 13.03,
+          "epochs_to_target": 9
+        },
+        {
+          "lr": 0.36429438645139733,
+          "lr_aux": 0.001,
+          "epochs": 15,
+          "split": "tune",
+          "log": "/home/legeartis/SignMuon/code/results/tuning_logs/alpha1_signmuon_lr0.3643_e15_t.log",
+          "metrics": "/home/legeartis/SignMuon/code/results/centralized/tune_alpha1_signmuon_lr0.3643_e15_t/seed0/metrics.json",
+          "val_acc": 93.12,
+          "test_acc": 92.98,
+          "epoch_seconds": 13.03,
+          "epochs_to_target": 7
+        },
+        {
+          "lr": 1.1520000000000001,
+          "lr_aux": 0.001,
+          "epochs": 15,
+          "split": "tune",
+          "log": "/home/legeartis/SignMuon/code/results/tuning_logs/alpha1_signmuon_lr1.152_e15_t.log",
+          "metrics": "/home/legeartis/SignMuon/code/results/centralized/tune_alpha1_signmuon_lr1.152_e15_t/seed0/metrics.json",
+          "val_acc": 93.42,
+          "test_acc": 92.94,
+          "epoch_seconds": 13.03,
+          "epochs_to_target": 7
+        },
+        {
+          "lr": 3.6429438645139736,
+          "lr_aux": 0.001,
+          "epochs": 15,
+          "split": "tune",
+          "log": "/home/legeartis/SignMuon/code/results/tuning_logs/alpha1_signmuon_lr3.643_e15_t.log",
+          "metrics": "/home/legeartis/SignMuon/code/results/centralized/tune_alpha1_signmuon_lr3.643_e15_t/seed0/metrics.json",
+          "val_acc": 93.12,
+          "test_acc": 92.84,
+          "epoch_seconds": 13.05,
+          "epochs_to_target": 7
+        },
+        {
+          "lr": 11.520000000000001,
+          "lr_aux": 0.001,
+          "epochs": 15,
+          "split": "tune",
+          "log": "/home/legeartis/SignMuon/code/results/tuning_logs/alpha1_signmuon_lr11.52_e15_t.log",
+          "metrics": "/home/legeartis/SignMuon/code/results/centralized/tune_alpha1_signmuon_lr11.52_e15_t/seed0/metrics.json",
+          "val_acc": 92.69,
+          "test_acc": 92.97,
+          "epoch_seconds": 13.03,
+          "epochs_to_target": 6
+        }
+      ]
+    },
+    "alpha_boundary": {
+      "0.5": "!! winner is at the HIGH end of the lr grid -- extend upward and re-run"
+    },
+    "chosen_rule": "mup",
+    "lr": {
+      "signmuon": {
+        "runs": [
+          {
+            "lr": 0.11520000000000002,
+            "lr_aux": 0.001,
+            "epochs": 15,
+            "split": "tune",
+            "log": "/home/legeartis/SignMuon/code/results/tuning_logs/lr_signmuon_mup_0.1152_e15_t.log",
+            "metrics": "/home/legeartis/SignMuon/code/results/centralized/tune_lr_signmuon_mup_0.1152_e15_t/seed0/metrics.json",
+            "val_acc": 92.2,
+            "test_acc": 92.04,
+            "epoch_seconds": 13.05,
+            "epochs_to_target": 9
+          },
+          {
+            "lr": 0.5347110336321922,
+            "lr_aux": 0.001,
+            "epochs": 15,
+            "split": "tune",
+            "log": "/home/legeartis/SignMuon/code/results/tuning_logs/lr_signmuon_mup_0.5347_e15_t.log",
+            "metrics": "/home/legeartis/SignMuon/code/results/centralized/tune_lr_signmuon_mup_0.5347_e15_t/seed0/metrics.json",
+            "val_acc": 93.45,
+            "test_acc": 93.11,
+            "epoch_seconds": 13.03,
+            "epochs_to_target": 7
+          },
+          {
+            "lr": 2.48190876291673,
+            "lr_aux": 0.001,
+            "epochs": 15,
+            "split": "tune",
+            "log": "/home/legeartis/SignMuon/code/results/tuning_logs/lr_signmuon_mup_2.482_e15_t.log",
+            "metrics": "/home/legeartis/SignMuon/code/results/centralized/tune_lr_signmuon_mup_2.482_e15_t/seed0/metrics.json",
+            "val_acc": 93.04,
+            "test_acc": 93.15,
+            "epoch_seconds": 13.03,
+            "epochs_to_target": 7
+          },
+          {
+            "lr": 11.520000000000001,
+            "lr_aux": 0.001,
+            "epochs": 15,
+            "split": "tune",
+            "log": "/home/legeartis/SignMuon/code/results/tuning_logs/lr_signmuon_mup_11.52_e15_t.log",
+            "metrics": "/home/legeartis/SignMuon/code/results/centralized/tune_lr_signmuon_mup_11.52_e15_t/seed0/metrics.json",
+            "val_acc": 93.23,
+            "test_acc": 93.19,
+            "epoch_seconds": 13.04,
+            "epochs_to_target": 7
+          }
+        ],
+        "grid": [
+          0.11520000000000002,
+          0.5347110336321922,
+          2.48190876291673,
+          11.520000000000001
+        ],
+        "best": {
+          "lr": 0.5347110336321922,
+          "lr_aux": 0.001,
+          "epochs": 15,
+          "split": "tune",
+          "log": "/home/legeartis/SignMuon/code/results/tuning_logs/lr_signmuon_mup_0.5347_e15_t.log",
+          "metrics": "/home/legeartis/SignMuon/code/results/centralized/tune_lr_signmuon_mup_0.5347_e15_t/seed0/metrics.json",
+          "val_acc": 93.45,
+          "test_acc": 93.11,
+          "epoch_seconds": 13.03,
+          "epochs_to_target": 7
+        }
+      },
+      "muonusign": {
+        "runs": [
+          {
+            "lr": 0.0015000000000000005,
+            "lr_aux": 0.001,
+            "epochs": 15,
+            "split": "tune",
+            "log": "/home/legeartis/SignMuon/code/results/tuning_logs/lr_muonusign_mup_0.0015_e15_t.log",
+            "metrics": "/home/legeartis/SignMuon/code/results/centralized/tune_lr_muonusign_mup_0.0015_e15_t/seed0/metrics.json",
+            "val_acc": 88.28,
+            "test_acc": 88.7,
+            "epoch_seconds": 13.01
+          },
+          {
+            "lr": 0.006962383250419168,
+            "lr_aux": 0.001,
+            "epochs": 15,
+            "split": "tune",
+            "log": "/home/legeartis/SignMuon/code/results/tuning_logs/lr_muonusign_mup_0.006962_e15_t.log",
+            "metrics": "/home/legeartis/SignMuon/code/results/centralized/tune_lr_muonusign_mup_0.006962_e15_t/seed0/metrics.json",
+            "val_acc": 92.36,
+            "test_acc": 92.24,
+            "epoch_seconds": 13.01,
+            "epochs_to_target": 8
+          },
+          {
+            "lr": 0.03231652035047826,
+            "lr_aux": 0.001,
+            "epochs": 15,
+            "split": "tune",
+            "log": "/home/legeartis/SignMuon/code/results/tuning_logs/lr_muonusign_mup_0.03232_e15_t.log",
+            "metrics": "/home/legeartis/SignMuon/code/results/centralized/tune_lr_muonusign_mup_0.03232_e15_t/seed0/metrics.json",
+            "val_acc": 92.33,
+            "test_acc": 91.84,
+            "epoch_seconds": 13.01,
+            "epochs_to_target": 8
+          },
+          {
+            "lr": 0.15000000000000005,
+            "lr_aux": 0.001,
+            "epochs": 15,
+            "split": "tune",
+            "log": "/home/legeartis/SignMuon/code/results/tuning_logs/lr_muonusign_mup_0.15_e15_t.log",
+            "metrics": "/home/legeartis/SignMuon/code/results/centralized/tune_lr_muonusign_mup_0.15_e15_t/seed0/metrics.json",
+            "val_acc": 92.7,
+            "test_acc": 92.13,
+            "epoch_seconds": 13.05,
+            "epochs_to_target": 8
+          },
+          {
+            "lr": 0.6962383250419169,
+            "lr_aux": 0.001,
+            "epochs": 15,
+            "split": "tune",
+            "log": "/home/legeartis/SignMuon/code/results/tuning_logs/lr_muonusign_mup_0.6962_e15_t.log",
+            "metrics": "/home/legeartis/SignMuon/code/results/centralized/tune_lr_muonusign_mup_0.6962_e15_t/seed0/metrics.json",
+            "val_acc": 92.02,
+            "test_acc": 92.04,
+            "epoch_seconds": 13.02,
+            "epochs_to_target": 9
+          },
+          {
+            "lr": 3.2316520350478246,
+            "lr_aux": 0.001,
+            "epochs": 15,
+            "split": "tune",
+            "log": "/home/legeartis/SignMuon/code/results/tuning_logs/lr_muonusign_mup_3.232_e15_t.log",
+            "metrics": "/home/legeartis/SignMuon/code/results/centralized/tune_lr_muonusign_mup_3.232_e15_t/seed0/metrics.json",
+            "val_acc": 92.37,
+            "test_acc": 92.04,
+            "epoch_seconds": 13.02,
+            "epochs_to_target": 9
+          }
+        ],
+        "grid": [
+          0.0015000000000000005,
+          0.006962383250419168,
+          0.03231652035047826,
+          0.15000000000000005,
+          0.6962383250419169,
+          3.2316520350478246
+        ],
+        "best": {
+          "lr": 0.15000000000000005,
+          "lr_aux": 0.001,
+          "epochs": 15,
+          "split": "tune",
+          "log": "/home/legeartis/SignMuon/code/results/tuning_logs/lr_muonusign_mup_0.15_e15_t.log",
+          "metrics": "/home/legeartis/SignMuon/code/results/centralized/tune_lr_muonusign_mup_0.15_e15_t/seed0/metrics.json",
+          "val_acc": 92.7,
+          "test_acc": 92.13,
+          "epoch_seconds": 13.05,
+          "epochs_to_target": 8
+        }
+      },
+      "muonsign": {
+        "runs": [
+          {
+            "lr": 0.11520000000000002,
+            "lr_aux": 0.001,
+            "epochs": 15,
+            "split": "tune",
+            "log": "/home/legeartis/SignMuon/code/results/tuning_logs/lr_muonsign_mup_0.1152_e15_t.log",
+            "metrics": "/home/legeartis/SignMuon/code/results/centralized/tune_lr_muonsign_mup_0.1152_e15_t/seed0/metrics.json",
+            "val_acc": 90.95,
+            "test_acc": 90.4,
+            "epoch_seconds": 13.1,
+            "epochs_to_target": 12
+          },
+          {
+            "lr": 0.5347110336321922,
+            "lr_aux": 0.001,
+            "epochs": 15,
+            "split": "tune",
+            "log": "/home/legeartis/SignMuon/code/results/tuning_logs/lr_muonsign_mup_0.5347_e15_t.log",
+            "metrics": "/home/legeartis/SignMuon/code/results/centralized/tune_lr_muonsign_mup_0.5347_e15_t/seed0/metrics.json",
+            "val_acc": 90.24,
+            "test_acc": 90.33,
+            "epoch_seconds": 13.08,
+            "epochs_to_target": 12
+          },
+          {
+            "lr": 2.48190876291673,
+            "lr_aux": 0.001,
+            "epochs": 15,
+            "split": "tune",
+            "log": "/home/legeartis/SignMuon/code/results/tuning_logs/lr_muonsign_mup_2.482_e15_t.log",
+            "metrics": "/home/legeartis/SignMuon/code/results/centralized/tune_lr_muonsign_mup_2.482_e15_t/seed0/metrics.json",
+            "val_acc": 90.22,
+            "test_acc": 90.21,
+            "epoch_seconds": 13.07,
+            "epochs_to_target": 12
+          },
+          {
+            "lr": 11.520000000000001,
+            "lr_aux": 0.001,
+            "epochs": 15,
+            "split": "tune",
+            "log": "/home/legeartis/SignMuon/code/results/tuning_logs/lr_muonsign_mup_11.52_e15_t.log",
+            "metrics": "/home/legeartis/SignMuon/code/results/centralized/tune_lr_muonsign_mup_11.52_e15_t/seed0/metrics.json",
+            "val_acc": 89.16,
+            "test_acc": 89.39,
+            "epoch_seconds": 13.07,
+            "epochs_to_target": 15
+          },
+          {
+            "lr": 0.005347110336321924,
+            "lr_aux": 0.001,
+            "epochs": 15,
+            "split": "tune",
+            "log": "/home/legeartis/SignMuon/code/results/tuning_logs/lr_muonsign_mup_0.005347_e15_t.log",
+            "metrics": "/home/legeartis/SignMuon/code/results/centralized/tune_lr_muonsign_mup_0.005347_e15_t/seed0/metrics.json",
+            "val_acc": 70.5,
+            "test_acc": 70.93,
+            "epoch_seconds": 13.06
+          },
+          {
+            "lr": 0.02481908762916731,
+            "lr_aux": 0.001,
+            "epochs": 15,
+            "split": "tune",
+            "log": "/home/legeartis/SignMuon/code/results/tuning_logs/lr_muonsign_mup_0.02482_e15_t.log",
+            "metrics": "/home/legeartis/SignMuon/code/results/centralized/tune_lr_muonsign_mup_0.02482_e15_t/seed0/metrics.json",
+            "val_acc": 85.0,
+            "test_acc": 85.67,
+            "epoch_seconds": 13.07
+          }
+        ],
+        "grid": [
+          0.005347110336321924,
+          0.02481908762916731,
+          0.11520000000000002,
+          0.5347110336321922,
+          2.48190876291673,
+          11.520000000000001
+        ],
+        "best": {
+          "lr": 0.11520000000000002,
+          "lr_aux": 0.001,
+          "epochs": 15,
+          "split": "tune",
+          "log": "/home/legeartis/SignMuon/code/results/tuning_logs/lr_muonsign_mup_0.1152_e15_t.log",
+          "metrics": "/home/legeartis/SignMuon/code/results/centralized/tune_lr_muonsign_mup_0.1152_e15_t/seed0/metrics.json",
+          "val_acc": 90.95,
+          "test_acc": 90.4,
+          "epoch_seconds": 13.1,
+          "epochs_to_target": 12
+        }
+      },
+      "ef21signmuon": {
+        "runs": [
+          {
+            "lr": 0.0008000000000000004,
+            "lr_aux": 0.001,
+            "epochs": 15,
+            "split": "tune",
+            "log": "/home/legeartis/SignMuon/code/results/tuning_logs/lr_ef21signmuon_mup_0.0008_e15_t.log",
+            "metrics": "/home/legeartis/SignMuon/code/results/centralized/tune_lr_ef21signmuon_mup_0.0008_e15_t/seed0/metrics.json",
+            "val_acc": 87.46,
+            "test_acc": 87.28,
+            "epoch_seconds": 13.38
+          },
+          {
+            "lr": 0.003713271066890223,
+            "lr_aux": 0.001,
+            "epochs": 15,
+            "split": "tune",
+            "log": "/home/legeartis/SignMuon/code/results/tuning_logs/lr_ef21signmuon_mup_0.003713_e15_t.log",
+            "metrics": "/home/legeartis/SignMuon/code/results/centralized/tune_lr_ef21signmuon_mup_0.003713_e15_t/seed0/metrics.json",
+            "val_acc": 92.44,
+            "test_acc": 92.17,
+            "epoch_seconds": 13.36,
+            "epochs_to_target": 8
+          },
+          {
+            "lr": 0.017235477520255074,
+            "lr_aux": 0.001,
+            "epochs": 15,
+            "split": "tune",
+            "log": "/home/legeartis/SignMuon/code/results/tuning_logs/lr_ef21signmuon_mup_0.01724_e15_t.log",
+            "metrics": "/home/legeartis/SignMuon/code/results/centralized/tune_lr_ef21signmuon_mup_0.01724_e15_t/seed0/metrics.json",
+            "val_acc": 93.17,
+            "test_acc": 93.07,
+            "epoch_seconds": 13.36,
+            "epochs_to_target": 7
+          },
+          {
+            "lr": 0.08000000000000003,
+            "lr_aux": 0.001,
+            "epochs": 15,
+            "split": "tune",
+            "log": "/home/legeartis/SignMuon/code/results/tuning_logs/lr_ef21signmuon_mup_0.08_e15_t.log",
+            "metrics": "/home/legeartis/SignMuon/code/results/centralized/tune_lr_ef21signmuon_mup_0.08_e15_t/seed0/metrics.json",
+            "val_acc": 92.78,
+            "test_acc": 92.91,
+            "epoch_seconds": 13.36,
+            "epochs_to_target": 8
+          }
+        ],
+        "grid": [
+          0.0008000000000000004,
+          0.003713271066890223,
+          0.017235477520255074,
+          0.08000000000000003
+        ],
+        "best": {
+          "lr": 0.017235477520255074,
+          "lr_aux": 0.001,
+          "epochs": 15,
+          "split": "tune",
+          "log": "/home/legeartis/SignMuon/code/results/tuning_logs/lr_ef21signmuon_mup_0.01724_e15_t.log",
+          "metrics": "/home/legeartis/SignMuon/code/results/centralized/tune_lr_ef21signmuon_mup_0.01724_e15_t/seed0/metrics.json",
+          "val_acc": 93.17,
+          "test_acc": 93.07,
+          "epoch_seconds": 13.36,
+          "epochs_to_target": 7
+        }
+      },
+      "ef21muonusign": {
+        "runs": [
+          {
+            "lr": 0.0008000000000000004,
+            "lr_aux": 0.001,
+            "epochs": 15,
+            "split": "tune",
+            "log": "/home/legeartis/SignMuon/code/results/tuning_logs/lr_ef21muonusign_mup_0.0008_e15_t.log",
+            "metrics": "/home/legeartis/SignMuon/code/results/centralized/tune_lr_ef21muonusign_mup_0.0008_e15_t/seed0/metrics.json",
+            "val_acc": 87.08,
+            "test_acc": 86.79,
+            "epoch_seconds": 13.37
+          },
+          {
+            "lr": 0.003713271066890223,
+            "lr_aux": 0.001,
+            "epochs": 15,
+            "split": "tune",
+            "log": "/home/legeartis/SignMuon/code/results/tuning_logs/lr_ef21muonusign_mup_0.003713_e15_t.log",
+            "metrics": "/home/legeartis/SignMuon/code/results/centralized/tune_lr_ef21muonusign_mup_0.003713_e15_t/seed0/metrics.json",
+            "val_acc": 92.33,
+            "test_acc": 92.25,
+            "epoch_seconds": 13.37,
+            "epochs_to_target": 8
+          },
+          {
+            "lr": 0.017235477520255074,
+            "lr_aux": 0.001,
+            "epochs": 15,
+            "split": "tune",
+            "log": "/home/legeartis/SignMuon/code/results/tuning_logs/lr_ef21muonusign_mup_0.01724_e15_t.log",
+            "metrics": "/home/legeartis/SignMuon/code/results/centralized/tune_lr_ef21muonusign_mup_0.01724_e15_t/seed0/metrics.json",
+            "val_acc": 92.6,
+            "test_acc": 92.63,
+            "epoch_seconds": 13.37,
+            "epochs_to_target": 8
+          },
+          {
+            "lr": 0.08000000000000003,
+            "lr_aux": 0.001,
+            "epochs": 15,
+            "split": "tune",
+            "log": "/home/legeartis/SignMuon/code/results/tuning_logs/lr_ef21muonusign_mup_0.08_e15_t.log",
+            "metrics": "/home/legeartis/SignMuon/code/results/centralized/tune_lr_ef21muonusign_mup_0.08_e15_t/seed0/metrics.json",
+            "val_acc": 92.59,
+            "test_acc": 92.42,
+            "epoch_seconds": 13.38,
+            "epochs_to_target": 8
+          }
+        ],
+        "grid": [
+          0.0008000000000000004,
+          0.003713271066890223,
+          0.017235477520255074,
+          0.08000000000000003
+        ],
+        "best": {
+          "lr": 0.017235477520255074,
+          "lr_aux": 0.001,
+          "epochs": 15,
+          "split": "tune",
+          "log": "/home/legeartis/SignMuon/code/results/tuning_logs/lr_ef21muonusign_mup_0.01724_e15_t.log",
+          "metrics": "/home/legeartis/SignMuon/code/results/centralized/tune_lr_ef21muonusign_mup_0.01724_e15_t/seed0/metrics.json",
+          "val_acc": 92.6,
+          "test_acc": 92.63,
+          "epoch_seconds": 13.37,
+          "epochs_to_target": 8
+        }
+      },
+      "ef21muonsign": {
+        "runs": [
+          {
+            "lr": 0.0007000000000000001,
+            "lr_aux": 0.001,
+            "epochs": 15,
+            "split": "tune",
+            "log": "/home/legeartis/SignMuon/code/results/tuning_logs/lr_ef21muonsign_mup_0.0007_e15_t.log",
+            "metrics": "/home/legeartis/SignMuon/code/results/centralized/tune_lr_ef21muonsign_mup_0.0007_e15_t/seed0/metrics.json",
+            "val_acc": 85.43,
+            "test_acc": 85.96,
+            "epoch_seconds": 13.77
+          },
+          {
+            "lr": 0.003249112183528945,
+            "lr_aux": 0.001,
+            "epochs": 15,
+            "split": "tune",
+            "log": "/home/legeartis/SignMuon/code/results/tuning_logs/lr_ef21muonsign_mup_0.003249_e15_t.log",
+            "metrics": "/home/legeartis/SignMuon/code/results/centralized/tune_lr_ef21muonsign_mup_0.003249_e15_t/seed0/metrics.json",
+            "val_acc": 91.77,
+            "test_acc": 91.98,
+            "epoch_seconds": 13.77,
+            "epochs_to_target": 9
+          },
+          {
+            "lr": 0.015081042830223186,
+            "lr_aux": 0.001,
+            "epochs": 15,
+            "split": "tune",
+            "log": "/home/legeartis/SignMuon/code/results/tuning_logs/lr_ef21muonsign_mup_0.01508_e15_t.log",
+            "metrics": "/home/legeartis/SignMuon/code/results/centralized/tune_lr_ef21muonsign_mup_0.01508_e15_t/seed0/metrics.json",
+            "val_acc": 92.79,
+            "test_acc": 92.48,
+            "epoch_seconds": 13.76,
+            "epochs_to_target": 8
+          },
+          {
+            "lr": 0.07000000000000002,
+            "lr_aux": 0.001,
+            "epochs": 15,
+            "split": "tune",
+            "log": "/home/legeartis/SignMuon/code/results/tuning_logs/lr_ef21muonsign_mup_0.07_e15_t.log",
+            "metrics": "/home/legeartis/SignMuon/code/results/centralized/tune_lr_ef21muonsign_mup_0.07_e15_t/seed0/metrics.json",
+            "val_acc": 92.59,
+            "test_acc": 92.58,
+            "epoch_seconds": 13.76,
+            "epochs_to_target": 8
+          }
+        ],
+        "grid": [
+          0.0007000000000000001,
+          0.003249112183528945,
+          0.015081042830223186,
+          0.07000000000000002
+        ],
+        "best": {
+          "lr": 0.015081042830223186,
+          "lr_aux": 0.001,
+          "epochs": 15,
+          "split": "tune",
+          "log": "/home/legeartis/SignMuon/code/results/tuning_logs/lr_ef21muonsign_mup_0.01508_e15_t.log",
+          "metrics": "/home/legeartis/SignMuon/code/results/centralized/tune_lr_ef21muonsign_mup_0.01508_e15_t/seed0/metrics.json",
+          "val_acc": 92.79,
+          "test_acc": 92.48,
+          "epoch_seconds": 13.76,
+          "epochs_to_target": 8
+        }
+      },
+      "muon": {
+        "runs": [
+          {
+            "lr": 0.0015000000000000005,
+            "lr_aux": 0.001,
+            "epochs": 15,
+            "split": "tune",
+            "log": "/home/legeartis/SignMuon/code/results/tuning_logs/lr_muon_mup_0.0015_e15_t.log",
+            "metrics": "/home/legeartis/SignMuon/code/results/centralized/tune_lr_muon_mup_0.0015_e15_t/seed0/metrics.json",
+            "val_acc": 90.54,
+            "test_acc": 90.31,
+            "epoch_seconds": 12.94,
+            "epochs_to_target": 12
+          },
+          {
+            "lr": 0.006962383250419168,
+            "lr_aux": 0.001,
+            "epochs": 15,
+            "split": "tune",
+            "log": "/home/legeartis/SignMuon/code/results/tuning_logs/lr_muon_mup_0.006962_e15_t.log",
+            "metrics": "/home/legeartis/SignMuon/code/results/centralized/tune_lr_muon_mup_0.006962_e15_t/seed0/metrics.json",
+            "val_acc": 93.15,
+            "test_acc": 92.95,
+            "epoch_seconds": 12.97,
+            "epochs_to_target": 7
+          },
+          {
+            "lr": 0.03231652035047826,
+            "lr_aux": 0.001,
+            "epochs": 15,
+            "split": "tune",
+            "log": "/home/legeartis/SignMuon/code/results/tuning_logs/lr_muon_mup_0.03232_e15_t.log",
+            "metrics": "/home/legeartis/SignMuon/code/results/centralized/tune_lr_muon_mup_0.03232_e15_t/seed0/metrics.json",
+            "val_acc": 93.5,
+            "test_acc": 93.11,
+            "epoch_seconds": 12.95,
+            "epochs_to_target": 7
+          },
+          {
+            "lr": 0.15000000000000005,
+            "lr_aux": 0.001,
+            "epochs": 15,
+            "split": "tune",
+            "log": "/home/legeartis/SignMuon/code/results/tuning_logs/lr_muon_mup_0.15_e15_t.log",
+            "metrics": "/home/legeartis/SignMuon/code/results/centralized/tune_lr_muon_mup_0.15_e15_t/seed0/metrics.json",
+            "val_acc": 93.13,
+            "test_acc": 93.29,
+            "epoch_seconds": 12.96,
+            "epochs_to_target": 6
+          }
+        ],
+        "grid": [
+          0.0015000000000000005,
+          0.006962383250419168,
+          0.03231652035047826,
+          0.15000000000000005
+        ],
+        "best": {
+          "lr": 0.03231652035047826,
+          "lr_aux": 0.001,
+          "epochs": 15,
+          "split": "tune",
+          "log": "/home/legeartis/SignMuon/code/results/tuning_logs/lr_muon_mup_0.03232_e15_t.log",
+          "metrics": "/home/legeartis/SignMuon/code/results/centralized/tune_lr_muon_mup_0.03232_e15_t/seed0/metrics.json",
+          "val_acc": 93.5,
+          "test_acc": 93.11,
+          "epoch_seconds": 12.95,
+          "epochs_to_target": 7
+        }
+      },
+      "signsgd": {
+        "runs": [
+          {
+            "lr": 0.11520000000000002,
+            "lr_aux": 0.001,
+            "epochs": 15,
+            "split": "tune",
+            "log": "/home/legeartis/SignMuon/code/results/tuning_logs/lr_signsgd_mup_0.1152_e15_t.log",
+            "metrics": "/home/legeartis/SignMuon/code/results/centralized/tune_lr_signsgd_mup_0.1152_e15_t/seed0/metrics.json",
+            "val_acc": 89.16,
+            "test_acc": 89.42,
+            "epoch_seconds": 10.89
+          },
+          {
+            "lr": 0.5347110336321922,
+            "lr_aux": 0.001,
+            "epochs": 15,
+            "split": "tune",
+            "log": "/home/legeartis/SignMuon/code/results/tuning_logs/lr_signsgd_mup_0.5347_e15_t.log",
+            "metrics": "/home/legeartis/SignMuon/code/results/centralized/tune_lr_signsgd_mup_0.5347_e15_t/seed0/metrics.json",
+            "val_acc": 88.06,
+            "test_acc": 88.17,
+            "epoch_seconds": 10.89
+          },
+          {
+            "lr": 2.48190876291673,
+            "lr_aux": 0.001,
+            "epochs": 15,
+            "split": "tune",
+            "log": "/home/legeartis/SignMuon/code/results/tuning_logs/lr_signsgd_mup_2.482_e15_t.log",
+            "metrics": "/home/legeartis/SignMuon/code/results/centralized/tune_lr_signsgd_mup_2.482_e15_t/seed0/metrics.json",
+            "val_acc": 86.1,
+            "test_acc": 86.26,
+            "epoch_seconds": 10.9
+          },
+          {
+            "lr": 11.520000000000001,
+            "lr_aux": 0.001,
+            "epochs": 15,
+            "split": "tune",
+            "log": "/home/legeartis/SignMuon/code/results/tuning_logs/lr_signsgd_mup_11.52_e15_t.log",
+            "metrics": "/home/legeartis/SignMuon/code/results/centralized/tune_lr_signsgd_mup_11.52_e15_t/seed0/metrics.json",
+            "val_acc": 84.96,
+            "test_acc": 85.39,
+            "epoch_seconds": 10.9
+          },
+          {
+            "lr": 0.005347110336321924,
+            "lr_aux": 0.001,
+            "epochs": 15,
+            "split": "tune",
+            "log": "/home/legeartis/SignMuon/code/results/tuning_logs/lr_signsgd_mup_0.005347_e15_t.log",
+            "metrics": "/home/legeartis/SignMuon/code/results/centralized/tune_lr_signsgd_mup_0.005347_e15_t/seed0/metrics.json",
+            "val_acc": 72.89,
+            "test_acc": 73.52,
+            "epoch_seconds": 10.92
+          },
+          {
+            "lr": 0.02481908762916731,
+            "lr_aux": 0.001,
+            "epochs": 15,
+            "split": "tune",
+            "log": "/home/legeartis/SignMuon/code/results/tuning_logs/lr_signsgd_mup_0.02482_e15_t.log",
+            "metrics": "/home/legeartis/SignMuon/code/results/centralized/tune_lr_signsgd_mup_0.02482_e15_t/seed0/metrics.json",
+            "val_acc": 86.57,
+            "test_acc": 86.83,
+            "epoch_seconds": 10.91
+          }
+        ],
+        "grid": [
+          0.005347110336321924,
+          0.02481908762916731,
+          0.11520000000000002,
+          0.5347110336321922,
+          2.48190876291673,
+          11.520000000000001
+        ],
+        "best": {
+          "lr": 0.11520000000000002,
+          "lr_aux": 0.001,
+          "epochs": 15,
+          "split": "tune",
+          "log": "/home/legeartis/SignMuon/code/results/tuning_logs/lr_signsgd_mup_0.1152_e15_t.log",
+          "metrics": "/home/legeartis/SignMuon/code/results/centralized/tune_lr_signsgd_mup_0.1152_e15_t/seed0/metrics.json",
+          "val_acc": 89.16,
+          "test_acc": 89.42,
+          "epoch_seconds": 10.89
+        }
+      },
+      "sgd": {
+        "runs": [
+          {
+            "lr": 0.0015000000000000005,
+            "lr_aux": 0.001,
+            "epochs": 15,
+            "split": "tune",
+            "log": "/home/legeartis/SignMuon/code/results/tuning_logs/lr_sgd_mup_0.0015_e15_t.log",
+            "metrics": "/home/legeartis/SignMuon/code/results/centralized/tune_lr_sgd_mup_0.0015_e15_t/seed0/metrics.json",
+            "val_acc": 84.47,
+            "test_acc": 85.13,
+            "epoch_seconds": 10.98
+          },
+          {
+            "lr": 0.006962383250419168,
+            "lr_aux": 0.001,
+            "epochs": 15,
+            "split": "tune",
+            "log": "/home/legeartis/SignMuon/code/results/tuning_logs/lr_sgd_mup_0.006962_e15_t.log",
+            "metrics": "/home/legeartis/SignMuon/code/results/centralized/tune_lr_sgd_mup_0.006962_e15_t/seed0/metrics.json",
+            "val_acc": 88.35,
+            "test_acc": 88.88,
+            "epoch_seconds": 10.99
+          },
+          {
+            "lr": 0.03231652035047826,
+            "lr_aux": 0.001,
+            "epochs": 15,
+            "split": "tune",
+            "log": "/home/legeartis/SignMuon/code/results/tuning_logs/lr_sgd_mup_0.03232_e15_t.log",
+            "metrics": "/home/legeartis/SignMuon/code/results/centralized/tune_lr_sgd_mup_0.03232_e15_t/seed0/metrics.json",
+            "val_acc": 88.93,
+            "test_acc": 89.06,
+            "epoch_seconds": 11.0
+          },
+          {
+            "lr": 0.15000000000000005,
+            "lr_aux": 0.001,
+            "epochs": 15,
+            "split": "tune",
+            "log": "/home/legeartis/SignMuon/code/results/tuning_logs/lr_sgd_mup_0.15_e15_t.log",
+            "metrics": "/home/legeartis/SignMuon/code/results/centralized/tune_lr_sgd_mup_0.15_e15_t/seed0/metrics.json",
+            "val_acc": 87.34,
+            "test_acc": 87.43,
+            "epoch_seconds": 10.99
+          }
+        ],
+        "grid": [
+          0.0015000000000000005,
+          0.006962383250419168,
+          0.03231652035047826,
+          0.15000000000000005
+        ],
+        "best": {
+          "lr": 0.03231652035047826,
+          "lr_aux": 0.001,
+          "epochs": 15,
+          "split": "tune",
+          "log": "/home/legeartis/SignMuon/code/results/tuning_logs/lr_sgd_mup_0.03232_e15_t.log",
+          "metrics": "/home/legeartis/SignMuon/code/results/centralized/tune_lr_sgd_mup_0.03232_e15_t/seed0/metrics.json",
+          "val_acc": 88.93,
+          "test_acc": 89.06,
+          "epoch_seconds": 11.0
+        }
+      },
+      "adam": {
+        "runs": [
+          {
+            "lr": 0.0001,
+            "lr_aux": 0.001,
+            "epochs": 15,
+            "split": "tune",
+            "log": "/home/legeartis/SignMuon/code/results/tuning_logs/lr_adam_mup_0.0001_e15_t.log",
+            "metrics": "/home/legeartis/SignMuon/code/results/centralized/tune_lr_adam_mup_0.0001_e15_t/seed0/metrics.json",
+            "val_acc": 86.9,
+            "test_acc": 86.76,
+            "epoch_seconds": 11.44
+          },
+          {
+            "lr": 0.00046415888336127773,
+            "lr_aux": 0.001,
+            "epochs": 15,
+            "split": "tune",
+            "log": "/home/legeartis/SignMuon/code/results/tuning_logs/lr_adam_mup_0.0004642_e15_t.log",
+            "metrics": "/home/legeartis/SignMuon/code/results/centralized/tune_lr_adam_mup_0.0004642_e15_t/seed0/metrics.json",
+            "val_acc": 89.9,
+            "test_acc": 89.99,
+            "epoch_seconds": 11.43,
+            "epochs_to_target": 13
+          },
+          {
+            "lr": 0.002154434690031882,
+            "lr_aux": 0.001,
+            "epochs": 15,
+            "split": "tune",
+            "log": "/home/legeartis/SignMuon/code/results/tuning_logs/lr_adam_mup_0.002154_e15_t.log",
+            "metrics": "/home/legeartis/SignMuon/code/results/centralized/tune_lr_adam_mup_0.002154_e15_t/seed0/metrics.json",
+            "val_acc": 88.25,
+            "test_acc": 88.7,
+            "epoch_seconds": 11.42
+          },
+          {
+            "lr": 0.01,
+            "lr_aux": 0.001,
+            "epochs": 15,
+            "split": "tune",
+            "log": "/home/legeartis/SignMuon/code/results/tuning_logs/lr_adam_mup_0.01_e15_t.log",
+            "metrics": "/home/legeartis/SignMuon/code/results/centralized/tune_lr_adam_mup_0.01_e15_t/seed0/metrics.json",
+            "val_acc": 88.17,
+            "test_acc": 88.06,
+            "epoch_seconds": 11.42
+          }
+        ],
+        "grid": [
+          0.0001,
+          0.00046415888336127773,
+          0.002154434690031882,
+          0.01
+        ],
+        "best": {
+          "lr": 0.00046415888336127773,
+          "lr_aux": 0.001,
+          "epochs": 15,
+          "split": "tune",
+          "log": "/home/legeartis/SignMuon/code/results/tuning_logs/lr_adam_mup_0.0004642_e15_t.log",
+          "metrics": "/home/legeartis/SignMuon/code/results/centralized/tune_lr_adam_mup_0.0004642_e15_t/seed0/metrics.json",
+          "val_acc": 89.9,
+          "test_acc": 89.99,
+          "epoch_seconds": 11.43,
+          "epochs_to_target": 13
+        }
+      },
+      "adam+scaled": {
+        "runs": [
+          {
+            "lr": 0.11520000000000002,
+            "lr_aux": 0.001,
+            "epochs": 15,
+            "split": "tune",
+            "log": "/home/legeartis/SignMuon/code/results/tuning_logs/lr_adam_scaled_mup_0.1152_e15_t.log",
+            "metrics": "/home/legeartis/SignMuon/code/results/centralized/tune_lr_adam_scaled_mup_0.1152_e15_t/seed0/metrics.json",
+            "val_acc": 87.38,
+            "test_acc": 87.74,
+            "epoch_seconds": 11.43
+          },
+          {
+            "lr": 0.5347110336321922,
+            "lr_aux": 0.001,
+            "epochs": 15,
+            "split": "tune",
+            "log": "/home/legeartis/SignMuon/code/results/tuning_logs/lr_adam_scaled_mup_0.5347_e15_t.log",
+            "metrics": "/home/legeartis/SignMuon/code/results/centralized/tune_lr_adam_scaled_mup_0.5347_e15_t/seed0/metrics.json",
+            "val_acc": 89.4,
+            "test_acc": 89.22,
+            "epoch_seconds": 11.42
+          },
+          {
+            "lr": 2.48190876291673,
+            "lr_aux": 0.001,
+            "epochs": 15,
+            "split": "tune",
+            "log": "/home/legeartis/SignMuon/code/results/tuning_logs/lr_adam_scaled_mup_2.482_e15_t.log",
+            "metrics": "/home/legeartis/SignMuon/code/results/centralized/tune_lr_adam_scaled_mup_2.482_e15_t/seed0/metrics.json",
+            "val_acc": 87.7,
+            "test_acc": 87.77,
+            "epoch_seconds": 11.44
+          },
+          {
+            "lr": 11.520000000000001,
+            "lr_aux": 0.001,
+            "epochs": 15,
+            "split": "tune",
+            "log": "/home/legeartis/SignMuon/code/results/tuning_logs/lr_adam_scaled_mup_11.52_e15_t.log",
+            "metrics": "/home/legeartis/SignMuon/code/results/centralized/tune_lr_adam_scaled_mup_11.52_e15_t/seed0/metrics.json",
+            "val_acc": 86.7,
+            "test_acc": 86.9,
+            "epoch_seconds": 11.43
+          }
+        ],
+        "grid": [
+          0.11520000000000002,
+          0.5347110336321922,
+          2.48190876291673,
+          11.520000000000001
+        ],
+        "best": {
+          "lr": 0.5347110336321922,
+          "lr_aux": 0.001,
+          "epochs": 15,
+          "split": "tune",
+          "log": "/home/legeartis/SignMuon/code/results/tuning_logs/lr_adam_scaled_mup_0.5347_e15_t.log",
+          "metrics": "/home/legeartis/SignMuon/code/results/centralized/tune_lr_adam_scaled_mup_0.5347_e15_t/seed0/metrics.json",
+          "val_acc": 89.4,
+          "test_acc": 89.22,
+          "epoch_seconds": 11.42
+        }
+      }
+    },
+    "verify": {
+      "signmuon": {
+        "short": [
+          {
+            "lr": 0.5347110336321922,
+            "lr_aux": 0.001,
+            "epochs": 15,
+            "split": "tune",
+            "log": "/home/legeartis/SignMuon/code/results/tuning_logs/lr_signmuon_mup_0.5347_e15_t.log",
+            "metrics": "/home/legeartis/SignMuon/code/results/centralized/tune_lr_signmuon_mup_0.5347_e15_t/seed0/metrics.json",
+            "val_acc": 93.45,
+            "test_acc": 93.11,
+            "epoch_seconds": 13.03,
+            "epochs_to_target": 7
+          },
+          {
+            "lr": 11.520000000000001,
+            "lr_aux": 0.001,
+            "epochs": 15,
+            "split": "tune",
+            "log": "/home/legeartis/SignMuon/code/results/tuning_logs/lr_signmuon_mup_11.52_e15_t.log",
+            "metrics": "/home/legeartis/SignMuon/code/results/centralized/tune_lr_signmuon_mup_11.52_e15_t/seed0/metrics.json",
+            "val_acc": 93.23,
+            "test_acc": 93.19,
+            "epoch_seconds": 13.04,
+            "epochs_to_target": 7
+          },
+          {
+            "lr": 2.48190876291673,
+            "lr_aux": 0.001,
+            "epochs": 15,
+            "split": "tune",
+            "log": "/home/legeartis/SignMuon/code/results/tuning_logs/lr_signmuon_mup_2.482_e15_t.log",
+            "metrics": "/home/legeartis/SignMuon/code/results/centralized/tune_lr_signmuon_mup_2.482_e15_t/seed0/metrics.json",
+            "val_acc": 93.04,
+            "test_acc": 93.15,
+            "epoch_seconds": 13.03,
+            "epochs_to_target": 7
+          }
+        ],
+        "long": [
+          {
+            "lr": 0.5347110336321922,
+            "lr_aux": 0.001,
+            "epochs": 75,
+            "split": "tune",
+            "log": "/home/legeartis/SignMuon/code/results/tuning_logs/verify_signmuon_mup_0.5347_e75_t.log",
+            "metrics": "/home/legeartis/SignMuon/code/results/centralized/tune_verify_signmuon_mup_0.5347_e75_t/seed0/metrics.json",
+            "val_acc": 94.35,
+            "test_acc": 94.11,
+            "epoch_seconds": 13.0,
+            "epochs_to_target": 10
+          },
+          {
+            "lr": 11.520000000000001,
+            "lr_aux": 0.001,
+            "epochs": 75,
+            "split": "tune",
+            "log": "/home/legeartis/SignMuon/code/results/tuning_logs/verify_signmuon_mup_11.52_e75_t.log",
+            "metrics": "/home/legeartis/SignMuon/code/results/centralized/tune_verify_signmuon_mup_11.52_e75_t/seed0/metrics.json",
+            "val_acc": 94.04,
+            "test_acc": 94.27,
+            "epoch_seconds": 13.0,
+            "epochs_to_target": 9
+          },
+          {
+            "lr": 2.48190876291673,
+            "lr_aux": 0.001,
+            "epochs": 75,
+            "split": "tune",
+            "log": "/home/legeartis/SignMuon/code/results/tuning_logs/verify_signmuon_mup_2.482_e75_t.log",
+            "metrics": "/home/legeartis/SignMuon/code/results/centralized/tune_verify_signmuon_mup_2.482_e75_t/seed0/metrics.json",
+            "val_acc": 94.37,
+            "test_acc": 94.27,
+            "epoch_seconds": 13.01,
+            "epochs_to_target": 8
+          }
+        ],
+        "stable": false,
+        "best_short": 0.5347110336321922,
+        "best_long": 2.48190876291673
+      },
+      "muon": {
+        "short": [
+          {
+            "lr": 0.03231652035047826,
+            "lr_aux": 0.001,
+            "epochs": 15,
+            "split": "tune",
+            "log": "/home/legeartis/SignMuon/code/results/tuning_logs/lr_muon_mup_0.03232_e15_t.log",
+            "metrics": "/home/legeartis/SignMuon/code/results/centralized/tune_lr_muon_mup_0.03232_e15_t/seed0/metrics.json",
+            "val_acc": 93.5,
+            "test_acc": 93.11,
+            "epoch_seconds": 12.95,
+            "epochs_to_target": 7
+          },
+          {
+            "lr": 0.006962383250419168,
+            "lr_aux": 0.001,
+            "epochs": 15,
+            "split": "tune",
+            "log": "/home/legeartis/SignMuon/code/results/tuning_logs/lr_muon_mup_0.006962_e15_t.log",
+            "metrics": "/home/legeartis/SignMuon/code/results/centralized/tune_lr_muon_mup_0.006962_e15_t/seed0/metrics.json",
+            "val_acc": 93.15,
+            "test_acc": 92.95,
+            "epoch_seconds": 12.97,
+            "epochs_to_target": 7
+          },
+          {
+            "lr": 0.15000000000000005,
+            "lr_aux": 0.001,
+            "epochs": 15,
+            "split": "tune",
+            "log": "/home/legeartis/SignMuon/code/results/tuning_logs/lr_muon_mup_0.15_e15_t.log",
+            "metrics": "/home/legeartis/SignMuon/code/results/centralized/tune_lr_muon_mup_0.15_e15_t/seed0/metrics.json",
+            "val_acc": 93.13,
+            "test_acc": 93.29,
+            "epoch_seconds": 12.96,
+            "epochs_to_target": 6
+          }
+        ],
+        "long": [
+          {
+            "lr": 0.03231652035047826,
+            "lr_aux": 0.001,
+            "epochs": 75,
+            "split": "tune",
+            "log": "/home/legeartis/SignMuon/code/results/tuning_logs/verify_muon_mup_0.03232_e75_t.log",
+            "metrics": "/home/legeartis/SignMuon/code/results/centralized/tune_verify_muon_mup_0.03232_e75_t/seed0/metrics.json",
+            "val_acc": 94.78,
+            "test_acc": 94.08,
+            "epoch_seconds": 12.95,
+            "epochs_to_target": 8
+          },
+          {
+            "lr": 0.006962383250419168,
+            "lr_aux": 0.001,
+            "epochs": 75,
+            "split": "tune",
+            "log": "/home/legeartis/SignMuon/code/results/tuning_logs/verify_muon_mup_0.006962_e75_t.log",
+            "metrics": "/home/legeartis/SignMuon/code/results/centralized/tune_verify_muon_mup_0.006962_e75_t/seed0/metrics.json",
+            "val_acc": 94.18,
+            "test_acc": 94.08,
+            "epoch_seconds": 12.97,
+            "epochs_to_target": 7
+          },
+          {
+            "lr": 0.15000000000000005,
+            "lr_aux": 0.001,
+            "epochs": 75,
+            "split": "tune",
+            "log": "/home/legeartis/SignMuon/code/results/tuning_logs/verify_muon_mup_0.15_e75_t.log",
+            "metrics": "/home/legeartis/SignMuon/code/results/centralized/tune_verify_muon_mup_0.15_e75_t/seed0/metrics.json",
+            "val_acc": 94.19,
+            "test_acc": 94.1,
+            "epoch_seconds": 12.96,
+            "epochs_to_target": 9
+          }
+        ],
+        "stable": true,
+        "best_short": 0.03231652035047826,
+        "best_long": 0.03231652035047826
+      }
+    },
+    "final": {
+      "signmuon_mup_e75_fs0": {
+        "lr": 0.5347110336321922,
+        "lr_aux": 0.001,
+        "epochs": 75,
+        "split": "full",
+        "log": "/home/legeartis/SignMuon/code/results/tuning_logs/signmuon_mup_e75_fs0.log",
+        "metrics": "/home/legeartis/SignMuon/code/results/centralized/final_signmuon_mup_e75_fs0/seed0/metrics.json",
+        "test_acc": 94.27,
+        "epoch_seconds": 14.45,
+        "epochs_to_target": 7
+      },
+      "muonusign_mup_e75_fs0": {
+        "lr": 0.15000000000000005,
+        "lr_aux": 0.001,
+        "epochs": 75,
+        "split": "full",
+        "log": "/home/legeartis/SignMuon/code/results/tuning_logs/muonusign_mup_e75_fs0.log",
+        "metrics": "/home/legeartis/SignMuon/code/results/centralized/final_muonusign_mup_e75_fs0/seed0/metrics.json",
+        "test_acc": 93.94,
+        "epoch_seconds": 14.44,
+        "epochs_to_target": 10
+      },
+      "muonsign_mup_e75_fs0": {
+        "lr": 0.11520000000000002,
+        "lr_aux": 0.001,
+        "epochs": 75,
+        "split": "full",
+        "log": "/home/legeartis/SignMuon/code/results/tuning_logs/muonsign_mup_e75_fs0.log",
+        "metrics": "/home/legeartis/SignMuon/code/results/centralized/final_muonsign_mup_e75_fs0/seed0/metrics.json",
+        "test_acc": 93.34,
+        "epoch_seconds": 14.5,
+        "epochs_to_target": 16
+      },
+      "ef21signmuon_mup_e75_fs0": {
+        "lr": 0.017235477520255074,
+        "lr_aux": 0.001,
+        "epochs": 75,
+        "split": "full",
+        "log": "/home/legeartis/SignMuon/code/results/tuning_logs/ef21signmuon_mup_e75_fs0.log",
+        "metrics": "/home/legeartis/SignMuon/code/results/centralized/final_ef21signmuon_mup_e75_fs0/seed0/metrics.json",
+        "test_acc": 94.54,
+        "epoch_seconds": 14.82,
+        "epochs_to_target": 10
+      },
+      "ef21muonusign_mup_e75_fs0": {
+        "lr": 0.017235477520255074,
+        "lr_aux": 0.001,
+        "epochs": 75,
+        "split": "full",
+        "log": "/home/legeartis/SignMuon/code/results/tuning_logs/ef21muonusign_mup_e75_fs0.log",
+        "metrics": "/home/legeartis/SignMuon/code/results/centralized/final_ef21muonusign_mup_e75_fs0/seed0/metrics.json",
+        "test_acc": 94.05,
+        "epoch_seconds": 14.83,
+        "epochs_to_target": 10
+      },
+      "ef21muonsign_mup_e75_fs0": {
+        "lr": 0.015081042830223186,
+        "lr_aux": 0.001,
+        "epochs": 75,
+        "split": "full",
+        "log": "/home/legeartis/SignMuon/code/results/tuning_logs/ef21muonsign_mup_e75_fs0.log",
+        "metrics": "/home/legeartis/SignMuon/code/results/centralized/final_ef21muonsign_mup_e75_fs0/seed0/metrics.json",
+        "test_acc": 94.26,
+        "epoch_seconds": 15.26,
+        "epochs_to_target": 10
+      },
+      "muon_mup_e75_fs0": {
+        "lr": 0.03231652035047826,
+        "lr_aux": 0.001,
+        "epochs": 75,
+        "split": "full",
+        "log": "/home/legeartis/SignMuon/code/results/tuning_logs/muon_mup_e75_fs0.log",
+        "metrics": "/home/legeartis/SignMuon/code/results/centralized/final_muon_mup_e75_fs0/seed0/metrics.json",
+        "test_acc": 94.46,
+        "epoch_seconds": 14.38,
+        "epochs_to_target": 10
+      },
+      "signsgd_mup_e75_fs0": {
+        "lr": 0.11520000000000002,
+        "lr_aux": 0.001,
+        "epochs": 75,
+        "split": "full",
+        "log": "/home/legeartis/SignMuon/code/results/tuning_logs/signsgd_mup_e75_fs0.log",
+        "metrics": "/home/legeartis/SignMuon/code/results/centralized/final_signsgd_mup_e75_fs0/seed0/metrics.json",
+        "test_acc": 92.93,
+        "epoch_seconds": 12.08,
+        "epochs_to_target": 23
+      },
+      "sgd_mup_e75_fs0": {
+        "lr": 0.03231652035047826,
+        "lr_aux": 0.001,
+        "epochs": 75,
+        "split": "full",
+        "log": "/home/legeartis/SignMuon/code/results/tuning_logs/sgd_mup_e75_fs0.log",
+        "metrics": "/home/legeartis/SignMuon/code/results/centralized/final_sgd_mup_e75_fs0/seed0/metrics.json",
+        "test_acc": 93.11,
+        "epoch_seconds": 12.18,
+        "epochs_to_target": 22
+      },
+      "adam_mup_e75_fs0": {
+        "lr": 0.00046415888336127773,
+        "lr_aux": 0.001,
+        "epochs": 75,
+        "split": "full",
+        "log": "/home/legeartis/SignMuon/code/results/tuning_logs/adam_mup_e75_fs0.log",
+        "metrics": "/home/legeartis/SignMuon/code/results/centralized/final_adam_mup_e75_fs0/seed0/metrics.json",
+        "test_acc": 93.38,
+        "epoch_seconds": 12.67,
+        "epochs_to_target": 20
+      },
+      "adam_scaled_mup_e75_fs0": {
+        "lr": 0.5347110336321922,
+        "lr_aux": 0.001,
+        "epochs": 75,
+        "split": "full",
+        "log": "/home/legeartis/SignMuon/code/results/tuning_logs/adam_scaled_mup_e75_fs0.log",
+        "metrics": "/home/legeartis/SignMuon/code/results/centralized/final_adam_scaled_mup_e75_fs0/seed0/metrics.json",
+        "test_acc": 93.11,
+        "epoch_seconds": 12.68,
+        "epochs_to_target": 23
+      }
+    },
+    "wd": {
+      "muon": {
+        "wd": 0.0005,
+        "lr": 0.03231652035047826,
+        "test_acc": 94.4,
+        "test_acc_no_decay": 94.46
+      },
+      "signmuon": {
+        "wd": 0.0005,
+        "lr": 0.5347110336321922,
+        "test_acc": 94.86,
+        "test_acc_no_decay": 94.27
+      },
+      "ef21signmuon": {
+        "wd": 0.0005,
+        "lr": 0.017235477520255074,
+        "test_acc": 94.62,
+        "test_acc_no_decay": 94.54
+      }
+    }
+  },
+  "started": "2026-07-26T11:39:52",
+  "fingerprint": {
+    "weight_decay_mode": "decoupled",
+    "weight_decay": 0.0,
+    "momentum": 0.9,
+    "head_adamw": "always",
+    "lr_aux": 0.001,
+    "dataset": "cifar10",
+    "model": "resnet18"
+  },
+  "epoch_seconds": 12.93
+}

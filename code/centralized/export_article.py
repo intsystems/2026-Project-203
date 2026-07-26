@@ -256,6 +256,44 @@ def group_finals(runs: Sequence[Run]) -> Dict[Tuple[str, str], List[Run]]:
     return out
 
 
+#: Fields that must agree across the two rule groups for a head-to-head to be
+#: about the rule. ``lr`` is excluded on purpose -- each rule is tuned separately,
+#: so a differing eta_0 is the comparison working, not a confound.
+MATCHED_FIELDS = ("weight_decay", "weight_decay_mode", "momentum", "epochs",
+                  "batch_size", "head_adamw", "lr_aux", "dataset", "model",
+                  "split", "last_k")
+
+
+def confounds(by: Dict[Tuple[str, str], List[Run]]) -> List[str]:
+    """Config fields that differ *between* lr_scaling groups.
+
+    A scaling-rule comparison only measures the rule if nothing else moved. This
+    has teeth: an earlier unit-gain sweep in this project ran at ``weight_decay
+    5e-4, coupled`` while the mup sweep ran at ``0, decoupled``, and since
+    ``_unit_gain`` and ``_mup`` are the *same* multiplier for the LMO family, every
+    apparent "rule effect" on those methods was the decay. Reporting that as a rule
+    comparison would have been a fabricated result, so the exporter refuses rather
+    than leaving it to the reader to notice.
+    """
+    per_rule: Dict[str, Dict[str, set]] = {}
+    for (_, rule), group in by.items():
+        seen = per_rule.setdefault(rule, {f: set() for f in MATCHED_FIELDS})
+        for run in group:
+            for field in MATCHED_FIELDS:
+                seen[field].add(repr(run.config.get(field)))
+    if len(per_rule) < 2:
+        return []
+    bad = []
+    for field in MATCHED_FIELDS:
+        values = {rule: seen[field] for rule, seen in per_rule.items()}
+        union: set = set()
+        for vals in values.values():
+            union |= vals
+        if len(union) > 1:
+            bad.append(field)
+    return bad
+
+
 def agg(group: Sequence[Run], fn) -> Tuple[Optional[float], int]:
     """``(mean over seeds, n_seeds contributing)``; ``(None, 0)`` if nothing recorded.
 
@@ -395,16 +433,23 @@ def write_scaling_compare(runs: Sequence[Run], out: Path,
     if not by:
         return None
     rules = sorted({rule for _, rule in by})
+    bad = confounds(by)
 
     path = out / "scaling_compare.csv"
     metric_cols = ["test_acc_tail", "n_seeds", "lr",
                    *[f"epochs_to_{t:g}" for t in targets]]
     with open(path, "w", encoding="utf-8", newline="") as fh:
         w = csv.writer(fh)
+        # The delta column is withheld rather than qualified: a number in a CSV
+        # gets quoted, a caveat in a header does not travel with it.
+        if bad:
+            w.writerow([f"CONFOUNDED: the rule groups also differ in "
+                        f"{', '.join(bad)} -- these columns are not a scaling-rule "
+                        f"comparison and no delta is reported"])
         header = ["optimizer"]
         for rule in rules:
             header += [f"{m}[{rule}]" for m in metric_cols]
-        if len(rules) == 2:
+        if len(rules) == 2 and not bad:
             header.append(f"delta_test_acc_tail[{rules[1]}-{rules[0]}]")
         w.writerow(header)
 
@@ -424,7 +469,7 @@ def write_scaling_compare(runs: Sequence[Run], out: Path,
                     reached, _ = agg(group, lambda r, t=t: _steps_to(
                         r.history, "test_acc", t))
                     row.append(_r(reached, 1))
-            if len(rules) == 2:
+            if len(rules) == 2 and not bad:
                 a, b = tails[rules[0]], tails[rules[1]]
                 row.append(_r(b - a) if (a is not None and b is not None) else None)
             w.writerow(row)
@@ -515,15 +560,23 @@ def print_summary(runs: Sequence[Run], targets: Sequence[float]) -> None:
     by = group_finals(runs)
     frules = sorted({rule for _, rule in by})
     if len(frules) >= 2:
+        bad = confounds(by)
         print("\n--- SCALING RULE, HEAD TO HEAD (tail test acc) ---")
+        if bad:
+            print(f"  !! CONFOUNDED: the rule groups also differ in "
+                  f"{', '.join(bad)}.")
+            print("  !! This is NOT a scaling-rule comparison. Deltas withheld.")
+            print("  !! Note unit-gain and mup are the SAME multiplier for the LMO")
+            print("  !! family, so any apparent rule effect there is the other "
+                  "variable.")
         print(f"{'optimizer':<16}" + "".join(f"{r:>13}" for r in frules) +
-              f"{'delta':>9}")
+              ("" if bad else f"{'delta':>9}"))
         wins = {r: 0 for r in frules}
         deltas: List[float] = []
         for opt in sorted({o for o, _ in by}):
             vals = [agg(by.get((opt, rule)) or [], _tail_test)[0] for rule in frules]
             line = f"{opt:<16}" + "".join(_fmt(v, '13.2f') for v in vals)
-            if len(frules) == 2 and all(v is not None for v in vals):
+            if len(frules) == 2 and not bad and all(v is not None for v in vals):
                 delta = vals[1] - vals[0]
                 line += f"{delta:>+9.2f}"
                 deltas.append(delta)

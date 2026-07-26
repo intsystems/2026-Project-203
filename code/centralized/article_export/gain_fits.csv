@@ -1,0 +1,5 @@
+run_name,optimizer,lr_scaling,lr,epochs,slope,r2,points,reading
+tune_gain_muon,muon,unit-gain,0.015,20,-0.0137,0.0253,20,incoherent -> alpha=1/2
+tune_gain_muon_e20_t,muon,unit-gain,0.005,20,0.5127,0.9995,20,incoherent -> alpha=1/2
+tune_gain_signmuon,signmuon,unit-gain,0.034,20,-0.0595,0.304,20,incoherent -> alpha=1/2
+tune_gain_signmuon_e20_t,signmuon,unit-gain,0.011333333333333334,20,0.5156,0.9998,20,incoherent -> alpha=1/2
