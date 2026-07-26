@@ -151,6 +151,135 @@ def test_update_math_matches_reference():
 
 
 # --------------------------------------------------------------------------
+# Per-layer EF21 compressor on record #40's merged Q/K/V/O weight
+# --------------------------------------------------------------------------
+# ``mean|r|`` is the only NON-elementwise operation in any of the EF21 update
+# rules, so -- exactly like the LMO -- it has to be taken per LAYER, and record
+# #40's ``qkvo_w`` is four layers in one tensor. ``sign``, the visible half of the
+# compressor, IS elementwise, which is what makes this easy to get wrong and
+# impossible to see in the loss curves of the non-EF21 methods.
+#
+# The three tests below pin, in order: the block axis, the per-block scale, and
+# that single-layer parameters are untouched.
+
+_EF21 = ["EF21-SignMuon", "EF21-MuonUSign", "EF21-MuonSign"]
+
+
+def _tagged(shape, module):
+    """A parameter carrying record #40's ``.module`` tag, which is how both the
+    LMO and the compressor learn that ``qkvo_w`` is four layers."""
+    p = torch.zeros(shape)
+    if module is not None:
+        p.module = module
+    return p
+
+
+def _compress(name, r, module=None):
+    """``_scaled_sign(r, p)`` for one method, on a parameter tagged ``module``."""
+    p = _tagged(tuple(r.shape), module)
+    opt = smo.OPTIMIZERS[name]([p], lr=0.1, momentum=0.9, weight_decay=0.0,
+                               lr_scaling="none")
+    return opt._scaled_sign(r, p)
+
+
+def test_compressor_block_axis_is_the_models_view():
+    """A residual supported on ONE Q/K/V/O block must move only that block.
+
+    This is the failure that is silent: ``[h, 4w]`` split on the wrong axis gives
+    four "blocks" each mixing all of Q/K/V/O, so a single-block residual leaks
+    into all four, every block ends up with the same scale again, and the
+    per-layer compressor is a no-op that looks implemented.
+    """
+    h, w = 8, 16                                   # blocks are reshape(4, 8, 4)
+    for name in _EF21:
+        for k in range(4):
+            r = torch.zeros(4, h, w // 4)
+            r[k] = 1.0
+            out = _compress(name, r.reshape(h, w), module="attn")
+            blocks = out.reshape(4, h, w // 4)
+            assert blocks[k].abs().min() > 0, f"{name}: block {k} was not moved"
+            for j in range(4):
+                if j != k:
+                    assert blocks[j].abs().max() == 0, (
+                        f"{name}: a residual confined to block {k} leaked into "
+                        f"block {j} -- the reshape axis does not match the model's "
+                        ".view(4, hdim, dim)")
+    print(f"  OK   block axis matches the model's .view(4, hdim, dim) "
+          f"({len(_EF21)} methods x 4 blocks)")
+
+
+def test_compressor_scale_is_per_block():
+    """Each block's step magnitude must equal that block's OWN mean|r|.
+
+    Record #40 zero-inits the O block, so the four blocks' gradients -- and hence
+    their EF21 residuals -- differ by orders of magnitude. A single shared
+    ``mean|r|`` hands every block the *largest* block's step size: at scales
+    (1, 1, 1, 0.01) it overshoots the O block by ~74x its own residual, and the
+    LMO of that block becomes the LMO of the compressor's own overshoot.
+    """
+    h, w = 8, 16
+    scales = torch.tensor([1.0, 1.0, 1.0, 0.01], dtype=torch.get_default_dtype())
+    torch.manual_seed(0)
+    r = torch.randn(4, h, w // 4) * scales[:, None, None]
+    want = r.abs().mean(dim=(-2, -1))               # each block's own scale
+    shared = r.abs().mean()                         # the pre-fix single scale
+    assert shared / want[3] > 10, "fixture must exercise a real block disparity"
+    for name in _EF21:
+        out = _compress(name, r.reshape(h, w), module="attn")
+        # |out| is constant within a block and equal to that block's alpha
+        got = out.reshape(4, h, w // 4).abs().mean(dim=(-2, -1))
+        assert torch.allclose(got, want, rtol=1e-12), (
+            f"{name}: block step magnitudes {got.tolist()} != each block's own "
+            f"mean|r| {want.tolist()}")
+    print(f"  OK   per-block scale (shared scale would overshoot the O block by "
+          f"{shared / want[3]:.0f}x)")
+
+
+def test_compressor_unchanged_for_single_layer_parameters():
+    """Parameters that ARE one layer must be bit-identical to the pre-fix rule.
+
+    This is what keeps the existing non-attn results valid: 33 of record #40's 43
+    matrix parameters, and all five methods that never compress at all.
+    """
+    torch.manual_seed(0)
+    for shape, module in (((768, 3072), "mlp"), ((6, 12), "attn_gate"),
+                          ((1, 12), "smear_gate"), ((5, 5), None)):
+        r = torch.randn(shape)
+        old = torch.sign(r) * r.abs().mean()        # the exact pre-fix expression
+        for name in _EF21:
+            got = _compress(name, r, module=module)
+            assert torch.equal(got, old), f"{name} {shape}: not bit-identical"
+    print("  OK   single-layer parameters bit-identical to the pre-fix rule")
+
+
+def test_diagnostics_record_and_report():
+    """The diagnostics path must run single-process and report a sane ``alpha``.
+
+    For an isotropic residual the scaled sign's achieved contraction
+    ``||r||_1^2 / (d ||r||_2^2)`` is ``2/pi = 0.6366``. That is where ``alpha_up``
+    should sit early in a run -- and its DECAY toward ``1/d`` as the residual
+    becomes directionally coherent is the whole reason the slot is logged.
+    """
+    torch.manual_seed(0)
+    p = _tagged((32, 32), None)
+    opt = smo.OPTIMIZERS["EF21-MuonUSign"]([p], lr=0.1, momentum=0.0,
+                                           weight_decay=0.0, lr_scaling="none")
+    opt.diagnostics = True
+    grp = opt.param_groups[0]
+    for _ in range(3):
+        p.grad = torch.randn(32, 32, dtype=p.dtype)
+        opt.update_param(p, grp)
+    report = opt.diagnostics_report({id(p): "probe"})
+    assert "alpha_up" in report and "lag_est" in report, f"bad report:\n{report}"
+    a = opt._diag_buf[smo.DIAG_SLOTS.index("alpha_up"), 0].item()
+    assert 0.5 < a < 0.75, (
+        f"alpha_eff={a:.4f} on an isotropic residual; expected ~2/pi=0.637")
+    # off by default, so the measured hot loop never pays for them
+    assert smo.OPTIMIZERS["Muon"]([_tagged((4, 4), None)], lr=0.1).diagnostics is False
+    print(f"  OK   diagnostics report (alpha_up={a:.4f} vs 2/pi=0.6366)")
+
+
+# --------------------------------------------------------------------------
 # Per-layer LR scaling
 # --------------------------------------------------------------------------
 
@@ -163,13 +292,6 @@ _REC40_SHAPES = [
     ("blocks.mlp.c_fc", (768, 3072), "mlp"),
     ("blocks.mlp.c_proj", (768, 3072), "mlp"),
 ]
-
-
-def _tagged(shape, module):
-    p = torch.zeros(shape)
-    if module is not None:
-        p.module = module
-    return p
 
 
 def test_lmo_family_matches_record40_aspect_factor():
@@ -250,6 +372,11 @@ def test_semantic_rule_only_moves_the_transposed_mlp_matrix():
 if __name__ == "__main__":
     print("Verifying distributed optimizer cores against the numpy paper reference...\n")
     test_update_math_matches_reference()
+    print("\nVerifying the per-layer EF21 compressor on the merged Q/K/V/O weight...\n")
+    test_compressor_block_axis_is_the_models_view()
+    test_compressor_scale_is_per_block()
+    test_compressor_unchanged_for_single_layer_parameters()
+    test_diagnostics_record_and_report()
     print("\nVerifying per-layer LR scaling...\n")
     test_lmo_family_matches_record40_aspect_factor()
     test_unit_gain_equalizes_the_per_step_gain()

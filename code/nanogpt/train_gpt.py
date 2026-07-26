@@ -1012,6 +1012,18 @@ def update_optimizer_params(step, optimizer1, optimizer2):
         for group in optimizer2.param_groups:
             group["momentum"] = momentum
 
+    # One instrumented optimizer step per validation. The diagnostics (compressor
+    # contraction, estimator lag, per-block gradient magnitudes -- see DIAG_SLOTS
+    # in signmuon_optimizers.py) cost a couple of extra reductions per parameter,
+    # which is nothing next to the LMO's matmuls but is not free in kernel
+    # launches. Enabling them only on the step whose numbers get logged keeps the
+    # speedrun clock bit-for-bit comparable across all eight arms.
+    if hasattr(optimizer2, "diagnostics"):
+        nxt = step + 1                     # validation happens at the TOP of `nxt`
+        optimizer2.diagnostics = bool(
+            nxt == train_steps
+            or (args.val_loss_every > 0 and nxt % args.val_loss_every == 0))
+
 model: nn.Module = torch.compile(model, dynamic=False, fullgraph=True)
 
 ########################################
@@ -1100,29 +1112,62 @@ for step in range(train_steps + 1):
         training_time_ms += 1000 * (time.perf_counter() - t0)
         diverged |= flush_train_losses(step)
         model.eval()
-        # EF21-MuonSign trains a sign-compressed broadcast model W but tracks an exact server
-        # model X; evaluate on X (the "true" progress) and restore W afterwards. No-op otherwise.
+        assert args.val_tokens % args.val_batch_size == 0
+        val_steps = grad_accum_steps * args.val_tokens // args.val_batch_size
+
+        def evaluate():
+            """Mean validation loss of the CURRENT parameters, averaged over ranks.
+
+            A fresh loader is deterministic -- the val split is read unaligned from
+            position 0 of the first sorted shard -- so every call within one
+            validation sees the identical tokens. That is what makes the X-vs-W
+            comparison below a comparison of MODELS rather than of batches.
+            """
+            loader = distributed_data_generator(args.val_files, args.val_batch_size, -1,
+                                                grad_accum_steps=grad_accum_steps,
+                                                align_to_bos=False)
+            total = 0
+            with torch.no_grad():
+                for _ in range(val_steps):
+                    inputs, targets, cum_seqlens = next(loader)
+                    total += model(inputs, targets, cum_seqlens, ws_short, ws_long)
+            del loader
+            total /= val_steps
+            dist.all_reduce(total, op=dist.ReduceOp.AVG)
+            return total
+
+        # EF21-MuonSign trains a sign-compressed broadcast model W but tracks an
+        # exact server model X. Report BOTH:
+        #   * X is primary -- it is the iterate the convergence corollary bounds
+        #     (E||grad f(X_t)||), and it keeps this column comparable with the
+        #     other seven arms and with earlier logs;
+        #   * W is the iterate every gradient was actually evaluated at, and the
+        #     EF21-P downlink's contraction is only alpha ~ 1/d, so the two can
+        #     separate by a lot. Without both numbers a reader cannot tell a
+        #     failure of the METHOD from a failure of the X-tracking.
+        # No-op for every other method, where X and W are the same tensor.
         eval_on_exact = hasattr(optimizer2, "swap_in_exact")
         if eval_on_exact:
             optimizer2.swap_in_exact()
-        assert args.val_tokens % args.val_batch_size == 0
-        val_steps = grad_accum_steps * args.val_tokens // args.val_batch_size
-        val_loader = distributed_data_generator(args.val_files, args.val_batch_size, -1, grad_accum_steps=grad_accum_steps, align_to_bos=False)
-        val_loss = 0
-        with torch.no_grad():
-            for _ in range(val_steps):
-                inputs, targets, cum_seqlens = next(val_loader)
-                val_loss += model(inputs, targets, cum_seqlens, ws_short, ws_long)
-        val_loss /= val_steps
-        del val_loader
-        dist.all_reduce(val_loss, op=dist.ReduceOp.AVG)
+        val_loss = evaluate()                       # X (primary)
+        val_loss_w = None
         if eval_on_exact:
             optimizer2.swap_out_exact()
-        print0(f"step:{step}/{train_steps} val_loss:{val_loss:.4f} train_time:{training_time_ms:.0f}ms step_avg:{training_time_ms/max(step, 1):.2f}ms", console=True)
+            val_loss_w = evaluate()                 # W (broadcast model)
+        print0(f"step:{step}/{train_steps} val_loss:{val_loss:.4f}"
+               + (f" val_loss_W:{val_loss_w:.4f}" if val_loss_w is not None else "")
+               + f" train_time:{training_time_ms:.0f}ms step_avg:{training_time_ms/max(step, 1):.2f}ms",
+               console=True)
+        if step > 0 and hasattr(optimizer2, "diagnostics_report"):
+            report = optimizer2.diagnostics_report(_param_names)
+            if report:
+                print0(report)
         # Several of the paper's methods are proved to diverge (Thms 1-4) and this
         # is a paid GPU: once the loss is NaN/Inf nothing more is learned, so stop.
-        # The decision is identical on every rank (both quantities are all_reduced).
+        # The decision is identical on every rank (every quantity is all_reduced).
         diverged |= not math.isfinite(val_loss.item())
+        if val_loss_w is not None:
+            diverged |= not math.isfinite(val_loss_w.item())
         if diverged:
             print0(f"DIVERGED step:{step}/{train_steps} -- non-finite loss, aborting run",
                    console=True)

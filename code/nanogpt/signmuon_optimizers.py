@@ -45,9 +45,29 @@ Two things that are specific to the record-#40 model
    ``.view(4, hdim, dim)``.  Muon must therefore orthogonalize the FOUR
    ``[hdim, dim]`` sub-matrices independently -- NOT the merged matrix.  We
    detect this via the ``.module == "attn"`` tag the model attaches to the
-   parameter and reshape only around the LMO call (every other op is elementwise
-   and shape-agnostic).  Same-shaped MLP weights (``.module == "mlp"``) are
-   orthogonalized as a single matrix, as the model uses them.
+   parameter and reshape around the two operations that are NOT elementwise:
+
+     * the LMO itself (:meth:`_DistributedMatrixOptimizer._lmo`), and
+     * the EF21 compressor's scale ``mean|.|``
+       (:meth:`_DistributedMatrixOptimizer._scaled_sign`).
+
+   The second one matters as much as the first and is easy to miss, because
+   ``sign`` -- the visible half of the compressor -- *is* elementwise.  One
+   ``mean|r|`` shared across the four blocks hands every block the step size
+   implied by the LARGEST, so a block whose residual sits well below that mean has
+   its estimator driven by the compressor's own overshoot rather than by its own
+   residual, and the LMO of that block becomes the LMO of noise.  Record #40
+   zero-inits the O block (``qkvo_w.view(4,hdim,dim)[3].zero_()``), so at
+   initialization no gradient reaches Q/K/V at all while O's is finite: the
+   disparity is unbounded exactly where it does the most damage.  The paper's
+   compressor is per-LAYER and these are four layers, so it gets four scales.
+
+   This affects only the three EF21 methods.  The non-EF21 sign methods transmit a
+   bare entrywise ``sign``, which is scale-free and therefore identical whether it
+   is read as one matrix or four; ``Muon`` never compresses at all.
+
+   Same-shaped MLP weights (``.module == "mlp"``) are one layer each and are
+   orthogonalized -- and compressed -- as a single matrix, as the model uses them.
 
 -----------------------------------------------------------------------------
 Distributed vs. federated -- the part that actually changes
@@ -115,6 +135,7 @@ __all__ = [
     "FAMILY_LMO",
     "FAMILY_SIGN",
     "LR_SCALING_RULES",
+    "DIAG_SLOTS",
     "lmo_shape",
     "layer_multiplier",
     "describe_lr_scaling",
@@ -339,6 +360,35 @@ def describe_lr_scaling(optimizer: "_DistributedMatrixOptimizer",
 
 
 # ---------------------------------------------------------------------------
+# Per-parameter diagnostics published for the run log.
+#
+# Each is a scalar recorded on the rank that OWNS the parameter, on the single
+# step per validation that the training script flags (see
+# ``_DistributedMatrixOptimizer.diagnostics``), so the hot loop and its
+# wall-clock are unperturbed.  ``diagnostics_report`` sums them across ranks --
+# every non-owning rank contributes zero -- so the table is identical everywhere.
+#
+# These exist because the convergence threshold of the EF21 methods is governed
+# by the compressor's contraction constant ``alpha``, and the scaled sign's
+# ``alpha`` is NOT a constant: it is ``||r||_1^2 / (d ||r||_2^2)``, which equals
+# ``2/pi`` for an isotropic residual and decays toward ``1/d`` as the residual
+# becomes directionally coherent.  ``alpha_up`` / ``alpha_dn`` measure it.
+# ---------------------------------------------------------------------------
+
+DIAG_SLOTS = (
+    "alpha_up",   # contraction achieved by the uplink (or only) scaled sign
+    "alpha_dn",   # ... by the downlink EF21-P scaled sign (EF21-MuonSign)
+    "lag_est",    # ||target - estimator||_F / ||target||_F  (all EF21 methods)
+    "lag_XW",     # ||X - W||_F / ||W||_F  (EF21-MuonSign's server/broadcast gap)
+    "gblk0",      # mean|grad| of Q  (or of the whole tensor, for non-attn params)
+    "gblk1",      # mean|grad| of K
+    "gblk2",      # mean|grad| of V
+    "gblk3",      # mean|grad| of O
+)
+_DIAG_SLOT_IX = {name: i for i, name in enumerate(DIAG_SLOTS)}
+
+
+# ---------------------------------------------------------------------------
 # Shared distributed base: reduce_scatter -> owning-rank update -> all_gather.
 # ---------------------------------------------------------------------------
 
@@ -377,6 +427,21 @@ class _DistributedMatrixOptimizer(Optimizer):
         # per-step cost is a dict lookup rather than a sqrt per parameter.
         self._lambda = {id(p): layer_multiplier(p, self.family, lr_scaling)
                         for g in self.param_groups for p in g["params"]}
+        # --- diagnostics (see DIAG_SLOTS) ----------------------------------
+        self._diag_params = [p for g in self.param_groups for p in g["params"]]
+        self._diag_col = {id(p): i for i, p in enumerate(self._diag_params)}
+        # Allocated EAGERLY, not on first use: `diagnostics_report` all_reduces this
+        # buffer, and a rank that happened to own no parameter would otherwise reach
+        # that collective with nothing allocated, bail out early, and deadlock every
+        # other rank. A few hundred floats is not worth the risk.
+        self._diag_buf = torch.zeros(len(DIAG_SLOTS), len(self._diag_params),
+                                     dtype=torch.float32,
+                                     device=self._diag_params[0].device)
+        #: The training script sets this True for the one step whose statistics it
+        #: wants logged (the step immediately before each validation) and False
+        #: otherwise, so the ~2 extra reductions per parameter never land in the
+        #: measured hot loop. Every arm therefore keeps an identical clock.
+        self.diagnostics = False
 
     # ---- centralized math helpers (single parameter, no collectives) -------
 
@@ -400,6 +465,142 @@ class _DistributedMatrixOptimizer(Optimizer):
             return d.reshape(m.shape)
         return polar_express(m)
 
+    def _scaled_sign(self, r: Tensor, p: Tensor, slot: str | None = None) -> Tensor:
+        """The EF21 compressor ``mean|r| * sign(r)``, with ONE scale per LAYER.
+
+        ``mean|r|`` is the only non-elementwise operation in any of the EF21
+        update rules, so it is the only one -- besides the LMO -- that has to know
+        about record #40's merged ``qkvo_w``.  That tensor holds FOUR layers
+        (Q/K/V/O) and both the model (``.view(4, hdim, dim)``) and :meth:`_lmo`
+        read it that way, so the compressor gets four scales, not one.  See the
+        module docstring, item 2, for why sharing one is damaging and why it hits
+        only the EF21 methods.
+
+        ``slot`` optionally names the DIAG_SLOTS entry under which this call's
+        achieved contraction is recorded.
+        """
+        if self._is_attn(p):
+            h, w = r.shape[-2], r.shape[-1]
+            # exactly _lmo's reshape, which is exactly the model's own
+            # `.view(4, hdim, dim)`: the blocks are row bands of the flat tensor,
+            # NOT column slices. Getting this axis wrong yields four "blocks" that
+            # each mix all of Q/K/V/O, i.e. silently no per-layer scaling at all.
+            rb = r.reshape(4, h, w // 4)
+            alpha = rb.abs().mean(dim=(-2, -1), keepdim=True)
+            if slot is not None and self.diagnostics:
+                self._record_alpha(p, rb, slot)
+            return (alpha * rb.sign()).reshape(r.shape)
+        if slot is not None and self.diagnostics:
+            self._record_alpha(p, r, slot)
+        return r.abs().mean() * r.sign()
+
+    # ---- diagnostics (owning-rank scalars; see DIAG_SLOTS) -----------------
+
+    def _record(self, p: Tensor, slot: str, value: Tensor) -> None:
+        """Store one scalar for one owned parameter: device-to-device, no host
+        sync, so this is safe to call from inside the training step."""
+        self._diag_buf[_DIAG_SLOT_IX[slot], self._diag_col[id(p)]] = value
+
+    def _record_alpha(self, p: Tensor, r: Tensor, slot: str) -> None:
+        """``alpha_eff = ||r||_1^2 / (d ||r||_2^2)``: the contraction the scaled
+        sign ACTUALLY achieves on this round's residual -- ``2/pi`` for an
+        isotropic ``r``, decaying to ``1/d`` as ``r`` becomes coherent.  This is
+        the ``alpha`` of the convergence threshold, measured rather than assumed.
+
+        ``r`` arrives already blocked for the merged attention weight, in which
+        case we report the mean of the four blocks' values.  Accumulated in fp32
+        because ``r`` may be bf16 (record #40 casts every ``nn.Linear``, which
+        includes the gate weights).
+        """
+        rf = r.float()
+        d = rf.shape[-1] * rf.shape[-2]
+        l1 = rf.abs().sum(dim=(-2, -1))
+        l2sq = rf.pow(2).sum(dim=(-2, -1))
+        self._record(p, slot, (l1.pow(2) / (d * l2sq.clamp_min(1e-30))).mean())
+
+    def _record_lag(self, p: Tensor, slot: str, err: Tensor, ref: Tensor) -> None:
+        """Relative tracking error ``||err|| / ||ref||`` (fp32-accumulated)."""
+        self._record(p, slot,
+                     err.float().norm() / ref.float().norm().clamp_min(1e-30))
+
+    def _record_grad_blocks(self, p: Tensor) -> None:
+        """``mean|grad|`` per Q/K/V/O block of the merged attention weight (and the
+        whole-tensor value in ``gblk0`` for every other parameter).  The spread
+        across the four is what decides whether one shared compressor scale would
+        have been adequate -- it is the measurement, on the real model, behind the
+        per-layer scaling in :meth:`_scaled_sign`."""
+        g = p.grad.float()
+        if self._is_attn(p):
+            h, w = g.shape[-2], g.shape[-1]
+            vals = g.reshape(4, h, w // 4).abs().mean(dim=(-2, -1))
+            for i in range(4):
+                self._record(p, f"gblk{i}", vals[i])
+        else:
+            self._record(p, "gblk0", g.abs().mean())
+
+    @torch.no_grad()
+    def diagnostics_report(self, names: dict | None = None) -> str:
+        """Table of the diagnostics recorded on the last flagged step.
+
+        Values live on their owning rank only, so one SUM all_reduce (every other
+        rank contributes zeros) makes the table identical on every rank and the
+        caller can print it from rank 0.  Rows collapse the per-block index, as
+        :func:`describe_lr_scaling` does, and report the median over the identical
+        layers; a slot no method touched is left blank rather than printed as 0.
+
+        Every rank must reach this method, and every early return must happen
+        *after* the collective -- see the note on eager buffer allocation in
+        :meth:`__init__`.
+        """
+        import re
+        import statistics
+
+        buf = self._diag_buf
+        if dist.is_initialized() and dist.get_world_size() > 1:
+            # UNCONDITIONAL: never gate this collective on rank-local state.
+            buf = buf.clone()
+            dist.all_reduce(buf, op=dist.ReduceOp.SUM)
+        vals = buf.tolist()   # host sync: only ever called with the clock stopped
+        # Decided AFTER the reduce so that every rank returns the same thing.
+        if not any(any(row) for row in vals):
+            return ""
+        names = names or {}
+
+        groups: dict[str, list[int]] = {}
+        for p in self._diag_params:
+            name = re.sub(r"\.\d+\.", ".*.",
+                          names.get(id(p), getattr(p, "module", "?")))
+            groups.setdefault(name, []).append(self._diag_col[id(p)])
+
+        shown = ("alpha_up", "alpha_dn", "lag_est", "lag_XW")
+        used = [s for s in shown if any(vals[_DIAG_SLOT_IX[s]][c] != 0.0
+                                       for cols in groups.values() for c in cols)]
+        lines = [f"diagnostics ({type(self).__name__}; medians over identical "
+                 f"layers, from the step before this validation)"]
+        if used:
+            lines.append("  " + f"{'parameter':<32}{'count':>7}"
+                         + "".join(f"{s:>11}" for s in used))
+            for name, cols in groups.items():
+                row = f"  {name:<32}{len(cols):>7}"
+                for s in used:
+                    med = statistics.median(vals[_DIAG_SLOT_IX[s]][c] for c in cols)
+                    row += f"{med:>11.4g}" if med != 0.0 else f"{'-':>11}"
+                lines.append(row)
+        # Per-block gradient magnitudes: only the merged attention weight has
+        # blocks, and their spread is the number that justifies the per-layer
+        # compressor scale in _scaled_sign.
+        for name, cols in groups.items():
+            if not self._is_attn(self._diag_params[cols[0]]):
+                continue
+            blk = [statistics.median(vals[_DIAG_SLOT_IX[f"gblk{i}"]][c] for c in cols)
+                   for i in range(4)]
+            lo, hi = min(blk), max(blk)
+            ratio = f"{hi / lo:.1f}x" if lo > 0 else "inf"
+            lines.append(f"  {name} mean|grad| per Q,K,V,O block: "
+                         + " ".join(f"{v:.3e}" for v in blk)
+                         + f"   max/min={ratio}")
+        return "\n".join(lines)
+
     def lambda_of(self, p: Tensor) -> float:
         """Per-layer multiplier for ``p`` (see the LR-scaling section above)."""
         lam = self._lambda.get(id(p))
@@ -408,15 +609,22 @@ class _DistributedMatrixOptimizer(Optimizer):
             self._lambda[id(p)] = lam
         return lam
 
-    def _effective_grad(self, grad: Tensor, group: dict, state: dict) -> Tensor:
+    def _effective_grad(self, p: Tensor, group: dict, state: dict) -> Tensor:
         """Nesterov heavy-ball momentum, identical to the upstream Muon:
 
             buf  <- momentum * buf + (1 - momentum) * grad      (EMA buffer)
             m    <- (1 - momentum) * grad + momentum * buf      (look-ahead)
 
-        Returns ``m`` (aliases ``grad`` after an in-place lerp; callers must not
+        Returns ``m`` (aliases ``p.grad`` after an in-place lerp; callers must not
         mutate it in place).
+
+        Takes ``p`` rather than ``p.grad`` so that this single choke point -- every
+        method calls it exactly once, with the global mean gradient already in
+        place -- can also publish the per-block gradient magnitudes.
         """
+        if self.diagnostics:
+            self._record_grad_blocks(p)
+        grad = p.grad
         momentum = group["momentum"]
         if "momentum_buffer" not in state:
             state["momentum_buffer"] = torch.zeros_like(grad)
@@ -535,7 +743,7 @@ class Muon(_DistributedMatrixOptimizer):
     def update_param(self, p, group):
         state = self.state[p]
         self._decoupled_weight_decay(p, p, group)
-        m = self._effective_grad(p.grad, group, state)
+        m = self._effective_grad(p, group, state)
         v = self._lmo(m, p)
         p.add_(v, alpha=-self._eff_lr(p, group))
 
@@ -548,7 +756,7 @@ class SignSGD(_DistributedMatrixOptimizer):
     def update_param(self, p, group):
         state = self.state[p]
         self._decoupled_weight_decay(p, p, group)
-        m = self._effective_grad(p.grad, group, state)
+        m = self._effective_grad(p, group, state)
         p.add_(m.sign(), alpha=-self._eff_lr(p, group))
 
 
@@ -569,7 +777,7 @@ class SignMuon(_DistributedMatrixOptimizer):
     def update_param(self, p, group):
         state = self.state[p]
         self._decoupled_weight_decay(p, p, group)
-        m = self._effective_grad(p.grad, group, state)
+        m = self._effective_grad(p, group, state)
         d = self._lmo(m, p)
         p.add_(d.sign(), alpha=-self._eff_lr(p, group))
 
@@ -589,7 +797,7 @@ class MuonUSign(_DistributedMatrixOptimizer):
     def update_param(self, p, group):
         state = self.state[p]
         self._decoupled_weight_decay(p, p, group)
-        m = self._effective_grad(p.grad, group, state)
+        m = self._effective_grad(p, group, state)
         d = self._lmo(m.sign(), p)
         p.add_(d, alpha=-self._eff_lr(p, group))
 
@@ -604,7 +812,7 @@ class MuonSign(_DistributedMatrixOptimizer):
     def update_param(self, p, group):
         state = self.state[p]
         self._decoupled_weight_decay(p, p, group)
-        m = self._effective_grad(p.grad, group, state)
+        m = self._effective_grad(p, group, state)
         d = self._lmo(m.sign(), p)
         p.add_(d.sign(), alpha=-self._eff_lr(p, group))
 
@@ -623,6 +831,12 @@ class EF21SignMuon(_DistributedMatrixOptimizer):
         X     <- X - eta * d_est
 
     Tracks the (discontinuous) LMO direction with a contractive 1-bit estimator.
+
+    Note that this method's target ``D`` is *blockwise orthogonal*, so its four
+    merged Q/K/V/O blocks carry identical entry magnitudes and the per-layer
+    compressor scale changes almost nothing here -- unlike the two methods below,
+    which track the raw momentum. It uses the same operator regardless: the
+    compressor is defined per layer, and one spelling is better than two.
     """
 
     family = FAMILY_LMO
@@ -630,14 +844,15 @@ class EF21SignMuon(_DistributedMatrixOptimizer):
     def update_param(self, p, group):
         state = self.state[p]
         self._decoupled_weight_decay(p, p, group)
-        m = self._effective_grad(p.grad, group, state)
+        m = self._effective_grad(p, group, state)
         d = self._lmo(m, p)
         if "d_est" not in state:
             state["d_est"] = torch.zeros_like(p)
         d_est = state["d_est"]
         delta = d - d_est
-        alpha = delta.abs().mean()
-        d_est.add_(delta.sign() * alpha)        # d_est += mean|delta| * sign(delta)
+        d_est.add_(self._scaled_sign(delta, p, slot="alpha_up"))
+        if self.diagnostics:
+            self._record_lag(p, "lag_est", d - d_est, d)
         p.add_(d_est, alpha=-self._eff_lr(p, group))
 
 
@@ -651,6 +866,11 @@ class EF21MuonUSign(_DistributedMatrixOptimizer):
 
     Applying the LMO to the (asymptotically exact) gradient estimator rather than
     to a sign is what restores convergence on the Theorem-1 counterexample.
+
+    ``mean|.|`` is per LAYER, so on the merged Q/K/V/O weight it is four scales,
+    not one -- see :meth:`_DistributedMatrixOptimizer._scaled_sign`. This method
+    tracks the RAW momentum, whose blocks differ by orders of magnitude, so unlike
+    EF21-SignMuon it is materially affected by that choice.
     """
 
     family = FAMILY_LMO
@@ -658,13 +878,14 @@ class EF21MuonUSign(_DistributedMatrixOptimizer):
     def update_param(self, p, group):
         state = self.state[p]
         self._decoupled_weight_decay(p, p, group)
-        m = self._effective_grad(p.grad, group, state)
+        m = self._effective_grad(p, group, state)
         if "g_est" not in state:
             state["g_est"] = torch.zeros_like(p)
         g_est = state["g_est"]
         delta = m - g_est
-        alpha = delta.abs().mean()
-        g_est.add_(delta.sign() * alpha)        # g_est += mean|delta| * sign(delta)
+        g_est.add_(self._scaled_sign(delta, p, slot="alpha_up"))
+        if self.diagnostics:
+            self._record_lag(p, "lag_est", m - g_est, m)
         d = self._lmo(g_est, p)
         p.add_(d, alpha=-self._eff_lr(p, group))
 
@@ -687,6 +908,17 @@ class EF21MuonSign(_DistributedMatrixOptimizer):
     Only ``W`` (one bit + one scalar per entry per round, conceptually) is ever
     broadcast; ``X`` never leaves its owning rank except via
     :meth:`swap_in_exact` for evaluation. Weight decay acts on the exact model.
+
+    Both ``mean|.|`` above are per LAYER (four scales on the merged Q/K/V/O
+    weight); see :meth:`_DistributedMatrixOptimizer._scaled_sign`.
+
+    ``X`` and ``W`` are NOT interchangeable in practice. The convergence corollary
+    bounds ``||grad f(X_t)||``, but the EF21-P downlink's contraction constant is
+    only ``alpha ~ 1/d`` in the worst case, and on a coherent residual -- which is
+    what momentum plus a slowly-turning gradient produces -- it really does
+    collapse to that end of the range. ``X`` then runs many steps ahead of the
+    iterate every gradient was actually taken at. The ``lag_XW`` diagnostic
+    measures the gap, and the training script reports the loss at both models.
     """
 
     family = FAMILY_LMO
@@ -698,20 +930,22 @@ class EF21MuonSign(_DistributedMatrixOptimizer):
         X = state["exact_model"]
         self._decoupled_weight_decay(X, p, group)       # decay the exact server model
 
-        m = self._effective_grad(p.grad, group, state)  # gradient was taken at W = p
+        m = self._effective_grad(p, group, state)  # gradient was taken at W = p
         if "g_est" not in state:
             state["g_est"] = torch.zeros_like(p)
         g_est = state["g_est"]
         delta_up = m - g_est
-        alpha_up = delta_up.abs().mean()
-        g_est.add_(delta_up.sign() * alpha_up)          # uplink EF21 on the gradient
+        g_est.add_(self._scaled_sign(delta_up, p, slot="alpha_up"))  # uplink EF21
+        if self.diagnostics:
+            self._record_lag(p, "lag_est", m - g_est, m)
 
         d = self._lmo(g_est, p)
         X.add_(d, alpha=-self._eff_lr(p, group))        # exact server step: X <- X - eta * PE(g_est)
 
         delta_dn = X - p                                # downlink EF21-P on the model increment
-        alpha_dn = delta_dn.abs().mean()
-        p.add_(delta_dn.sign() * alpha_dn)              # W <- W + mean|X - W| * sign(X - W)
+        p.add_(self._scaled_sign(delta_dn, p, slot="alpha_dn"))
+        if self.diagnostics:                            # server/broadcast gap after the round
+            self._record_lag(p, "lag_XW", X - p, p)
 
     # -- expose the exact model X for evaluation -----------------------------
 

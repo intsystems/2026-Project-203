@@ -50,8 +50,14 @@ from typing import Any, Iterable
 __all__ = ["parse_log", "parse_many", "write_csv", "RunRecord"]
 
 # step:1234/2330 val_loss:3.2812 train_time:141234ms step_avg:60.61ms
+# EF21-MuonSign additionally reports the broadcast model:
+# step:1234/2330 val_loss:7.8221 val_loss_W:3.3612 train_time:141234ms step_avg:60.61ms
+# ``val_loss`` stays the exact server model X (the iterate the convergence
+# corollary bounds), so this column means the same thing in old and new logs; the
+# optional group keeps pre-existing logs parseable.
 _VAL_RE = re.compile(
-    r"^step:(?P<step>\d+)/(?P<total>\d+)\s+val_loss:(?P<val>[-\deE.]+|nan|inf|-inf)\s+"
+    r"^step:(?P<step>\d+)/(?P<total>\d+)\s+val_loss:(?P<val>[-\deE.]+|nan|inf|-inf)"
+    r"(?:\s+val_loss_W:(?P<valw>[-\deE.]+|nan|inf|-inf))?\s+"
     r"train_time:(?P<ms>[\d.]+)ms")
 # step:1234/2330 train_time:141234ms step_avg:60.61ms
 _STEP_RE = re.compile(
@@ -87,6 +93,7 @@ def parse_log(path: Path) -> RunRecord | None:
     end: dict[str, Any] = {}
     train_loss: dict[int, float] = {}
     val: dict[int, tuple[float, float]] = {}     # step -> (val_loss, cumulative ms)
+    val_w: dict[int, float] = {}                 # step -> val_loss of W (EF21-MuonSign)
     step_ms: dict[int, float] = {}               # step -> approx cumulative ms
     diverged_at: int | None = None
     peak_mib: int | None = None
@@ -137,6 +144,8 @@ def parse_log(path: Path) -> RunRecord | None:
             if m:
                 total_steps = int(m.group("total"))
                 val[int(m.group("step"))] = (_f(m.group("val")), _f(m.group("ms")))
+                if m.group("valw") is not None:
+                    val_w[int(m.group("step"))] = _f(m.group("valw"))
                 continue
             m = _STEP_RE.match(line)
             if m:
@@ -167,9 +176,20 @@ def parse_log(path: Path) -> RunRecord | None:
         ms = v[1] if v is not None else step_ms.get(s)
         series.append(dict(step=s, wallclock_ms=ms,
                            train_loss=train_loss.get(s),
-                           val_loss=None if v is None else v[0]))
+                           val_loss=None if v is None else v[0],
+                           val_loss_w=val_w.get(s)))
 
     finite_val = {s: v for s, (v, _) in val.items() if v == v and abs(v) != float("inf")}
+    finite_val_w = {s: v for s, v in val_w.items() if v == v and abs(v) != float("inf")}
+    # A run whose validation loss never returns to its first measured value has
+    # failed, whether or not it ever went non-finite. EF21-MuonSign at eta=0.06
+    # climbs 4.39 -> 8.08 on the exact server model X while staying finite
+    # throughout, which the `diverged` flag (non-finite only) reports as a clean
+    # completion. Surface it as its own column rather than overloading `diverged`,
+    # whose meaning other consumers already rely on.
+    _probe = {s: v for s, v in finite_val.items() if s > 0}
+    val_rose = (len(_probe) >= 2
+                and _probe[max(_probe)] > _probe[min(_probe)])
     rec = RunRecord(
         run_id=meta.get("run_id", path.stem),
         log=str(path),
@@ -189,6 +209,12 @@ def parse_log(path: Path) -> RunRecord | None:
         last_step=max(steps) if steps else None,
         final_val_loss=finite_val.get(max(finite_val)) if finite_val else None,
         best_val_loss=min(finite_val.values()) if finite_val else None,
+        # EF21-MuonSign only: the sign-compressed broadcast model W, i.e. the
+        # iterate every gradient was actually evaluated at. None for every other
+        # method, where W and X are the same tensor.
+        final_val_loss_w=finite_val_w.get(max(finite_val_w)) if finite_val_w else None,
+        best_val_loss_w=min(finite_val_w.values()) if finite_val_w else None,
+        val_rose=bool(val_rose),
         train_time_ms=end.get("train_time_ms",
                               max((m for m in step_ms.values()), default=None)),
         peak_memory_mib=end.get("peak_memory_mib", peak_mib),
@@ -256,7 +282,8 @@ def parse_many(paths: Iterable[Path]) -> list[RunRecord]:
 
 _RUN_FIELDS = ["run_id", "optimizer", "family", "lr", "momentum", "weight_decay",
                "lr_scaling", "world_size", "gpu", "train_steps", "last_step",
-               "diverged", "completed", "final_val_loss", "best_val_loss",
+               "diverged", "val_rose", "completed", "final_val_loss", "best_val_loss",
+               "final_val_loss_w", "best_val_loss_w",
                "train_time_ms", "ms_per_step", "peak_memory_mib", "log"]
 
 
@@ -279,11 +306,12 @@ def write_csv(records: list[RunRecord], outdir: Path, targets: list[float]) -> N
     with (outdir / "steps.csv").open("w", newline="", encoding="utf-8") as fh:
         w = csv.writer(fh)
         w.writerow(["run_id", "optimizer", "lr", "lr_scaling", "step",
-                    "wallclock_ms", "train_loss", "val_loss"])
+                    "wallclock_ms", "train_loss", "val_loss", "val_loss_w"])
         for r in records:
             for s in r.steps:
                 w.writerow([r["run_id"], r["optimizer"], r["lr"], r["lr_scaling"],
-                            s["step"], s["wallclock_ms"], s["train_loss"], s["val_loss"]])
+                            s["step"], s["wallclock_ms"], s["train_loss"],
+                            s["val_loss"], s.get("val_loss_w")])
 
     with (outdir / "runs.json").open("w", encoding="utf-8") as fh:
         json.dump([{k: v for k, v in r.items() if k != "_steps"} for r in records],
@@ -324,17 +352,24 @@ def main() -> None:
 
     w = max(len(str(r["optimizer"])) for r in records)
     print(f"\n{'optimizer':<{w}} {'lr':>7} {'steps':>6} {'final val':>10} "
-          f"{'best val':>9} {'time':>9} {'ms/step':>8}  status")
+          f"{'best val':>9} {'val(W)':>9} {'time':>9} {'ms/step':>8}  status")
     for r in sorted(records, key=lambda r: (r["final_val_loss"] is None,
                                             r["final_val_loss"] or 0)):
         t = r["train_time_ms"]
+        vw = r.get("final_val_loss_w")
+        if r["diverged"]:
+            status = "DIVERGED"
+        elif r.get("val_rose"):
+            status = "VAL ROSE"        # finite throughout, but never came back down
+        else:
+            status = "ok" if r["completed"] else "incomplete"
         print(f"{str(r['optimizer']):<{w}} {r['lr'] or float('nan'):>7.4g} "
               f"{r['last_step'] or 0:>6} "
               f"{(r['final_val_loss'] if r['final_val_loss'] is not None else float('nan')):>10.4f} "
               f"{(r['best_val_loss'] if r['best_val_loss'] is not None else float('nan')):>9.4f} "
+              f"{(f'{vw:.4f}' if vw is not None else '-'):>9} "
               f"{(t / 1000 if t else float('nan')):>8.1f}s "
-              f"{(r['ms_per_step'] or float('nan')):>8.2f}  "
-              f"{'DIVERGED' if r['diverged'] else ('ok' if r['completed'] else 'incomplete')}")
+              f"{(r['ms_per_step'] or float('nan')):>8.2f}  {status}")
     print(f"\nwrote {args.outdir}/runs.csv, {args.outdir}/steps.csv, {args.outdir}/runs.json")
 
 

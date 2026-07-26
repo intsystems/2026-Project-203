@@ -42,7 +42,13 @@ ATOL = 1e-9
 
 # --- rank-stable exact polar (U_r V_r^T over nonzero singular directions) -----
 def _exact_polar(G: torch.Tensor, steps: int = 5) -> torch.Tensor:
+    """Batched: the merged Q/K/V/O weight reaches the LMO as 4 stacked blocks, and
+    each block must be truncated at its OWN rank -- so this cannot be a single
+    batched matmul over a shared `r`."""
     A = G.to(torch.float64)
+    if A.ndim > 2:
+        flat = A.reshape(-1, *A.shape[-2:])
+        return torch.stack([_exact_polar(b) for b in flat]).reshape(A.shape).to(G.dtype)
     U, S, Vh = torch.linalg.svd(A, full_matrices=False)
     if S.numel() == 0:
         return torch.zeros_like(A)
@@ -88,7 +94,7 @@ def _install_gloo_shims():
 
 # --- deterministic, rank-independent parameters and gradients -----------------
 def _make_params():
-    """9 params over two shapes (7 of (5,5), 2 of (4,4)).
+    """12 params over three shapes (7 of (5,5), 2 of (4,4), 3 of (6,8) tagged attn).
 
     The counts are chosen so both padding regimes are exercised for
     ``world_size`` in {2, 4}:
@@ -102,10 +108,26 @@ def _make_params():
       buffer instead of a fresh scratch tensor, it silently zeroes an already
       averaged gradient. Record #40's real shapes hit exactly this (10
       attn_gate params on 8 ranks).
+    * 3 of (6,8) tagged ``module="attn"``: record #40's MERGED Q/K/V/O weight,
+      which both the LMO and the EF21 compressor split into 4 blocks
+      (``reshape(4, 6, 2)``). Without a tagged parameter here the entire
+      block-splitting path -- the batched LMO call and the per-layer compressor
+      scale -- is never exercised by the sharded transport at all. The blocks are
+      given deliberately DISPARATE magnitudes, as record #40's zero-inited O block
+      produces, so a shared compressor scale would show up as a real difference
+      rather than a rounding one.
     """
     g = torch.Generator().manual_seed(1234)
-    shapes = [(5, 5)] * 7 + [(4, 4)] * 2
-    return [torch.empty(s, dtype=torch.float64).uniform_(-0.1, 0.1, generator=g) for s in shapes]
+    out = []
+    for s in [(5, 5)] * 7 + [(4, 4)] * 2:
+        out.append(torch.empty(s, dtype=torch.float64).uniform_(-0.1, 0.1, generator=g))
+    for _ in range(3):
+        blocks = torch.empty(4, 6, 2, dtype=torch.float64).uniform_(-0.1, 0.1, generator=g)
+        blocks *= torch.tensor([1.0, 1.0, 1.0, 0.01], dtype=torch.float64)[:, None, None]
+        p = blocks.reshape(6, 8).contiguous()
+        p.module = "attn"
+        out.append(p)
+    return out
 
 
 def _grad(step: int, i: int, shape) -> torch.Tensor:
