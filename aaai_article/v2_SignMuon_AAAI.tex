@@ -494,54 +494,11 @@ Although Federated SignMuon demonstrates strong empirical stability, sign-based 
 The LMO orthogonalization is moved from the clients to the server: each client evaluates the difference between its local momentum $\mathbf{M}_t^{(j)}$ and the previous gradient estimate $\mathbf{g}_t^{(j)}$, compresses it via scaled sign, and sends only $(\mathbf{s}_t^{(j)}, \alpha_t^{(j)})$. The server aggregates these, updates a global gradient estimator $\mathbf{G}_{t+1}$, and applies the Muon LMO. The complete Algorithm~\ref{alg:fed_serverlmo} is in Appendix\ref{app:alg}. The transmission of an additional scalar $\alpha_t^{(j)}$ for each layer introduces insignificant communication overhead, keeping the uplink communication cost at $\approx 1$ bit per parameter (the server broadcasts the full model on the downlink). Thus, all federated variants -- SignMuon, EF21-MuonUSign and EF21-MuonSign -- effectively address: the baseline majority-vote scheme and the error-feedback variant -- effectively address the communication bottleneck in federated learning. They preserve the geometric benefits of Muon-style matrix orthogonalization while maintaining an extremely low communication budget.
 
 
-\begin{table*}[!t]
-\centering
-\footnotesize
-\renewcommand{\arraystretch}{1.2}
-\begin{tabular}{|l|c|c|c|}
-\hline
-\textbf{Algorithm} & \textbf{Learning rate ($\eta$)} & \textbf{Momentum ($\mu$)} & \textbf{Iterations to $0.001$} \\
-\hline
-SignMuon & 0.0002 & 0.2 & 2104 \\
-MuonUSign & - & - & - \\
-EF21-MuonUSign & 0.0033 & 0.1 & 3694 \\
-EF21-MuonSign & 0.0028 & 0.1 & 3564 \\
-Muon & 0.0065 & 0.1 & 1122 \\
-SignSGD & 0.00015 & 0.8 & 3120 \\
-SGD & 0.1 & 0.95 & 972 \\
-Adam &  0.07 & - & 202 \\
-\hline
-\end{tabular}
-\caption{Tuned learning rates and momentum coefficients in the experiments on the smooth convex optimization problem (Equation~\ref{eq:synthetic_problem}).}
-\label{tab:synthetic_results}
-\end{table*}
-
 \section{Experiments}\label{sec:exp}
 The goal of these experiments is empirical validation of the SignMuon, EF21-MuonUSign and EF21-MuonSign algorithms. The study consists of several parts, including evaluation in both centralized and federated settings, as well as validation on a synthetic least-squares optimization problem.
 
-\subsection{Smooth Convex Optimization Problem (Synthetic Experiment)}
-% Для того чтобы оценить влияние матричной структуры на ход оптимизации (без влияния стохастического шума и сложной архитектуры нейронных сетей), мы начинаем эксперименты с детерминированной $L-$гладкой выпуклой задачи. Для этого рассмотрим задачу минимизации квадратичной формы:
-To evaluate the effect of matrix structure on the optimization process (without the influence of stochastic noise or the complexity of DNN architectures), we begin our experiments with a deterministic $L$-smooth convex optimization problem. We consider the minimization of a quadratic form:
-\begin{multline}
-F(\mathbf{X}) = \frac{1}{2} \|\mathbf{A}^{1/2} \mathbf{X} \mathbf{B}^{1/2}\|_F^2 \\
-= \frac{1}{2} \langle \mathbf{X}, \mathbf{A} \mathbf{X} \mathbf{B} \rangle \to \min_{\mathbf{X} \in \mathbb{R}^{m \times n}},
-\label{eq:synthetic_problem}
-\end{multline}
-where the parameter matrix $\mathbf{X} \in \mathbb{R}^{m \times n}$ has dimension $m = n = 500$, which is representative of the size of parameter matrices in deep neural networks. The matrices $\mathbf{A} \in \mathbb{S}_+^m$ and $\mathbf{B} \in \mathbb{S}_+^n$ are symmetric positive semidefinite. To generate the problem instance, we randomly construct the spectra of $\mathbf{A}$ and $\mathbf{B}$ by sampling their eigenvalues uniformly from the interval $(0, 1)$, which guarantees a smoothness constant $L \le 1$ with respect to the Frobenius norm. The parameter matrix $\mathbf{X}_0$ is initialized with elements sampled independently from a normal distribution $\mathcal{N}(0, 0.01)$.
-
-% Поскольку теоретические оценки скорости сходимости зависят от выбора нормы и констант гладкости, будем использовать эмпирический критерий эффективности: алгоритмы оцениваются по минимальному количеству итераций, необходимых для достижения порогового значения функции потерь $F(\mathbf{X}) \le 0.001$, максимальное число итераций $T_{\max} = 5000$. Для поиска оптимальных гиперпараметров оптимизаторов был проведен сеточный поиск (Grid Search) по learning rate $\eta$ и коэффициенту моментума $\mu$ для каждого из пяти рассматриваемых оптимизаторов:
-Since theoretical convergence guarantees depend on the choice of norm and the corresponding smoothness constants, we adopt an empirical evaluation criterion. Specifically, the optimizers are compared by the minimum number of iterations required to reach the target function $F(\mathbf{X}) \le 0.001$, with a maximum number of iterations set to $T_{\max} = 5000$.  We perform a grid search over the hyperparameter ranges for each of the optimization algorithms under consideration (Table~\ref{tab:grid_search}).
-% \begin{itemize}
-%     \item $\mu \in \{0.1, 0.2, 0.3, 0.4, 0.5, 0.6, 0.7, 0.8, 0.9, 0.95\}$ для всех алгоритмов, кроме Adam;
-%     \item $\eta \in [0.005, 0.020]$ с шагом $0.001$ для Muon;
-%     \item $\eta \in [1\cdot 10^{-4}, 0.001]$ с шагом $10^{-4}$ для SignMuon;
-%     \item $\eta \in [5\cdot 10^{-5}, 2\cdot 10^{-4}]$ с шагом $10^{-5}$ для SignSGD;
-%     \item $\eta \in [0.01, 0.10]$ с шагом $0.01$ для SGD и Adam.
-% \end{itemize}
-
-The results of the grid search with the number of iterations required to converge to 0.001, are summarized in Table~\ref{tab:synthetic_results}. Muon converges in 1122 iterations, comparable to SGD (972) but slower than Adam (202). SignMuon reaches the target in 2104 iterations, significantly outperforming SignSGD (3120). EF21-MuonUSign requires 3694 iterations and EF21-MuonSign requires 3564 iterations; its overhead on this benign convex problem is expected, since its purpose is to guarantee convergence on problems where SignMuon does not converge (Theorem~\ref{th:1}). The optimization trajectories are shown in Appendix\ref{app:images_task}, Figure~\ref{fig:synthetic_results}.
-
-% Из результатов видно, что алгоритм Muon достиг оптимума за 1122 итерации, что сопоставимо с классическими методами первого порядка (Adam, SGD). Стоит отметить, что алгоритм SignMuon достигает целевого значения функции потерь за 2104 итерации, значительно превосходя базовый алгоритм SignSGD (3120 итераций). Динамика целевой функции и нормы градиента в процессе оптимизации проиллюстрированы в Приложении на Рисунке \ref{fig:synthetic_results}.
+\subsection{Smooth Convex Optimization Problem}
+Before the network experiments we verify on a deterministic $L$-smooth convex quadratic that sign compression of an \textsc{lmo} step preserves the structural advantage: SignMuon reaches the target in $2104$ iterations against SignSGD's $3120$, at an identical one-bit budget, while the error-feedback variants pay the overhead their guarantee costs on a problem benign enough not to need it. The construction, the grid search and the trajectories are deferred to Appendix~\ref{app:images_task}.
 
 \subsection{Centralized Learning}
 \begin{figure*}[!t]
@@ -573,13 +530,9 @@ In this experiment, we compare the convergence dynamics and the final accuracies
 The experiments are conducted on CIFAR-10 \cite{krizhevsky2009cifar}. It is a standard image classification dataset. It contains 60{,}000 color images of 10 classes. Each image is represented as a tensor of size $3 \times 32 \times 32$, where the first dimension corresponds to the number of color channels (RGB). For centralized training, the dataset is split into training and test sets. In federated learning, the training set is partitioned across the clients.
 % Эксперименты проводились на датасете CIFAR-10: стандартный датасет для задачи классификации изображений. Содержит 60 000 цветных изображений 10 классов. Каждое изображение представлено в виде тензора размерности $3 \times 32 \times 32$, где первый индекс соответствует количеству цветовых каналов (RGB). Для централизованного обучения датасет делится на обучающую и тестовую выборки. В федеративном сценарии обучающая выборка делится между узлами.
 
-The base model is a ResNet-18 architecture adapted to low-resolution images by using an initial $3\times3$ convolution without max-pooling. The network consists of 4 residual blocks with Batch Normalization (BatchNorm), followed by a dropout regularization layer and a linear classifier. As mentioned above, training is run for a fixed number of epochs $T_{\max}=75$. During training, the learning rate is annealed with a cosine scheduler (CosineAnnealingLR). The learning rate $\eta_t$ at epoch $t$ is updated as follows:
-% В качестве базовой модели была использована архитектура ResNet-18, адаптированная под изображения малого разрешения за счет использования начальной свертки $3\times3$ без макс-пулинга. Сеть включает четыре блока остаточных слоев (Residual Blocks) с пакетной нормализацией (BatchNorm), завершаясь слоем регуляризации Dropout и линейным классификатором. Как было сказано ранее обучение происходило при фиксированном количестве эпох $T_{max}=75$. В процессе обучения learning rate варьируется, используя косинусный планировщик скорости обучения (CosineAnnealingLR). Обновление learning rate $\eta_t$ на эпохе $t$ осуществляется по следующей формуле:
-\begin{equation}
-\eta_t = \eta_{\text{min}} + \frac{1}{2}(\eta_{\text{max}} - \eta_{\text{min}})\left(1 + \cos\left(\frac{t}{T_{\text{max}}}\pi\right)\right),
-\end{equation}
-where $\eta_{\text{max}}$ is the initial learning rate of the algorithm, $\eta_{\text{min}} = 0$ is the minimum value (in our configuration), and $T_{\text{max}}$ is the total number of training epochs.
-% Результаты эксперимента и значения подобранных гиперпараметров указаны в Таблице \ref{tab:cifar_central}. Динамика целевой функции и точности алгоритмов в процессе обучения проиллюстрированы в Приложении~\ref{app:images_cen}.
+The base model is a ResNet-18 architecture adapted to low-resolution images by using an initial $3\times3$ convolution without max-pooling. The network consists of 4 residual blocks with Batch Normalization (BatchNorm), followed by a dropout regularization layer and a linear classifier. Training runs for $T_{\max}=75$ epochs, with $\eta_0$ annealed to zero by a cosine schedule.
+
+\paragraph{Step-size schedules.} Each experiment inherits the schedule conventional to its domain, and none of them is the constant rate our rates are proved for. The ResNet runs anneal cosinally to zero, the standard for this architecture and the premise of every accuracy we can be compared against; the nanoGPT runs keep record \#40's stable-then-decay schedule, flat for the first $55\%$ of steps and linear to $0.1\eta_0$ thereafter, because altering it would forfeit the reproduction that validates our port (Section~\ref{sec:exp_nanogpt}). The discrepancy is deliberate: matching the analysed step size would cost comparability on both benchmarks and close only one of several gaps between the theory and the runs, the others being Newton--Schulz in place of an exact oracle, momentum, and normalization layers. One measurement is exempt. A decaying rate makes the accumulated update saturate, so the growth exponent of Appendix~\ref{app:lrscale} would report the schedule instead of the alignment; that diagnostic alone is run at a constant rate.
 
 \paragraph{Protocol.} Every method is tuned and reported under one per-layer rule, the unit-gain rule of Appendix~\ref{app:lrscale}, so that $\eta_0$ means the same thing --- the per-step RMS gain --- for all eleven and no comparison is confounded by the scaling convention. The only tuned hyperparameter is $\eta_0$. Momentum is fixed at $0.9$ and weight decay at $0$ for the primary table: that is the setting our theorems analyse, the one the reference nanoGPT configuration uses, and the one \citet{mishra2026signmuon}'s own sweep selects; the regularized case is an ablation (Appendix~\ref{app:images_cen}). The auxiliary group --- embeddings, normalization parameters, the classifier head --- is AdamW at a fixed $10^{-3}$ for every method, so the matrix rule is the only thing that varies.
 
@@ -825,7 +778,53 @@ The experiments were run on \textbf{[GPU model and memory, e.g.\ NVIDIA A100 80\
 All experiments use a single fixed random seed (default $0$), set through a \texttt{seed\_everything} routine that seeds the Python \texttt{random} module, NumPy, and PyTorch (including all CUDA devices) and enables deterministic cuDNN kernels (\texttt{cudnn.deterministic\,=\,True}, \texttt{cudnn.benchmark\,=\,False}). Each reported number corresponds to a single such run.
 
 \subsection{Results for the smooth convex problem}\label{app:images_task}
-Table~\ref{tab:grid_search} details the grid-search ranges used for each optimizer on the synthetic problem of Equation~\ref{eq:synthetic_problem}, and Figure~\ref{fig:synthetic_results} shows the loss and gradient-norm dynamics.
+% Для того чтобы оценить влияние матричной структуры на ход оптимизации (без влияния стохастического шума и сложной архитектуры нейронных сетей), мы начинаем эксперименты с детерминированной $L-$гладкой выпуклой задачи. Для этого рассмотрим задачу минимизации квадратичной формы:
+To evaluate the effect of matrix structure on the optimization process (without the influence of stochastic noise or the complexity of DNN architectures), we begin our experiments with a deterministic $L$-smooth convex optimization problem. We consider the minimization of a quadratic form:
+\begin{multline}
+F(\mathbf{X}) = \frac{1}{2} \|\mathbf{A}^{1/2} \mathbf{X} \mathbf{B}^{1/2}\|_F^2 \\
+= \frac{1}{2} \langle \mathbf{X}, \mathbf{A} \mathbf{X} \mathbf{B} \rangle \to \min_{\mathbf{X} \in \mathbb{R}^{m \times n}},
+\label{eq:synthetic_problem}
+\end{multline}
+where the parameter matrix $\mathbf{X} \in \mathbb{R}^{m \times n}$ has dimension $m = n = 500$, which is representative of the size of parameter matrices in deep neural networks. The matrices $\mathbf{A} \in \mathbb{S}_+^m$ and $\mathbf{B} \in \mathbb{S}_+^n$ are symmetric positive semidefinite. To generate the problem instance, we randomly construct the spectra of $\mathbf{A}$ and $\mathbf{B}$ by sampling their eigenvalues uniformly from the interval $(0, 1)$, which guarantees a smoothness constant $L \le 1$ with respect to the Frobenius norm. The parameter matrix $\mathbf{X}_0$ is initialized with elements sampled independently from a normal distribution $\mathcal{N}(0, 0.01)$.
+
+% Поскольку теоретические оценки скорости сходимости зависят от выбора нормы и констант гладкости, будем использовать эмпирический критерий эффективности: алгоритмы оцениваются по минимальному количеству итераций, необходимых для достижения порогового значения функции потерь $F(\mathbf{X}) \le 0.001$, максимальное число итераций $T_{\max} = 5000$. Для поиска оптимальных гиперпараметров оптимизаторов был проведен сеточный поиск (Grid Search) по learning rate $\eta$ и коэффициенту моментума $\mu$ для каждого из пяти рассматриваемых оптимизаторов:
+Since theoretical convergence guarantees depend on the choice of norm and the corresponding smoothness constants, we adopt an empirical evaluation criterion. Specifically, the optimizers are compared by the minimum number of iterations required to reach the target function $F(\mathbf{X}) \le 0.001$, with a maximum number of iterations set to $T_{\max} = 5000$.  We perform a grid search over the hyperparameter ranges for each of the optimization algorithms under consideration (Table~\ref{tab:grid_search}).
+% \begin{itemize}
+%     \item $\mu \in \{0.1, 0.2, 0.3, 0.4, 0.5, 0.6, 0.7, 0.8, 0.9, 0.95\}$ для всех алгоритмов, кроме Adam;
+%     \item $\eta \in [0.005, 0.020]$ с шагом $0.001$ для Muon;
+%     \item $\eta \in [1\cdot 10^{-4}, 0.001]$ с шагом $10^{-4}$ для SignMuon;
+%     \item $\eta \in [5\cdot 10^{-5}, 2\cdot 10^{-4}]$ с шагом $10^{-5}$ для SignSGD;
+%     \item $\eta \in [0.01, 0.10]$ с шагом $0.01$ для SGD и Adam.
+% \end{itemize}
+
+The results of the grid search with the number of iterations required to converge to 0.001, are summarized in Table~\ref{tab:synthetic_results}. Muon converges in 1122 iterations, comparable to SGD (972) but slower than Adam (202). SignMuon reaches the target in 2104 iterations, significantly outperforming SignSGD (3120). EF21-MuonUSign requires 3694 iterations and EF21-MuonSign requires 3564 iterations; its overhead on this benign convex problem is expected, since its purpose is to guarantee convergence on problems where SignMuon does not converge (Theorem~\ref{th:1}). The optimization trajectories are shown in Appendix\ref{app:images_task}, Figure~\ref{fig:synthetic_results}.
+
+% Из результатов видно, что алгоритм Muon достиг оптимума за 1122 итерации, что сопоставимо с классическими методами первого порядка (Adam, SGD). Стоит отметить, что алгоритм SignMuon достигает целевого значения функции потерь за 2104 итерации, значительно превосходя базовый алгоритм SignSGD (3120 итераций). Динамика целевой функции и нормы градиента в процессе оптимизации проиллюстрированы в Приложении на Рисунке \ref{fig:synthetic_results}.
+
+
+\begin{table*}[!t]
+\centering
+\footnotesize
+\renewcommand{\arraystretch}{1.2}
+\begin{tabular}{|l|c|c|c|}
+\hline
+\textbf{Algorithm} & \textbf{Learning rate ($\eta$)} & \textbf{Momentum ($\mu$)} & \textbf{Iterations to $0.001$} \\
+\hline
+SignMuon & 0.0002 & 0.2 & 2104 \\
+MuonUSign & - & - & - \\
+EF21-MuonUSign & 0.0033 & 0.1 & 3694 \\
+EF21-MuonSign & 0.0028 & 0.1 & 3564 \\
+Muon & 0.0065 & 0.1 & 1122 \\
+SignSGD & 0.00015 & 0.8 & 3120 \\
+SGD & 0.1 & 0.95 & 972 \\
+Adam &  0.07 & - & 202 \\
+\hline
+\end{tabular}
+\caption{Tuned learning rates and momentum coefficients in the experiments on the smooth convex optimization problem (Equation~\ref{eq:synthetic_problem}).}
+\label{tab:synthetic_results}
+\end{table*}
+
+Table~\ref{tab:grid_search} details the grid-search ranges swept for each optimizer, and Figure~\ref{fig:synthetic_results} shows the loss and gradient-norm dynamics.
 
 \begin{table*}[!t]
 \centering
@@ -1043,11 +1042,11 @@ Our counterexamples, like the analysis of \citet{mishra2026signmuon}, concern a 
 \paragraph{The two families.} For a parameter reshaped to $\mathbf{X}\in\mathbb{R}^{m\times n}$ ($m$ = fan-out, $n$ = fan-in, $r=\operatorname{rank}=\min(m,n)$ generically), the step matrices are
 \begin{equation}
 \label{eq:two_families}
-\begin{aligned}
-\text{\textsc{lmo} family } &(\text{Muon, MuonUSign, EF21-Muon}\{\text{USign},\text{Sign}\},\ \text{EF21-SignMuon}): &&\mathbf{s}=\mathbf{U}\mathbf{V}^\top, \\
-\text{\textsc{sign} family } &(\text{SignMuon, MuonSign, SignSGD}): &&\mathbf{s}\in\{\pm1\}^{m\times n}.
-\end{aligned}
+\mathbf{s}=\mathbf{U}\mathbf{V}^\top\ \ (\textsc{lmo}),
+\qquad
+\mathbf{s}\in\{\pm1\}^{m\times n}\ \ (\textsc{sign}).
 \end{equation}
+The \textsc{lmo} family comprises Muon, MuonUSign, EF21-MuonUSign, EF21-MuonSign and EF21-SignMuon; the \textsc{sign} family comprises SignMuon, MuonSign and SignSGD.
 Both have \emph{exactly} known Frobenius norms: $\|\mathbf{U}\mathbf{V}^\top\|_F^2=\operatorname{tr}(\mathbf{V}\mathbf{U}^\top\mathbf{U}\mathbf{V}^\top)=\operatorname{tr}(\mathbf{V}^\top\mathbf{V})=r$, so $\|\mathbf{s}\|_F=\sqrt{r}$; and a $\pm1$ matrix has $\|\mathbf{s}\|_F=\sqrt{mn}$. (EF21-SignMuon steps along the error-feedback estimator $\mathbf{d}_t^{\mathrm{est}}$ of $\operatorname{polar}(\tilde{\mathbf{M}}_t)$ rather than along the oracle output itself, so for it $\|\mathbf{s}\|_F=\sqrt{r}$ holds only in the limit; we assign it to the \textsc{lmo} family on that basis.)
 
 \paragraph{The criterion.} Define the \emph{RMS gain} of $\mathbf{A}\in\mathbb{R}^{m\times n}$, i.e.\ how much it amplifies a generic input in root-mean-square terms, with $\operatorname{rms}(\mathbf{v}):=\|\mathbf{v}\|/\sqrt{\dim}$:
@@ -1098,20 +1097,20 @@ a bound on the layer's gain that is uniform in $t$ and \emph{independent of the 
 \paragraph{Comparison with concurrent work.} \citet{mishra2026signmuon} analyse the normalized update $\mathbf{D}_t=\bar{\mathbf{S}}_t/\sqrt{mn}$, justified by $\|\mathbf{D}_t\|_{\mathrm{op}}\le\|\mathbf{D}_t\|_F=1$ under their spectral-norm smoothness assumption, and remark that updating with $\bar{\mathbf{S}}_t$ directly is equivalent after absorbing $\sqrt{mn}$ into $\eta_t$. That equivalence holds for a single matrix but not across layers of differing shape, and their algorithm applies no shape factor, so their experiments use a single global rate as well. The substitution is also loose in a shape-dependent way: since $\|\operatorname{sign}(\operatorname{polar}(\mathbf{M}))\|_{\mathrm{op}}\approx\sqrt{m}+\sqrt{n}$, the bound $\sqrt{mn}$ overstates the operator norm by a factor growing like $\sqrt{\min(m,n)}$ -- from $3.7\times$ at the stem to $18.1\times$ in the last stage of a ResNet-18 -- so the induced spectral trust region drifts roughly fivefold across the network instead of remaining flat.
 
 \begin{table}[!t]
-\centering\small
-\setlength{\tabcolsep}{4pt}
+\centering\footnotesize
+\setlength{\tabcolsep}{3pt}
 \begin{tabular}{@{}llll@{}}
 \toprule
 \textbf{Rule} & \textbf{\textsc{lmo}} & \textbf{\textsc{sign}} & \textbf{Equalizes} \\
 \midrule
 global ($\alpha\!=\!0$) & $1$ & $1$ & nothing \\
-Muon default & $\sqrt{\max(1,\tfrac{m}{n})}$ & $1$ & \textsc{lmo} gain only \\
-\textbf{unit gain} & $\sqrt{\max(1,\tfrac{m}{n})}$ & $n^{-1/2}$ & per-step gain, both families \\
-$\mu$P ($\alpha\!=\!1$) & $\sqrt{\max(1,\tfrac{m}{n})}$ & $n^{-1}$ & gain of the aligned accumulation \\
-\citet{mishra2026signmuon} & $r^{-1/2}$ & $(mn)^{-1/2}$ & $\|\mathbf{s}\|_F$ (their analysis) \\
+Muon default & $\sqrt{\max(1,\tfrac{m}{n})}$ & $1$ & \textsc{lmo} gain \\
+\textbf{unit gain} & $\sqrt{\max(1,\tfrac{m}{n})}$ & $n^{-1/2}$ & per-step gain, both \\
+$\mu$P ($\alpha\!=\!1$) & $\sqrt{\max(1,\tfrac{m}{n})}$ & $n^{-1}$ & aligned accumulation \\
+Mishra et al. & $r^{-1/2}$ & $(mn)^{-1/2}$ & $\|\mathbf{s}\|_F$ \\
 \bottomrule
 \end{tabular}
-\caption{Per-layer step-size multipliers $\lambda_\ell$. Only $\eta_0$ is tuned; $\lambda_\ell$ is fixed a priori by the shape. The rules differ only in the \textsc{sign} family, and the \textsc{lmo} column of the unit-gain rule coincides with the factor already used in practice \citep{jordan2024muon} -- which is our main evidence that \eqref{eq:gain_def} is the right criterion.}
+\caption{Per-layer step-size multipliers $\lambda_\ell$. Only $\eta_0$ is tuned; $\lambda_\ell$ is fixed a priori by the shape. The rules differ only in the \textsc{sign} family, and the \textsc{lmo} column of the unit-gain rule coincides with the factor already used in practice \citep{jordan2024muon} -- our main evidence that \eqref{eq:gain_def} is the right criterion. The last row is the normalization of \citet{mishra2026signmuon}, which equalizes $\|\mathbf{s}\|_F$ rather than the gain.}
 \label{tab:lrscale}
 \end{table}
 
