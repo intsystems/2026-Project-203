@@ -89,6 +89,23 @@ def geom_grid(anchor: float, decades: float, points: int) -> List[float]:
     return [10 ** (lo + i * step) for i in range(points)]
 
 
+def extend_grid(grid: Sequence[float], *, low: bool, points: int = 2) -> List[float]:
+    """Continue ``grid``'s geometric spacing ``points`` further past one endpoint.
+
+    An optimum sitting on an endpoint is not an optimum -- the grid simply ran out
+    before the objective turned over. Extending preserves the spacing, so the
+    widened grid is still one uniform log-scale sweep and every method keeps the
+    same relative resolution per decade searched.
+    """
+    g = sorted(grid)
+    if len(g) < 2:
+        return list(g)
+    ratio = g[1] / g[0]
+    if low:
+        return sorted([g[0] / ratio ** (i + 1) for i in range(points)] + g)
+    return sorted(g + [g[-1] * ratio ** (i + 1) for i in range(points)])
+
+
 def refine_grid(best: float, factor: float = 2.0, points: int = 4) -> List[float]:
     """``points`` values geometrically around ``best``, spanning ``factor`` either way."""
     half = (points - 1) / 2
@@ -152,6 +169,7 @@ def run_one(args, *, lr: float, lr_aux: float, lr_scaling: str,
         "--epochs", str(epochs), "--batch-size", str(args.batch_size),
         "--lr", repr(lr), "--lr-aux", repr(lr_aux),
         "--momentum", str(args.momentum), "--weight-decay", str(args.weight_decay),
+        "--weight-decay-mode", getattr(args, "weight_decay_mode", "decoupled"),
         "--head-adamw", args.head_adamw, "--last-k", str(last_k),
         "--device", args.device,
         "--seed", str(args.seed if seed is None else seed),
@@ -436,7 +454,11 @@ def get_args():
     p.add_argument("--batch-size", type=int, default=128)
     p.add_argument("--lr-aux", type=float, default=1e-3)
     p.add_argument("--momentum", type=float, default=0.9)
-    p.add_argument("--weight-decay", type=float, default=5e-4)
+    p.add_argument("--weight-decay", type=float, default=0.0,
+                   help="See centralized.main; 0 by default.")
+    p.add_argument("--weight-decay-mode", type=str, default="decoupled",
+                   choices=["decoupled", "coupled"],
+                   help="See centralized.main; forwarded verbatim to every child run.")
     p.add_argument("--head-adamw", type=str, default="always",
                    choices=["auto", "always", "never"])
     p.add_argument("--last-k", type=int, default=5)

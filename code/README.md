@@ -77,9 +77,15 @@ Enforced in one place, so that two runs differ *only* in the matrix-parameter ru
   the centralized setting `--lr-scaling` additionally sets a *derived* per-layer
   multiplier, `η_layer = η₀·λ(family, shape)`, so that only the shape-free `η₀` is
   ever tuned — see below.
-* **Weight decay** applied exactly once. Federated: decoupled on the server, so the
-  LMO sees the true gradient geometry. Centralized: folded into the gradient by
-  default (`decoupled_weight_decay=True` on the optimizer switches it).
+* **Weight decay** applied exactly once, **decoupled** in both drivers
+  (`X *= 1 − lr·wd`, uniform across layers — *not* scaled by the per-layer
+  multiplier), so the LMO sees the true gradient geometry. This is not a style
+  preference: every step direction here is positively homogeneous of degree *zero*
+  (`sign(cM) = sign(M)`, `polar(cM) = polar(M)`), so folding `wd·X` into the
+  gradient cannot change the step length at all — it only rotates the direction, by
+  an amount set by the drifting, method-dependent ratio `wd·‖X‖_F/‖G‖_F`.
+  `--weight-decay-mode coupled` reproduces that convention (which is what
+  Mishra et al. and our own pre-2026-07-26 numbers used) for the appendix ablation.
 * **Momentum** is the EMA form `M = μM + (1−μ)G` of the paper's algorithm boxes,
   trajectory-identical to the heavy-ball form of the main text (the two differ by a
   constant factor and every method is positively homogeneous in `M`). `sgd` keeps

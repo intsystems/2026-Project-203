@@ -184,7 +184,7 @@ def build_optimizers(model, args):
         momentum=args.momentum,
         nesterov=args.nesterov,
         weight_decay=args.weight_decay,
-        decoupled_weight_decay=getattr(args, "weight_decay_mode", "coupled")
+        decoupled_weight_decay=getattr(args, "weight_decay_mode", "decoupled")
         == "decoupled",
         ns_steps=getattr(args, "ns_steps", 5),
         lmo_dtype=getattr(torch, getattr(args, "lmo_dtype", "bfloat16")),
@@ -230,14 +230,27 @@ def build_optimizers(model, args):
             info["family"] = FAMILY_SIGN
             info["shapes"] = [(n, tuple(named[n].shape)) for n in main_names
                               if named[n].ndim >= 2]
+        decoupled = getattr(args, "weight_decay_mode", "decoupled") == "decoupled"
         if name == "sgd":
+            # torch's SGD couples the decay (``g <- g + wd*p``), and that is the right
+            # convention here: SGD's step is ``eta*m``, which is NOT scale-invariant,
+            # so coupling really does minimize ``f + (wd/2)||W||^2``. There is nothing
+            # to switch, and forcing decoupling on it would be the deviation.
             opt_main = torch.optim.SGD(groups, lr=args.lr, momentum=args.momentum,
                                        nesterov=args.nesterov,
                                        weight_decay=args.weight_decay)
         else:
-            opt_main = torch.optim.Adam(groups, lr=args.lr,
-                                        weight_decay=args.weight_decay)
+            # Adam's step *is* approximately scale-invariant, so the same argument as
+            # for the LMO methods applies: use AdamW (decoupled) unless the coupled
+            # ablation was asked for. Running plain Adam against decoupled LMO methods
+            # would confound the comparison with the AdamW-vs-Adam difference.
+            adam_cls = torch.optim.AdamW if decoupled else torch.optim.Adam
+            opt_main = adam_cls(groups, lr=args.lr, weight_decay=args.weight_decay)
 
+    # The auxiliary group (BatchNorm scales, biases, and under ``--head-adamw always``
+    # the classifier) is never decayed: decaying normalization scales is not standard
+    # practice, and keeping it at 0 for every method means ``--weight-decay`` describes
+    # the matrix parameters only -- the ones the shape rule and the LMO act on.
     opt_aux = (torch.optim.AdamW(aux_params, lr=args.lr_aux, weight_decay=0.0)
                if aux_params else None)
     info["n_matrix_params"] = sum(named[n].numel() for n in main_names)

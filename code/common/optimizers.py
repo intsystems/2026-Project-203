@@ -172,12 +172,15 @@ class _BaseMethod(Optimizer):
 
     Weight decay
     ------------
-    ``decoupled_weight_decay=False`` (the default) folds ``wd * p`` into the
-    gradient *before* the momentum buffer, which is what the reported
-    experiments used. ``True`` instead shrinks the parameter multiplicatively
+    ``decoupled_weight_decay=True`` shrinks the parameter multiplicatively
     (``p *= 1 - lr*wd``) and leaves the gradient -- and hence the LMO geometry --
-    untouched; this is the AdamW/Muon convention and what the federated driver
-    uses.
+    untouched. Both drivers pass ``True``, because it is the only well-posed
+    choice here: every ``_direction`` in this module is positively homogeneous of
+    degree **zero** (``sign(cM) = sign(M)``, ``polar(cM) = polar(M)``), so folding
+    ``wd * p`` into the gradient cannot change the step length by so much as a
+    percent -- it only rotates the direction, by an amount governed by the ratio
+    ``wd * ||p|| / ||g||``, which drifts over training and differs between methods.
+    ``False`` reproduces that coupled convention for the ablation in the appendix.
     """
 
     method_name = "base"

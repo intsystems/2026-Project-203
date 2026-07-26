@@ -77,10 +77,16 @@ def get_params() -> argparse.ArgumentParser:
                    help="Rate of the auxiliary AdamW (biases, BatchNorm, head)")
     p.add_argument("--momentum", type=float, default=0.9)
     p.add_argument("--nesterov", action="store_true")
-    p.add_argument("--weight-decay", type=float, default=5e-4)
-    p.add_argument("--weight-decay-mode", type=str, default="coupled",
-                   choices=["coupled", "decoupled"],
-                   help="coupled (default): wd*X is added to the gradient, so it "
+    p.add_argument("--weight-decay", type=float, default=0.0,
+                   help="Applied to the MATRIX parameters only (the auxiliary group is never decayed). Defaults to 0: our theorems analyse unregularized f, the nanoGPT record we build on uses 0.0 for every group, and all ten of Mishra et al.'s best CIFAR configurations select 0 -- so 0 is the setting under which theory and experiment describe the same algorithm. The overnight driver re-runs the top methods at 5e-4 as an ablation.")
+    p.add_argument("--weight-decay-mode", type=str, default="decoupled",
+                   choices=["decoupled", "coupled"],
+                   help="decoupled (default): X *= 1 - lr*wd, so the LMO sees the "
+                        "true gradient. This is the only well-posed choice for a "
+                        "norm-constrained step: the LMO output is scale-invariant, so "
+                        "folding wd*X into the gradient cannot shrink X at all -- it "
+                        "only rotates the direction, by an amount set by the drifting "
+                        "ratio wd*||X||/||G||. coupled: wd*X is added to the gradient, so it "
                         "passes through the LMO -- what the paper's numbers used. "
                         "decoupled: X *= 1 - lr*wd, leaving the LMO to see the "
                         "true gradient geometry (the AdamW/Muon convention, and "

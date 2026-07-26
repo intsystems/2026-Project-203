@@ -319,7 +319,8 @@ def test_exact_and_newton_schulz_oracles_differ_on_the_instances():
 # --------------------------------------------------------------------------
 
 
-def _centralized_reference(method, rounds, lr, lr_aux, momentum, seed=0):
+def _centralized_reference(method, rounds, lr, lr_aux, momentum, seed=0,
+                           weight_decay=0.0):
     """Drive the centralized optimizer by hand, one full-batch step per round."""
     torch.manual_seed(seed)
     model = TinyNet()
@@ -327,9 +328,12 @@ def _centralized_reference(method, rounds, lr, lr_aux, momentum, seed=0):
     named = dict(model.named_parameters())
 
     opt = CENTRAL_CLASSES[method]([named[n] for n in matrix_names],
-                                  lr=lr, momentum=momentum, weight_decay=0.0,
+                                  lr=lr, momentum=momentum,
+                                  weight_decay=weight_decay,
+                                  decoupled_weight_decay=True,
                                   lmo_dtype=torch.float32)
-    aux = torch.optim.AdamW([named[n] for n in aux_names], lr=lr_aux, weight_decay=0.0)
+    aux = torch.optim.AdamW([named[n] for n in aux_names], lr=lr_aux,
+                            weight_decay=weight_decay)
 
     loader = tiny_loader()
     criterion = nn.CrossEntropyLoss()
@@ -344,14 +348,15 @@ def _centralized_reference(method, rounds, lr, lr_aux, momentum, seed=0):
     return model
 
 
-def _federated_run(method, rounds, lr, lr_aux, momentum, n_clients=1, seed=0):
+def _federated_run(method, rounds, lr, lr_aux, momentum, n_clients=1, seed=0,
+                   weight_decay=0.0):
     torch.manual_seed(seed)
     model = TinyNet()
     loaders = [tiny_loader() for _ in range(n_clients)]
     run_federated(
         method, model, loaders, [tiny_loader()],
         rounds=rounds, n_steps=1, lr=lr, lr_aux=lr_aux, momentum=momentum,
-        weight_decay=0.0, eval_freq=10 ** 9, device="cpu",
+        weight_decay=weight_decay, eval_freq=10 ** 9, device="cpu",
         cosine_schedule=False, lmo_dtype=torch.float32, verbose=False,
     )
     return model
@@ -373,6 +378,67 @@ def test_federated_one_client_equals_centralized():
             if not torch.allclose(a, b, atol=TOL):
                 failures.append(f"{method}/{n}: max|diff| = {(a - b).abs().max():.3e}")
     assert not failures, "federated != centralized:\n  " + "\n  ".join(failures)
+
+
+def test_the_two_drivers_agree_on_the_weight_decay_convention():
+    """Same equivalence, now with weight decay switched on.
+
+    The zero-decay test above passes under *either* convention, so it cannot see a
+    coupled/decoupled mismatch between the two drivers -- which is exactly the
+    discrepancy that existed. Decoupled is the only well-posed choice here: every
+    step direction is positively homogeneous of degree zero, so folding ``wd * X``
+    into the gradient leaves the step length untouched and merely rotates it.
+    """
+    failures = []
+    for method in CENTRAL_CLASSES:
+        kw = dict(rounds=6, lr=0.05, lr_aux=0.01, momentum=0.8, weight_decay=0.02)
+        ref = _centralized_reference(method, **kw)
+        fed = _federated_run(method, **kw)
+        moved = max((p - q).abs().max().item()
+                    for p, q in zip(_centralized_reference(method, rounds=6, lr=0.05,
+                                                           lr_aux=0.01, momentum=0.8,
+                                                           weight_decay=0.0).parameters(),
+                                    ref.parameters()))
+        # A decay too small to move the parameters would make this test vacuous.
+        assert moved > 10 * TOL, f"{method}: wd=0.02 changed nothing ({moved:.2e})"
+        for (n, a), (m, b) in zip(ref.named_parameters(), fed.named_parameters()):
+            assert n == m
+            if not torch.allclose(a, b, atol=TOL):
+                failures.append(f"{method}/{n}: max|diff| = {(a - b).abs().max():.3e}")
+    assert not failures, ("the drivers disagree once weight decay is nonzero:\n  "
+                          + "\n  ".join(failures))
+
+
+def test_coupled_decay_cannot_change_the_step_length():
+    """Coupled decay through a scale-invariant step map shrinks nothing.
+
+    ``sign`` and ``polar`` are positively homogeneous of degree zero, so adding
+    ``wd * X`` to the gradient can only rotate the update. This is the reason the
+    coupled convention is kept for an ablation and is not the default.
+    """
+    torch.manual_seed(0)
+    for name, cls in CENTRAL_CLASSES.items():
+        p_c = nn.Parameter(torch.randn(16, 12))
+        p_d = nn.Parameter(p_c.detach().clone())
+        g = torch.randn(16, 12) * 1e-3          # small gradient => large rho
+        steps = {}
+        for tag, param, coupled in (("coupled", p_c, True), ("plain", p_d, False)):
+            opt = cls([param], lr=0.1, momentum=0.0, lmo_dtype=torch.float32,
+                      weight_decay=0.5 if coupled else 0.0,
+                      decoupled_weight_decay=False)
+            before = param.detach().clone()
+            param.grad = g.clone()
+            opt.step()
+            if hasattr(opt, "restore_exact"):
+                opt.restore_exact()
+            steps[tag] = (param.detach() - before)
+        n_c, n_p = steps["coupled"].norm().item(), steps["plain"].norm().item()
+        assert abs(n_c - n_p) <= 1e-5 * max(n_p, 1e-12), (
+            f"{name}: coupled decay changed the step norm {n_p:.6g} -> {n_c:.6g}; "
+            f"the step map is supposed to be scale-invariant")
+        # ... and it does rotate it, so it is not simply a no-op either.
+        cos = (steps["coupled"] * steps["plain"]).sum() / (n_c * n_p + 1e-30)
+        assert cos < 0.999, f"{name}: coupled decay had no effect at all (cos={cos:.4f})"
 
 
 def test_identical_clients_reduce_to_one():

@@ -39,6 +39,11 @@ Phases
 4. ``verify``     re-run the top rates at the FINAL horizon: is the short-horizon
                   ranking horizon-stable? (the assumption a short proxy makes)
 5. ``final``      full 50k training runs at the tuned values, seed-major.
+6. ``wd``         re-run the best few methods with weight decay switched on. The
+                  primary table is unregularized -- that is the setting the theorems
+                  analyse, the one the nanoGPT record #40 config uses, and the one
+                  Mishra et al.'s own sweep selects -- so this phase supplies the
+                  regularized number and shows whether the ordering moves.
 
 The ``lr_aux`` study is a separate tool: ``python3 -m centralized.tune --stage aux``.
 """
@@ -61,8 +66,8 @@ from centralized.train import LMO_FAMILY
 from common.lr_scaling import FAMILY_SIGN, describe_rule, resolve_rule
 from common.utils import results_root
 from centralized.tune import (ALL_METHODS, LEGACY_ANCHORS, ROOT, SCALED_ANCHOR_BOOST,
-                              best_of, boundary_warning, canonical_tag, geom_grid,
-                              run_one)
+                              best_of, boundary_warning, canonical_tag, extend_grid,
+                              geom_grid, run_one)
 
 OUT_DIR = results_root() / "overnight"
 STATE_PATH = OUT_DIR / "state.json"
@@ -200,6 +205,7 @@ def _tune_args(args) -> Namespace:
     return Namespace(
         dataset=args.dataset, model=args.model, batch_size=args.batch_size,
         momentum=args.momentum, weight_decay=args.weight_decay,
+        weight_decay_mode=args.weight_decay_mode,
         head_adamw=args.head_adamw, last_k=args.last_k, val_seed=args.val_seed,
         seed=args.seed, device=args.device, data=args.data,
         num_workers=args.num_workers,
@@ -328,32 +334,52 @@ def phase_lr(args, state, budget, sec, rule: str) -> Dict[str, Dict]:
         cls = LMO_FAMILY.get(method)
         if (cls is not None and cls.family == FAMILY_SIGN) or scale_baselines:
             base *= SCALED_ANCHOR_BOOST.get(rule, 1.0)
-        grid = geom_grid(base, decades=args.lr_decades, points=args.lr_points)
-        runs = out.setdefault(key, {"runs": [], "grid": grid})["runs"]
-        for lr in grid:
-            tag = f"lr_{key.replace('+', '_')}_{rule.replace(':', '')}_{lr:.4g}"
-            jkey = canonical_tag(tag, epochs=args.tune_epochs)
-            if jkey in state["jobs"]:
-                continue
-            cost = job_cost(sec, args.tune_epochs)
-            if not budget.fits(cost) or _stop["requested"]:
-                return out
-            print(f"[{stamp()}] lr/{key} (~{cost/60:.0f} min) | {budget.report()}")
-            extra = ("--scale-baselines",) if scale_baselines else ()
-            r = run_one(_tune_args(args), lr=lr, lr_aux=args.lr_aux,
-                        lr_scaling=rule, method=method, epochs=args.tune_epochs,
-                        tag=tag, extra=extra)
-            record(state, jkey, r)
-            if r:
-                runs.append(r)
-        best = best_of(runs)
-        if best:
-            out[key]["best"] = best
+        entry = out.setdefault(key, {"runs": [], "grid": []})
+        runs = entry["runs"]
+        # A resumed run inherits the grid an earlier round had already widened to,
+        # so the extension budget is not spent twice on the same method.
+        grid = entry.get("grid") or geom_grid(base, decades=args.lr_decades,
+                                              points=args.lr_points)
+        entry["grid"] = grid
+        for extension in range(args.lr_extend_rounds + 1):
+            for lr in grid:
+                tag = f"lr_{key.replace('+', '_')}_{rule.replace(':', '')}_{lr:.4g}"
+                jkey = canonical_tag(tag, epochs=args.tune_epochs)
+                if jkey in state["jobs"]:
+                    continue
+                cost = job_cost(sec, args.tune_epochs)
+                if not budget.fits(cost) or _stop["requested"]:
+                    return out
+                print(f"[{stamp()}] lr/{key} (~{cost/60:.0f} min) | {budget.report()}")
+                extra = ("--scale-baselines",) if scale_baselines else ()
+                r = run_one(_tune_args(args), lr=lr, lr_aux=args.lr_aux,
+                            lr_scaling=rule, method=method, epochs=args.tune_epochs,
+                            tag=tag, extra=extra)
+                record(state, jkey, r)
+                if r:
+                    runs.append(r)
+            best = best_of(runs)
+            if best is None:
+                break
+            entry["best"] = best
             warn = boundary_warning(best, grid)
             print(f"  BEST {key}: eta_0={best['lr']:.6g}  val {best['val_acc']:.2f}%")
-            if warn:
-                print(warn)
-                out[key]["boundary"] = warn.strip()
+            # An optimum on an endpoint is not an optimum: widen the grid and keep
+            # going rather than reporting a rate the grid boundary chose for us.
+            if not warn:
+                entry.pop("boundary", None)
+                break
+            print(warn)
+            entry["boundary"] = warn.strip()
+            if extension == args.lr_extend_rounds:
+                break
+            grid = extend_grid(grid, low="LOW end" in warn,
+                               points=args.lr_extend_points)
+            entry["grid"] = grid
+            print(f"  -> extending to [{min(grid):.4g}, {max(grid):.4g}]: "
+                  f"{args.lr_extend_points} more points "
+                  f"(round {extension + 1}/{args.lr_extend_rounds})")
+            save_state(state)
     return out
 
 
@@ -516,6 +542,54 @@ def _fit_gain_slope(job: Dict):
     return slope, r2, n
 
 
+def phase_wd(args, state, budget, sec, rule: str, tuned: Dict[str, Dict]) -> None:
+    """Re-run the best few methods at the final horizon with decay switched on.
+
+    The primary table uses ``--weight-decay 0``, so that the experiment and the
+    theorems describe the same algorithm and no coupled/decoupled question arises.
+    This phase supplies the other number: whether decay changes the *ordering*, and
+    what the absolute accuracy is for readers who expect a regularized ResNet-18.
+    The decay is decoupled -- the only well-posed choice for a scale-invariant step.
+    """
+    if args.wd_ablation <= 0 or not tuned:
+        return
+    ranked = sorted(((d["best"]["val_acc"], k, d["best"]["lr"])
+                     for k, d in tuned.items() if d.get("best")), reverse=True)
+    picks = ranked[:max(0, args.wd_ablation_top)]
+    out = state["phases"].setdefault("wd", {})
+    print(f"  decay ablation on {[k for _, k, _ in picks]} "
+          f"at wd={args.wd_ablation:g} (decoupled)")
+    for _, key, lr in picks:
+        method = key.replace("+scaled", "")
+        seed = args.final_seeds[0]
+        tag = f"wd_{key.replace('+', '_')}_{rule.replace(':', '')}"
+        jkey = canonical_tag(tag, epochs=args.final_epochs, split="full", seed=seed)
+        if jkey in state["jobs"]:
+            continue
+        cost = job_cost(sec, args.final_epochs)
+        if not budget.fits(cost) or _stop["requested"]:
+            return
+        print(f"[{stamp()}] wd/{key} (~{cost / 60:.0f} min) | {budget.report()}")
+        # ``extra`` lands at the END of the child argv, so these override the values
+        # the driver already put there.
+        extra = (("--scale-baselines",) if key.endswith("+scaled") else ()) + (
+            "--weight-decay", repr(args.wd_ablation),
+            "--weight-decay-mode", "decoupled")
+        r = run_one(_tune_args(args), lr=lr, lr_aux=args.lr_aux, lr_scaling=rule,
+                    method=method, epochs=args.final_epochs, tag=tag, split="full",
+                    seed=seed, extra=extra)
+        record(state, jkey, r)
+        if r:
+            # The undecayed counterpart of this exact configuration, for the delta.
+            ref_key = canonical_tag(f"{key.replace('+', '_')}_{rule.replace(':', '')}",
+                                    epochs=args.final_epochs, split="full", seed=seed)
+            ref = (state["phases"].get("final") or {}).get(ref_key) or {}
+            out[key] = {"wd": args.wd_ablation, "lr": lr,
+                        "test_acc": r.get("test_acc"),
+                        "test_acc_no_decay": ref.get("test_acc")}
+            save_state(state)
+
+
 def build_report(args, state, budget, sec, rule, alpha, tuned) -> str:
     lines = [
         "# Overnight run report",
@@ -525,7 +599,7 @@ def build_report(args, state, budget, sec, rule, alpha, tuned) -> str:
         f"measured **{sec:.1f} s/epoch**" if sec else "* timing unavailable",
         f"* scaling rule **`{rule}`**, `--head-adamw {args.head_adamw}`, "
         f"lr_aux = {args.lr_aux:g}, momentum {args.momentum:g}, "
-        f"weight decay {args.weight_decay:g}",
+        f"weight decay {args.weight_decay:g} ({args.weight_decay_mode})",
         f"* tuning: {args.tune_epochs} epochs on the 45k/5k split, selected on "
         f"**val_acc** (tail mean of {args.last_k}); the test set was not used for "
         f"any decision",
@@ -557,6 +631,11 @@ def build_report(args, state, budget, sec, rule, alpha, tuned) -> str:
             lines.append(f"| `{k}` | {slope:.3f} | {r2:.3f} | {n} | {reading} |")
         lines.append("")
 
+    # Read the verdict back from the state file rather than trusting the live
+    # variable, so a resumed run or a --report-only rebuild still shows the sweep
+    # it already paid for.
+    if alpha is None:
+        alpha = _alpha_verdict(state["phases"].get("alpha") or {})
     if alpha is not None:
         lines += ["## Alpha sweep", "",
                   f"Best exponent on `{args.alpha_method}`: **alpha = {alpha:g}**.", ""]
@@ -576,7 +655,7 @@ def build_report(args, state, budget, sec, rule, alpha, tuned) -> str:
             if not b:
                 continue
             lines.append(f"| `{key}` | {b['lr']:.6g} | {b['val_acc']:.2f}% | "
-                         f"{len(d['runs'])} | {d.get('boundary', '')} |")
+                         f"{len(d.get('runs') or [])} | {d.get('boundary', '')} |")
         lines += ["", "A `BOUNDARY` note means the optimum sat on a grid endpoint: "
                       "extend the grid and re-run that method before reporting it.", ""]
 
@@ -609,6 +688,27 @@ def build_report(args, state, budget, sec, rule, alpha, tuned) -> str:
         lines += ["", "Aggregate across seeds with "
                       "`python3 -m aggregate --root results/centralized`.", ""]
 
+    wd = state["phases"].get("wd", {})
+    if wd:
+        lines += [f"## Weight-decay ablation (decoupled, wd = {args.wd_ablation:g})", "",
+                  f"The primary table above is unregularized (`--weight-decay "
+                  f"{args.weight_decay:g}`), which is the setting the theorems analyse "
+                  f"and the one both reference implementations use. These runs repeat "
+                  f"the best methods at seed {args.final_seeds[0]} with decoupled decay "
+                  f"on the matrix parameters, at the *same* eta_0. What matters is "
+                  f"whether the ordering moves, not the absolute gain -- eta_0 was not "
+                  f"re-tuned under decay.", "",
+                  "| method | eta_0 | with decay | no decay | delta |",
+                  "| :--- | ---: | ---: | ---: | ---: |"]
+        for k, v in sorted(wd.items()):
+            got, ref = v.get("test_acc"), v.get("test_acc_no_decay")
+            cells = [f"`{k}`", f"{v['lr']:.6g}",
+                     "-" if got is None else f"{got:.2f}%",
+                     "-" if ref is None else f"{ref:.2f}%",
+                     "-" if (got is None or ref is None) else f"{got - ref:+.2f}"]
+            lines.append("| " + " | ".join(cells) + " |")
+        lines.append("")
+
     done = sum(1 for v in state["jobs"].values() if v)
     failed = sum(1 for v in state["jobs"].values() if not v)
     lines += ["## What this run did NOT establish", "",
@@ -620,10 +720,19 @@ def build_report(args, state, budget, sec, rule, alpha, tuned) -> str:
               f"* **Momentum ({args.momentum:g}) and weight decay "
               f"({args.weight_decay:g}) were held fixed** for every method, so this is "
               f"a comparison at equal momentum, not at each method's own optimum.",
-              "* **Weight decay is coupled** by default (added to the gradient, so it "
-              "passes through the LMO). The federated driver uses *decoupled* decay; "
-              "`--weight-decay-mode decoupled` makes the two consistent, at the cost "
-              "of changing these numbers.",
+              f"* Weight decay is **{args.weight_decay_mode}**"
+              + (" (`X *= 1 - lr*wd`, the LMO sees the true gradient). The coupled "
+                 "convention -- `wd*X` added to the gradient, which is what "
+                 "Mishra et al.'s Algorithm 1 and our own earlier numbers used -- is "
+                 "*not* an alternative worth reporting as an equal: every step "
+                 "direction here is scale-invariant, so coupled decay shrinks nothing "
+                 "and only rotates the direction. `--weight-decay-mode coupled` "
+                 "reproduces it for the appendix ablation."
+                 if args.weight_decay_mode == "decoupled" else
+                 " -- `wd*X` is folded into the gradient. Every step direction in this "
+                 "code is scale-invariant, so this shrinks nothing and only rotates the "
+                 "direction, by an amount set by the drifting, method-dependent ratio "
+                 "`wd*||X||/||G||`. Prefer `--weight-decay-mode decoupled`."),
               "* **A gap smaller than the seed spread is not a result.** Add seeds with "
               "`--resume` and aggregate before claiming one.",
               "",
@@ -685,7 +794,20 @@ def get_args():
     p.add_argument("--model", type=str, default="resnet18")
     p.add_argument("--batch-size", type=int, default=128)
     p.add_argument("--momentum", type=float, default=0.9)
-    p.add_argument("--weight-decay", type=float, default=5e-4)
+    p.add_argument("--weight-decay", type=float, default=0.0,
+                   help="Applied to the MATRIX parameters only (the auxiliary group is never decayed). Defaults to 0: our theorems analyse unregularized f, the nanoGPT record we build on uses 0.0 for every group, and all ten of Mishra et al.'s best CIFAR configurations select 0 -- so 0 is the setting under which theory and experiment describe the same algorithm. The overnight driver re-runs the top methods at 5e-4 as an ablation.")
+    p.add_argument("--wd-ablation", type=float, default=5e-4,
+                   help="Decay rate for the `wd` phase, which re-runs the "
+                        "best --wd-ablation-top methods at the final horizon "
+                        "with decay switched on. 0 disables the phase.")
+    p.add_argument("--wd-ablation-top", type=int, default=3,
+                   help="How many of the tuned methods to re-run with decay.")
+    p.add_argument("--weight-decay-mode", type=str, default="decoupled",
+                   choices=["decoupled", "coupled"],
+                   help="decoupled (default): X *= 1 - lr*wd, leaving the LMO to see "
+                        "the true gradient. coupled folds wd*X into the gradient, "
+                        "which cannot shrink a scale-invariant step at all and only "
+                        "rotates it -- kept for the appendix ablation.")
     p.add_argument("--lr-aux", type=float, default=1e-3)
     p.add_argument("--head-adamw", type=str, default="always",
                    choices=["auto", "always", "never"])
@@ -702,8 +824,8 @@ def get_args():
 
     p.add_argument("--methods", nargs="*", default=ALL_METHODS)
     p.add_argument("--phases", nargs="*",
-                   default=["gain", "alpha", "lr", "verify", "final"],
-                   choices=["gain", "alpha", "lr", "verify", "final"],
+                   default=["gain", "alpha", "lr", "verify", "final", "wd"],
+                   choices=["gain", "alpha", "lr", "verify", "final", "wd"],
                    help="Which phases to run, in order. The lr_aux study is a "
                         "separate tool: python3 -m centralized.tune --stage aux")
     p.add_argument("--tune-epochs", type=int, default=15,
@@ -727,6 +849,16 @@ def get_args():
                    help="Each alpha needs its own eta_0 optimum found, or the "
                         "comparison is confounded by a badly chosen rate")
     p.add_argument("--alpha-method", type=str, default="signmuon")
+    p.add_argument("--lr-extend-rounds", type=int, default=2,
+                   help="When a method's optimum lands on a grid endpoint, widen the "
+                        "grid in that direction and re-tune, up to this many times. "
+                        "0 restores the old behaviour of reporting the endpoint with "
+                        "a warning.")
+    p.add_argument("--lr-extend-points", type=int, default=2,
+                   help="Points added per extension round.")
+    p.add_argument("--report-only", action="store_true",
+                   help="Rebuild REPORT.md from state.json and exit: runs nothing, "
+                        "needs no GPU, and is safe to call while a run is in flight.")
     p.add_argument("--verify-methods", nargs="*", default=["signmuon", "muon"],
                    help="Methods whose top learning rates are re-run at "
                         "--final-epochs to check horizon stability")
@@ -757,7 +889,13 @@ def print_schedule(args, sec: float, budget: Budget) -> None:
         ("lr", n_lr, args.tune_epochs),
         ("verify", n_verify, args.final_epochs),
         ("final", n_final, args.final_epochs),
+        ("wd", 0 if args.wd_ablation <= 0 else args.wd_ablation_top,
+         args.final_epochs),
     ]
+    # The lr phase can widen a method's grid when its optimum lands on an endpoint,
+    # which is extra work the plan cannot know about in advance.
+    extra_lr = sum(1 for _ in _lr_jobs(args)) * args.lr_extend_rounds * args.lr_extend_points
+    plan = [(n, j, e) for n, j, e in plan if j > 0 and n in args.phases]
     print("\n" + "=" * 78)
     budget_desc = ("no deadline -- runs until Ctrl-C" if budget.unlimited
                    else f"budget {args.budget_hours:g} h")
@@ -780,6 +918,11 @@ def print_schedule(args, sec: float, budget: Budget) -> None:
             status = "yes" if cum <= args.budget_hours else "NO -- will be cut"
         print(f"  {name:<8}{n:>6}{ep:>8}{hrs:>8.1f}{cum:>12.1f}   {status}")
     print("=" * 78)
+    if extra_lr and "lr" in args.phases:
+        print(f"  Plus up to {extra_lr} more lr jobs "
+              f"(+{extra_lr * job_cost(sec, args.tune_epochs) / 3600.0:.1f} h) if "
+              f"optima land on grid endpoints:\n  the grid is then widened and that "
+              f"method re-tuned, rather than reporting the endpoint.")
     if budget.unlimited:
         eta = (datetime.now() + timedelta(hours=cum)).strftime("%a %H:%M")
         print(f"  Everything runs to completion: {cum:.1f} h total, finishing around "
@@ -823,11 +966,24 @@ def main() -> None:
     args = get_args()
     signal.signal(signal.SIGINT, _handle_sigint)
 
-    state = load_state() if args.resume else {"jobs": {}, "phases": {}}
+    state = load_state() if args.resume or args.report_only else {"jobs": {}, "phases": {}}
     state.setdefault("jobs", {})
     state.setdefault("phases", {})
     state["started"] = state.get("started") or datetime.now().isoformat(timespec="seconds")
     budget = Budget(args.budget_hours)
+
+    if args.report_only:
+        # Read-only: rebuild the report from whatever is on disk and leave the
+        # state file alone, so this is safe to run while a job is training.
+        rule = state["phases"].get("chosen_rule") or args.lr_scaling
+        print(build_report(args, state, budget, state.get("epoch_seconds") or 0.0,
+                           rule, None, state["phases"].get("lr", {})))
+        REPORT_PATH.write_text(
+            build_report(args, state, budget, state.get("epoch_seconds") or 0.0,
+                         rule, None, state["phases"].get("lr", {})),
+            encoding="utf-8")
+        print(f"\n[{stamp()}] rewrote {REPORT_PATH}")
+        return
 
     if args.download:
         # Fetch once, here, rather than letting every child run pass --download:
@@ -837,6 +993,30 @@ def main() -> None:
         build_loaders(args.dataset, args.data, batch_size=args.batch_size,
                       download=True, split="tune", num_workers=0)
         print(f"[{stamp()}] dataset ready")
+
+    # Resuming across a change of convention would silently mix runs that are not
+    # comparable: the cached jobs are keyed by method and rate only.
+    fingerprint = {
+        "weight_decay_mode": args.weight_decay_mode,
+        "weight_decay": args.weight_decay,
+        "momentum": args.momentum,
+        "head_adamw": args.head_adamw,
+        "lr_aux": args.lr_aux,
+        "dataset": args.dataset,
+        "model": args.model,
+    }
+    old = state.get("fingerprint")
+    if args.resume and old and old != fingerprint:
+        differs = {k: (old.get(k), v) for k, v in fingerprint.items() if old.get(k) != v}
+        print("REFUSING to resume: this run's settings differ from the recorded ones,")
+        print("so the cached jobs are not comparable with the new ones.")
+        for k, (was, now) in differs.items():
+            print(f"  {k}: recorded {was!r} -> requested {now!r}")
+        print(f"\nStart a fresh sweep (drop --resume, which overwrites "
+              f"{STATE_PATH.name}), or move the old results aside first. Use "
+              f"--report-only to read the existing report without running anything.")
+        sys.exit(1)
+    state["fingerprint"] = fingerprint
 
     sec = state.get("epoch_seconds") if args.resume else None
     if sec is None:
@@ -902,6 +1082,11 @@ def main() -> None:
                             f"seeds {args.final_seeds})")
             phase_final(args, state, budget, sec, rule,
                         tuned or state["phases"].get("lr", {}))
+            refresh()
+        if "wd" in args.phases and not _stop["requested"]:
+            banner("wd", f"  (decay ablation, wd={args.wd_ablation:g} decoupled)")
+            phase_wd(args, state, budget, sec, rule,
+                     tuned or state["phases"].get("lr", {}))
     except KeyboardInterrupt:
         print(f"\n[{stamp()}] interrupted -- writing the report from what completed.")
     finally:
