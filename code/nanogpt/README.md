@@ -22,6 +22,7 @@ hyperparameter tuning**. See "Why record #40" below.
 | `train_gpt_a100.py` | The **single-A100** build. Identical to `train_gpt.py` except the two Hopper-only pieces (FA3, FP8) are swapped for Ampere-safe equivalents. Every difference is a `# ===== [A100 DIFF #k] ...` banner. |
 | `test_signmuon_optimizers.py` | Portable CPU test: each optimizer's update recurrence == the numpy paper reference (`../counterexamples/optimizers.py`), **and** the per-layer LR multipliers (== record #40's aspect factor for the LMO family, unit gain for both families, agreement with `../common/lr_scaling.py`). |
 | `test_distributed_sharding.py` | gloo/CPU test: the sharded `step()` == a single-process centralized run, over both padding regimes. |
+| `setup_env.sh` | Builds a working venv (reuses a container's torch when it qualifies, never touches an apt package) and verifies it with a real FA3 fetch. **Start here.** |
 | `run_all.sh` | Launches the eight hero runs, one per optimizer, at their starting learning rates. |
 | `parse_logs.py` | Raw logs -> `runs.csv` (one row per run) + `steps.csv` (tidy per-step) + `runs.json`. |
 | `plot_runs.py` | loss-vs-steps and loss-vs-time comparison figures from `steps.csv`, with record #40's own curve drawn behind every validation figure. |
@@ -35,44 +36,58 @@ hyperparameter tuning**. See "Why record #40" below.
 
 ```bash
 cd code/nanogpt
-pip install -r requirements.txt
-# download e.g. the first 900M training tokens (chunks) + the val chunk
-python data/cached_fineweb10B.py 9        # use a larger arg (up to 103) for full runs
+bash setup_env.sh                         # venv + deps + a real FA3 fetch, verified
+source .venv/bin/activate
+python data/cached_fineweb10B.py 9        # ~900M train tokens + the val chunk
 ```
 
-`requirements.txt` is **verbatim** upstream modded-nanogpt (re-verified against master
-2026-07-26) -- keeping it identical is what makes "same environment as the record"
-checkable. Missing `kernels` is the most likely first-run failure: `train_gpt.py` imports
-it at module scope, so every rank dies before any training happens.
+**Do not `pip install` into the system python on a rented Debian/NGC box.** It ends in
 
-**On a prebuilt CUDA container** (`nvcr.io/nvidia/pytorch:*`, most rented 8xH100 boxes)
-there is a real decision, because `kernels` downloads a **prebuilt** FA3 binary keyed to
-the exact torch version/ABI, and NGC ships a dev build (`2.10.0a0+gitXXXX`) the hub may
-have no variant for. Work down this ladder:
+```
+Cannot uninstall cryptography 41.0.7
+  The package's contents are unknown: no RECORD file was found for cryptography.
+  hint: The package was installed by debian.
+```
+
+apt-installed packages carry no pip RECORD, so pip cannot remove them, and any dependency
+that wants a newer one is fatal. `setup_env.sh` builds a venv and installs with
+`--ignore-installed`, so no system package is ever touched.
+
+Two things caused that specific chain, and both are now pinned away in `requirements.txt`:
+
+* **`kernels` must be `<0.13`.** Since 0.14 it requires `huggingface-hub>=1.10` (a major
+  bump); since 0.16 it also requires `sigstore>=4`, which drags in
+  cryptography / pyOpenSSL / rfc3161-client -- that is where the collision comes from.
+  `kernels<0.13` needs only `huggingface_hub<2.0`, `packaging`, `pyyaml`, fetches FA3
+  identically, and is what was current when record #40 was set.
+* **`torch` does not need to be 2.10.** The old pin was believed load-bearing for the FA3
+  prebuilt; it is not. `varunneal/flash-attention-3` ships build variants for
+  **torch 2.8 / 2.9 / 2.10 / 2.11 / 2.12 × cu126 / cu128 / cu130 × x86_64 / aarch64**
+  (checked against the hub 2026-07-26), so any CUDA torch in that window resolves FA3 and
+  a container's build can simply be kept. `setup_env.sh` reuses it when it qualifies and
+  only installs `torch==2.10.*` (into the venv) when there is nothing usable
+  (`FRESH_TORCH=1` forces that).
+
+For provenance, record #40 itself ran **torch `2.10.0.dev20250926+cu126`, Python 3.10.12,
+Triton 3.5.0, CUDA 12.6** -- a nightly, i.e. not even the PyPI `torch==2.10` release
+upstream's own requirements.txt pins.
+
+If FA3 still will not resolve, skip it -- FlexAttention instead, still 8 GPUs:
 
 ```bash
-python -c "import torch; print(torch.__version__, torch.version.cuda)"   # what you have
-
-# 1) cheapest: keep the container's torch, add only the extras
-pip install kernels huggingface-hub
-python -c "from kernels import get_kernel; get_kernel('varunneal/flash-attention-3'); print('FA3 ok')"
-
-# 2) if that fetch fails: take the torch the hub has prebuilts for (~2.5 GB, replaces
-#    the container's build -- which is the upstream-faithful choice anyway)
-pip install -r requirements.txt
-
-# 3) if FA3 still will not resolve: skip it, FlexAttention instead, still 8 GPUs
 NPROC=8 SCRIPT=train_gpt_a100.py bash run_all.sh
 ```
 
-Step 3 is a genuine fallback, not a downgrade of the experiment: FA3 -> FlexAttention and
+That is a genuine fallback, not a downgrade of the experiment: FA3 -> FlexAttention and
 FP8 -> bf16 lm_head are both **outside** the optimizer, so the sign/EF21 comparison is
 unchanged and only the absolute wall-clock differs from record #40.
 
-`run_all.sh` runs exactly this check itself -- imports, GPU count, data shards, **and a
+`run_all.sh` re-runs exactly this check itself -- imports, GPU count, data shards, **and a
 real FA3 fetch** -- on one process before launching anything (`SKIP_PREFLIGHT=1` to
 bypass), and stops the sweep if the first runs all fail, rather than reproducing the same
-environment error eight times.
+environment error eight times. It drives everything through one interpreter
+(`$PYTHON -m torch.distributed.run`, not a bare `torchrun`), so the environment it
+validates is the one that trains; set `PYTHON=/path/to/venv/bin/python` to be explicit.
 
 The scripts read `data/fineweb10B/fineweb_{train,val}_*.bin` relative to the current
 directory (or set `DATA_PATH=/abs/path` to point elsewhere). A full run consumes ~611M

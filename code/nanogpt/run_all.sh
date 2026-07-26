@@ -22,6 +22,13 @@ SCRIPT="${SCRIPT:-train_gpt.py}"
 NPROC="${NPROC:-8}"
 LOG_DIR="${LOG_DIR:-logs}"
 export LOG_DIR
+# One interpreter for the preflight AND the runs. A bare `torchrun` is a console
+# script on PATH and can easily belong to a DIFFERENT python than `python` does
+# (system vs venv) -- then the preflight validates an environment the training
+# never sees. `$PYTHON -m torch.distributed.run` is torchrun, guaranteed same
+# interpreter. `python` already points at the venv when one is activated.
+PYTHON="${PYTHON:-python}"
+if ! command -v "$PYTHON" >/dev/null 2>&1; then PYTHON=python3; fi
 
 # Order: cheapest-to-interpret first. Muon leads so a broken environment is
 # caught against the known record-#40 curve before any method under study runs.
@@ -40,6 +47,7 @@ if [ -z "${1:-}" ]; then OPTS=("${ALL_OPTS[@]}"); fi
 
 mkdir -p "$LOG_DIR"
 echo "script=$SCRIPT  nproc=$NPROC  log_dir=$LOG_DIR  iters=${NANOGPT_ITERS:-<full>}"
+echo "python=$("$PYTHON" -c 'import sys; print(sys.executable)' 2>/dev/null || echo "$PYTHON")"
 echo "runs: ${OPTS[*]}"
 echo
 
@@ -49,7 +57,7 @@ echo
 # eight torchrun teardowns.
 if [ "${SKIP_PREFLIGHT:-0}" != "1" ]; then
   echo "--- preflight ---"
-  python - "$SCRIPT" <<'PY' || { echo "preflight FAILED -- fix the above before running"; exit 1; }
+  "$PYTHON" - "$SCRIPT" <<'PY' || { echo "preflight FAILED -- fix the above before running"; exit 1; }
 import importlib.util   # NOT `import importlib`: the util submodule is not auto-bound
 import glob, os, sys
 script = sys.argv[1]
@@ -59,7 +67,10 @@ if script == "train_gpt.py":
 missing = [m for m in need if importlib.util.find_spec(m) is None]
 if missing:
     print(f"  MISSING python packages: {', '.join(missing)}")
-    print(f"  fix: pip install -r requirements.txt   (or just: pip install {' '.join(missing)})")
+    print( "  fix:  bash setup_env.sh    (builds a venv; never touches an apt package)")
+    print(f"  then: source .venv/bin/activate && bash run_all.sh")
+    print( "  -- do NOT `pip install -r requirements.txt` into a Debian system python:")
+    print( "     pip cannot uninstall apt-managed packages ('no RECORD file was found').")
     if "kernels" in missing:
         print("  no FA3 available? -> NPROC=8 SCRIPT=train_gpt_a100.py bash run_all.sh")
     sys.exit(1)
@@ -85,17 +96,22 @@ if script == "train_gpt.py":
     # NOT imply "FA3 resolves for this torch" -- and the real fetch happens deep in
     # model construction, i.e. once per run, after compile setup. Pay for it once
     # here (it is cached afterwards) instead of eight times.
+    import kernels
+    print(f"  kernels {getattr(kernels, '__version__', '?')}")
     from kernels import get_kernel
     try:
         get_kernel("varunneal/flash-attention-3")
         print("  FA3 kernel resolved for this torch build")
     except Exception as exc:
+        v = torch.__version__.split("+")[0].split(".")
+        cu = (torch.version.cuda or "none").replace(".", "")
         print(f"  FA3 FETCH FAILED: {type(exc).__name__}: {exc}")
-        print(f"  this torch is {torch.__version__}; the hub keys prebuilts by torch")
-        print("  version/ABI, and an nvcr.io dev build (2.10.0a0+gitXXXX) may have no")
-        print("  matching variant. Two ways forward:")
-        print("    1) get the torch the hub has prebuilts for:")
-        print("         pip install -r requirements.txt      # torch==2.10 from PyPI")
+        print(f"  this torch is {torch.__version__}, so it needs build variant")
+        print(f"     torch{v[0]}{v[1]}-cxx11-cu{cu}-x86_64-linux")
+        print("  the hub ships torch28..torch212 x cu126/cu128/cu130 x x86_64/aarch64,")
+        print("  so this normally only fails outside that window. Two ways forward:")
+        print("    1) install a torch inside it, in a venv:")
+        print("         FRESH_TORCH=1 bash setup_env.sh      # torch==2.10.* + kernels<0.13")
         print("    2) skip FA3 entirely -- FlexAttention instead, runs on 8xH100:")
         print("         NPROC=8 SCRIPT=train_gpt_a100.py bash run_all.sh")
         print("       (FA3->FlexAttention and FP8->bf16 are both OUTSIDE the optimizer,")
@@ -124,10 +140,10 @@ run_one() {   # $1 = optimizer, $2 = lr override ("" for the configured default)
   # words are assignment prefixes, so a conditional `${lr:+SIGNMUON_LR=$lr}` is
   # taken as the command name and fails with 127. `env` resolves it at run time.
   if [ "$NPROC" = "1" ] && [ "$SCRIPT" = "train_gpt_a100.py" ]; then
-    env SIGNMUON_OPT="$opt" ${lr:+SIGNMUON_LR="$lr"} python "$SCRIPT"
+    env SIGNMUON_OPT="$opt" ${lr:+SIGNMUON_LR="$lr"} "$PYTHON" "$SCRIPT"
   else
     env SIGNMUON_OPT="$opt" ${lr:+SIGNMUON_LR="$lr"} \
-      torchrun --standalone --nproc_per_node="$NPROC" "$SCRIPT"
+      "$PYTHON" -m torch.distributed.run --standalone --nproc_per_node="$NPROC" "$SCRIPT"
   fi
   # A diverging method exits non-zero only on a real CRASH: the training script
   # aborts cleanly (and logs DIVERGED) when the loss goes non-finite, which is a
