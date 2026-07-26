@@ -24,7 +24,8 @@ hyperparameter tuning**. See "Why record #40" below.
 | `test_distributed_sharding.py` | gloo/CPU test: the sharded `step()` == a single-process centralized run, over both padding regimes. |
 | `run_all.sh` | Launches the eight hero runs, one per optimizer, at their starting learning rates. |
 | `parse_logs.py` | Raw logs -> `runs.csv` (one row per run) + `steps.csv` (tidy per-step) + `runs.json`. |
-| `plot_runs.py` | loss-vs-steps and loss-vs-time comparison figures from `steps.csv`. |
+| `plot_runs.py` | loss-vs-steps and loss-vs-time comparison figures from `steps.csv`, with record #40's own curve drawn behind every validation figure. |
+| `reference_record40.csv` | Record #40's published validation curve, averaged over its **five** upstream 8×H100 logs (`3.2780 ± 0.0009` at step 2330, `140.7 s`). The pass/fail line for the `Muon` control arm. |
 | `data/cached_fineweb10B.py` | Downloads the pre-tokenized FineWeb-10B GPT-2 tokens (same stream for every record). |
 | `requirements.txt` | Python deps (mirrors upstream; `torch==2.10`). |
 | `train_gpt_rec40_reference.py` | The **verbatim record-#40 source** (from its run log), for provenance / diffing. Not wired to the optimizer knob. |
@@ -114,6 +115,24 @@ carries a machine-readable `RUNMETA {...}` / `RUNEND {...}` JSON header, the per
 LR multiplier table, **per-step training loss**, and the usual validation points.
 A run whose loss goes non-finite logs `DIVERGED` and stops -- that is a result, not a
 crash, and the analysis tooling reports it as such.
+
+### Validate the port before reading any result
+
+`run_all.sh` runs `Muon` first for exactly this reason: it **is** record #40's optimizer,
+so it must land on record #40's published curve. Those numbers are checked in
+(`reference_record40.csv`, mean of upstream's five 8×H100 logs) and drawn behind every
+validation figure:
+
+| step | 250 | 500 | 1000 | 1500 | 2000 | 2330 |
+|---|---|---|---|---|---|---|
+| upstream val loss | 4.0898 | 3.8203 | 3.5766 | 3.4509 | 3.3307 | **3.2780 ± 0.0009** |
+
+A `Muon` run outside roughly `3.278 ± 0.003` at step 2330 means the **port** is broken, not
+the optimizer — fix that before interpreting the other seven arms. Wall-clock *will* be
+somewhat above the record's `140.7 s` / `60.4 ms per step`: this port replaces #40's Triton
+kernels and its batched sharded transport with a pure-torch, per-parameter equivalent
+(identical arithmetic, more kernel launches). All eight methods pay that cost equally, so
+every cross-method comparison — including loss-vs-time — stays fair.
 
 ## Analysis
 

@@ -172,7 +172,14 @@ def _polar_express_eager(G: Tensor, steps: int = 5) -> Tensor:
 if os.environ.get("SIGNMUON_NO_COMPILE", "0") == "1":
     polar_express = _polar_express_eager
 else:  # pragma: no cover - exercised on the GPU cluster, not in CPU tests
-    polar_express = torch.compile(_polar_express_eager)
+    # `dynamic=False` is NOT optional -- it is record #40's own comment on this
+    # very function ("Must use dynamic=False or else it's much slower").  We call
+    # the LMO with four distinct static shapes ([768,3072] mlp, [4,768,768] attn
+    # blocks, [6,12] attn_gate, [1,12] smear_gate); without the flag dynamo marks
+    # the dims dynamic after the second one and emits a much slower generic
+    # kernel for all of them.  Four specializations are well under
+    # `dynamo.config.recompile_limit`, which the training script raises to 64.
+    polar_express = torch.compile(_polar_express_eager, dynamic=False, fullgraph=True)
 
 # Backward-compatible alias: earlier code / tests referred to the LMO as
 # ``zeropower_via_newtonschulz5``.  Record #40 uses Polar Express instead, but
@@ -304,12 +311,16 @@ def describe_lr_scaling(optimizer: "_DistributedMatrixOptimizer",
     names = names or {}
     rule = optimizer.lr_scaling
     family = optimizer.family
+    # Report the (m, n) THIS RULE reads, not always lmo_shape: 'semantic' falls back
+    # to the stored shape for any parameter the model forgot to tag, and printing
+    # lmo_shape would hide that fallback behind numbers that look deliberate.
+    shape_of = LR_SCALING_RULES[rule][0]
     lines = [f"per-layer LR scaling '{rule}' (family={family}): {LR_SCALING_RULES[rule][2]}",
-             f"  {'parameter':<32}{'stored':>15}{'lmo m':>8}{'lmo n':>8}{'lambda':>13}{'count':>7}"]
+             f"  {'parameter':<32}{'stored':>15}{'rule m':>8}{'rule n':>8}{'lambda':>13}{'count':>7}"]
     seen: dict[tuple, int] = {}
     for group in optimizer.param_groups:
         for p in group["params"]:
-            m, n = lmo_shape(p)
+            m, n = shape_of(p)
             lam = layer_multiplier(p, family, rule)
             # collapse the per-block index so 22 identical MLP matrices are one row
             name = re.sub(r"\.\d+\.", ".*.", names.get(id(p), getattr(p, "module", "?")))
@@ -436,6 +447,17 @@ class _DistributedMatrixOptimizer(Optimizer):
 
     # ---- distributed transport (identical to upstream Muon) ----------------
 
+    @staticmethod
+    def _pad_params(params: list, world_size: int) -> list:
+        """``params`` padded with scratch tensors to a whole number of chunks.
+
+        The padded slots are all_gather *outputs* that nobody reads, so scratch is
+        fine -- but they must be distinct-shaped, same-dtype tensors and there must
+        be exactly ``(-n) % world_size`` of them, never more (an over-long pad list
+        would allocate a full parameter's worth of memory every step for nothing)."""
+        n_pad = (-len(params)) % world_size
+        return list(params) + [torch.empty_like(params[-1]) for _ in range(n_pad)]
+
     @torch.no_grad()
     def step(self):
         # Efficient sharded implementation from the modded-nanogpt record
@@ -454,7 +476,15 @@ class _DistributedMatrixOptimizer(Optimizer):
             assert all(p.grad is not None for p in params), (
                 f"{type(self).__name__}.step(): some parameters have no .grad; "
                 "every parameter in a group must take part in the collective")
-            grad_pad = [p.grad for p in params] + [torch.zeros_like(params[-1])] * world_size
+            # Pad the group out to a whole number of world_size-sized chunks. Only
+            # the final chunk can be short, so `(-n) % world_size` padding entries
+            # are enough -- and when the group divides evenly (record #40's 32
+            # hidden matrices on 8 ranks) that is zero, saving a pointless
+            # zeros_like of the full parameter every step. The padding must be
+            # ZEROS: it is reduce_scatter input, and ranks that own nothing in the
+            # last chunk must average zeros rather than uninitialized memory.
+            n_pad = (-len(params)) % world_size
+            grad_pad = [p.grad for p in params] + [torch.zeros_like(params[-1])] * n_pad
             for base_i in range(0, len(params), world_size):
                 if base_i + rank < len(params):
                     grad = params[base_i + rank].grad
@@ -477,7 +507,7 @@ class _DistributedMatrixOptimizer(Optimizer):
         idx = 0
         for group in self.param_groups:
             params: list[Tensor] = group["params"]
-            params_pad = params + [torch.empty_like(params[-1])] * world_size
+            params_pad = self._pad_params(params, world_size)
             for base_i in range(0, len(params), world_size):
                 reduce_scatter_futures[idx].wait()
                 if base_i + rank < len(params):
@@ -696,7 +726,7 @@ class EF21MuonSign(_DistributedMatrixOptimizer):
         futures: list[torch.Future] = []
         for group in self.param_groups:
             params: list[Tensor] = group["params"]
-            params_pad = params + [torch.empty_like(params[-1])] * world_size
+            params_pad = self._pad_params(params, world_size)
             for base_i in range(0, len(params), world_size):
                 if base_i + rank < len(params):
                     p = params[base_i + rank]
@@ -722,7 +752,7 @@ class EF21MuonSign(_DistributedMatrixOptimizer):
         futures: list[torch.Future] = []
         for group in self.param_groups:
             params: list[Tensor] = group["params"]
-            params_pad = params + [torch.empty_like(params[-1])] * world_size
+            params_pad = self._pad_params(params, world_size)
             for base_i in range(0, len(params), world_size):
                 if base_i + rank < len(params):
                     p = params[base_i + rank]

@@ -384,6 +384,11 @@ class CausalSelfAttention(nn.Module):
         self.qkvo_w = nn.Parameter(torch.empty(self.hdim, self.dim*4))
         # label module to enable custom optimizer sizing
         self.qkvo_w.module='attn'
+        # SIGNMUON: semantic (fan_out, fan_in) of the linear map this parameter
+        # implements, for lr_scaling="semantic" (see signmuon_optimizers.py). Inert
+        # under the default "unit-gain" rule, which reads the STORED shape exactly as
+        # record #40 does. Each of Q/K/V/O is a [hdim, dim] map.
+        self.qkvo_w.fan_out_sem, self.qkvo_w.fan_in_sem = self.hdim, self.dim
         with torch.no_grad():
             self.qkvo_w.view(4,self.hdim, self.dim)[:3].uniform_(-bound, bound) # init QKV weights
             self.qkvo_w.view(4,self.hdim, self.dim)[3].zero_() # init output weights to zero
@@ -392,6 +397,7 @@ class CausalSelfAttention(nn.Module):
         self.attn_gate = CastedLinear(12, num_heads)
         # label module to enable custom optimizer sizing
         self.attn_gate.weight.module = 'attn_gate'
+        self.attn_gate.weight.fan_out_sem, self.attn_gate.weight.fan_in_sem = num_heads, 12
         self.attn_gate.weight.detach().zero_()
 
     def forward(self, x: Tensor, attn_args: AttnArgs):
@@ -434,6 +440,12 @@ class MLP(nn.Module):
         # label modules to enable custom optimizer sizing
         self.c_fc.module='mlp'
         self.c_proj.module='mlp'
+        # SIGNMUON: semantic (fan_out, fan_in). c_fc is STORED TRANSPOSED -- [dim, hdim]
+        # but applied as F.linear(x, c_fc.T), i.e. a dim -> hdim map -- so its stored
+        # shape is (fan_in, fan_out) and it is the ONE parameter lr_scaling="semantic"
+        # moves (by 2x). c_proj is stored as (fan_out, fan_in) already.
+        self.c_fc.fan_out_sem, self.c_fc.fan_in_sem = hdim, dim
+        self.c_proj.fan_out_sem, self.c_proj.fan_in_sem = dim, hdim
         std = 0.5 * (dim ** -0.5)
         bound = (3 ** 0.5) * std # improved init scale by @YouJiacheng
         with torch.no_grad():
@@ -477,6 +489,7 @@ class GPT(nn.Module):
         self.smear_gate.weight.detach().zero_()
         # label modules to enable custom optimizer sizing
         self.smear_gate.weight.module = 'smear_gate'
+        self.smear_gate.weight.fan_out_sem, self.smear_gate.weight.fan_in_sem = 1, 12
         # token value embeddings by @KoszarskyB - inspired by @Grad62304977's value residual implementation following https://arxiv.org/abs/2410.17897
         # value embedding code simplification inspired by @ragulpr https://github.com/KellerJordan/modded-nanogpt/pull/78
         self.value_embeds = nn.ModuleList([nn.Embedding(vocab_size, model_dim) for _ in range(3)])

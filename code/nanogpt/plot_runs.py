@@ -30,6 +30,11 @@ Rigour notes (the concurrent Sign-Muon paper plots an "anytime best" envelope)
 * Loss and perplexity are the same information (``ppl = exp(loss)``);
   ``--metric perplexity`` relabels for comparison with figures that use it. Never
   both on one figure -- one axis per chart.
+* Every validation figure carries upstream record #40's own curve
+  (``reference_record40.csv``, mean of its five published 8xH100 logs) as a grey
+  dashed backdrop with a +/-3 sd band. ``Muon`` here IS record #40's optimizer, so
+  it must lie on that line; a gap means the port is broken and nothing else on the
+  figure can be trusted yet. ``--no-reference`` removes it.
 """
 
 from __future__ import annotations
@@ -101,6 +106,29 @@ def load_steps(path: Path) -> "OrderedDict[str, dict]":
     return runs
 
 
+#: Upstream record #40's own validation curve, averaged over its five published
+#: 8xH100 logs. Drawn behind every validation figure as the "is the port intact?"
+#: baseline: the `Muon` arm is record #40's optimizer verbatim, so it must land on
+#: this line. Comment lines (``#``) carry the provenance.
+REFERENCE_CSV = Path(__file__).resolve().parent / "reference_record40.csv"
+
+
+def load_reference(path: Path) -> dict | None:
+    """reference_record40.csv -> {step[], ms[], val[], sd[]}, or None if absent."""
+    if not path.exists():
+        return None
+    rows = []
+    with path.open(newline="", encoding="utf-8") as fh:
+        for row in csv.DictReader(ln for ln in fh if not ln.lstrip().startswith("#")):
+            rows.append(row)
+    if not rows:
+        return None
+    return dict(step=[int(r["step"]) for r in rows],
+                ms=[_num(r["train_time_ms"]) for r in rows],
+                val=[_num(r["val_loss"]) for r in rows],
+                sd=[_num(r["val_loss_sd"]) for r in rows])
+
+
 def load_runs_meta(path: Path) -> dict:
     if not path.exists():
         return {}
@@ -141,7 +169,7 @@ def _running_min(ys):
 # Plot
 # --------------------------------------------------------------------------
 
-def make_figure(runs, which, xaxis, theme, args, meta):
+def make_figure(runs, which, xaxis, theme, args, meta, reference=None):
     import matplotlib
     matplotlib.use("Agg")
     import matplotlib.pyplot as plt
@@ -156,6 +184,29 @@ def make_figure(runs, which, xaxis, theme, args, meta):
         xscale = 60_000.0
 
     plotted, all_y = 0, []
+
+    # Upstream record #40, drawn first so it sits behind everything and reads as
+    # the backdrop rather than as a ninth competitor: neutral grey, no marker, and
+    # deliberately NOT given a palette slot. `Muon` should lie on top of it; any
+    # visible gap is a port bug, not an optimizer result. Its y-values are kept out
+    # of `all_y` so the reference never drives the axis limits.
+    if reference is not None and which == "val":
+        rx = reference["step"] if xaxis == "steps" else reference["ms"]
+        pts = [(x / xscale, y, sd) for x, y, sd in
+               zip(rx, reference["val"], reference["sd"]) if x is not None and y is not None]
+        if pts:
+            xs = [p[0] for p in pts]
+            ys = [p[1] for p in pts]
+            los = [p[1] - 3 * (p[2] or 0.0) for p in pts]
+            his = [p[1] + 3 * (p[2] or 0.0) for p in pts]
+            if args.metric == "perplexity":
+                ys, los, his = ([math.exp(min(v, 20.0)) for v in seq]
+                                for seq in (ys, los, his))
+            # +/-3 sd over the record's own five runs: the band a correct port must
+            # land inside, not a confidence interval on our single run.
+            ax.fill_between(xs, los, his, color=theme["text2"], alpha=0.16, lw=0, zorder=1)
+            ax.plot(xs, ys, color=theme["text2"], lw=1.4, ls=(0, (5, 2)), zorder=1.5,
+                    label="record #40 upstream (mean of 5)")
     for rid, run in sorted(runs.items(), key=lambda kv: _slot(kv[1]["optimizer"])):
         xs, ys = _series(run, which, xaxis)
         if not xs:
@@ -238,10 +289,12 @@ def make_figure(runs, which, xaxis, theme, args, meta):
 
     # Legend below the axes: a loss curve sweeps from the top-left to the
     # bottom-right, so every in-axes corner is occupied by some run at some point.
-    ncol = 4 if plotted > 6 else max(1, plotted)
-    rows = -(-plotted // ncol)
+    handles, labels = ax.get_legend_handles_labels()
+    n_entries = len(labels)             # runs, plus the reference line when drawn
+    ncol = 4 if n_entries > 6 else max(1, n_entries)
+    rows = -(-n_entries // ncol)
     band = 0.03 + 0.045 * rows          # figure fraction reserved for the legend
-    leg = fig.legend(*ax.get_legend_handles_labels(), frameon=False, fontsize=8.8,
+    leg = fig.legend(handles, labels, frameon=False, fontsize=8.8,
                      ncol=ncol, loc="upper center", bbox_to_anchor=(0.5, band),
                      handlelength=2.2, columnspacing=1.6, handletextpad=0.6)
     for t in leg.get_texts():
@@ -265,6 +318,11 @@ def main() -> None:
                     help="EMA factor for the train-loss curve (0 disables)")
     ap.add_argument("--anytime", action="store_true",
                     help="also draw the running-minimum envelope (dashed)")
+    ap.add_argument("--reference", type=Path, default=REFERENCE_CSV,
+                    help="upstream record-#40 val curve to draw as a baseline "
+                         "(default: reference_record40.csv next to this script)")
+    ap.add_argument("--no-reference", dest="reference", action="store_const", const=None,
+                    help="do not draw the record-#40 baseline")
     ap.add_argument("--minutes", action="store_true", help="x axis in minutes, not seconds")
     ap.add_argument("--target", type=float, default=3.28,
                     help="draw the speedrun's val-loss target (0 to omit)")
@@ -288,6 +346,9 @@ def main() -> None:
         if not runs:
             raise SystemExit(f"no runs matching {args.only}")
     meta = load_runs_meta(args.runs_csv or args.steps_csv.with_name("runs.csv"))
+    reference = load_reference(args.reference) if args.reference else None
+    if args.reference and reference is None:
+        print(f"  note: {args.reference} not found -- no record-#40 baseline drawn")
 
     args.outdir.mkdir(parents=True, exist_ok=True)
     themes = [("light", _LIGHT)]
@@ -300,7 +361,7 @@ def main() -> None:
     for tname, theme in themes:
         for which in ("val", "train"):
             for xaxis in ("steps", "time"):
-                fig = make_figure(runs, which, xaxis, theme, args, meta)
+                fig = make_figure(runs, which, xaxis, theme, args, meta, reference)
                 if fig is None:
                     continue
                 suffix = "" if tname == "light" else "_dark"

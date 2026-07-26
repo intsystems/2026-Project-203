@@ -50,7 +50,8 @@ echo
 if [ "${SKIP_PREFLIGHT:-0}" != "1" ]; then
   echo "--- preflight ---"
   python - "$SCRIPT" <<'PY' || { echo "preflight FAILED -- fix the above before running"; exit 1; }
-import glob, importlib, os, sys
+import importlib.util   # NOT `import importlib`: the util submodule is not auto-bound
+import glob, os, sys
 script = sys.argv[1]
 need = ["torch", "numpy", "huggingface_hub"]
 if script == "train_gpt.py":
@@ -119,10 +120,13 @@ run_one() {   # $1 = optimizer, $2 = lr override ("" for the configured default)
   echo "=============================================================="
   echo "  $label   ($(date '+%H:%M:%S'))"
   echo "=============================================================="
+  # `env` and not a bare `VAR=$x cmd` prefix: bash decides at PARSE time which
+  # words are assignment prefixes, so a conditional `${lr:+SIGNMUON_LR=$lr}` is
+  # taken as the command name and fails with 127. `env` resolves it at run time.
   if [ "$NPROC" = "1" ] && [ "$SCRIPT" = "train_gpt_a100.py" ]; then
-    SIGNMUON_OPT="$opt" ${lr:+SIGNMUON_LR=$lr} python "$SCRIPT"
+    env SIGNMUON_OPT="$opt" ${lr:+SIGNMUON_LR="$lr"} python "$SCRIPT"
   else
-    SIGNMUON_OPT="$opt" ${lr:+SIGNMUON_LR=$lr} \
+    env SIGNMUON_OPT="$opt" ${lr:+SIGNMUON_LR="$lr"} \
       torchrun --standalone --nproc_per_node="$NPROC" "$SCRIPT"
   fi
   # A diverging method exits non-zero only on a real CRASH: the training script
