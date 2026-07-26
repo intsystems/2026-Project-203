@@ -65,6 +65,18 @@ _STEP_RE = re.compile(
 # step:1233 train_loss:3.281234
 _TRAIN_RE = re.compile(
     r"^step:(?P<step>\d+)\s+train_loss:(?P<loss>[-\deE.]+|nan|inf|-inf)\s*$")
+# The per-validation diagnostics block written by
+# ``_DistributedMatrixOptimizer.diagnostics_report``. The slot columns present
+# depend on the method (a slot no method touched is omitted), so the column
+# header has to be read rather than assumed. All three patterns are anchored and
+# only ever applied past RUNMETA, so the verbatim source dump at the top of the
+# log -- which contains these same strings inside f-strings -- cannot match.
+_DIAG_HDR_RE = re.compile(r"^diagnostics \((?P<opt>\w+);")
+_DIAG_COLS_RE = re.compile(r"^\s+parameter\s+count\s+(?P<cols>[\w\s]+?)\s*$")
+_DIAG_ROW_RE = re.compile(r"^\s{2}(?P<name>\S+)\s+(?P<count>\d+)\s+(?P<vals>[-\d.eE+\s]+?)\s*$")
+_DIAG_BLK_RE = re.compile(
+    r"^\s{2}(?P<name>\S+) mean\|grad\| per Q,K,V,O block:\s+"
+    r"(?P<vals>[\d.eE+-]+\s+[\d.eE+-]+\s+[\d.eE+-]+\s+[\d.eE+-]+)\s+max/min=(?P<ratio>\S+)")
 _META_RE = re.compile(r"^RUNMETA (?P<json>\{.*\})\s*$")
 _END_RE = re.compile(r"^RUNEND (?P<json>\{.*\})\s*$")
 _DIVERGED_RE = re.compile(r"^DIVERGED step:(?P<step>\d+)/")
@@ -94,6 +106,9 @@ def parse_log(path: Path) -> RunRecord | None:
     train_loss: dict[int, float] = {}
     val: dict[int, tuple[float, float]] = {}     # step -> (val_loss, cumulative ms)
     val_w: dict[int, float] = {}                 # step -> val_loss of W (EF21-MuonSign)
+    diag: list[dict[str, Any]] = []              # per-validation diagnostics rows
+    diag_cols: list[str] | None = None
+    diag_step: int | None = None
     step_ms: dict[int, float] = {}               # step -> approx cumulative ms
     diverged_at: int | None = None
     peak_mib: int | None = None
@@ -143,10 +158,36 @@ def parse_log(path: Path) -> RunRecord | None:
             m = _VAL_RE.match(line)
             if m:
                 total_steps = int(m.group("total"))
-                val[int(m.group("step"))] = (_f(m.group("val")), _f(m.group("ms")))
+                diag_step = int(m.group("step"))
+                val[diag_step] = (_f(m.group("val")), _f(m.group("ms")))
                 if m.group("valw") is not None:
-                    val_w[int(m.group("step"))] = _f(m.group("valw"))
+                    val_w[diag_step] = _f(m.group("valw"))
                 continue
+            # ---- diagnostics block, printed straight after its val line -----
+            if _DIAG_HDR_RE.match(line):
+                diag_cols = None
+                continue
+            m = _DIAG_COLS_RE.match(line)
+            if m:
+                diag_cols = m.group("cols").split()
+                continue
+            m = _DIAG_BLK_RE.match(line)          # before _DIAG_ROW_RE: also 2-indented
+            if m and diag_step is not None:
+                row = dict(step=diag_step, parameter=m.group("name"))
+                row.update({f"gblk{i}": _f(v)
+                            for i, v in enumerate(m.group("vals").split())})
+                diag.append(row)
+                continue
+            if diag_cols:
+                m = _DIAG_ROW_RE.match(line)
+                if m and diag_step is not None:
+                    vals = m.group("vals").split()
+                    if len(vals) == len(diag_cols):
+                        row = dict(step=diag_step, parameter=m.group("name"),
+                                   count=int(m.group("count")))
+                        row.update(dict(zip(diag_cols, (_f(v) for v in vals))))
+                        diag.append(row)
+                        continue
             m = _STEP_RE.match(line)
             if m:
                 total_steps = int(m.group("total"))
@@ -222,6 +263,7 @@ def parse_log(path: Path) -> RunRecord | None:
     n = rec["last_step"] or 0
     rec["ms_per_step"] = round(rec["train_time_ms"] / n, 3) if rec["train_time_ms"] and n else None
     rec["_steps"] = series
+    rec["_diag"] = diag
     rec["_meta"] = meta
     rec["_end"] = end
     return rec
@@ -313,9 +355,24 @@ def write_csv(records: list[RunRecord], outdir: Path, targets: list[float]) -> N
                             s["step"], s["wallclock_ms"], s["train_loss"],
                             s["val_loss"], s.get("val_loss_w")])
 
+    # Per-validation optimizer diagnostics (compressor contraction, estimator lag,
+    # server/broadcast gap, per-block gradient magnitudes). Long format: one row
+    # per (run, step, parameter), so a method that never wrote a slot simply has
+    # no value there rather than a misleading zero.
+    diag_fields = ["run_id", "optimizer", "lr", "step", "parameter", "count",
+                   "alpha_up", "alpha_dn", "lag_est", "lag_XW",
+                   "gblk0", "gblk1", "gblk2", "gblk3"]
+    with (outdir / "diagnostics.csv").open("w", newline="", encoding="utf-8") as fh:
+        w = csv.DictWriter(fh, fieldnames=diag_fields, extrasaction="ignore")
+        w.writeheader()
+        for r in records:
+            for row in r.get("_diag", []):
+                w.writerow(dict(row, run_id=r["run_id"], optimizer=r["optimizer"],
+                                lr=r["lr"]))
+
     with (outdir / "runs.json").open("w", encoding="utf-8") as fh:
-        json.dump([{k: v for k, v in r.items() if k != "_steps"} for r in records],
-                  fh, indent=2, default=str)
+        json.dump([{k: v for k, v in r.items() if k not in ("_steps", "_diag")}
+                   for r in records], fh, indent=2, default=str)
 
 
 def _collect(inputs: list[str]) -> list[Path]:

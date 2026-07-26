@@ -1,9 +1,12 @@
-run_id,optimizer,family,lr,momentum,weight_decay,lr_scaling,world_size,gpu,train_steps,last_step,diverged,completed,final_val_loss,best_val_loss,train_time_ms,ms_per_step,peak_memory_mib,log,steps_to_3.28,ms_to_3.28
-EF21-MuonSign_lr0.06_d09c9783,EF21-MuonSign,lmo,0.06,0.95,0.0,unit-gain,8,NVIDIA H100 80GB HBM3,2330,2330,False,True,7.8221,4.3865,144648.5,62.081,29206,logs\EF21-MuonSign_lr0.06_d09c9783.txt,,
-EF21-MuonUSign_lr0.06_56acc443,EF21-MuonUSign,lmo,0.06,0.95,0.0,unit-gain,8,NVIDIA H100 80GB HBM3,2330,2330,False,True,3.3311,3.3311,144245.2,61.908,30160,logs\EF21-MuonUSign_lr0.06_56acc443.txt,,
-EF21-SignMuon_lr0.06_a52d62d6,EF21-SignMuon,lmo,0.06,0.95,0.0,unit-gain,8,NVIDIA H100 80GB HBM3,2330,2330,False,True,3.2889,3.2889,144218.2,61.896,28882,logs\EF21-SignMuon_lr0.06_a52d62d6.txt,,
-Muon_lr0.06_5db64adc,Muon,lmo,0.06,0.95,0.0,unit-gain,8,NVIDIA H100 80GB HBM3,2330,2330,False,True,3.2785,3.2785,143818.4,61.725,29098,logs\Muon_lr0.06_5db64adc.txt,2320.6250000000023,143234.87500000015
-MuonSign_lr0.03_8ae069a3,MuonSign,sign,0.03,0.95,0.0,unit-gain,8,NVIDIA H100 80GB HBM3,2330,2330,False,True,3.3249,3.3249,143082.9,61.409,30160,logs\MuonSign_lr0.03_8ae069a3.txt,,
-MuonUSign_lr0.06_d9721bde,MuonUSign,lmo,0.06,0.95,0.0,unit-gain,8,NVIDIA H100 80GB HBM3,2330,2330,False,True,3.2959,3.2959,143633.0,61.645,28882,logs\MuonUSign_lr0.06_d9721bde.txt,,
-SignMuon_lr0.03_19f64fe1,SignMuon,sign,0.03,0.95,0.0,unit-gain,8,NVIDIA H100 80GB HBM3,2330,2330,False,True,3.2881,3.2881,144339.6,61.948,29314,logs\SignMuon_lr0.03_19f64fe1.txt,,
-SignSGD_lr0.03_1f0db2d4,SignSGD,sign,0.03,0.95,0.0,unit-gain,8,NVIDIA H100 80GB HBM3,2330,2330,False,True,3.4049,3.4049,143246.3,61.479,28882,logs\SignSGD_lr0.03_1f0db2d4.txt,,
+run_id,optimizer,family,lr,momentum,weight_decay,lr_scaling,world_size,gpu,train_steps,last_step,diverged,val_rose,completed,final_val_loss,best_val_loss,final_val_loss_w,best_val_loss_w,train_time_ms,ms_per_step,peak_memory_mib,log,steps_to_3.28,ms_to_3.28
+EF21-MuonSign_lr0.06_d09c9783,EF21-MuonSign,lmo,0.06,0.95,0.0,unit-gain,8,NVIDIA H100 80GB HBM3,2330,2330,False,True,True,7.8221,4.3865,,,144648.5,62.081,29206,logs\EF21-MuonSign_lr0.06_d09c9783.txt,,
+EF21-MuonSign_lr0.06_e6770317,EF21-MuonSign,lmo,0.06,0.95,0.0,unit-gain,8,NVIDIA H100 80GB HBM3,2330,2330,False,True,True,5.5198,4.1967,3.3213,3.3213,144599.3,62.06,28992,logs\EF21-MuonSign_lr0.06_e6770317_new.txt,,
+EF21-MuonUSign_lr0.06_2717df49,EF21-MuonUSign,lmo,0.06,0.95,0.0,unit-gain,8,NVIDIA H100 80GB HBM3,2330,2330,False,False,True,3.3203,3.3203,,,144538.4,62.034,28882,logs\EF21-MuonUSign_lr0.06_2717df49_new.txt,,
+EF21-MuonUSign_lr0.06_56acc443,EF21-MuonUSign,lmo,0.06,0.95,0.0,unit-gain,8,NVIDIA H100 80GB HBM3,2330,2330,False,False,True,3.3311,3.3311,,,144245.2,61.908,30160,logs\EF21-MuonUSign_lr0.06_56acc443.txt,,
+EF21-SignMuon_lr0.06_a52d62d6,EF21-SignMuon,lmo,0.06,0.95,0.0,unit-gain,8,NVIDIA H100 80GB HBM3,2330,2330,False,False,True,3.2889,3.2889,,,144218.2,61.896,28882,logs\EF21-SignMuon_lr0.06_a52d62d6.txt,,
+EF21-SignMuon_lr0.06_bb803ec4,EF21-SignMuon,lmo,0.06,0.95,0.0,unit-gain,8,NVIDIA H100 80GB HBM3,2330,2330,False,False,True,3.286,3.286,,,144468.8,62.004,28882,logs\EF21-SignMuon_lr0.06_bb803ec4_new.txt,,
+Muon_lr0.06_5db64adc,Muon,lmo,0.06,0.95,0.0,unit-gain,8,NVIDIA H100 80GB HBM3,2330,2330,False,False,True,3.2785,3.2785,,,143818.4,61.725,29098,logs\Muon_lr0.06_5db64adc.txt,2320.6250000000023,143234.87500000015
+MuonSign_lr0.03_8ae069a3,MuonSign,sign,0.03,0.95,0.0,unit-gain,8,NVIDIA H100 80GB HBM3,2330,2330,False,False,True,3.3249,3.3249,,,143082.9,61.409,30160,logs\MuonSign_lr0.03_8ae069a3.txt,,
+MuonUSign_lr0.06_d9721bde,MuonUSign,lmo,0.06,0.95,0.0,unit-gain,8,NVIDIA H100 80GB HBM3,2330,2330,False,False,True,3.2959,3.2959,,,143633.0,61.645,28882,logs\MuonUSign_lr0.06_d9721bde.txt,,
+SignMuon_lr0.03_19f64fe1,SignMuon,sign,0.03,0.95,0.0,unit-gain,8,NVIDIA H100 80GB HBM3,2330,2330,False,False,True,3.2881,3.2881,,,144339.6,61.948,29314,logs\SignMuon_lr0.03_19f64fe1.txt,,
+SignSGD_lr0.03_1f0db2d4,SignSGD,sign,0.03,0.95,0.0,unit-gain,8,NVIDIA H100 80GB HBM3,2330,2330,False,False,True,3.4049,3.4049,,,143246.3,61.479,28882,logs\SignSGD_lr0.03_1f0db2d4.txt,,

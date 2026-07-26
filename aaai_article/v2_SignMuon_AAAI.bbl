@@ -1,4 +1,4 @@
-\begin{thebibliography}{24}
+\begin{thebibliography}{25}
 \providecommand{\natexlab}[1]{#1}
 
 \bibitem[{Ahn et~al.(2025)Ahn, Xu, Abreu, Fan, Magakyan, Sharma, Zhan, and
@@ -158,5 +158,13 @@ Safaryan, M.; and Richtarik, P. 2021.
 \newblock In Meila, M.; and Zhang, T., eds., \emph{Proceedings of the 38th
   International Conference on Machine Learning}, volume 139 of
   \emph{Proceedings of Machine Learning Research}, 9224--9234. PMLR.
+
+\bibitem[{Yang et~al.(2021)Yang, Hu, Babuschkin, Sidor, Liu, Farhi, Ryder,
+  Pachocki, Chen, and Gao}]{yang2021tuning}
+Yang, G.; Hu, E.~J.; Babuschkin, I.; Sidor, S.; Liu, X.; Farhi, D.; Ryder, N.;
+  Pachocki, J.; Chen, W.; and Gao, J. 2021.
+\newblock Tuning Large Neural Networks via Zero-Shot Hyperparameter Transfer.
+\newblock In \emph{Advances in Neural Information Processing Systems
+  (NeurIPS)}.
 
 \end{thebibliography}
