@@ -1,12 +1,18 @@
 # Dependencies for the record-#40 NanoGPT-speedrun port of the SignMuon/EF21 optimizers.
-# Mirrors the upstream KellerJordan/modded-nanogpt requirements (latest repo), which is
-# what the 8xH100 build (train_gpt.py, Flash Attention 3 + FP8) needs.
 #
-# The single-A100 build (train_gpt_a100.py) does NOT need `kernels` (it uses torch's
-# FlexAttention instead of the Hopper-only FA3 kernel) but the extra package is harmless.
+# VERBATIM upstream KellerJordan/modded-nanogpt/requirements.txt (re-verified against
+# master on 2026-07-26). Do not edit the package list -- keeping it identical is what
+# makes "same environment as the record" checkable.
 #
-# Note: record #40 itself was validated around torch 2.9.0.dev; we pin the current
-# upstream torch==2.10. If FlexAttention / FA3 behave oddly, try the record's torch.
+# The `torch==2.10` pin is load-bearing for the 8xH100 build: `kernels` fetches a
+# PREBUILT Flash Attention 3 binary from the HF hub, keyed to the exact torch
+# version/ABI, so a nonstandard torch can leave FA3 with no matching variant. On an
+# nvcr.io/nvidia/pytorch container (which ships a dev build like 2.10.0a0+gitXXXX)
+# installing this file replaces that torch -- usually the right call, because the hub
+# has prebuilts for the release wheel. See "Setup" in README.md for the decision ladder.
+#
+# The single-A100 build (train_gpt_a100.py) needs NO `kernels` and no FA3: it uses
+# torch's own FlexAttention, so it runs on whatever torch is already present.
 
 numpy
 tqdm

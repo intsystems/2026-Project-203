@@ -25,7 +25,28 @@ import torch.distributed as dist
 import torch.nn.functional as F
 
 # torch._inductor.config.coordinate_descent_tuning = True # we have banned this flag for new records because it causes compilation to take 30min
-from kernels import get_kernel
+try:
+    from kernels import get_kernel
+except ModuleNotFoundError as _exc:   # the single most likely first-run failure
+    raise SystemExit(
+        "\n"
+        "train_gpt.py needs the `kernels` package to fetch record #40's Hopper-only\n"
+        "Flash Attention 3 kernel, and it is not installed.\n"
+        "\n"
+        "  fix:  pip install -r requirements.txt\n"
+        "\n"
+        "  That file is verbatim upstream modded-nanogpt. Its torch==2.10 pin matters:\n"
+        "  `kernels` downloads a PREBUILT FA3 binary keyed to the exact torch\n"
+        "  version/ABI, so on an nvcr.io container (dev build 2.10.0a0+gitXXXX) the\n"
+        "  hub may have no matching variant even once `kernels` is installed. Trying\n"
+        "  `pip install kernels huggingface-hub` first keeps the container's torch --\n"
+        "  fine if FA3 then resolves; `run_all.sh` preflights exactly that.\n"
+        "\n"
+        "  no FA3 available?  train_gpt_a100.py is device-agnostic and runs on 8xH100:\n"
+        "      NPROC=8 SCRIPT=train_gpt_a100.py bash run_all.sh\n"
+        "  It swaps FA3 -> FlexAttention and FP8 -> bf16 lm_head (both OUTSIDE the\n"
+        "  optimizer), so the sign/EF21 comparison is unchanged; only the absolute\n"
+        "  wall-clock differs from record #40.\n") from _exc
 from torch import Tensor, nn
 
 dynamo.config.recompile_limit = 64
@@ -724,27 +745,78 @@ args.val_files = os.path.join(data_path, args.val_files)
 # (lr=0.06, momentum=0.95, weight_decay=0.0 -- no cautious WD yet at #40). That
 # grouping is kept exactly; only the *method* changes.
 #
-# Why these learning rates.  The per-layer multipliers in signmuon_optimizers.py
-# (rule "unit-gain") make eta_0 mean ONE thing for every method: the per-step RMS
-# gain of the update.  For the LMO family the multiplier IS record #40's aspect
-# factor, so `Muon` at 0.06 is the record verbatim; the sign family's
-# 1/sqrt(fan_in) multiplier then puts its steps at the same RMS scale, which is
-# why 0.06 -- not 3e-4 -- is the right starting anchor for them too.  The one
-# systematic difference left is spectral: a sign step is entrywise uniform, so
-# ||lambda*sign(.)||_op is ~1.4x (mlp) to ~1.9x (attn) larger than the LMO step's
-# 1.0 at equal eta_0.  Hence the sign-terminated methods start at HALF the anchor.
+# WHY THESE LEARNING RATES
+# ------------------------
+# The per-layer multipliers in signmuon_optimizers.py (rule "unit-gain") make
+# eta_0 mean ONE thing for every method: the per-step RMS gain of the update. For
+# the LMO family the multiplier IS record #40's aspect factor, so `Muon` at 0.06
+# is the record verbatim, and eta_0 is then transferable to the other seven.
 #
-# All values are deliberately "round" (one significant digit) so a later sweep
-# moves along a clean ladder: 0.01, 0.02, 0.03, 0.05, 0.1, 0.2.
-_ANCHOR_LR = 0.06        # record #40's Muon learning rate
+# The LMO five: 0.06, i.e. exactly the reference's.  This is not a guess, it is a
+# deliberate design choice -- their final step is an *orthogonal* matrix (or, for
+# the EF21 pair, an error-feedback estimate of one), so it has the same spectral
+# and Frobenius norm as Muon's step and there is nothing to rescale.  Keeping them
+# AT the reference's LR is also what makes the paper's contrasts clean: each of
+#   Muon vs MuonUSign            (what does 1-bit uplink cost?)
+#   EF21-SignMuon vs EF21-MuonUSign / EF21-MuonSign  (Thm 4: EF21 on the LMO
+#                                 OUTPUT diverges, EF21 on the momentum does not)
+# is then a matched-hyperparameter comparison, differing only in the update rule.
+# In particular EF21-SignMuon belongs HERE, not with SignMuon: error feedback is
+# precisely what undoes the 1-bit quantization -- `d_est` is a full-precision
+# accumulator tracking PE(M), so the step regains the LMO's magnitude (its
+# op-norm starts ~1.1x Muon's and decays toward 1.0 as d_est tracks D). Putting
+# it at Muon's own LR is the only way its divergence can be read as the rule's
+# fault rather than the step size's.
+#
+# The sign three: 0.03.  Their step is entrywise uniform, so at equal RMS gain it
+# is spectrally more aggressive than an orthogonal step -- and the smoothness
+# framework these methods are analysed in (Gluon / EF21-Muon) is a SPECTRAL-norm
+# framework, so that is the norm that should be matched, not the Frobenius one.
+# Three independent routes agree on the discount:
+#
+#   (a) spectral matching.  ||lambda*sign(.)||_op / ||lambda*PE(.)||_op
+#       = 0.93(sqrt m + sqrt n)/sqrt n = 1.40 (mlp [768,3072]), 1.86 (attn
+#       [768,768]).  One eta_0 must satisfy the tighter one: 0.06/1.86 = 0.032.
+#
+#   (b) Mishra et al.'s tuned value, mapped in.  Their Sign-Muon Algorithm 1 has
+#       NO shape factor (line 9 is W <- W - eta*sign(U)), so their nanoGPT sweep
+#       over {1e-1..1e-5} picking eta=1e-3 for BOTH SignMuon and signSGD is a
+#       global unscaled LR on a d=384 model.  Dividing by our lambda gives
+#       eta_0 ~ 0.023; correcting for their broken schedule (warmup_iters=2000 >
+#       max_iters=1500, so their LR only ever ramps 0 -> 7.5e-4) and for our 8.5x
+#       larger batch gives ~0.032.
+#
+#   (c) Lion's "3-10x smaller than AdamW" rule of thumb, decomposed.  AdamW's
+#       m/sqrt(v) has per-entry magnitude ~0.3 against a sign step's 1.0, so ~3x
+#       of that discount is pure norm -- which unit-gain already handles exactly.
+#       The residual robustness discount is 1-3x: eta_0 = 0.02 .. 0.06.
+#
+# 0.032 -> 0.03, the round number, and the conservative end of (a).
+#
+# Sanity check against the alternative reading of "sign methods want 1e-4": that
+# figure is a GLOBAL, unscaled LR from standard-batch, long-schedule training.
+# Per weight entry, 0.03 here means 5.4e-4 (mlp) to 1.1e-3 (attn) -- i.e. HALF of
+# what Muon itself takes at the record's 0.06.  If 1e-4 per entry were right for
+# this model, Muon at 0.06 would be ~10x too large too, and it is the record.
+# This codebase simply operates far more aggressively than standard GPT-2
+# training: 2330 steps, 262k tokens/step, Muon at 0.06 (vs ~0.02 typical), Adam at
+# 0.008 with lr_mul=75 on the embeddings.
+#
+# CONFIDENCE.  The LMO five are pinned by the record and are not a guess. The
+# sign three are the uncertain number; the evidence brackets 0.01-0.04. If you can
+# afford three more runs, probe the downside:  SIGN_PROBE_LR=0.01 bash run_all.sh
+#
+# All values are "round" (one significant digit); the tuning ladder that contains
+# both of them is 0.01, 0.02, 0.03, 0.06, 0.1, 0.2.
+_ANCHOR_LR = 0.06        # record #40's Muon learning rate -- the reference, not a guess
 OPTIMIZER_CONFIG = {
-    # --- LMO-terminated: step is polar(.), ||s||_op = 1 -> the anchor itself ---
+    # --- LMO-terminated: step is polar(.) (or an EF21 estimate of it), op-norm 1 ---
     "Muon":           dict(lr=_ANCHOR_LR, momentum=0.95, weight_decay=0.0),  # == record #40
     "MuonUSign":      dict(lr=_ANCHOR_LR, momentum=0.95, weight_decay=0.0),
     "EF21-MuonUSign": dict(lr=_ANCHOR_LR, momentum=0.95, weight_decay=0.0),
     "EF21-MuonSign":  dict(lr=_ANCHOR_LR, momentum=0.95, weight_decay=0.0),
     "EF21-SignMuon":  dict(lr=_ANCHOR_LR, momentum=0.95, weight_decay=0.0),
-    # --- sign-terminated: entrywise-uniform step, ~1.4-1.9x the spectral norm ---
+    # --- sign-terminated: entrywise-uniform step, 1.4-1.9x the spectral norm ---
     "SignMuon":       dict(lr=0.03,       momentum=0.95, weight_decay=0.0),
     "MuonSign":       dict(lr=0.03,       momentum=0.95, weight_decay=0.0),
     "SignSGD":        dict(lr=0.03,       momentum=0.95, weight_decay=0.0),

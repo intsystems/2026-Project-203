@@ -39,8 +39,43 @@ pip install -r requirements.txt
 python data/cached_fineweb10B.py 9        # use a larger arg (up to 103) for full runs
 ```
 
+`requirements.txt` is **verbatim** upstream modded-nanogpt (re-verified against master
+2026-07-26) -- keeping it identical is what makes "same environment as the record"
+checkable. Missing `kernels` is the most likely first-run failure: `train_gpt.py` imports
+it at module scope, so every rank dies before any training happens.
+
+**On a prebuilt CUDA container** (`nvcr.io/nvidia/pytorch:*`, most rented 8xH100 boxes)
+there is a real decision, because `kernels` downloads a **prebuilt** FA3 binary keyed to
+the exact torch version/ABI, and NGC ships a dev build (`2.10.0a0+gitXXXX`) the hub may
+have no variant for. Work down this ladder:
+
+```bash
+python -c "import torch; print(torch.__version__, torch.version.cuda)"   # what you have
+
+# 1) cheapest: keep the container's torch, add only the extras
+pip install kernels huggingface-hub
+python -c "from kernels import get_kernel; get_kernel('varunneal/flash-attention-3'); print('FA3 ok')"
+
+# 2) if that fetch fails: take the torch the hub has prebuilts for (~2.5 GB, replaces
+#    the container's build -- which is the upstream-faithful choice anyway)
+pip install -r requirements.txt
+
+# 3) if FA3 still will not resolve: skip it, FlexAttention instead, still 8 GPUs
+NPROC=8 SCRIPT=train_gpt_a100.py bash run_all.sh
+```
+
+Step 3 is a genuine fallback, not a downgrade of the experiment: FA3 -> FlexAttention and
+FP8 -> bf16 lm_head are both **outside** the optimizer, so the sign/EF21 comparison is
+unchanged and only the absolute wall-clock differs from record #40.
+
+`run_all.sh` runs exactly this check itself -- imports, GPU count, data shards, **and a
+real FA3 fetch** -- on one process before launching anything (`SKIP_PREFLIGHT=1` to
+bypass), and stops the sweep if the first runs all fail, rather than reproducing the same
+environment error eight times.
+
 The scripts read `data/fineweb10B/fineweb_{train,val}_*.bin` relative to the current
-directory (or set `DATA_PATH=/abs/path` to point elsewhere).
+directory (or set `DATA_PATH=/abs/path` to point elsewhere). A full run consumes ~611M
+tokens (2330 steps x 262144), so 7+ shards.
 
 ## Running
 
@@ -71,6 +106,7 @@ Valid `SIGNMUON_OPT`: `SignMuon`, `EF21-SignMuon`, `MuonUSign`, `MuonSign`,
 | `SIGNMUON_RUN_ID` | override the log name (default `<Opt>_lr<lr>_<hash>`) |
 | `NANOGPT_ITERS`, `NANOGPT_VAL_EVERY` | shorten a run / change the validation cadence |
 | `LOG_DIR`, `DATA_PATH` | where logs are written / where the `.bin` shards live |
+| `SIGN_PROBE_LR`, `SKIP_PREFLIGHT` | `run_all.sh` only: extra sign-method runs at that LR / skip the environment check |
 
 Each logged run records `train_gpt*.py` **and** `signmuon_optimizers.py` verbatim, so a
 log fully reproduces the optimizer definitions even though they are imported. It also
@@ -202,14 +238,48 @@ Two things make this the right default here:
 **Starting learning rates** (`train_gpt.py:OPTIMIZER_CONFIG`, all "round" to one
 significant digit):
 
-| methods | `η₀` | reason |
+| methods | `η₀` | why |
 |---|---|---|
-| `Muon`, `MuonUSign`, `EF21-MuonUSign`, `EF21-MuonSign`, `EF21-SignMuon` | **0.06** | record #40's own value; the anchor |
-| `SignMuon`, `MuonSign`, `SignSGD` | **0.03** | same RMS gain, but a `±1` step is spectrally more aggressive: `‖λ·sign(·)‖_op / ‖λ·PE(·)‖_op ≈ 1.4` (MLP) to `1.9` (attention), so start at half |
+| `Muon`, `MuonUSign`, `EF21-MuonUSign`, `EF21-MuonSign`, `EF21-SignMuon` | **0.06** | the reference's own value — not a guess |
+| `SignMuon`, `MuonSign`, `SignSGD` | **0.03** | spectral discount on an entrywise-uniform step |
 
-Sweep along the round ladder `0.01, 0.02, 0.03, 0.05, 0.1, 0.2` from there
-(`SIGNMUON_LR=0.1 SIGNMUON_OPT=SignMuon torchrun ...`). The multiplier table actually in
-force is printed into every log.
+**The LMO five sit at the reference's LR on purpose.** Their final step is an orthogonal
+matrix (or, for the EF21 pair, an error-feedback estimate of one), so it has the same
+spectral *and* Frobenius norm as Muon's and there is nothing to rescale. It also makes
+the paper's contrasts matched-hyperparameter ones: `Muon` vs `MuonUSign` (what does a
+1-bit uplink cost?) and `EF21-SignMuon` vs `EF21-MuonUSign`/`EF21-MuonSign` (Thm 4: EF21
+on the LMO *output* diverges, EF21 on the momentum does not) differ only in the rule.
+
+**`EF21-SignMuon` belongs with the LMO five, not with `SignMuon`.** Error feedback is
+exactly what undoes the 1-bit quantization: `d_est` is a full-precision accumulator
+tracking `PE(M)`, so the step regains the LMO's magnitude — its operator norm starts at
+~1.1x Muon's and decays toward 1.0 as `d_est` tracks `D`. Running it at Muon's own LR is
+the only way its divergence reads as the *rule's* fault rather than the step size's.
+
+**Where 0.03 comes from.** A sign step is entrywise uniform, so at equal RMS gain it is
+spectrally more aggressive than an orthogonal one — and the framework these methods are
+analysed in (Gluon / EF21-Muon) is a *spectral*-norm framework, so that is the norm to
+match. Three independent routes agree:
+
+| route | number |
+|---|---|
+| spectral matching: `‖λ·sign(·)‖_op/‖λ·PE(·)‖_op` = 1.40 (mlp) / 1.86 (attn); one `η₀` must satisfy the tighter | `0.06/1.86 = 0.032` |
+| Mishra et al.'s tuned nanoGPT value, mapped in: their Alg. 1 has **no** shape factor, so `η=1e-3` on `d=384` is a global unscaled LR → `η₀ ≈ 0.023`; correcting for their broken schedule (`warmup_iters=2000 > max_iters=1500`, so their LR only ramps 0→7.5e-4) and our 8.5x batch | `≈ 0.032` |
+| Lion's "3–10x smaller than AdamW", decomposed: AdamW's `m/√v` is ~0.3 per entry vs a sign step's 1.0, so ~3x of that is pure norm — which unit-gain already handles; residual robustness discount 1–3x | `0.02 – 0.06` |
+
+If you expected `1e-4`: that is a **global, unscaled** LR from standard-batch,
+long-schedule training. Per weight entry, `η₀=0.03` here means `5.4e-4` (mlp) to `1.1e-3`
+(attn) — *half* what Muon itself takes at the record's `0.06`. If `1e-4` per entry were
+right for this model, Muon at `0.06` would be ~10x too large too, and it is the record.
+This codebase runs far more aggressively than standard GPT-2 training: 2330 steps,
+262k tokens/step, Muon at `0.06` (vs ~0.02 typical), Adam at `0.008` with `lr_mul=75` on
+the embeddings.
+
+**Confidence.** The LMO five are pinned by the record. The sign three are the one
+uncertain number and the evidence brackets `0.01–0.04`; `SIGN_PROBE_LR=0.01 bash
+run_all.sh` adds one extra run per sign method at the downside. Tuning ladder:
+`0.01, 0.02, 0.03, 0.06, 0.1, 0.2` (`SIGNMUON_LR=0.1 SIGNMUON_OPT=SignMuon ...`). The
+multiplier table actually in force is printed into every log.
 
 **One inherited caveat.** The rule reads `(fan_out, fan_in)` off the *stored* tensor, and
 record #40 stores the MLP `c_fc` transposed (`[dim, hdim]`, used as `x @ c_fc`) so it can
