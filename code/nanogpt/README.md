@@ -22,7 +22,7 @@ hyperparameter tuning**. See "Why record #40" below.
 | `train_gpt_a100.py` | The **single-A100** build. Identical to `train_gpt.py` except the two Hopper-only pieces (FA3, FP8) are swapped for Ampere-safe equivalents. Every difference is a `# ===== [A100 DIFF #k] ...` banner. |
 | `test_signmuon_optimizers.py` | Portable CPU test: each optimizer's update recurrence == the numpy paper reference (`../counterexamples/optimizers.py`), **and** the per-layer LR multipliers (== record #40's aspect factor for the LMO family, unit gain for both families, agreement with `../common/lr_scaling.py`). |
 | `test_distributed_sharding.py` | gloo/CPU test: the sharded `step()` == a single-process centralized run, over both padding regimes. |
-| `setup_env.sh` | Builds a working venv (reuses a container's torch when it qualifies, never touches an apt package) and verifies it with a real FA3 fetch. **Start here.** |
+| `setup_env.sh` | Builds the venv from `requirements.txt` and verifies it with a real FA3 fetch. **Start here.** |
 | `run_all.sh` | Launches the eight hero runs, one per optimizer, at their starting learning rates. |
 | `parse_logs.py` | Raw logs -> `runs.csv` (one row per run) + `steps.csv` (tidy per-step) + `runs.json`. |
 | `plot_runs.py` | loss-vs-steps and loss-vs-time comparison figures from `steps.csv`, with record #40's own curve drawn behind every validation figure. |
@@ -41,36 +41,25 @@ source .venv/bin/activate
 python data/cached_fineweb10B.py 9        # ~900M train tokens + the val chunk
 ```
 
-**Do not `pip install` into the system python on a rented Debian/NGC box.** It ends in
+The venv is not optional, and neither is its own torch. Both pins are in
+`requirements.txt`:
 
-```
-Cannot uninstall cryptography 41.0.7
-  The package's contents are unknown: no RECORD file was found for cryptography.
-  hint: The package was installed by debian.
-```
-
-apt-installed packages carry no pip RECORD, so pip cannot remove them, and any dependency
-that wants a newer one is fatal. `setup_env.sh` builds a venv and installs with
-`--ignore-installed`, so no system package is ever touched.
-
-Two things caused that specific chain, and both are now pinned away in `requirements.txt`:
-
-* **`kernels` must be `<0.13`.** Since 0.14 it requires `huggingface-hub>=1.10` (a major
-  bump); since 0.16 it also requires `sigstore>=4`, which drags in
-  cryptography / pyOpenSSL / rfc3161-client -- that is where the collision comes from.
-  `kernels<0.13` needs only `huggingface_hub<2.0`, `packaging`, `pyyaml`, fetches FA3
-  identically, and is what was current when record #40 was set.
-* **`torch` does not need to be 2.10.** The old pin was believed load-bearing for the FA3
-  prebuilt; it is not. `varunneal/flash-attention-3` ships build variants for
-  **torch 2.8 / 2.9 / 2.10 / 2.11 / 2.12 × cu126 / cu128 / cu130 × x86_64 / aarch64**
-  (checked against the hub 2026-07-26), so any CUDA torch in that window resolves FA3 and
-  a container's build can simply be kept. `setup_env.sh` reuses it when it qualifies and
-  only installs `torch==2.10.*` (into the venv) when there is nothing usable
-  (`FRESH_TORCH=1` forces that).
+* **Never `pip install` into the system python.** apt-installed packages carry no pip
+  RECORD, so pip cannot remove them: `Cannot uninstall cryptography 41.0.7 -- no RECORD
+  file was found`.
+* **`kernels<0.13`.** 0.14+ requires `huggingface-hub>=1.10` (a major bump) and 0.16+ also
+  `sigstore>=4`, which pulls cryptography / pyOpenSSL / rfc3161-client -- that is where
+  the collision above comes from. `<0.13` fetches FA3 identically.
+* **`torch==2.10.0` from PyPI, not the container's.** `kernels` downloads a *prebuilt* FA3
+  binary and the hub has **cu126 / cu128 / cu130** variants only (for torch 2.8-2.12,
+  x86_64 and aarch64). An NGC container ships a **CUDA 13.1** build
+  (`2.10.0a0+...nv26.01`), which would need a `cu131` variant that does not exist, so the
+  container torch simply cannot run the FA3 path. PyPI's `torch==2.10.0` is a cu128 build
+  -- variant `torch210-cxx11-cu128-x86_64-linux`, which does exist -- and cu128 runs fine
+  on the newer driver.
 
 For provenance, record #40 itself ran **torch `2.10.0.dev20250926+cu126`, Python 3.10.12,
-Triton 3.5.0, CUDA 12.6** -- a nightly, i.e. not even the PyPI `torch==2.10` release
-upstream's own requirements.txt pins.
+Triton 3.5.0, CUDA 12.6**.
 
 If FA3 still will not resolve, skip it -- FlexAttention instead, still 8 GPUs:
 

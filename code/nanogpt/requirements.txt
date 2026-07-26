@@ -1,46 +1,31 @@
-# Dependencies for the record-#40 NanoGPT-speedrun port of the SignMuon/EF21 optimizers.
+# Dependencies for the record-#40 NanoGPT-speedrun port. Install into a VENV:
+#     bash setup_env.sh
+# Never into a Debian system python -- pip cannot uninstall apt-managed packages
+# ("Cannot uninstall cryptography 41.0.7: no RECORD file was found").
 #
-# PREFER `bash setup_env.sh` over installing this file by hand: it builds a venv,
-# reuses an existing container torch when it can, and never lets pip touch an
-# apt-managed package. Installing ANY requirements file into a Debian system python
-# eventually hits
-#     Cannot uninstall cryptography 41.0.7 -- no RECORD file was found
-# because apt-installed packages carry no pip RECORD, so pip cannot remove them.
+# Two pins differ from upstream modded-nanogpt's requirements.txt, both load-bearing:
 #
-# ---------------------------------------------------------------------------
-# Two deliberate deviations from upstream modded-nanogpt's requirements.txt
-# ---------------------------------------------------------------------------
-# Upstream's file reads, verbatim:
-#     numpy / tqdm / torch==2.10 / huggingface-hub / kernels / setuptools /
-#     typing-extensions==4.15.0 / datasets / tiktoken
+#   torch==2.10.0   PyPI's 2.10.0 is a cu128 build, and `kernels` fetches a PREBUILT
+#                   Flash Attention 3 binary for which the hub has cu126 / cu128 /
+#                   cu130 variants only. An NGC container's torch (2.10.0a0+...nv26.01,
+#                   CUDA 13.1) would need a cu131 variant that does not exist, so the
+#                   container torch cannot be reused for the 8xH100 build.
 #
-# 1. `kernels` is PINNED to <0.13 (upstream leaves it open). Since 0.14 `kernels`
-#    requires huggingface-hub>=1.10 (a MAJOR bump); since 0.16 it also requires
-#    sigstore>=4, which pulls cryptography / pyOpenSSL / rfc3161-client -- the exact
-#    chain that collides with a distro cryptography. `kernels<0.13` needs only
-#    huggingface_hub<2.0, packaging and pyyaml -- nothing that can collide with apt --
-#    and is what was current when record #40 was set (Oct 2025). It fetches FA3
-#    identically (same `build/<variant>/` repo layout).
+#   kernels<0.13    0.14+ requires huggingface-hub>=1.10 (major bump) and 0.16+ also
+#                   sigstore>=4, which pulls cryptography / pyOpenSSL / rfc3161-client.
+#                   <0.13 needs only huggingface_hub, packaging, pyyaml, and fetches
+#                   FA3 identically.
 #
-# 2. `torch` is NOT pinned to 2.10. That pin was believed to be load-bearing for the
-#    FA3 prebuilt, and it is not: the kernel repo varunneal/flash-attention-3 ships
-#    build variants for torch 2.8 / 2.9 / 2.10 / 2.11 / 2.12 x cu126 / cu128 / cu130 x
-#    x86_64 / aarch64 (checked against the hub on 2026-07-26). Any CUDA torch in that
-#    window resolves FA3, so there is no reason to spend ~3 GB replacing a container's
-#    build. For provenance: record #40 itself ran torch 2.10.0.dev20250926+cu126 -- a
-#    NIGHTLY, not the PyPI `torch==2.10` release upstream pins. Bring your own torch,
-#    or:   pip install 'torch==2.10.*'
-#
-# The single-A100 build (train_gpt_a100.py) needs NO `kernels` and no FA3: it uses
-# torch's own FlexAttention, so it runs on whatever torch is already present.
+# train_gpt_a100.py needs neither: it uses torch's own FlexAttention, so it runs on
+# whatever torch is present, including the container's.
 
 numpy
 tqdm
-huggingface-hub<2.0,>=0.26.0   # data/cached_fineweb10B.py download; also a kernels dep
-kernels>=0.9,<0.13             # Flash Attention 3 fetch (8xH100 build only); see note 1
+torch==2.10.0
+huggingface-hub<2.0,>=0.26.0
+kernels>=0.9,<0.13
 setuptools
 typing-extensions>=4.0
-# torch                        # see note 2 -- bring your own, or: pip install 'torch==2.10.*'
-# datasets                     # only to re-tokenize FineWeb from scratch (data/fineweb.py)
-# tiktoken                     # only to re-tokenize FineWeb from scratch
-# matplotlib                   # only for plot_runs.py (analysis, not training)
+# datasets      # only to re-tokenize FineWeb from scratch (data/fineweb.py)
+# tiktoken      # only to re-tokenize FineWeb from scratch
+# matplotlib    # only for plot_runs.py (analysis, not training)
