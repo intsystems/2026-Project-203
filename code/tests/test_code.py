@@ -409,35 +409,107 @@ def test_the_two_drivers_agree_on_the_weight_decay_convention():
                           + "\n  ".join(failures))
 
 
-def test_coupled_decay_cannot_change_the_step_length():
-    """Coupled decay through a scale-invariant step map shrinks nothing.
+def test_the_exact_step_maps_pin_the_step_length():
+    """The claim the appendix's weight-decay argument rests on, on the exact maps.
 
-    ``sign`` and ``polar`` are positively homogeneous of degree zero, so adding
-    ``wd * X`` to the gradient can only rotate the update. This is the reason the
-    coupled convention is kept for an ablation and is not the default.
+    ``sign`` and the polar factor are positively homogeneous of degree **zero**, and
+    their Frobenius norms are constants of the shape alone -- ``sqrt(m n)`` and
+    ``sqrt(min(m, n))``. Hence a step along either has a length that no additive
+    perturbation of the gradient can change: coupled weight decay can only rotate it.
+
+    Stated on ``torch.linalg.svd``, not on the shipped Newton-Schulz iteration --
+    NS-5 approximates the polar factor's *direction* well but its norm only to a few
+    percent, which is what the next test measures.
     """
+    def exact_polar(A):
+        U, _, Vh = torch.linalg.svd(A, full_matrices=False)
+        return U @ Vh
+
     torch.manual_seed(0)
+    for (m, n) in [(16, 12), (12, 16), (64, 27), (33, 33)]:
+        A = torch.randn(m, n, dtype=torch.float64)
+        r = min(m, n)
+        assert abs(exact_polar(A).norm().item() - math.sqrt(r)) < 1e-9
+        assert abs(torch.sign(A).norm().item() - math.sqrt(m * n)) < 1e-9
+        for c in (1e-6, 1e-3, 1.0, 1e3, 1e6):
+            assert torch.equal(torch.sign(c * A), torch.sign(A)), c
+            assert (exact_polar(c * A) - exact_polar(A)).abs().max() < 1e-9, c
+        # and the norm is untouched by an ADDITIVE perturbation of any size
+        B = torch.randn(m, n, dtype=torch.float64) * 1e4
+        assert abs(exact_polar(A + B).norm().item() - math.sqrt(r)) < 1e-9
+        assert abs(torch.sign(A + B).norm().item() - math.sqrt(m * n)) < 1e-9
+
+
+def test_coupled_decay_does_not_shrink_the_implemented_step():
+    """The same claim on the real optimizers, with the honest caveats.
+
+    * **Sign-terminated** steps (SignMuon, MuonSign, SignSGD) land on
+      ``{-1,+1}^{m x n}`` whatever the input, so the invariance is *exact* here.
+    * **LMO-terminated** steps are pinned to ``sqrt(min(m,n))`` by the exact polar
+      factor, but the shipped Newton-Schulz iteration only approximates it, and
+      coupled decay changes the input's *spectrum* -- so the step norm moves a little.
+      That residual is Newton-Schulz's approximation error, not decay.
+    * **EF21-SignMuon** steps along the EF21 estimator of the Muon direction, whose
+      norm reaches ``sqrt(r)`` only asymptotically, so it is excluded from the norm
+      claim by construction (the appendix says so too).
+
+    In every case the direction *is* rotated, which is the actual harm.
+    """
+    from common.lr_scaling import FAMILY_SIGN
+
+    torch.manual_seed(0)
+    m, n = 16, 12
+
+    # How far the shipped NS-5 iteration's output norm may sit from the exact
+    # sqrt(min(m,n)). MEASURED here rather than hard-coded, over the three input
+    # distributions the methods actually feed it (raw momentum, a sign matrix, a
+    # scaled-sign EF21 payload), so this test cannot go stale if the iteration or
+    # its coefficients change.
+    def ns_norm(A):
+        return muon_lmo(A, ns_steps=5, dtype=torch.float32,
+                        scale_aspect=False).norm().item() / math.sqrt(min(m, n))
+
+    probe = []
+    for _ in range(16):
+        A = torch.randn(m, n)
+        probe += [ns_norm(A), ns_norm(torch.sign(A)), ns_norm(A.abs().mean() * torch.sign(A))]
+    NS_BAND = max(0.05, 2.0 * max(abs(x - 1.0) for x in probe))
     for name, cls in CENTRAL_CLASSES.items():
-        p_c = nn.Parameter(torch.randn(16, 12))
-        p_d = nn.Parameter(p_c.detach().clone())
-        g = torch.randn(16, 12) * 1e-3          # small gradient => large rho
+        base = torch.randn(m, n)
+        g = torch.randn(m, n) * 1e-3        # small gradient => large rho
         steps = {}
-        for tag, param, coupled in (("coupled", p_c, True), ("plain", p_d, False)):
+        for tag, wd in (("coupled", 0.5), ("plain", 0.0)):
+            param = nn.Parameter(base.clone())
             opt = cls([param], lr=0.1, momentum=0.0, lmo_dtype=torch.float32,
-                      weight_decay=0.5 if coupled else 0.0,
-                      decoupled_weight_decay=False)
+                      weight_decay=wd, decoupled_weight_decay=False,
+                      scale_aspect=False)
             before = param.detach().clone()
             param.grad = g.clone()
             opt.step()
             if hasattr(opt, "restore_exact"):
                 opt.restore_exact()
-            steps[tag] = (param.detach() - before)
+            steps[tag] = param.detach() - before
         n_c, n_p = steps["coupled"].norm().item(), steps["plain"].norm().item()
-        assert abs(n_c - n_p) <= 1e-5 * max(n_p, 1e-12), (
-            f"{name}: coupled decay changed the step norm {n_p:.6g} -> {n_c:.6g}; "
-            f"the step map is supposed to be scale-invariant")
-        # ... and it does rotate it, so it is not simply a no-op either.
-        cos = (steps["coupled"] * steps["plain"]).sum() / (n_c * n_p + 1e-30)
+
+        if cls.family == FAMILY_SIGN:
+            # 1e-4 relative is float32 differencing noise; a real shrinkage would be
+            # O(lr*wd) = 5e-2 relative, ~500x larger, so the test still has teeth.
+            assert abs(n_c - n_p) <= 1e-4 * n_p, (
+                f"{name}: coupled decay changed a sign step's norm "
+                f"{n_p:.8g} -> {n_c:.8g}; that is exactly impossible")
+            assert abs(n_p / (0.1 * math.sqrt(m * n)) - 1.0) <= 1e-4, n_p
+        elif name != "ef21signmuon":
+            exact = 0.1 * math.sqrt(min(m, n))
+            for tag, got in (("coupled", n_c), ("plain", n_p)):
+                assert abs(got / exact - 1.0) <= NS_BAND, (
+                    f"{name}/{tag}: step norm {got:.6g} is {got / exact:.3f}x the "
+                    f"exact polar value {exact:.6g} -- outside the Newton-Schulz band")
+            # No systematic shrinkage: the gap is bounded by the NS error, not by wd.
+            assert abs(n_c - n_p) <= 2 * NS_BAND * exact, (
+                f"{name}: {n_p:.6g} -> {n_c:.6g} exceeds twice the NS band")
+
+        # ... but the direction really is rotated, which is the harm.
+        cos = (steps["coupled"] * steps["plain"]).sum().item() / (n_c * n_p + 1e-30)
         assert cos < 0.999, f"{name}: coupled decay had no effect at all (cos={cos:.4f})"
 
 
