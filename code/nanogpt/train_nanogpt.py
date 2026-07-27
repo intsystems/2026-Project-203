@@ -1,5 +1,9 @@
-"""
-Запуск (на сервере, 1 GPU):
+"""SUPERSEDED classic-record scaffolding, kept for reference only.
+
+The current speedrun port is ``train_gpt.py`` (8xH100) / ``train_gpt_a100.py``
+(single A100); see README.md.
+
+Run (one GPU):
 torchrun --standalone --nproc_per_node=1 code/nanogpt/train_nanogpt.py \
   --optimizer signmuon --total_steps 5000 --train_seq_len 2048 --val_seq_len 2048
 """
@@ -23,7 +27,7 @@ from pathlib import Path
 
 os.environ["PYTORCH_CUDA_ALLOC_CONF"] = "expandable_segments:True"
 import torch
-torch.empty(1, device="cuda", requires_grad=True).backward()  # <--- менять cuda:0
+torch.empty(1, device="cuda", requires_grad=True).backward()  # <--- change cuda:0 here
 from torch import Tensor, nn
 import torch.nn.functional as F
 import torch.distributed as dist
@@ -134,7 +138,7 @@ mm_op.register_autograd(backward, setup_context=setup_context)
 
 
 # -----------------------------------------------------------------------------
-# copied from lesha_nanogpt.py
+# copied from train_nanogpt_classic.py
 
 def norm(x: Tensor):
     return F.rms_norm(x, (x.size(-1),))
@@ -345,7 +349,7 @@ class GPT(nn.Module):
 
 
 # -----------------------------------------------------------------------------
-# Data loader (copied from lesha_nanogpt.py; works at world_size==1)
+# Data loader (copied from train_nanogpt_classic.py; works at world_size==1)
 
 def _load_data_shard(file: Path):
     header = torch.from_file(str(file), False, 256, dtype=torch.int32)  # header is 256 int32
@@ -404,7 +408,7 @@ def distributed_data_generator(filename_pattern: str, batch_size: int, align_to_
 
 def _aux_param_groups(params, lr_aux: float, wd_aux: float):
     """Group aux params by their `lr_mul` attribute so plain AdamW replicates the
-    per-parameter LR scaling that lesha's DistAdam applied (embed=75, head=27.5, scalars=5.0)."""
+    per-parameter LR scaling that the classic record's DistAdam applied (embed=75, head=27.5, scalars=5.0)."""
     groups = {}
     for p in params:
         lmul = float(getattr(p, "lr_mul", 1.0))
@@ -438,7 +442,7 @@ def build_optimizers(model: nn.Module, args):
 
 
 # -----------------------------------------------------------------------------
-# LR (copied from lesha_nanogpt.py, parameterized)
+# LR (copied from train_nanogpt_classic.py, parameterized)
 def get_lr(step: int, total_steps: int, cooldown_frac: float):
     x = step / total_steps
     assert 0 <= x < 1

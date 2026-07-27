@@ -1,0 +1,118 @@
+# Preparing this directory as anonymous supplementary material
+
+```bash
+cd code
+python3 -m anonymize --check                      # scan; exits 1 on a hit
+python3 -m anonymize --build ../supplement.zip    # clean bundle for submission
+```
+
+`--check` also runs inside `tests/test_code.py`, so a new author name or absolute
+path in a docstring fails the test suite rather than reaching a reviewer.
+
+## What the scan looks for
+
+| rule | why |
+| :--- | :--- |
+| `project-identifier` | An author name, handle, institution or repository belonging to this project |
+| `email` | Any email address |
+| `home-path` | `/home/<user>`, `/Users/<user>`, `C:\Users\<user>` |
+| `project-repo` | A link to this project's own repository |
+| `orcid` | An ORCID identifier |
+
+`python3 -m anonymize --list-rules` prints the patterns.
+
+**Notebooks are scanned as the bundle will ship them**, i.e. with outputs stripped.
+That is the honest object to check: an output cell holding `/home/<user>/project` is
+invisible to a reader skimming the source but is shipped verbatim inside a raw
+`.ipynb` — and `--build` removes it. Scanning the raw file instead would make the
+check fail forever on a leak that cannot reach a reviewer, and a check that always
+fails is a check nobody runs. The scan says out loud which notebooks still carry
+outputs, so nothing depends on remembering that the stripping happens.
+
+## What is deliberately *not* removed
+
+* **Upstream URLs and third-party author names.** The modded-nanogpt repository this
+  port is built on, the Polar Express implementation it borrows, the contributors
+  credited in comments — these are citations, not self-identification, and removing
+  them would misattribute the work. Only *this* project's repository is flagged.
+* **Hardware and driver strings** in the nanoGPT run logs (`NVIDIA H100 80GB`,
+  `Driver Version: …`). The reproducibility checklist asks for exactly this, and it
+  identifies a GPU model, not a person.
+* **Dates.** They constrain the submission window, not the authors.
+
+If a hit is one of these, add it to `ALLOW` in `anonymize.py` **with a one-line
+reason**, so that silencing something stays a visible decision.
+
+## What was found and fixed, 2026-07-27
+
+The first run of the scan found five leaks, none of which a checklist would have
+caught:
+
+| where | what |
+| :--- | :--- |
+| `common/models.py` ×2 | A docstring crediting a colleague by first name |
+| `nanogpt/`, one module | A **filename** containing a first name, plus four references to it |
+| `nanogpt/plot_nano.ipynb` | An output cell holding an absolute home-directory path |
+| `centralized/article_export/MANIFEST.md` | A generated manifest quoting an absolute source path |
+
+The module was renamed to `train_nanogpt_classic.py` and its references updated; the
+docstrings were rewritten to describe the models rather than their provenance; the
+notebook output is stripped at bundle time; the generated export directory is
+excluded from the bundle. Russian-language comments in `common/models.py` and
+`nanogpt/train_nanogpt.py` were translated at the same time — not identifying on
+their own, but they narrow the author pool for no benefit.
+
+Two of those four are worth dwelling on, because they are the ones a manual pass
+misses. A name inside a **filename** does not match a `\b…\b` regex, since `\b`
+counts `_` as a word character — the rule now uses letter/digit lookarounds
+instead. And a name inside a **notebook output** is invisible to anyone reading the
+source. Both were found only after grepping the built zip independently of the
+tool that built it, which is why step 3 below is not optional.
+
+## What the bundle contains
+
+`--build` writes a zip with `code/` at the top level, and a `MANIFEST.md` recording
+what was left out, so the omissions are visible rather than silent.
+
+**Excluded**: caches (`__pycache__`, `.pytest_cache`, `.ipynb_checkpoints`),
+datasets (`data/`, `data_federated/`, the FineWeb shards), run output (`results/`,
+`article_export/`), model checkpoints (`*.pt`), the `scrap/` scratch directory, and
+`anonymize.py` itself — its identifier list is the one file whose whole content is
+the names that must not ship.
+
+**Included, deliberately**: `nanogpt/logs/`. Those logs *are* the evidence behind
+the language-modelling table — `parse_logs.py` turns them into it — so dropping them
+would make that table unreproducible without 8×H100. They embed the training script
+and the optimizer definitions verbatim, and the scan covers them, so they are as
+anonymous as the source they quote.
+
+## Before submitting
+
+1. `python3 -m anonymize --check` → `OK`.
+2. `python3 -m tests.test_code` → all pass.
+3. Build, then **grep the zip itself** rather than trusting the builder:
+
+   ```bash
+   python3 -m anonymize --build ../supplement.zip
+   python3 - <<'PY'
+   import re, zipfile
+   z = zipfile.ZipFile('../supplement.zip')
+   pat = re.compile(r'(/home/|Users\\|@[\w.-]+\.(com|org|ru))', re.I)
+   hits = [(n, i, l) for n in z.namelist()
+           if not n.endswith(('.png', '.pdf', '.pt', '.bin'))
+           for i, l in enumerate(z.read(n).decode('utf-8', 'replace').splitlines(), 1)
+           if pat.search(l)]
+   print(f'{len(z.namelist())} entries, {len(hits)} suspicious lines')
+   for h in hits[:20]:
+       print(' ', h)
+   PY
+   ```
+4. Check the paper's own PDF metadata separately — this tool covers `code/` only,
+   and LaTeX embeds the author in `/Author` and `/Title` unless told otherwise.
+
+## The limits of this
+
+The scan is a regex sweep. It will not catch a self-citation phrased as "our earlier
+work", an acknowledgements paragraph, a distinctive variable name, or a screenshot.
+It covers `code/`, not the paper, not `git` history, and not the repository the code
+is hosted in. Treat it as the floor, not the ceiling.

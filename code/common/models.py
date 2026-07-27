@@ -4,8 +4,9 @@ import torch.nn.functional as F
 
 class CNN2(nn.Module):
     """
-    Model CNN by Lesha from git SignMuon
-    for data:
+    Two-block convolutional network, the federated experiments' backbone.
+
+    Inputs:
     - MNIST (1x28x28)
     - CIFAR10 (3x32x32)
 
@@ -60,8 +61,9 @@ class CNN2(nn.Module):
 
 class ResNet9(nn.Module):
     """
-    Model ResNet9 by Lesha from git SignMuon
-    for data:
+    ResNet-9 for low-resolution images.
+
+    Inputs:
     - CIFAR10/100 (3x32x32)
 
     Conv2d(3, 64) -> BatchNorm2d -> ReLU
@@ -116,8 +118,8 @@ class ResNet9(nn.Module):
 
 class BasicBlock(nn.Module):
     """
-    Классический остаточный блок (Residual Block) для ResNet18.
-    Состоит из двух сверточных слоев с остаточной связью (Skip Connection).
+    The classical ResNet-18 residual block: two convolutions plus a skip
+    connection.
     """
     expansion = 1
 
@@ -130,8 +132,8 @@ class BasicBlock(nn.Module):
         self.conv2 = nn.Conv2d(planes, planes, kernel_size=3, stride=1, padding=1, bias=False)
         self.bn2 = nn.BatchNorm2d(planes)
 
-        # Если меняется размерность (stride != 1) или количество каналов,
-        # подгоняем размерность входа через свертку 1x1, чтобы сложить с выходом
+        # When the spatial size (stride != 1) or the channel count changes, a
+        # 1x1 convolution reshapes the input so it can be added to the output.
         self.shortcut = nn.Sequential()
         if stride != 1 or in_planes != self.expansion * planes:
             self.shortcut = nn.Sequential(
