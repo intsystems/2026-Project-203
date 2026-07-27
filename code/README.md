@@ -1,63 +1,79 @@
 # Code
 
-Source for the paper *SignMuon, MuonSign, and the Role of Error Feedback*.
-
-**→ [REPRODUCE.md](REPRODUCE.md) has the exact command for every table and figure
-in the paper.** Start there.
+Source for *SignMuon, MuonSign, and the Role of Error Feedback*.
 
 > [!IMPORTANT]
 > Every command runs from this `code/` directory, which is the Python package root:
-> `python3 -m federated.main ...`, not `python3 federated/main.py`.
+> `python3 -m federated.main …`, not `python3 federated/main.py`.
 
-## Layout
+```bash
+cd code
+pip install -r requirements.txt
+python3 -m tests.test_code          # CPU only, no downloads, ~1 min
+```
+
+## Where to go
+
+| I want to… | Go to |
+| :--- | :--- |
+| **reproduce a specific table or figure** | [REPRODUCE.md](REPRODUCE.md) — one command each |
+| understand the optimizers themselves | [`common/`](common/README.md) |
+| run the CIFAR-10 ResNet-18 study | [`centralized/`](centralized/README.md) |
+| run the federated study | [`federated/`](federated/README.md) |
+| check a divergence theorem | [`counterexamples/`](counterexamples/README.md) |
+| see the convex-benchmark modes | [`synthetic/`](synthetic/README.md) |
+| run the language-modelling arm | [`nanogpt/`](nanogpt/README.md) |
+| know what the tests actually pin | [`tests/`](tests/README.md) |
+| redraw a figure | [`notebooks/`](notebooks/README.md) |
+| package this for double-blind review | [ANONYMIZATION.md](ANONYMIZATION.md) |
 
 ```
 code/
-├── REPRODUCE.md          exact commands per paper table/figure
-├── aggregate.py          collapses multi-seed runs into mean ± std
-├── common/               shared library
-│   ├── optimizers.py       the eight methods as torch.optim.Optimizer subclasses
-│   ├── lr_scaling.py       derived per-layer learning-rate rules
-│   ├── models.py           CNN2, ResNet9, ResNet18
-│   └── utils.py            seeding, run dirs, metrics schema, parameter routing
-├── centralized/          single-node CIFAR-10 / MNIST
-│   ├── main.py             entry point
-│   ├── train.py            training loop, optimizer construction
-│   ├── tune.py             equal-budget, validation-only LR search
-│   └── data.py             loaders, incl. the 45k/5k tuning split
-├── federated/            all ten federated methods, one driver
-│   ├── main.py             entry point
-│   ├── algorithms.py       run_federated + the MethodSpec registry
-│   ├── data.py             partitioning and per-client loaders
-│   └── grid.py             early-stopped learning-rate search
-├── synthetic/
-│   └── benchmark.py        F(X) = ½⟨X, AXB⟩, grid + final modes
-├── counterexamples/      exact-LMO reproduction of Theorems 1–4 and the figures
-├── nanogpt/              modded-nanogpt speedrun adaptation (own README)
-├── tests/test_code.py    CPU-only test suite
+├── REPRODUCE.md          exact command per paper table/figure
+├── ANONYMIZATION.md      preparing the anonymous supplement
+├── aggregate.py          multi-seed mean ± std
+├── anonymize.py          the anonymity scan and bundler
+├── common/               optimizers, per-layer LR rules, models, utilities
+├── centralized/          ResNet-18 / CIFAR-10        (main, train, tune, overnight, data)
+├── federated/            all ten methods, one driver (algorithms, main, tune, overnight, data)
+├── synthetic/            F(X) = ½⟨X, AXB⟩, seven modes
+├── counterexamples/      Theorems 1–4, exact LMO
+├── nanogpt/              modded-nanogpt speedrun port
+├── tests/test_code.py    the CPU test suite
 ├── notebooks/            plotting only
 └── results/              all output (created on first run)
 ```
 
+Two entry points do the whole protocol in one resumable, budget-aware command:
+
+```bash
+python3 -m centralized.overnight --device cuda:0 --budget-hours 0 --download
+python3 -m federated.overnight   --device cuda:0 --budget-hours 12 --download
+```
+
+Both self-check, time your GPU, print a schedule with a finish time per phase, and
+rewrite a `REPORT.md` after every phase so you can read it mid-run. Ctrl-C stops
+cleanly and writes it. `--dry-run` prints the schedule and exits.
+
 ## Method names
 
-The code uses the paper's names throughout:
-
-| Name | Matrix-parameter step | Uplink | Downlink |
-| :--- | :--- | :--- | :--- |
+| Name | Matrix step | Uplink | Downlink |
+| :--- | :--- | :---: | :---: |
 | `signmuon` | `sign(polar(M))` | 1 bit | exact |
 | `muonusign` | `polar(sign(M))` | 1 bit | exact |
 | `muonsign` | `sign(polar(sign(M)))` | 1 bit | 1 bit |
-| `ef21signmuon` | EF21 on `polar(M)` — **diverges**, Theorem 4 | 1 bit | exact |
+| `ef21signmuon` | EF21 on `polar(M)` — **diverges**, Thm 4 | 1 bit | exact |
 | `ef21muonusign` | `polar(g_est)`, `g_est ≈ M` | 1 bit | exact |
 | `ef21muonsign` | as above + downlink EF21-P | 1 bit | 1 bit |
-| `muon`, `signsgd`, `sgd`, `adam` | references | | |
+| `muon` | `polar(M)` averaged over clients (worker LMO) | 32 bit | exact |
+| `muonserver` | `polar(mean M)` (server LMO) | 32 bit | exact |
+| `signsgd`, `sgd`, `adam` | references | | |
 
 Older spellings (`signmuon_cl`, `signmuon_ef_21`, `signmuon_ef_ud`, `ef_usignmuon`,
 `ef_udsignmuon`) still resolve. **`MuonSign` changed meaning**: it used to name the
 sign-*before* method, which the paper now calls `MuonUSign`. There is deliberately
 no alias for the old spelling, because resolving it silently would swap the
-algorithm rather than just the label.
+algorithm rather than the label.
 
 The LMO is an **exact rank-truncated SVD** in `counterexamples/` (matching the
 theorem statements) and a **Newton–Schulz approximation** everywhere a network is
@@ -67,56 +83,63 @@ trained (matching practice).
 
 Enforced in one place, so that two runs differ *only* in the matrix-parameter rule.
 
-* **Parameter routing.** The LMO/sign rule applies to matrix parameters
-  (`ndim ≥ 2`, excluding the classification head). Biases, BatchNorm scales and the
-  head go to AdamW. In the federated driver this holds for every method, references
-  included. Centralized, `--head-adamw auto` gives the LMO methods this split while
-  `sgd`/`adam`/`signsgd` apply their single rule to all parameters (as published,
-  and what the paper's numbers used); `--head-adamw always` makes it uniform.
-* **Learning rate.** One cosine schedule for both the main and auxiliary rate. In
-  the centralized setting `--lr-scaling` additionally sets a *derived* per-layer
-  multiplier, `η_layer = η₀·λ(family, shape)`, so that only the shape-free `η₀` is
-  ever tuned — see below.
-* **Weight decay** applied exactly once, **decoupled** in both drivers
-  (`X *= 1 − lr·wd`, uniform across layers — *not* scaled by the per-layer
-  multiplier), so the LMO sees the true gradient geometry. This is not a style
-  preference: every step direction here is positively homogeneous of degree *zero*
-  (`sign(cM) = sign(M)`, `polar(cM) = polar(M)`), so folding `wd·X` into the
-  gradient cannot change the step length at all — it only rotates the direction, by
-  an amount set by the drifting, method-dependent ratio `wd·‖X‖_F/‖G‖_F`.
-  `--weight-decay-mode coupled` reproduces that convention (which is what
-  Mishra et al. and our own pre-2026-07-26 numbers used) for the appendix ablation.
-* **Momentum** is the EMA form `M = μM + (1−μ)G` of the paper's algorithm boxes,
-  trajectory-identical to the heavy-ball form of the main text (the two differ by a
-  constant factor and every method is positively homogeneous in `M`). `sgd` keeps
+* **Parameter routing.** The LMO/sign rule applies to matrix parameters (`ndim ≥ 2`,
+  excluding the classification head). Biases, BatchNorm scales and the head go to
+  AdamW, which is **never weight-decayed** in either setting. Federated, this holds
+  for every method including the references; centrally, `--head-adamw auto`
+  reproduces the published split and `--head-adamw always` makes it uniform.
+* **Learning rate.** One cosine schedule for both the main and auxiliary rate.
+  `--lr-scaling` sets a *derived* per-layer multiplier `η_layer = η₀·λ(family, shape)`
+  in both settings, so only the shape-free `η₀` is ever tuned. The multiplier is a
+  deterministic function of the layer shape, known to server and clients alike, so
+  federating it costs nothing in communication and does not affect the 1-bit claim.
+* **Weight decay** applied exactly once, **decoupled** (`X *= 1 − lr·wd`, uniform
+  across layers, *not* scaled by the per-layer multiplier). Not a style preference:
+  every step direction here is positively homogeneous of degree *zero*, so folding
+  `wd·X` into the gradient cannot change the step length at all — it only rotates
+  the direction, by an amount set by the drifting, method-dependent ratio
+  `wd‖X‖_F/‖G‖_F`. `--weight-decay-mode coupled` reproduces that convention for the
+  appendix ablation.
+* **Momentum** is the EMA form `M = μM + (1−μ)G` of the algorithm boxes,
+  trajectory-identical to the heavy-ball form of the main text. `sgd` keeps
   heavy-ball, since its step *is* the buffer.
 
 ### Per-layer learning rates
 
-The six methods produce step matrices from two families with different norms, so one
-global rate cannot be right for both families and across layers at once. The rule is
-*derived*, from the criterion that an update's RMS gain `γ(A)=‖A‖_F/√fan_out` should
-be a fixed fraction of the initialization's:
+The two families produce step matrices with different norms, so one global rate
+cannot be right for both families and across layers at once. The rule is *derived*,
+from the criterion that an update's RMS gain `γ(A)=‖A‖_F/√fan_out` should be a fixed
+fraction of the initialization's:
 
 | family | methods | `‖s‖_F` | multiplier |
 | :--- | :--- | :--- | :--- |
 | `lmo` | Muon, MuonUSign, EF21-Muon{USign,Sign}, EF21-SignMuon | `√min(m,n)` | `√max(1, m/n)` |
 | `sign` | SignMuon, MuonSign, SignSGD | `√(mn)` | `1/√fan_in` |
 
-The first row is the aspect factor already in the reference Muon implementation — the
-criterion *derives* it, which is the main evidence that it is the right criterion. The
-second row is its missing counterpart. `python3 -m common.lr_scaling` lists the
-alternatives (`mup`, `mishra-analysis`, `power:α,β`) and what each assumes;
-`--measure` and `--compare` are the supporting diagnostics.
+The first row is the aspect factor already in the reference Muon implementation —
+the criterion *derives* it, which is the main evidence that it is the right
+criterion. The second row is its missing counterpart. `python3 -m common.lr_scaling`
+lists the alternatives (`mup`, `mishra-analysis`, `power:α,β`) and what each assumes.
 
-### Two caveats worth knowing
+On CNN2 the sign family's multiplier spans **7.8×** (`fan_in` 75 → 4608), a wider
+spread than ResNet-18 offers, so the federated setting is the more sensitive test of
+the rule. `python3 -m federated.tune --stage anchors` prints the multipliers and the
+grid anchor each method inherits.
 
+## Three caveats worth knowing
+
+* **The uplink alphabet is ternary, so "1 bit" is an approximation.** `sign(0) = 0`,
+  and `polar(M)` has an exactly-zero column wherever `M` does — which after ReLU and
+  MaxPool is common, because a feature that is zero across the whole local batch
+  gives an exactly-zero gradient column. Measured on CNN2: **8–17% of transmitted
+  entries are zero**, i.e. ≈1.37 bits/parameter. Every run records
+  `uplink_zero_frac`; `--uplink-zeros random` makes the channel a genuine one bit.
+  See [`federated/README.md`](federated/README.md) for why the client count is 11.
 * **BatchNorm in the federated setting.** Local models are discarded each round and
   BatchNorm runs in inference mode during gradient accumulation, so the running
   statistics are never updated from data — they stay at `(0, 1)` for the whole run.
-  BatchNorm therefore acts as a fixed normalization with learnable affine
-  parameters. Self-consistent, and what the reported numbers used;
-  `--live-bn-stats` changes it.
+  BatchNorm is therefore a fixed normalization with learnable affine parameters.
+  Self-consistent, and what the reported numbers used; `--live-bn-stats` changes it.
 * **`bfloat16` LMO.** The default matches the reference Muon implementation, but
   bfloat16 carries ~3 decimal digits, so for methods that sign the LMO *output* an
   entry of `polar(M)` near zero can flip. `--lmo-dtype float32` when the sign
@@ -131,8 +154,7 @@ A run writes to `results/{centralized,federated}/<run_name>/seed<seed>/`:
 
 `history` records the **x-axis explicitly** and stores only evaluated points, so
 curves from different seeds (or different `--eval_freq`) align pointwise. Nothing is
-deleted or forward-filled. Synthetic results go to
-`results/synthetic/<method>/{grid,final}.json`.
+deleted or forward-filled.
 
 ```bash
 for s in 0 1 2 3 4; do python3 -m federated.main --seed $s ... ; done
@@ -140,18 +162,20 @@ python3 -m aggregate --metric test_acc --csv summary.csv
 ```
 
 `aggregate.py` groups runs by configuration *minus* the seed (and minus
-device/data-path fields) and reports mean ± sample std.
+device/data-path fields) and reports mean ± sample std, flagging unequal seed counts
+and single-seed groups instead of printing a misleading `± 0`.
 
 ## Tests
 
 ```bash
-python3 -m tests.test_code                    # torch, CPU only, seconds
-python3 -m counterexamples.problems           # Theorem 1-4 constants
+python3 -m tests.test_code                    # torch, CPU only, ~1 min
+python3 -m counterexamples.problems           # the Theorem 1-4 constants
 python3 -m counterexamples.verify_ns_oracle   # exact vs Newton-Schulz LMO
 python3 -m common.lr_scaling --measure        # the sign-step operator norm
+python3 -m anonymize --check                  # no identifying material
 ```
 
-`tests/test_code.py`'s central check is that the federated driver with one client
-reproduces the corresponding centralized optimizer exactly, for all eight
-matrix-parameter rules — which is what keeps `federated/algorithms.py` and
-`common/optimizers.py` from drifting apart.
+The central check is that the federated driver with one client reproduces the
+corresponding centralized optimizer exactly, for all eight matrix rules and under
+both scaling conventions — which is what keeps `federated/algorithms.py` and
+`common/optimizers.py` from drifting apart. See [`tests/`](tests/README.md).
