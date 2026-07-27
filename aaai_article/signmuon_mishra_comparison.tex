@@ -8,7 +8,7 @@
 \subsection{Comparison with the convergence claim for SignMuon}\label{app:mishra}
 
 Concurrently, \citet{mishra2026signmuon} introduced the same sign-after-LMO
-method under the name \emph{Sign-Muon}, with update direction
+method under the same name \emph{SignMuon}, with update direction
 $\mathbf{S}_t=\operatorname{sign}(\operatorname{polar}(\mathbf{M}_t))$ rescaled
 to $\mathbf{D}_t=\mathbf{S}_t/\sqrt{mn}$; this coincides with the SignMuon step
 of Section~\ref{sec:theory} after absorbing $1/\sqrt{mn}$ into $\eta$. For this
@@ -19,15 +19,15 @@ bound is uninformative on the instance of Theorem~\ref{th:1}.
 
 Their analysis controls the stationarity proxy
 $\mathcal{G}_T=\tfrac1T\sum_{t}\mathbb{E}[\|\mathbf{g}_t\|_1/\sqrt{mn}]$, where
-$\mathbf{g}_t=\nabla f(\mathbf{W}_t)$, through the per-entry sign-error
+$\mathbf{g}_t=\nabla f(\mathbf{X}_t)$, through the per-entry sign-error
 probabilities $q_{ij,t}=\Pr(\mathbf{S}_{t,ij}\neq
-\operatorname{sign}(\mathbf{g}_{t,ij})\mid\mathbf{W}_t)$, in two steps. First,
+\operatorname{sign}(\mathbf{g}_{t,ij})\mid\mathbf{X}_t)$, in two steps. First,
 for an arbitrary sign oracle $\mathbf{S}_t$ they derive
 \begin{equation}\label{eq:mishra_generic}
 \begin{aligned}
 \mathcal{G}_T
 &\le
-\frac{f(\mathbf{W}_0)-f^\ast}{\eta T}
+\frac{f(\mathbf{X}_0)-f^\ast}{\eta T}
 +\frac{L_\ast}{2}\,\eta\\
 &\quad+\underbrace{\frac{2}{T}\sum_{t}\mathbb{E}\!\left[\frac{1}{\sqrt{mn}}\sum_{i,j}|\mathbf{g}_{t,ij}|\,q_{ij,t}\right]}_{=:\,R_T}.
 \end{aligned}
@@ -39,7 +39,7 @@ $R_T$, and this estimate is derived \emph{only} for the gradient-sign oracle
 $\mathbf{S}_t=\operatorname{sign}(\widetilde{\mathbf{G}}_t)$, where
 $\widetilde{\mathbf{G}}_t$ is an unbiased stochastic gradient with
 coordinatewise variance $\operatorname{Var}(\widetilde{\mathbf{G}}_{t,ij}\mid
-\mathbf{W}_t)\le\sigma_{ij}^2/n_b$ and $n_b$ the mini-batch size. In that case a
+\mathbf{X}_t)\le\sigma_{ij}^2/n_b$ and $n_b$ the mini-batch size. In that case a
 Markov--Jensen argument yields $|\mathbf{g}_{t,ij}|\,q_{ij,t}\le
 \sigma_{ij}/\sqrt{n_b}$, hence
 $R_T=\mathcal{O}(\|\sigma\|_1/\sqrt{mn\,n_b})$ with
@@ -64,7 +64,7 @@ Theorem~\ref{th:1}. By Proposition~\ref{prop:reduction} one has
 $\mathbf{g}_t\equiv\mathbf{G}$ and
 $\operatorname{polar}(\mathbf{M}_t)=\operatorname{polar}(\mathbf{G})$ at every
 iteration, so the oracle is deterministic and the inner-product identity
-$\mathbb{E}[\langle\mathbf{g}_t,\mathbf{D}_t\rangle\mid\mathbf{W}_t]=
+$\mathbb{E}[\langle\mathbf{g}_t,\mathbf{D}_t\rangle\mid\mathbf{X}_t]=
 \tfrac1{\sqrt{mn}}\sum_{ij}|\mathbf{g}_{t,ij}|(1-2q_{ij,t})$ underlying
 \eqref{eq:mishra_generic} reduces to
 \begin{equation}\label{eq:mishra_identity}

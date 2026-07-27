@@ -53,6 +53,39 @@ def describe(config: Dict[str, Any]) -> str:
     return " ".join(parts)
 
 
+def unique_labels(groups: Dict[Tuple, List[Dict[str, Any]]]) -> Dict[Tuple, str]:
+    """Map each group to a label that no other group shares.
+
+    ``describe`` prints a fixed shortlist of config keys, so two groups that
+    differ only in, say, ``lr_scaling`` collapse to the same string -- which
+    silently overwrote curves when they were stored in a dict. Any label claimed
+    by more than one group is extended with exactly the fields that tell those
+    groups apart, so the suffix stays empty in the common case.
+    """
+    base: Dict[Tuple, str] = {k: describe(g[0]["config"]) for k, g in groups.items()}
+
+    clashes: Dict[str, List[Tuple]] = {}
+    for key, label in base.items():
+        clashes.setdefault(label, []).append(key)
+
+    labels: Dict[Tuple, str] = {}
+    for label, keys in clashes.items():
+        if len(keys) == 1:
+            labels[keys[0]] = label
+            continue
+        configs = [groups[k][0]["config"] for k in keys]
+        differing = sorted(
+            field for field in set().union(*(c.keys() for c in configs))
+            if field not in IGNORED_FIELDS
+            and len({_hashable(c.get(field)) for c in configs}) > 1
+        )
+        for key, config in zip(keys, configs):
+            suffix = " ".join(f"{f}={config.get(f)}" for f in differing)
+            labels[key] = f"{label} {suffix}" if suffix else label
+
+    return labels
+
+
 def load_runs(roots: Sequence[Path]) -> List[Dict[str, Any]]:
     """Read every ``metrics.json`` under ``roots``."""
     runs = []
@@ -147,10 +180,16 @@ def main() -> None:
     for run in runs:
         groups.setdefault(group_key(run["config"]), []).append(run)
 
+    labels = unique_labels(groups)
+    n_extended = sum(1 for k, g in groups.items()
+                     if labels[k] != describe(g[0]["config"]))
+    if n_extended:
+        print(f"Note: {n_extended} group(s) shared a label with another group; "
+              f"the distinguishing config fields were appended.\n")
+
     rows, curves = [], {}
-    for key, group in sorted(groups.items(), key=lambda kv: describe(kv[1][0]["config"])):
-        config = group[0]["config"]
-        label = describe(config)
+    for key, group in sorted(groups.items(), key=lambda kv: labels[kv[0]]):
+        label = labels[key]
         seeds = sorted(r["config"].get("seed") for r in group)
         agg = aggregate_group(group, args.metric)
         if agg is None:

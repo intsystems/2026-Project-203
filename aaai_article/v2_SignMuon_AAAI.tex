@@ -43,6 +43,14 @@
 \usepackage{subcaption}
 \usepackage{cleveref}
 
+% Draft placeholders for measurements that are specified but not yet run. A
+% marked box is honest about the gap; a table of empty cells just looks broken.
+% Delete both macros once the synthetic study has been generated.
+\newcommand{\pendingrow}[2]{\multicolumn{#1}{c}{\footnotesize\itshape to be filled: #2}}
+\newcommand{\pendingbox}[2]{%
+  \framebox[\linewidth]{\parbox[c][#1][c]{0.88\linewidth}{%
+    \centering\footnotesize\itshape to be generated: #2}}}
+
 % Theorem-like environments used in the paper.
 \newtheorem{theorem}{Theorem}
 \newtheorem{proposition}{Proposition}
@@ -485,18 +493,9 @@ Before the network experiments we measure, on a deterministic $L$-smooth convex 
 
 \subsection{Centralized Learning}
 \begin{figure*}[!t]
-    \begin{subfigure}[b]{0.48\textwidth}
-        \centering
-        \includegraphics[width=\textwidth]{images/centralized_images/train_loss_resnet.png}
-        \caption{Train Loss}
-    \end{subfigure}
-    \hfill
-    \begin{subfigure}[b]{0.48\textwidth}
-        \centering
-        \includegraphics[width=\textwidth]{images/centralized_images/test_acc_resnet.png}
-        \caption{Test Accuracy}
-    \end{subfigure}
-    \caption{Centralized setting. Comparison of convergence and classification accuracy achieved by different optimization algorithms while training a ResNet-18 classifier on CIFAR-10.}
+    \centering
+    \includegraphics[width=\textwidth]{images/centralized_images/cifar_main.pdf}
+    \caption{Centralized ResNet-18 on CIFAR-10: test accuracy (top row, from epoch $25$, where the methods are a few points apart rather than twenty) and training loss (bottom row, log scale). Columns group the methods --- left: SignMuon and its two orderings; centre: the EF21 error-feedback variants; right: the uncompressed baselines. Muon is the gray dashed reference in every panel; bands are $\pm1$ standard deviation over three seeds. Each method is shown at its selected $\eta_0$ (Table~\ref{tab:cifar_main}). The full curves from epoch~$1$ are in Figure~\ref{fig:cifar_curves_appendix}.}
     \label{fig:cifar_results}
 \end{figure*}
 
@@ -518,7 +517,35 @@ Selection uses a fixed $45$k/$5$k train/validation partition and validation accu
 
 Alongside final accuracy we report the number of epochs to reach a fixed test accuracy. The two measure different things: with every method except SignSGD landing within about a point of the others at $75$ epochs (Table~\ref{tab:cifar_central}), final accuracy is close to the noise floor, whereas a threshold crossing on a monotonically rising curve separates the methods by factors rather than by tenths of a point, and is the analogue of the ``steps to $3.35$'' column of Table~\ref{tab:nanogpt}.
 
-Results and selected hyperparameters are in Appendix Table~\ref{tab:cifar_central}; the loss and accuracy dynamics are in Figure~\ref{fig:cifar_results}.
+\begin{table}[!t]
+\centering
+\small
+\renewcommand{\arraystretch}{1.15}
+\begin{tabular}{|l|c|c|c|}
+\hline
+\textbf{Method} & $\boldsymbol{\eta_0}$ & \textbf{Test acc (\%)} & \textbf{Ep.\ to $\mathbf{90\%}$} \\
+\hline
+EF21-SignMuon & $0.01$ & $94.64 \pm 0.24$ & $8.7$ \\
+SignMuon & $0.02$ & $94.53 \pm 0.22$ & $8.3$ \\
+Muon & $0.05$ & $94.49 \pm 0.09$ & $7.7$ \\
+\hline
+EF21-MuonSign & $0.01$ & $94.22 \pm 0.13$ & $10.3$ \\
+EF21-MuonUSign & $0.2$ & $94.15 \pm 0.16$ & $8.7$ \\
+MuonUSign & $0.02$ & $93.90 \pm 0.08$ & $10.0$ \\
+MuonSign & $0.005$ & $93.65 \pm 0.21$ & $15.0$ \\
+\hline
+Adam & $0.0005$ & $93.35 \pm 0.15$ & $18.8$ \\
+SignSGD & $0.002$ & $93.27 \pm 0.16$ & $19.0$ \\
+SGD & $0.02$ & $93.13 \pm 0.07$ & $21.7$ \\
+\hline
+\end{tabular}
+\caption{Centralized ResNet-18 / CIFAR-10, $75$ epochs. Test accuracy is the mean $\pm$ standard deviation over three seeds of the last five epochs; ``Ep.\ to $90\%$'' is the mean epoch at which test accuracy first reaches $90\%$. Rules separate the methods that are statistically tied from the rest. Train accuracy and the weight-decay ablation are in Appendix Table~\ref{tab:cifar_central}.}
+\label{tab:cifar_main}
+\end{table}
+
+EF21-SignMuon, SignMuon and Muon span $0.15$ points against seed spreads of $0.09$--$0.24$; at three seeds they are indistinguishable, so we claim only that sign-after \emph{matches} Muon. That is the claim the experiment was built for: SignMuon reaches Muon's accuracy at one bit per parameter on the uplink, $1.26$ points above SignSGD, which spends the same budget without the \textsc{lmo}. Error feedback is free --- EF21-SignMuon sits within a seed spread of uncompressed SignMuon.
+
+Within the family the ordering exceeds the noise: sign-after ($94.53$), sign-before ($93.90$) and bidirectional ($93.65$) separate by $0.9$ points, and the training-loss panels order them identically, so the gap is in optimization rather than regularization. The threshold column separates methods by factors instead of tenths --- SignMuon crosses $90\%$ in $8.3$ epochs against SGD's $21.7$, SignSGD's $19.0$ and Adam's $18.8$. Orthogonalization costs about $18\%$ more per epoch ($14.4$ vs.\ $12.2$\,s, one device throughout), so $2.6\times$ fewer epochs is still $2.2\times$ in wall clock.
 
 \subsection{Federated Learning}
 \begin{table*}[!t]
@@ -783,18 +810,13 @@ Theorems~\ref{th:1}--\ref{th:3} are constructions that drive $\rho_t$ negative. 
 \toprule
 \textbf{Algorithm} & \textbf{$\min_t \rho_t$} & \textbf{median $\rho_t$} & \textbf{mean $\rho_t$} & \textbf{\% of steps with $\rho_t<0$} & \textbf{closed form} & \textbf{tuned $(\eta,\mu)$} \\
 \midrule
-SignMuon       & & & & & --- & \\
-MuonUSign      & & & & & --- & \\
-MuonSign       & & & & & --- & \\
-EF21-SignMuon  & & & & & --- & \\
-EF21-MuonUSign & & & & & --- & \\
-EF21-MuonSign  & & & & & --- & \\
-Muon           & & & & & & \\
-SignSGD        & & & & & & \\
-SGD            & --- & --- & --- & --- & $1$ & \\
+% One row per method, in this order, once the numbers exist:
+%   SignMuon, MuonUSign, MuonSign, EF21-SignMuon, EF21-MuonUSign, EF21-MuonSign,
+%   Muon, SignSGD, SGD. The first six have no closed form (---); SGD's is 1.
+\pendingrow{7}{nine rows from the alignment section of \texttt{results/synthetic/SUMMARY.md}} \\
 \bottomrule
 \end{tabular}
-\caption{Gradient/step alignment $\rho_t$ of Equation~\eqref{eq:alignment} along the tuned trajectory. \textbf{[fill from \texttt{SUMMARY.md}, alignment section]} The closed-form column is evaluated at $\mathbf{X}_0$ without momentum, so it is comparable only to rows whose tuned $\mu$ is $0$; with momentum the step is built from $\mathbf{M}_t$ rather than the current gradient and $\rho_t$ falls accordingly.}
+\caption{Gradient/step alignment $\rho_t$ of Equation~\eqref{eq:alignment} along the tuned trajectory, one row per method. The closed-form column is evaluated at $\mathbf{X}_0$ without momentum, so it is comparable only to rows whose tuned $\mu$ is $0$; with momentum the step is built from $\mathbf{M}_t$ rather than the current gradient and $\rho_t$ falls accordingly. The three sign-around-the-\textsc{lmo} methods admit no closed form; SGD's is $1$.}
 \label{tab:synthetic_alignment}
 \end{table*}
 
@@ -810,21 +832,15 @@ Three further measurements, each testing a quantity the theory predicts in close
 \cmidrule(lr){2-3}\cmidrule(lr){4-7}\cmidrule(lr){8-8}
 \textbf{Algorithm} & $\mathrm{d}\log\|\nabla F\|_\infty / \mathrm{d}\log\eta$ & $R^2$ & $p$ & $R^2$ & $q$ & $R^2$ & $\eta_{\max}\|\mathbf{S}\|_F$ \\
 \midrule
-SignMuon       & & & & & & & \\
-MuonUSign      & & & & & & & \\
-MuonSign       & & & & & & & \\
-EF21-SignMuon  & & & & & & & \\
-EF21-MuonUSign & & & & & & & \\
-EF21-MuonSign  & & & & & & & \\
-Muon           & & & & & & & \\
-SignSGD        & & & & & & & \\
-SGD            & & & & & & & \\
-Adam           & & & & & & & \\
+% One row per method, in this order, once the numbers exist:
+%   SignMuon, MuonUSign, MuonSign, EF21-SignMuon, EF21-MuonUSign, EF21-MuonSign,
+%   Muon, SignSGD, SGD, Adam. SGD's floor columns stay empty by construction.
+\pendingrow{8}{ten rows from the floor, budget-scaling and stability sections of \texttt{results/synthetic/SUMMARY.md}} \\
 \midrule
 \emph{predicted} & $1$ & & $1/2$ or $1$ & & $1/2$ or $1$ & & $2/L$ \\
 \bottomrule
 \end{tabular}
-\caption{Floor exponent, budget exponents and stability edge. \textbf{[fill from \texttt{SUMMARY.md}, floor / budget scaling / stability sections]} SGD has no floor --- its step vanishes with the gradient --- so its floor columns are empty by construction, and its $\eta_{\max}$ is the control that must reproduce $2/L$.}
+\caption{Floor exponent, budget exponents and stability edge, one row per method, against the values the theory predicts. SGD has no floor --- its step vanishes with the gradient --- so its floor columns are empty by construction, and its $\eta_{\max}$ is the control that must reproduce $2/L$.}
 \label{tab:synthetic_dynamics}
 \end{table*}
 
@@ -833,7 +849,7 @@ Adam           & & & & & & & \\
     \begin{subfigure}[b]{0.48\columnwidth}
         \centering
         % \includegraphics[width=\textwidth]{images/synt/floor.pdf}
-        \rule{0pt}{3cm}
+        \pendingbox{3cm}{the accuracy floor of a constant step}
         \caption{Floor $\|\nabla F\|_\infty$ vs.\ $\eta$}
         \label{fig:synthetic_floor}
     \end{subfigure}
@@ -841,11 +857,11 @@ Adam           & & & & & & & \\
     \begin{subfigure}[b]{0.48\columnwidth}
         \centering
         % \includegraphics[width=\textwidth]{images/synt/horizon.pdf}
-        \rule{0pt}{3cm}
+        \pendingbox{3cm}{best error at each tuned budget}
         \caption{Error vs.\ budget $T$}
         \label{fig:synthetic_horizon}
     \end{subfigure}
-    \caption{\textbf{[placeholder --- generate from \texttt{results/synthetic/}]} Log--log fits behind Table~\ref{tab:synthetic_dynamics}. Left: the accuracy floor of a constant step. Right: best error at each tuned budget.}
+    \caption{Log--log fits behind Table~\ref{tab:synthetic_dynamics}. Left: the accuracy floor of a constant step. Right: best error at each tuned budget.}
     \label{fig:synthetic_dynamics}
 \end{figure}
 
@@ -855,8 +871,8 @@ Conditioning is the only knob that governs the dynamics of a quadratic, and the 
 \begin{figure}[!t]
     \centering
     % \includegraphics[width=0.9\columnwidth]{images/synt/kappa.pdf}
-    \rule{0pt}{4cm}
-    \caption{\textbf{[placeholder --- generate from \texttt{results/synthetic/}]} Best $\|\nabla F\|$ within the budget against the condition number $L/\sigma$, tuned at each point.}
+    \pendingbox{4cm}{best $\|\nabla F\|$ against the condition number, tuned at each point}
+    \caption{Best $\|\nabla F\|$ within the budget against the condition number $L/\sigma$, tuned at each point.}
     \label{fig:synthetic_kappa}
 \end{figure}
 
@@ -935,35 +951,59 @@ Adam     & $[1 \cdot 10^{-2}, 1 \cdot 10^{-1}]$ with step $1 \cdot 10^{-2}$ & --
 \end{figure*}
 
 \subsection{Centralized training results}\label{app:images_cen}
-Table~\ref{tab:cifar_central} reports the centralized CIFAR-10 results on ResNet-18, including the tuned hyperparameters and the final train/test accuracies.
+Table~\ref{tab:cifar_central} reports the centralized CIFAR-10 results on ResNet-18 in full: the selected $\eta_0$, the final train and test accuracies, the epoch count to the $90\%$ threshold, and the per-epoch cost. Every run uses batch $128$, momentum $0.9$, auxiliary rate $10^{-3}$, and zero weight decay, so the matrix rule and $\eta_0$ are the only things that vary. Figure~\ref{fig:cifar_curves_appendix} gives the curves from epoch~$1$, and Figure~\ref{fig:cifar_lr} the learning-rate sweep behind the selection.
+
 \begin{table*}[!t]
 \centering
 \small
 \renewcommand{\arraystretch}{1.2}
-\begin{tabular}{|c|c|c|c|c|c|c|c|c|}
+\begin{tabular}{|c|l|c|c|c|c|c|c|}
 \hline
-\textbf{Dataset} & \textbf{Optimizer} & \textbf{Epoch} & \textbf{Batch} & \textbf{LR} & \textbf{LR Aux} & \textbf{Mom} & \textbf{Train Acc} & \textbf{Test Acc} \\
+\textbf{Dataset} & \textbf{Optimizer} & \textbf{Epochs} & $\boldsymbol{\eta_0}$ & \textbf{Train Acc} & \textbf{Test Acc} & \textbf{Ep.\ to $\mathbf{90\%}$} & \textbf{s/epoch} \\
 \hline
-\multirow{8}{*}{CIFAR-10} & SignMuon & \multirow{8}{*}{75} & \multirow{8}{*}{128} & 0.001 & 0.0001 & \multirow{8}{*}{0.9} & 99.69\% & 92.55\% \\
-\cline{2-2} \cline{5-6} \cline{8-9}
-& MuonUSign & & & - & - & & -\% & -\% \\
-\cline{2-2} \cline{5-6} \cline{8-9}
-& Muon & & & \multirow{2}{*}{0.015}  & \multirow{2}{*}{0.001} & & 99.94\% & 93.70\% \\
-\cline{2-2} \cline{8-9}
-& SGD & & & & & & 99.98\% & 93.93\% \\
-\cline{2-2} \cline{5-6} \cline{8-9}
-& SignSGD & & & \multirow{2}{*}{0.001}  & \multirow{2}{*}{0.0001}  & & 93.19\% & 89.11\% \\
-\cline{2-2} \cline{8-9}
- & Adam & & &  & & & 99.77\% & 93.03\% \\
-\cline{2-2} \cline{5-6} \cline{8-9}
-& EF21-MuonUSign & & & 0.008 & 0.001& & 99.96\% & 93.82\% \\
-\cline{2-2} \cline{5-6} \cline{8-9}
-& EF21-MuonSign & & & 0.007 & 0.001& & 99.95\% & 93.86\% \\
+\multirow{10}{*}{CIFAR-10}
+& EF21-SignMuon & \multirow{10}{*}{75} & 0.01 & $100.00$ & $94.64 \pm 0.24$ & 8.7 & 14.8 \\
+\cline{2-2} \cline{4-8}
+& SignMuon & & 0.02 & $100.00$ & $94.53 \pm 0.22$ & 8.3 & 14.4 \\
+\cline{2-2} \cline{4-8}
+& Muon & & 0.05 & $99.99$ & $94.49 \pm 0.09$ & 7.7 & 14.4 \\
+\cline{2-2} \cline{4-8}
+& EF21-MuonSign & & 0.01 & $99.99$ & $94.22 \pm 0.13$ & 10.3 & 15.3 \\
+\cline{2-2} \cline{4-8}
+& EF21-MuonUSign & & 0.2 & $99.99$ & $94.15 \pm 0.16$ & 8.7 & 14.9 \\
+\cline{2-2} \cline{4-8}
+& MuonUSign & & 0.02 & $99.99$ & $93.90 \pm 0.08$ & 10.0 & 14.4 \\
+\cline{2-2} \cline{4-8}
+& MuonSign & & 0.005 & $99.98$ & $93.65 \pm 0.21$ & 15.0 & 14.5 \\
+\cline{2-2} \cline{4-8}
+& Adam & & 0.0005 & $99.98$ & $93.35 \pm 0.15$ & 18.8 & 12.7 \\
+\cline{2-2} \cline{4-8}
+& SignSGD & & 0.002 & $99.97$ & $93.27 \pm 0.16$ & 19.0 & 12.1 \\
+\cline{2-2} \cline{4-8}
+& SGD & & 0.02 & $99.95$ & $93.13 \pm 0.07$ & 21.7 & 12.2 \\
 \hline
 \end{tabular}
-\caption{CIFAR-10: Centralized Learning on ResNet-18.}
+\caption{CIFAR-10: centralized learning on ResNet-18, three seeds. Test accuracy is the mean $\pm$ standard deviation of the last five epochs; train accuracy, ``Ep.\ to $90\%$'' and ``s/epoch'' are means over the same three seeds. $\eta_0$ was selected on a held-out $5$k validation split at $15$ epochs and then retrained on the full $50$k set, as described in Section~\ref{sec:exp}. Every method fits the training set to within $0.05$ points of the others, so the column separates nothing on its own; the differences in the test column are not differences in how far training got.}
 \label{tab:cifar_central}
 \end{table*}
+
+\paragraph{Horizon stability.} Selection was carried out at $15$ epochs and the reported runs are $75$, so the tuning horizon and the reporting horizon differ. Re-tuning the top three rates directly at $75$ epochs moves the winner for two methods: SignMuon from $\eta_0 = 0.02$ to $0.2$ and Muon from $0.05$ to $0.01$. Both moves are small in accuracy --- SignMuon reaches $94.53 \pm 0.22$ at $0.02$ against $94.29$ at $0.2$ (one seed), and the sweep in Figure~\ref{fig:cifar_lr} is flat across that range for every \textsc{lmo} method --- but the short-horizon selection is provisional in the strict sense, and we report it as such rather than presenting the $15$-epoch grid as if it settled the $75$-epoch question.
+
+\paragraph{Weight decay.} The primary table is unregularized, the setting the theorems analyse and the one \citet{mishra2026signmuon}'s sweep selects. Repeating the top three at the same $\eta_0$ with decoupled decay $5\times10^{-4}$ (seed $0$, decay not re-tuned) leaves the ordering intact: EF21-SignMuon $94.52\%$ against $94.55\%$ undecayed, Muon $94.33\%$ against $94.53\%$, SignMuon $94.35\%$ against $94.75\%$. Decay is applied decoupled, $\mathbf{X} \mathrel{*}= 1 - \eta\lambda$, so the \textsc{lmo} sees the true gradient; the coupled convention would only rotate the direction, since every step here is scale-invariant.
+
+\begin{figure*}[!t]
+    \centering
+    \includegraphics[width=\textwidth]{images/centralized_images/curves_75ep.pdf}
+    \caption{Test accuracy over the whole run (top row) and from epoch~$25$ (bottom row), the same data at two scales, grouped as in Figure~\ref{fig:cifar_results}. Bands are $\pm1$ standard deviation over three seeds; Muon is the gray dashed reference in every panel. Series are labelled at the right of each panel.}
+    \label{fig:cifar_curves_appendix}
+\end{figure*}
+
+\begin{figure*}[!t]
+    \centering
+    \includegraphics[width=\textwidth]{images/centralized_images/lr_sensitivity.pdf}
+    \caption{Learning-rate sweep at $15$ epochs on the tuning split, grouped as in Figure~\ref{fig:cifar_results}, with Muon repeated as the gray dashed reference. The shaded band marks $\eta_0 \in [0.01, 0.05]$, the range every method except EF21-MuonSign was swept over and therefore the only range-matched comparison: within it the \textsc{lmo} methods vary by $0.16$--$0.42$ points (Muon itself, $0.28$, is no flatter than the sign variants), while Adam varies by $1.57$ and SignSGD by $2.82$. The robustness belongs to the \textsc{lmo}, and taking the sign of its output does not cost it.}
+    \label{fig:cifar_lr}
+\end{figure*}
 
 % \begin{figure*}[!t]
 %     \centering

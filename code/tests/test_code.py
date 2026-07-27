@@ -840,6 +840,35 @@ def test_aggregate_groups_by_seed(tmp_path=None):
     assert abs(agg["std"][-1] - 2.0) < 1e-12          # sample std of 80, 82, 84
 
 
+def test_aggregate_labels_are_unique():
+    """Two groups differing only in an unprinted field must not share a label.
+
+    ``describe`` prints a fixed shortlist of keys, so groups that differ only in,
+    say, ``lr_scaling`` used to render identically -- and the curves dict, keyed
+    on that label, silently kept whichever was written last. On the CIFAR sweep
+    that discarded seven groups, including three-seed runs overwritten by
+    single-seed ones.
+    """
+    import aggregate
+
+    base = {"dataset": "cifar10", "optimizer": "muon", "epochs": 75, "lr": 0.05}
+    groups = {
+        ("a",): [{"config": dict(base, lr_scaling="unit", seed=0)}],
+        ("b",): [{"config": dict(base, lr_scaling="none", seed=0)}],
+        ("c",): [{"config": {"dataset": "cifar10", "optimizer": "sgd", "lr": 0.02}}],
+    }
+    labels = aggregate.unique_labels(groups)
+
+    assert len(set(labels.values())) == 3, "labels still collide"
+    assert "lr_scaling=unit" in labels[("a",)]
+    assert "lr_scaling=none" in labels[("b",)]
+    # An uncontested label is left exactly as ``describe`` renders it, and only
+    # the fields that actually differ are appended.
+    assert labels[("c",)] == aggregate.describe(groups[("c",)][0]["config"])
+    assert "seed" not in labels[("a",)], "ignored fields must not leak into the suffix"
+    assert "epochs" not in labels[("a",)].split("lr_scaling")[1]
+
+
 # --------------------------------------------------------------------------
 # Federated protocol: per-layer scaling, data split, GPU augmentation
 # --------------------------------------------------------------------------

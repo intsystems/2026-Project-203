@@ -1,0 +1,93 @@
+label,seeds,n_seeds,final_test_acc_mean,final_test_acc_std,final_step
+dataset=cifar10 model=resnet18 optimizer=adam epochs=15 lr=0.0002 lr_aux=0.001 momentum=0.9,0,1,89.5,0.0,15
+dataset=cifar10 model=resnet18 optimizer=adam epochs=15 lr=0.0005 lr_aux=0.001 momentum=0.9,0,1,90.19,0.0,15
+dataset=cifar10 model=resnet18 optimizer=adam epochs=15 lr=0.001 lr_aux=0.001 momentum=0.9,0,1,89.59,0.0,15
+dataset=cifar10 model=resnet18 optimizer=adam epochs=15 lr=0.002 lr_aux=0.001 momentum=0.9 scale_baselines=False,0,1,89.72,0.0,15
+dataset=cifar10 model=resnet18 optimizer=adam epochs=15 lr=0.002 lr_aux=0.001 momentum=0.9 scale_baselines=True,0,1,85.35000000000001,0.0,15
+dataset=cifar10 model=resnet18 optimizer=adam epochs=15 lr=0.005 lr_aux=0.001 momentum=0.9 scale_baselines=False,0,1,89.41,0.0,15
+dataset=cifar10 model=resnet18 optimizer=adam epochs=15 lr=0.005 lr_aux=0.001 momentum=0.9 scale_baselines=True,0,1,89.24,0.0,15
+dataset=cifar10 model=resnet18 optimizer=adam epochs=15 lr=0.01 lr_aux=0.001 momentum=0.9,0,1,90.66,0.0,15
+dataset=cifar10 model=resnet18 optimizer=adam epochs=15 lr=0.02 lr_aux=0.001 momentum=0.9,0,1,90.86,0.0,15
+dataset=cifar10 model=resnet18 optimizer=adam epochs=15 lr=0.05 lr_aux=0.001 momentum=0.9,0,1,89.29,0.0,15
+dataset=cifar10 model=resnet18 optimizer=adam epochs=15 lr=0.1 lr_aux=0.001 momentum=0.9,0,1,88.71,0.0,15
+dataset=cifar10 model=resnet18 optimizer=adam epochs=15 lr=0.2 lr_aux=0.001 momentum=0.9,0,1,88.59,0.0,15
+dataset=cifar10 model=resnet18 optimizer=adam epochs=75 lr=0.0005 lr_aux=0.001 momentum=0.9,"0,1,2",3,93.34999999999998,0.15394804318340635,75
+dataset=cifar10 model=resnet18 optimizer=adam epochs=75 lr=0.01 lr_aux=0.001 momentum=0.9,"0,1,2",3,93.32333333333334,0.08020806277011173,75
+dataset=cifar10 model=resnet18 optimizer=ef21muonsign epochs=15 lr=0.001 lr_aux=0.001 momentum=0.9,0,1,88.44999999999999,0.0,15
+dataset=cifar10 model=resnet18 optimizer=ef21muonsign epochs=15 lr=0.002 lr_aux=0.001 momentum=0.9,0,1,91.5,0.0,15
+dataset=cifar10 model=resnet18 optimizer=ef21muonsign epochs=15 lr=0.005 lr_aux=0.001 momentum=0.9,0,1,92.41,0.0,15
+dataset=cifar10 model=resnet18 optimizer=ef21muonsign epochs=15 lr=0.01 lr_aux=0.001 momentum=0.9,0,1,92.71000000000001,0.0,15
+dataset=cifar10 model=resnet18 optimizer=ef21muonsign epochs=15 lr=0.02 lr_aux=0.001 momentum=0.9,0,1,92.82000000000001,0.0,15
+dataset=cifar10 model=resnet18 optimizer=ef21muonsign epochs=75 lr=0.01 lr_aux=0.001 momentum=0.9,"0,1,2",3,94.21666666666665,0.128970280814355,75
+dataset=cifar10 model=resnet18 optimizer=ef21muonusign epochs=15 lr=0.002 lr_aux=0.001 momentum=0.9,0,1,91.3,0.0,15
+dataset=cifar10 model=resnet18 optimizer=ef21muonusign epochs=15 lr=0.005 lr_aux=0.001 momentum=0.9,0,1,92.47,0.0,15
+dataset=cifar10 model=resnet18 optimizer=ef21muonusign epochs=15 lr=0.01 lr_aux=0.001 momentum=0.9,0,1,93.26,0.0,15
+dataset=cifar10 model=resnet18 optimizer=ef21muonusign epochs=15 lr=0.02 lr_aux=0.001 momentum=0.9,0,1,92.84,0.0,15
+dataset=cifar10 model=resnet18 optimizer=ef21muonusign epochs=15 lr=0.05 lr_aux=0.001 momentum=0.9,0,1,92.97,0.0,15
+dataset=cifar10 model=resnet18 optimizer=ef21muonusign epochs=15 lr=0.1 lr_aux=0.001 momentum=0.9,0,1,92.81,0.0,15
+dataset=cifar10 model=resnet18 optimizer=ef21muonusign epochs=15 lr=0.2 lr_aux=0.001 momentum=0.9,0,1,92.61,0.0,15
+dataset=cifar10 model=resnet18 optimizer=ef21muonusign epochs=15 lr=0.5 lr_aux=0.001 momentum=0.9,0,1,92.77,0.0,15
+dataset=cifar10 model=resnet18 optimizer=ef21muonusign epochs=15 lr=1.0 lr_aux=0.001 momentum=0.9,0,1,92.47,0.0,15
+dataset=cifar10 model=resnet18 optimizer=ef21muonusign epochs=75 lr=0.2 lr_aux=0.001 momentum=0.9,"0,1,2",3,94.14666666666666,0.16165807537309881,75
+dataset=cifar10 model=resnet18 optimizer=ef21signmuon epochs=15 lr=0.002 lr_aux=0.001 momentum=0.9,0,1,91.41,0.0,15
+dataset=cifar10 model=resnet18 optimizer=ef21signmuon epochs=15 lr=0.005 lr_aux=0.001 momentum=0.9,0,1,93.03,0.0,15
+dataset=cifar10 model=resnet18 optimizer=ef21signmuon epochs=15 lr=0.01 lr_aux=0.001 momentum=0.9,0,1,93.11,0.0,15
+dataset=cifar10 model=resnet18 optimizer=ef21signmuon epochs=15 lr=0.02 lr_aux=0.001 momentum=0.9,0,1,92.88,0.0,15
+dataset=cifar10 model=resnet18 optimizer=ef21signmuon epochs=15 lr=0.05 lr_aux=0.001 momentum=0.9,0,1,93.25,0.0,15
+dataset=cifar10 model=resnet18 optimizer=ef21signmuon epochs=75 lr=0.01 lr_aux=0.001 momentum=0.9 weight_decay=0.0,"0,1,2",3,94.64333333333333,0.24214320831552008,75
+dataset=cifar10 model=resnet18 optimizer=ef21signmuon epochs=75 lr=0.01 lr_aux=0.001 momentum=0.9 weight_decay=0.0005,0,1,94.56,0.0,75
+dataset=cifar10 model=resnet18 optimizer=muon epochs=15 lr=0.005 lr_aux=0.001 momentum=0.9,0,1,92.60000000000001,0.0,15
+dataset=cifar10 model=resnet18 optimizer=muon epochs=15 lr=0.01 lr_aux=0.001 momentum=0.9,0,1,93.22,0.0,15
+dataset=cifar10 model=resnet18 optimizer=muon epochs=15 lr=0.02 lr_aux=0.001 momentum=0.9,0,1,93.26,0.0,15
+dataset=cifar10 model=resnet18 optimizer=muon epochs=15 lr=0.05 lr_aux=0.001 momentum=0.9,0,1,93.5,0.0,15
+dataset=cifar10 model=resnet18 optimizer=muon epochs=15 lr=0.1 lr_aux=0.001 momentum=0.9,0,1,93.32000000000001,0.0,15
+dataset=cifar10 model=resnet18 optimizer=muon epochs=2 lr=0.015 lr_aux=0.001 momentum=0.9,0,1,82.54,0.0,2
+dataset=cifar10 model=resnet18 optimizer=muon epochs=20 lr=0.005 lr_aux=0.001 momentum=0.9,0,1,91.67,0.0,20
+dataset=cifar10 model=resnet18 optimizer=muon epochs=75 lr=0.01 lr_aux=0.001 momentum=0.9,0,1,94.03,0.0,75
+dataset=cifar10 model=resnet18 optimizer=muon epochs=75 lr=0.02 lr_aux=0.001 momentum=0.9,0,1,94.04,0.0,75
+dataset=cifar10 model=resnet18 optimizer=muon epochs=75 lr=0.05 lr_aux=0.001 momentum=0.9 split=full weight_decay=0.0,"0,1,2",3,94.48666666666666,0.08504900548115472,75
+dataset=cifar10 model=resnet18 optimizer=muon epochs=75 lr=0.05 lr_aux=0.001 momentum=0.9 split=full weight_decay=0.0005,0,1,94.24,0.0,75
+dataset=cifar10 model=resnet18 optimizer=muon epochs=75 lr=0.05 lr_aux=0.001 momentum=0.9 split=tune weight_decay=0.0,0,1,94.26,0.0,75
+dataset=cifar10 model=resnet18 optimizer=muonsign epochs=15 lr=0.002 lr_aux=0.001 momentum=0.9,0,1,90.4,0.0,15
+dataset=cifar10 model=resnet18 optimizer=muonsign epochs=15 lr=0.005 lr_aux=0.001 momentum=0.9,0,1,91.10000000000001,0.0,15
+dataset=cifar10 model=resnet18 optimizer=muonsign epochs=15 lr=0.01 lr_aux=0.001 momentum=0.9,0,1,90.77,0.0,15
+dataset=cifar10 model=resnet18 optimizer=muonsign epochs=15 lr=0.02 lr_aux=0.001 momentum=0.9,0,1,90.88000000000001,0.0,15
+dataset=cifar10 model=resnet18 optimizer=muonsign epochs=15 lr=0.05 lr_aux=0.001 momentum=0.9,0,1,90.55,0.0,15
+dataset=cifar10 model=resnet18 optimizer=muonsign epochs=15 lr=0.1 lr_aux=0.001 momentum=0.9,0,1,90.53999999999999,0.0,15
+dataset=cifar10 model=resnet18 optimizer=muonsign epochs=15 lr=0.2 lr_aux=0.001 momentum=0.9,0,1,90.4,0.0,15
+dataset=cifar10 model=resnet18 optimizer=muonsign epochs=20 lr=0.011333333333333334 lr_aux=0.001 momentum=0.9,0,1,89.25,0.0,20
+dataset=cifar10 model=resnet18 optimizer=muonsign epochs=75 lr=0.005 lr_aux=0.001 momentum=0.9,"0,1,2",3,93.64666666666666,0.20599352740640564,75
+dataset=cifar10 model=resnet18 optimizer=muonusign epochs=15 lr=0.005 lr_aux=0.001 momentum=0.9,0,1,92.42,0.0,15
+dataset=cifar10 model=resnet18 optimizer=muonusign epochs=15 lr=0.01 lr_aux=0.001 momentum=0.9,0,1,92.51,0.0,15
+dataset=cifar10 model=resnet18 optimizer=muonusign epochs=15 lr=0.02 lr_aux=0.001 momentum=0.9,0,1,92.51,0.0,15
+dataset=cifar10 model=resnet18 optimizer=muonusign epochs=15 lr=0.05 lr_aux=0.001 momentum=0.9,0,1,92.22,0.0,15
+dataset=cifar10 model=resnet18 optimizer=muonusign epochs=15 lr=0.1 lr_aux=0.001 momentum=0.9,0,1,92.28,0.0,15
+dataset=cifar10 model=resnet18 optimizer=muonusign epochs=75 lr=0.02 lr_aux=0.001 momentum=0.9,"0,1,2",3,93.90333333333332,0.07571877794400173,75
+dataset=cifar10 model=resnet18 optimizer=sgd epochs=15 lr=0.005 lr_aux=0.001 momentum=0.9,0,1,89.23,0.0,15
+dataset=cifar10 model=resnet18 optimizer=sgd epochs=15 lr=0.01 lr_aux=0.001 momentum=0.9,0,1,89.71000000000001,0.0,15
+dataset=cifar10 model=resnet18 optimizer=sgd epochs=15 lr=0.02 lr_aux=0.001 momentum=0.9,0,1,89.97,0.0,15
+dataset=cifar10 model=resnet18 optimizer=sgd epochs=15 lr=0.05 lr_aux=0.001 momentum=0.9,0,1,89.79,0.0,15
+dataset=cifar10 model=resnet18 optimizer=sgd epochs=15 lr=0.1 lr_aux=0.001 momentum=0.9,0,1,89.58,0.0,15
+dataset=cifar10 model=resnet18 optimizer=sgd epochs=75 lr=0.02 lr_aux=0.001 momentum=0.9,"0,1,2",3,93.13333333333333,0.0680685928555457,75
+dataset=cifar10 model=resnet18 optimizer=signmuon epochs=15 lr=0.01 lr_aux=0.001 momentum=0.9,0,1,93.08999999999999,0.0,15
+dataset=cifar10 model=resnet18 optimizer=signmuon epochs=15 lr=0.02 lr_aux=0.001 momentum=0.9,0,1,93.25,0.0,15
+dataset=cifar10 model=resnet18 optimizer=signmuon epochs=15 lr=0.05 lr_aux=0.001 momentum=0.9,0,1,93.15,0.0,15
+dataset=cifar10 model=resnet18 optimizer=signmuon epochs=15 lr=0.1 lr_aux=0.001 momentum=0.9,0,1,93.28999999999999,0.0,15
+dataset=cifar10 model=resnet18 optimizer=signmuon epochs=15 lr=0.2 lr_aux=0.001 momentum=0.9,0,1,93.41000000000001,0.0,15
+dataset=cifar10 model=resnet18 optimizer=signmuon epochs=20 lr=0.011333333333333334 lr_aux=0.001 momentum=0.9,0,1,91.7,0.0,20
+dataset=cifar10 model=resnet18 optimizer=signmuon epochs=75 lr=0.02 lr_aux=0.001 momentum=0.9 split=full weight_decay=0.0,"0,1,2",3,94.53333333333335,0.21548395145192287,75
+dataset=cifar10 model=resnet18 optimizer=signmuon epochs=75 lr=0.02 lr_aux=0.001 momentum=0.9 split=full weight_decay=0.0005,0,1,94.36,0.0,75
+dataset=cifar10 model=resnet18 optimizer=signmuon epochs=75 lr=0.02 lr_aux=0.001 momentum=0.9 split=tune weight_decay=0.0,0,1,93.84,0.0,75
+dataset=cifar10 model=resnet18 optimizer=signmuon epochs=75 lr=0.05 lr_aux=0.001 momentum=0.9,0,1,94.03,0.0,75
+dataset=cifar10 model=resnet18 optimizer=signmuon epochs=75 lr=0.2 lr_aux=0.001 momentum=0.9,0,1,94.28999999999999,0.0,75
+dataset=cifar10 model=resnet18 optimizer=signsgd epochs=15 lr=0.0005 lr_aux=0.001 momentum=0.9,0,1,84.39999999999999,0.0,15
+dataset=cifar10 model=resnet18 optimizer=signsgd epochs=15 lr=0.001 lr_aux=0.001 momentum=0.9,0,1,87.91,0.0,15
+dataset=cifar10 model=resnet18 optimizer=signsgd epochs=15 lr=0.002 lr_aux=0.001 momentum=0.9,0,1,90.16999999999999,0.0,15
+dataset=cifar10 model=resnet18 optimizer=signsgd epochs=15 lr=0.005 lr_aux=0.001 momentum=0.9,0,1,89.84,0.0,15
+dataset=cifar10 model=resnet18 optimizer=signsgd epochs=15 lr=0.01 lr_aux=0.001 momentum=0.9,0,1,89.25999999999999,0.0,15
+dataset=cifar10 model=resnet18 optimizer=signsgd epochs=15 lr=0.02 lr_aux=0.001 momentum=0.9,0,1,88.61,0.0,15
+dataset=cifar10 model=resnet18 optimizer=signsgd epochs=15 lr=0.05 lr_aux=0.001 momentum=0.9,0,1,86.44,0.0,15
+dataset=cifar10 model=resnet18 optimizer=signsgd epochs=15 lr=0.1 lr_aux=0.001 momentum=0.9,0,1,86.6,0.0,15
+dataset=cifar10 model=resnet18 optimizer=signsgd epochs=15 lr=0.2 lr_aux=0.001 momentum=0.9,0,1,87.05000000000001,0.0,15
+dataset=cifar10 model=resnet18 optimizer=signsgd epochs=20 lr=0.011333333333333334 lr_aux=0.001 momentum=0.9,0,1,88.53999999999999,0.0,20
+dataset=cifar10 model=resnet18 optimizer=signsgd epochs=75 lr=0.002 lr_aux=0.001 momentum=0.9,"0,1,2",3,93.26666666666667,0.15534906930307926,75
