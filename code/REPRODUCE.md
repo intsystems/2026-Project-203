@@ -609,12 +609,23 @@ on every layer. Every run checks that: the per-layer profile is printed at round
 `gain_spread` is recorded at every evaluation, and the driver warns above 1.15×.
 
 It is not flat for the LMO family. The derivation assumes the oracle returns
-`‖polar‖_F = √min(m,n)` exactly; five Newton–Schulz steps return 0.77–0.96 of it on
-CNN2's three shapes, **shape-dependently**, so `muonserver` measures a 1.24× spread
-at `--ns_steps 5` while the sign family sits near 1.08× (flat by construction). A
-tuned `η₀` is a single constant and cannot absorb a per-layer factor. Raising
-`--ns_steps` shrinks the error but does not remove it — the quintic oscillates in a
-band around 1 rather than converging.
+`‖polar‖_F = √min(m,n)` exactly; Newton–Schulz does not, and its error is
+shape-dependent. Measured on `muonserver`:
+
+| dtype | `ns_steps` | gain spread | conv1 | conv2 | fc1 |
+| :--- | ---: | ---: | ---: | ---: | ---: |
+| bfloat16 | **5** (default) | **1.34×** | 0.875 | 0.943 | 0.705 |
+| bfloat16 | 7 | 1.11× | 0.888 | 0.940 | 0.846 |
+| float32 | 5 | 1.35× | 0.873 | 0.945 | 0.700 |
+
+`fc1` (120×4608, 72% of the matrix parameters) realizes only 0.70 of the assumed
+gain. The sign family is flat by construction and sits near 1.08×.
+
+**Keep `--ns_steps 5` for the run.** It is what reference Muon uses and what the
+published numbers used, and the residual 1.34× is under half a learning-rate grid
+step (the lattice is 2–2.5×), so it cannot flip a ranking. `--ns_steps 7` roughly
+halves the excess if you want it tighter; it never reaches 1.0, because the quintic
+oscillates in a band around 1 rather than converging.
 
 ## 6. Multi-seed runs
 

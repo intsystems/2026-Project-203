@@ -1,1 +1,1 @@
-"""Federated experiments: all ten methods as one parameterized driver."""
+"""Federated experiments: all eleven methods as one parameterized driver."""

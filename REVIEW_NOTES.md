@@ -334,3 +334,269 @@ all eight matrix rules. That is what stops the two files from drifting apart aga
   superseded, also had its import repointed to `common.optimizers`.)
 * `scrap/` — no `UDSign` references remained.
 * The paper itself. Every recommendation above is unapplied and reversible.
+
+---
+
+# Federated overhaul — 2026-07-27
+
+Follow-up review, focused on the federated experiments. §4 above said Tables 4–5
+needed re-running for *fairness* reasons; this pass found that the protocol
+itself was the larger problem, and brought it into line with the centralized one.
+
+## 9. The federated learning rates were tuned on the test set
+
+`federated/grid.py` launched each configuration, scanned the training log for the
+accuracy printed at `--eval-round`, and ranked by it. That accuracy was **test**
+accuracy: the federated setting had no validation split at all — `partition_data`
+split the CIFAR test set across clients and that was the only held-out data. With
+ten methods and several rates each, the rates in Table 5 rest on dozens of peeks
+at the test set.
+
+This is squarely at odds with what the paper says two sections earlier about the
+centralized protocol ("Selection uses a fixed 45k/5k train/validation partition
+and validation accuracy alone… **the test set is never consulted during
+tuning**"). A reviewer who reads both sections will notice.
+
+**Fixed.** `federated/data.py` now holds out the same 5000 images the centralized
+path holds out (same `val_seed = 12345`, same permutation), *before* the client
+partition, so no client ever sees one. `--split tune` reports validation accuracy
+and **never loads the test set**; `--split full` partitions all 50k and reports
+test accuracy. `federated/tune.py` replaces `grid.py` with the 1–2–5 lattice,
+equal budget per method, and a boundary check; `grid.py` is now a stub that
+fails with a pointer rather than silently running the old protocol.
+
+## 10. Per-layer learning rates, and why they matter more here
+
+The TODO at the top of `federated/algorithms.py` is done: the driver takes
+`--lr-scaling`, applies `η_layer = η₀·λ(family, shape)` and switches
+`scale_aspect` off inside `muon_lmo`, exactly as the centralized path does. A
+`family` field on `MethodSpec` carries the classification rather than inferring
+it.
+
+Measured on CNN2, at one global rate and `η = 1`, the realized step norms are
+
+| method | conv1 | conv2 | fc1 |
+| :--- | ---: | ---: | ---: |
+| SignMuon / MuonSign / SignSGD, `‖s‖_F/√min(m,n)` | 8.7 | 40.0 | 63.7 |
+| Muon / MuonUSign / EF21-*, same normalization | ~0.5 | ~0.5 | ~0.4 |
+
+so the sign family's steps are 8.7×–63.7× the LMO family's *and* span 7.3×
+among themselves. CNN2's three matrix parameters have `fan_in` 75, 1600, 4608,
+giving the sign multiplier a **7.8× spread** — wider than ResNet-18's, and
+without ResNet-18's problem of one shape holding 63% of the parameters. If the
+centralized `--log-gain` measurement comes out ambiguous, CNN2 is the better
+instrument and this is where to repeat it.
+
+Grid anchors are *transported* rather than re-guessed:
+`anchor(rule) = anchor_legacy · geomean(λ_legacy)/geomean(λ_rule)`, evaluated on
+the model's own shapes. Under `unit-gain` on CNN2 that leaves the LMO family
+untouched and multiplies the sign family by 28.65. `python3 -m federated.tune
+--stage anchors` prints the table.
+
+`--lr-scaling legacy` reproduces the old convention bit for bit
+(`test_federated_legacy_rule_is_the_old_convention` pins it), so nothing
+published is lost.
+
+## 11. Bugs and inconsistencies fixed in this pass
+
+1. **The auxiliary AdamW was weight-decayed federated but not centrally.**
+   `centralized.train.build_optimizers` passes `weight_decay=0.0` for the
+   auxiliary group ("`--weight-decay` describes the matrix parameters only");
+   the federated driver passed the run's `weight_decay`. So the two settings
+   were running different algorithms under one name. Note that
+   `test_the_two_drivers_agree_on_the_weight_decay_convention` did **not** catch
+   this: its "centralized reference" is hand-rolled inside the test and decayed
+   the auxiliary group too, i.e. the test pinned the federated driver to a
+   convention the real centralized path does not use. Both are corrected.
+2. **`weight_decay` defaulted to `5e-4` federated and `0` centrally**, and the
+   paper's protocol paragraph says 0 is the primary setting. Now 0 in both, with
+   `5e-4` as an ablation phase.
+3. **The `adam` baseline used coupled `torch.optim.Adam`** while every other
+   method used decoupled decay, and centrally the same baseline is AdamW. Now
+   AdamW when the convention is decoupled, so the baseline is not handicapped by
+   an Adam-vs-AdamW difference on top of the comparison being made.
+4. **Per-client buffers round-tripped across PCIe every round.**
+   `buffer_device` defaulted to `"cpu"` and `federated/main.py` never overrode
+   it, so each client's momentum and EF21 buffers were copied device→host→device
+   once per round — ~240k transfers over a 2000-round, 10-client run, to save a
+   few tens of MB of VRAM. The default is now the compute device.
+5. **Empty client shards surfaced as `cannot reshape tensor of 0 elements`**
+   from inside the model, several call frames from the cause. Now rejected at
+   partition time with a message that names the clients.
+6. **Dead code in the Dirichlet partition.** The class indices were re-fetched
+   and re-shuffled at the end of every class iteration, doing nothing but
+   advancing the global RNG. The partition also drew from the *global* numpy RNG;
+   it now takes an explicit generator (`--partition-seed`, defaulting to the run
+   seed), so it is reproducible on its own.
+7. **`requirements.txt` was empty**, while `REPRODUCE.md` opened with
+   `pip install -r requirements.txt`.
+8. **Progress lines used `\r` with `end=""`**, so a log had one enormous line and
+   anything reading it incrementally blocked until an evaluation round. Now
+   line-oriented.
+
+## 12. The uplink alphabet is ternary — two wrong claims in the paper
+
+`sign(0) = 0`, so a client transmits a symbol from `{−1, 0, +1}`, not `{−1, +1}`.
+This is not a corner case: `polar(M)` has an exactly-zero column wherever `M`
+does, and `M` does wherever a feature was zero across the whole local batch —
+after ReLU and MaxPool, common. Measured on CNN2 with the real driver, **8–17% of
+transmitted entries are zero every round**.
+
+Two paper claims are affected.
+
+**(a) "1 bit per parameter" / "32× reduction".** At a 10% zero rate the symbol
+entropy is `H(0.45, 0.10, 0.45) ≈ 1.37` bits, so the real reduction is ~23×, not
+32×. The driver now records `uplink_zero_frac` and prints the implied
+bits/parameter in the run summary. `--uplink-zeros {random,positive}` maps the
+zeros to `±1` and makes the channel a genuine one bit; it costs nothing in
+expected descent, because a zero LMO entry carries no directional information.
+The EF21 uplink is deliberately left ternary — `α·sign(Δ)` is zero exactly where
+the estimator is on target, and forcing it off by `α` is the mechanism Theorem 4
+exploits.
+
+**(b) "the aggregate is equal to +1 or −1 in each component"** (main text). False
+as implemented, and — note — *not* rescued by using an odd client count, since a
+zero vote is not `±1`. Measured alignment `A = E[⟨truth, ŝ⟩]/(mn)` over 400k
+coordinates, each client correct with probability 0.65 and silent with
+probability `q`:
+
+| `N` | tie % (`q`=0) | `A` (`q`=0) | tie % (`q`=0.10) | `A` (`q`=0.10) |
+| ---: | ---: | ---: | ---: | ---: |
+| 9 | 0.00 | 0.6573 | 8.38 | 0.6183 |
+| 10 | 15.32 | 0.6558 | 9.23 | 0.6410 |
+| 11 | 0.00 | 0.7029 | 7.22 | 0.6676 |
+| 15 | 0.00 | 0.7747 | 5.54 | 0.7406 |
+
+**Action for the paper:** state the measured zero rate and the implied bit cost,
+and either restrict the `±1` sentence or say that ties abstain.
+
+**The client count is now 11, not 10.** At a strictly `±1` uplink an even count is
+wasted: `N = 10` delivers the same alignment as `N = 9` and differs only in tying
+~15% of coordinates, because an even vote's extra voter is never decisive. At
+CNN2's real zero rate that parity effect washes out and alignment is simply
+monotone in `N` — but 11 still beats 10 (0.668 vs 0.641), so 11 is the default.
+The tie *rule* is irrelevant either way (0.6580 vs 0.6581 at `N = 10`); `zero`
+abstains, `random` restores `‖s‖_F = √(mn)` by adding noise of matching size.
+
+## 13. Table 5 is missing two of the six methods
+
+`tab:fed_master` lists six federated methods and the abstract names MuonSign, but
+Table 5 has SignMuon, MuonUSign (`-`), EF21-MuonUSign and EF21-MuonSign — no
+**MuonSign** row and no **EF21-SignMuon** row. EF21-SignMuon is the method
+Theorem 4 predicts should diverge, so it belongs there as a predicted-failure
+baseline, exactly as it does in the nanoGPT table. All ten are now runnable and
+the overnight driver covers all ten by default.
+
+## 14. Speed
+
+A federated run was documented at 3–6 h. The dominant costs were the default
+`--eval_freq 1` (2000 evaluations of 10k images) and ten `DataLoader`s with
+`num_workers=0` doing PIL decode and augmentation on the main thread.
+
+* `--eval_freq` now defaults to 100, and the tuning driver derives it from the
+  round count so that the tail mean always covers the last quarter of training
+  at any horizon.
+* `--loader gpu` (the default on CUDA) uploads the dataset once as `uint8`
+  (153 MB for CIFAR-10 train) and does the random crop, flip and normalization as
+  tensor ops on the device. The augmentation is torchvision's — zero-padded
+  random 32×32 crop with `padding=4`, then a random horizontal flip — and
+  `test_gpu_crop_and_flip_match_torchvision_distributionally` compares the
+  per-row padding probability against `RandomCrop` itself over 2000 draws rather
+  than just checking shapes. `--loader torch` keeps the old path.
+
+## 16. Federated debug pass — three findings about the *motivation*
+
+A full invariant sweep over the federated path (determinism, split disjointness,
+shard coverage, EF21 bookkeeping, cosine schedule, driver plumbing) came back
+clean. The problems that remain are not bugs in the code; they are places where
+the experiment does not measure what the paper says it measures.
+
+**a. There was only one full-precision Muon, and it is the control for the wrong
+template.** `muon` orthogonalizes on the *worker* and the server averages the polar
+factors. That is the right control for SignMuon and EF21-SignMuon. It is the wrong
+one for MuonUSign, EF21-MuonUSign and EF21-MuonSign, whose uncompressed limit is
+`polar(mean M)` — one LMO on the server. The two are not interchangeable, because
+averaging near-orthogonal matrices shortens the step. Measured on a 120×4608
+matrix, clients sharing a signal plus independent noise of relative size `q`,
+reported as `‖·‖_F/√min(m,n)`:
+
+| `q` | N=1 | N=3 | N=11 | N=21 |
+| ---: | ---: | ---: | ---: | ---: |
+| 0.0 | 0.767 | 0.767 | 0.767 | 0.767 |
+| 0.3 | 0.768 | 0.744 | 0.735 | 0.734 |
+| 1.0 | 0.769 | 0.622 | **0.559** | 0.548 |
+| 3.0 | 0.768 | 0.483 | 0.324 | 0.286 |
+
+`polar(mean)` is flat to 0.3% from N=1 to N=21 at every noise level. So the
+reference loses up to 27% of its step length at N=11 purely to averaging, by an
+amount that drifts over training as the gradient-to-noise ratio changes — a tuned
+`η₀` absorbs a constant handicap, not that one. Comparing the server-LMO family
+against `muon` confounds "what does the 1-bit uplink cost?" with "what does
+averaging orthogonal matrices cost?", and it flatters the compressed methods.
+
+**Fixed**: `muonserver` added (one `MethodSpec` entry), anchored at Muon's rate,
+in the tuner's method list and the overnight sweep. Each family now has the
+uncompressed control from its own template.
+
+**b. The "32× reduction" is an uplink-only figure, and SignMuon's downlink is
+uncompressed.** Computed rather than quoted (`communication_bits`), on CNN2:
+
+| method | uplink | downlink | **round trip** |
+| :--- | ---: | ---: | ---: |
+| SignMuon, MuonUSign, EF21-SignMuon, EF21-MuonUSign | 22× | 1× | **1.9×** |
+| MuonSign, EF21-MuonSign | 22× | 29× | **25×** |
+
+Three corrections: the ternary alphabet (1.37 bits, §12); the auxiliary group,
+never compressed either way, which alone puts a *perfect* 1-bit uplink at 1.087
+bits/parameter model-wide; and, dominating both, the full-precision broadcast.
+
+**This is the argument for the bidirectional methods, not against the paper.** The
+abstract's own framing — "compressing the downlink as well is where the guarantee
+starts to cost something, and we measure what" — is exactly right. What is not
+defensible is the sentence attaching ~32× to SignMuon. **Action:** quote the round
+trip and let EF21-MuonSign carry the communication claim.
+
+**c. The per-layer rule does not equalize the *realized* gain for the LMO family.**
+The unit-gain derivation assumes the oracle returns `‖polar‖_F = √min(m,n)`
+exactly. Newton–Schulz does not, and its error is shape-dependent, so the realized
+gain `γ = ‖λ·s‖_F/√fan_out` — the quantity the rule exists to flatten — is not flat.
+Measured on `muonserver`:
+
+| dtype | `ns_steps` | gain spread | conv1 | conv2 | fc1 |
+| :--- | ---: | ---: | ---: | ---: | ---: |
+| bfloat16 | 5 (default) | **1.34×** | 0.875 | 0.943 | 0.705 |
+| bfloat16 | 7 | 1.11× | 0.888 | 0.940 | 0.846 |
+| bfloat16 | 12 | 1.15× | 0.951 | 0.893 | 0.829 |
+| float32 | 5 | 1.35× | 0.873 | 0.945 | 0.700 |
+| float32 | 12 | 1.28× | 0.947 | 0.893 | 0.742 |
+
+`fc1` (120×4608, aspect 38:1, 72% of the matrix parameters) realizes only 0.70 of
+the assumed gain. The sign family is flat by construction (±1 steps) and sits near
+1.08×. A tuned `η₀` is one constant and cannot absorb a per-layer factor; raising
+`ns_steps` shrinks the error but never removes it, because the quintic oscillates
+in a band around 1 rather than converging.
+
+Left at `ns_steps = 5`: that is what reference Muon uses and what the published
+numbers used, and 1.34× is under half a learning-rate lattice step (2–2.5×), so it
+cannot flip a ranking. But the paper should say that the rule equalizes the
+*intended* step exactly and the *realized* step to ~1.3× for the LMO family, the
+gap being the oracle's rather than the rule's.
+
+**Now measured, not assumed**: the per-layer profile is printed at round 1,
+`gain_spread` is recorded at every evaluation, and the driver warns above 1.15×.
+The honest reading is that unit-gain equalizes the *intended* step exactly (that is
+`test_unit_gain_equalizes_the_per_step_gain_exactly`) and the *realized* step to
+within ~25% for the LMO family, limited by the oracle rather than by the rule.
+
+## 15. Still open (paper text, not code)
+
+Unchanged from §6 above and re-confirmed against the current `.tex`:
+
+* **line 458**, `s_t^(j) = sign(A(M_t^(j)))`: `A` is the *argmin*, so this
+  ascends. Should be `sign(-A(·))` or `sign(D_t^(j))`. Equation (13) and both
+  algorithm boxes are correct.
+* **line 474** still reads `"... effectively address: the baseline majority-vote
+  scheme and the error-feedback variant -- effectively address ..."`.
+* six `Appendix\ref{...}` without a space (lines 469, 474, …) render as
+  "AppendixA"; Table 5's MuonUSign row still reads `-%`.
+* Algorithm 1 still omits Muon's `√max(1,m/n)` factor, which the code applies.
