@@ -193,7 +193,7 @@
 \maketitle
 
 \begin{abstract}\label{sec:abs}
-SignMuon (sign compression of the Muon update to one bit per parameter) is the most straightforward adaptation of Muon for training deep neural networks under an extremely low communication budget. Although SignMuon significantly outperforms SignSGD in practice, it may diverge even on a linear function. It is natural to conjecture that the order of operations is to blame, and that placing the sign before rather than after the Linear Minimization Oracle (LMO) might fix this issue. We show that the resulting algorithm, which we call MuonSign, still diverges even on a linear function. Thus, neither naive placement of the sign around the LMO yields a convergent algorithm. At the same time, EF21 does fix MuonSign: EF21-MuonSign provably achieves the standard $\mathcal{O}(T^{-1/2})$ rate for smooth nonconvex optimization, decisively outperforms SignSGD, and matches SignMuon when training various deep learning models -- on image classification, in federated settings, and on language modelling -- providing a reliable drop-in replacement for SignSGD. Compressing the downlink as well is where the guarantee starts to cost something, and we measure what.
+SignMuon (sign compression of the Muon update to one bit per parameter) is the most straightforward adaptation of Muon for training deep neural networks under an extremely low communication budget. Although SignMuon significantly outperforms SignSGD in practice, it may diverge even on a linear function. It is natural to conjecture that the order of operations is to blame, and that placing the sign before rather than after the Linear Minimization Oracle (LMO) might fix this issue. We show that the resulting algorithm, which we call MuonUSign, still diverges even on a linear function, and so does MuonSign, which signs both sides. Thus no naive placement of the sign around the LMO yields a convergent algorithm. At the same time, EF21 does fix MuonUSign: EF21-MuonUSign provably achieves the standard $\mathcal{O}(T^{-1/2})$ rate for smooth nonconvex optimization, decisively outperforms SignSGD, and matches SignMuon on image classification and in federated settings, at a small and measured cost on language modelling -- providing a reliable drop-in replacement for SignSGD. Compressing the downlink as well is where the guarantee starts to cost something, and we measure what.
 \end{abstract}
 
 
@@ -212,21 +212,24 @@ Recently, Muon has demonstrated that orthonormalized updates can stabilize DNN t
 % an optimization algorithm that applies sign compression to the Linear Minimization Oracle (LMO) update of Muon. SignSGD transmits the sign of the coordinates of the stochastic gradient direction. Our algorithm first computes an update direction using LMO, and then transmits only the sign of this direction. This approach allows for the matrix structure of the parameters to be accounted for and preserves the advantages of Muon, while reducing the amount of transmitted information to one bit per coordinate. Consequently, SignMuon combines the fast convergence of structured optimizers with the communication efficiency of sign-based approaches.
 We study the natural ways to combine sign compression with the Muon LMO while communicating only one bit per parameter: \textbf{SignMuon}, which places the sign operator \emph{after} the LMO and computes $\operatorname{sign}(\operatorname{LMO}(\cdot))$; \textbf{MuonUSign}, which places it \emph{before} and computes $\operatorname{LMO}(\operatorname{sign}(\cdot))$; and \textbf{MuonSign}, which signs on \emph{both} sides, $\operatorname{sign}(\operatorname{LMO}(\operatorname{sign}(\cdot)))$, compressing the uplink and the downlink alike. All three preserve the matrix-aware geometry of Muon and, empirically, match Muon's accuracy while significantly outperforming SignSGD in centralized and federated learning.
 
-However, none of these combinations enjoys a global convergence guarantee. We prove that all three can diverge: SignMuon on a $4\times4$ counterexample (Theorem~\ref{th:1}), and MuonUSign and MuonSign on a single common $5\times5$ counterexample (Theorems~\ref{th:2}--\ref{th:3}); in each case the 1-bit step becomes an ascent direction on a linear objective. To restore convergence without increasing the communication volume, we introduce \textbf{EF21-MuonUSign}, an Error-Feedback variant adapted from EF21-Muon~\citet{gruntkowska2025error}: the scaled-sign operator compresses only the residual between the momentum and a gradient estimator, while the descent step uses the full Muon LMO of the reconstructed estimator on the server. We further introduce \textbf{EF21-MuonSign}, which adds a second error-feedback loop on the downlink to compress both channels to one bit per parameter. Both converge on the counterexamples above while retaining one-bit communication.
+However, none of these combinations enjoys a global convergence guarantee. We prove that all three can diverge: SignMuon on a $4\times4$ counterexample (Theorem~\ref{th:1}), and MuonUSign and MuonSign on a single common $5\times5$ counterexample (Theorems~\ref{th:2}--\ref{th:3}); in each case the 1-bit step becomes an ascent direction on a linear objective. To restore convergence without increasing the communication volume, we introduce \textbf{EF21-MuonUSign}, an Error-Feedback variant adapted from EF21-Muon~\citep{gruntkowska2025error}: the scaled-sign operator compresses only the residual between the momentum and a gradient estimator, while the descent step uses the full Muon LMO of the reconstructed estimator on the server. We further introduce \textbf{EF21-MuonSign}, which adds a second error-feedback loop on the downlink to compress both channels to one bit per parameter. Both converge on the counterexamples above while retaining one-bit communication.
 
 % The effectiveness of the proposed optimizer is evaluated on synthetic and practical tasks: centralized image classification on CIFAR-10 with a ResNet-18 backbone, federated image classification on CIFAR-10 with a CNN across several client counts, and on a synthetic smooth convex least-squares problem.
 Our experiments investigate how effectively Muon-style structured update directions can be combined with the extreme communication compression characteristic of sign-based methods. Specifically, we analyze how transmitting only the update direction signal affects the accuracy and stability of training compared to using the full Muon update. We validate SignMuon and the Error-Feedback variants on centralized image classification on CIFAR-10 with a ResNet-18 backbone, federated image classification on CIFAR-10 with a CNN across several client counts, and on a synthetic smooth convex least-squares problem. Our contributions are:
 \\(i)~SignMuon, MuonUSign, and MuonSign, matrix-aware 1-bit optimizers that place the sign operator after, before, and on both sides of the LMO, respectively;
 \\(ii)~counterexamples (Theorems~\ref{th:1}--\ref{th:3}) proving that all three may diverge;
-\\(iii)~EF21-MuonUSign, which compresses the uplink to one bit per parameter while restoring convergence guarantees;
-\\(iv)~EF21-MuonSign, a bidirectional variant that adds a downlink error-feedback loop, keeping both channels at one bit per parameter.
+\\(iii)~a universal divergence theorem for EF21-SignMuon (Theorem~\ref{th:ef_div}), showing that error feedback applied to the LMO \emph{output} does not repair it for any $(L,\eta,\mu)$;
+\\(iv)~EF21-MuonUSign, which compresses the uplink to one bit per parameter while restoring convergence guarantees;
+\\(v)~EF21-MuonSign, a bidirectional variant that adds a downlink error-feedback loop, keeping both channels at one bit per parameter.
 
 % Experimental results show that applying sign compression to Muon directions reduces communication overhead (by $32\times$) while maintaining optimization rates. In the centralized setting, SignMuon consistently outperforms the baseline SignSGD method in both convergence speed and final accuracy. At the same time, the accuracy of the proposed 1-bit method is only $1-1.5\%$ lower than that of the Muon optimizer, while significantly outperforming basic signed algorithms. In federated setting, integrating SignMuon with client momentum and Majority Vote aggregation method provides stable convergence and robustness to anomalous client updates even under severe communication constraints. Furthermore, we present an analytical example that formalizes the limitations of applying sign compression to LMO-based updates in the deterministic setting and for smooth convex optimization problems. The results of our experiments demonstrate that the proposed algorithm successfully combines LMO-based methods with sign compression without any significant loss in training accuracy.
 
 \section{Related Work}\label{sec:relWork}
 \paragraph{SignSGD.} Vanilla SignSGD, introduced by \citet{bernstein2018signsgd} and later applied to federated learning by \citet{bernstein2019signsgdmajority}, required increasing batch sizes to guarantee convergence. This issue, together with SignSGD's inherent bias, was addressed through the adoption of the Error Feedback technique \citep{karimireddy2019efsign}. An alternative approach is to randomize the sign operator itself \citep{chen2020median,safaryan2021ssdm,jin2024stosign}.
 
-\paragraph{Compression for Muon.} \citet{gruntkowska2025error} developed a theoretical framework for federated learning with error feedback in which Muon/Gluon \citep{riabinin2025gluon} updates are compressed bidirectionally (client-to-server and server-to-client). \citet{qian2026communicationefficientgluon} employed variance reduction to lower the compression error for Gluon under unbiased and contractive compressors. Concurrently with our work, \citet{mishra2026signmuon} proposed vanilla SignMuon and demonstrated its empirical feasibility, and stated an $\mathcal{O}(1/\sqrt{T})$ convergence guarantee for it; in Appendix~\ref{app:mishra} we show that their finalized rate in fact covers only the gradient-sign (signSGD) instantiation, while the bound for the actual polar-sign method is left uninformative on exactly the instances of Theorem~\ref{th:1}.
+\paragraph{Compression for Muon.} \citet{gruntkowska2025error} developed a theoretical framework for federated learning with error feedback in which Muon/Gluon \citep{riabinin2025gluon} updates are compressed bidirectionally (client-to-server and server-to-client). \citet{qian2026communicationefficientgluon} employed variance reduction to lower the compression error for Gluon under unbiased and contractive compressors. Concurrently with our work, \citet{mishra2026signmuon} proposed vanilla SignMuon and demonstrated its empirical feasibility, and stated an $\mathcal{O}(1/\sqrt{T})$ convergence guarantee for it; in Appendix~\ref{app:mishra} we show that their finalized rate in fact covers only the gradient-sign (signSGD) instantiation, while the bound for the actual polar-sign method is left uninformative on exactly the instances of Theorem~\ref{th:1}. \citet{bolatov2026lionmuon} combine the two geometries differently again, \emph{alternating} spectral (Muon) and sign (Lion-type) descent steps rather than composing the sign operator with the LMO; the method they call SignMuon is thus not the one studied here, and our counterexamples do not bear on it.
+
+\paragraph{Changing the norm instead of compressing the oracle.} \citet{kravatskiy2026kyfannorms} attack the same pairing from the opposite side. Taking the norms dual to the Ky Fan $k$-norms, they obtain the \emph{Fanion} family, whose updates $\sum_{i\le k}\mathbf{u}_i\mathbf{v}_i^\top$ interpolate between the rank-one step of the nuclear norm and Muon's full-rank $\mathbf{U}\mathbf{V}^\top$ at $k=\min(m,n)$. They then show that a conic combination of LMOs is again an LMO --- for the norm dual to the corresponding combination of dual norms --- and use this to define \textbf{S-Muon}, whose step is the conic combination $\alpha\,\mathbf{U}\mathbf{V}^\top+(1-\alpha)\eta\operatorname{sign}(\mathbf{M}_t)$. This is the sharpest available contrast with the present paper. S-Muon and our three placements both marry the sign and spectral geometries, but S-Muon mixes them \emph{inside} the oracle and therefore remains an LMO method for an explicit norm, inheriting the whole LMO convergence theory; SignMuon, MuonUSign and MuonSign compose the sign \emph{around} the oracle, which is an LMO for no norm at all --- and Theorems~\ref{th:1}--\ref{th:3} show what that costs. The two constructions are complementary rather than competing: S-Muon changes the geometry at full precision, whereas we keep Muon's geometry and pay one bit per parameter on the wire. A caution from the same work applies to us directly: they exhibit an LMO method (rank-one Neon) that is markedly worse than Muon in practice despite sharing its convergence asymptotics in the bounds of \citet{kovalev2025understanding} and \citet{riabinin2025gluon}, from which our own guarantee descends. A rate of the form $\mathcal{O}(T^{-1/2})$ is thus a licence to run a method, not a prediction of where it will land.
 
 \section{Problem Statement}\label{sec:proState}
 
@@ -261,7 +264,7 @@ A(\mathbf{X})=\arg\min_{\mathbf{Y} \in \{ \mathbf{Y} \in \mathcal{S} | \|\mathbf
 \end{equation}
 where $\mathbf{X}\in\mathbb{R}^{m\times n}$ is the input matrix, $\mathcal{S}\subset\mathbb{R}^{m\times n}$  is a convex set, and $\langle \mathbf{X},\mathbf{Y}\rangle=\sum_{i,j}{X}_{ij}{Y}_{ij}$ is the standard matrix inner product \cite{pethick2025training}. 
 
-Such an operator selects the direction of steepest descent with respect to the specified norm. The analytical and practical role of the LMO is discussed in detail in the literature on norm-constrained LMO optimizers \cite{pethick2025training, kovalev2025understanding, riabinin2025gluon}.
+Such an operator selects the direction of steepest descent with respect to the specified norm. The analytical and practical role of the LMO is discussed in detail in the literature on norm-constrained LMO optimizers \cite{pethick2025training, kovalev2025understanding, riabinin2025gluon, bernstein2024old, bernstein2025deriving}, and the catalogue of usable geometries keeps growing \citep{cesista2025schattenp, kravatskiy2026kyfannorms}.
 
 \textbf{Muon optimizer} uses the matrix structure of the gradient. Muon implements a steepest descent step in the spectral norm, where the update direction is obtained by orthogonalizing the gradient matrix  \cite{bernstein2024old}. Let $\mathbf{M}=\mathbf{U}\boldsymbol{\Sigma}\mathbf{V}^\top$ be the singular value decomposition (SVD) of the matrix $\mathbf{M}\in\mathbb{R}^{m\times n}$, where $\mathbf{U}\in\mathbb{R}^{m\times r}$ and  $\mathbf{V}\in\mathbb{R}^{n\times r}$ are the orthonormal matrices of singular vectors, $\boldsymbol{\Sigma}\in\mathbb{R}^{r\times r}$ is the diagonal matrix of singular values, and $r=\mathrm{rank}(\mathbf{M})$. Then, the LMO direction takes the following form:
 \begin{equation}
@@ -288,7 +291,7 @@ Despite its advantages, Muon requires transmitting the full update matrix $\math
 \min_{0 \le t \le T}\mathbb{E}\bigl[\|\nabla f(\mathbf{X}_t)\|_*^2\bigr]
 = \mathcal{O}(T^{-1/2}),
 \end{equation}
-as well as an $\mathcal{O}(T^{-1/4})$ rate for $\min_t \mathbb{E}\|\nabla f(\mathbf{X}_t)\|_*$ under the weaker layer-wise $(L^0,L^1)$-smoothness with a plain constant learning rate (Corollary~\ref{cor:l0l1}). Finally, EF21-MuonSign adds a second error-feedback loop on the downlink, making communication 1-bit in \emph{both} directions. The $\mathcal{O}(T^{-1/2})$ rate survives, but not for free: a sign-based downlink is contractive only in the Euclidean norm, whereas Muon's spectral geometry asks for contractivity in the layer norm, so the admissible step size shrinks by a further factor of the layer rank. We show that this gap cannot be closed for the scaled sign by any sharper analysis -- only by changing the compressor (Remark~\ref{rem:normmismatch}) -- and we measure what it costs on a transformer (Section~\ref{sec:exp_nanogpt}).
+as well as an $\mathcal{O}(T^{-1/4})$ rate for $\min_t \mathbb{E}\|\nabla f(\mathbf{X}_t)\|_*$ under the weaker layer-wise $(L^0,L^1)$-smoothness with a plain constant learning rate (Corollary~\ref{cor:l0l1}). Finally, EF21-MuonSign adds a second error-feedback loop on the downlink, making communication 1-bit in \emph{both} directions. The $\mathcal{O}(T^{-1/2})$ rate survives, but not for free: a sign-based downlink is contractive only in the Euclidean norm, whereas Muon's spectral geometry asks for contractivity in the layer norm, so the admissible step size shrinks by a further $\sqrt{r}$ in the layer rank. We show that this gap cannot be closed for the scaled sign by any sharper analysis -- it is contractive in the spectral norm for \emph{no} parameter at all, so only changing the compressor helps (Remark~\ref{rem:normmismatch}) -- and we measure what it costs on a transformer (Section~\ref{sec:exp_nanogpt}).
 
 
 \section{Theory}\label{sec:theory}
@@ -434,7 +437,7 @@ and takes the descent step
 As $\mathbf{g}_t^{\mathrm{est}}\to\mathbf{M}_t$, the direction
 $\mathbf{D}_t \to \mathbf{U}_t\mathbf{V}_t^\top$ is always a descent direction,
 since $\langle\nabla f,\,\mathbf{U}_t\mathbf{V}_t^\top\rangle \approx \|\nabla f\|_* > 0$.
-The sign in~\eqref{eq:ef21_central} acts only on the internal compression residual, keeping the uplink at one bit per parameter. The Algorithm~\ref{central_alg_ef} is given in Appendix\ref{app:alg}. Figure~\ref{fig:divergence_plot} confirms that EF21-MuonUSign converges on the same counterexample where SignMuon diverges.
+The sign in~\eqref{eq:ef21_central} acts only on the internal compression residual, keeping the uplink at one bit per parameter. The Algorithm~\ref{central_alg_ef} is given in Appendix~\ref{app:alg}. Figure~\ref{fig:divergence_plot} confirms that EF21-MuonUSign converges on the same counterexample where SignMuon diverges.
 
 While USign leaves the downlink uncompressed, a fully 1-bit scheme is obtained by compressing both channels. We define the \textbf{UDSign} compressor as the directional pair $\mathrm{UDSign}:=(\mathcal{C}_{\uparrow},\,\mathcal{C}_{\downarrow})$ with the same scaled-sign operator on both channels, $\mathcal{C}_{\uparrow}(\mathbf{Y})=\mathcal{C}_{\downarrow}(\mathbf{Y})=\operatorname{mean}|\mathbf{Y}|\,\operatorname{sign}(\mathbf{Y})$. In this version of Error Feedback Algorithm the node keeps the exact model $\mathbf{X}_t$ and takes the exact LMO step, while it observes only a compressed model shift  $\mathbf{W}_t$ reconstructed by error feedback,
 \begin{multline}
@@ -454,9 +457,9 @@ $$
 \mathbf{G}_t^{(j)}\gets\frac{1}{n_{\text{steps}}}\sum_{i=1}^{n_{\text{steps}}}\nabla f_j(\mathbf{X}_t;\xi_{t,i}^{(j)}).
 $$
 In accordance with the general SignA framework (\ref{eq:signa_general}), each client maintains its own local momentum buffer $\mathbf{M}_t^{(j)}$. After computing the accumulated gradient, the client updates the momentum estimate, applies the LMO (implemented via Newton-Schulz orthogonalization, Algorithm~\ref{alg:muon_lmo}), and then performs element-wise sign compression:
-$$ \mathbf{M}_t^{(j)} = \mu \mathbf{M}_{t-1}^{(j)} + \mathbf{G}_t^{(j)} $$
+$$ \mathbf{M}_t^{(j)} = \mu \mathbf{M}_{t-1}^{(j)} + (1-\mu)\,\mathbf{G}_t^{(j)} $$
 $$ \mathbf{s}_t^{(j)} = \operatorname{sign}\bigl(A(\mathbf{M}_t^{(j)})\bigr) \in \{\pm 1\}^{m \times n} $$
-where $t\in[0, \mathrm{rounds}-1]$, $A(\cdot)$ is the Muon LMO (Newton-Schulz, as in the centralized setting). Thus, each client transmits only 1 bit per matrix parameter component to the server.
+where $t\in[0, \mathrm{rounds}-1]$ and $A(\cdot)$ is the Muon LMO (Newton-Schulz, as in the centralized setting). We write the momentum in exponential-moving-average form here, matching Algorithms~\ref{alg:fed_workerlmo}--\ref{alg:fed_serverlmo} and the framework of Appendix~\ref{app:hyp}; it differs from the heavy-ball form of \eqref{eq:signa_general} by the positive factor $1/(1-\mu)$, which $\operatorname{sign}(\cdot)$ and the LMO absorb. Thus, each client transmits only 1 bit per matrix parameter component to the server.
 
 On the server, messages received from the clients are aggregated using a majority vote. The aggregated sign is denoted by $\mathbf{s}_t^{\mathrm{agg}}$, then it is given by the formula:
 \begin{equation}
@@ -466,19 +469,19 @@ The majority-vote operation ensures that the resulting sign $\mathbf{s}_t^{\math
 \[
 \mathbf{X}_{t+1} = \mathbf{X}_t - \eta_t \mathbf{s}_t^{\mathrm{agg}}.
 \]
-A special treatment is applied to the final classification layer of the model. These parameters are not updated using the SignMuon rule; instead, they are optimized using AdamW. The complete federated SignMuon procedure is presented in Appendix\ref{app:alg}.
+A special treatment is applied to the final classification layer of the model. These parameters are not updated using the SignMuon rule; instead, they are optimized using AdamW. The complete federated SignMuon procedure is presented in Appendix~\ref{app:alg}.
 
 \subsection{Federated Learning with Error Feedback}
 Although Federated SignMuon demonstrates strong empirical stability, sign-based compression inevitably introduces bias into the descent direction. To compensate for quantization error and ensure strong convergence guarantees, we incorporate an Error Feedback method. In the federated setting, the Error-Feedback mechanism is adapted from EF21-Muon~\cite{gruntkowska2025error}. 
 
-The LMO orthogonalization is moved from the clients to the server: each client evaluates the difference between its local momentum $\mathbf{M}_t^{(j)}$ and the previous gradient estimate $\mathbf{g}_t^{(j)}$, compresses it via scaled sign, and sends only $(\mathbf{s}_t^{(j)}, \alpha_t^{(j)})$. The server aggregates these, updates a global gradient estimator $\mathbf{G}_{t+1}$, and applies the Muon LMO. The complete Algorithm~\ref{alg:fed_serverlmo} is in Appendix\ref{app:alg}. The transmission of an additional scalar $\alpha_t^{(j)}$ for each layer introduces insignificant communication overhead, keeping the uplink communication cost at $\approx 1$ bit per parameter (the server broadcasts the full model on the downlink). Thus, all federated variants -- SignMuon, EF21-MuonUSign and EF21-MuonSign -- effectively address: the baseline majority-vote scheme and the error-feedback variant -- effectively address the communication bottleneck in federated learning. They preserve the geometric benefits of Muon-style matrix orthogonalization while maintaining an extremely low communication budget.
+The LMO orthogonalization is moved from the clients to the server: each client evaluates the difference between its local momentum $\mathbf{M}_t^{(j)}$ and the previous gradient estimate $\mathbf{g}_t^{(j)}$, compresses it via scaled sign, and sends only $(\mathbf{s}_t^{(j)}, \alpha_t^{(j)})$. The server aggregates these, updates a global gradient estimator $\mathbf{G}_{t+1}$, and applies the Muon LMO. The complete Algorithm~\ref{alg:fed_serverlmo} is in Appendix~\ref{app:alg}. The transmission of an additional scalar $\alpha_t^{(j)}$ for each layer introduces insignificant communication overhead, keeping the uplink communication cost at $\approx 1$ bit per parameter (the server broadcasts the full model on the downlink). Thus all federated variants -- the baseline majority-vote SignMuon and the error-feedback EF21-MuonUSign and EF21-MuonSign -- address the communication bottleneck in federated learning: they preserve the geometric benefits of Muon-style matrix orthogonalization while maintaining an extremely low communication budget.
 
 
 \section{Experiments}\label{sec:exp}
 The goal of these experiments is empirical validation of the SignMuon, EF21-MuonUSign and EF21-MuonSign algorithms. The study consists of several parts, including evaluation in both centralized and federated settings, as well as validation on a synthetic least-squares optimization problem.
 
 \subsection{Smooth Convex Optimization Problem}
-Before the network experiments we verify on a deterministic $L$-smooth convex quadratic that sign compression of an \textsc{lmo} step preserves the structural advantage: SignMuon reaches the target in $2104$ iterations against SignSGD's $3120$, at an identical one-bit budget, while the error-feedback variants pay the overhead their guarantee costs on a problem benign enough not to need it. The construction, the grid search and the trajectories are deferred to Appendix~\ref{app:images_task}.
+Before the network experiments we measure, on a deterministic $L$-smooth convex quadratic, the scalar every guarantee in this paper rests on: the alignment $\rho_t = \langle \nabla F(\mathbf{X}_t), \mathbf{D}_t\rangle / (\|\nabla F(\mathbf{X}_t)\|_F\|\mathbf{D}_t\|_F)$ between the gradient and the step taken. Theorems~\ref{th:1}--\ref{th:3} construct instances that drive it negative; on random instances it stays positive throughout \textbf{[fill]}, so the failure they exhibit is not one random data produces. The same experiment shows what sign compression of an \textsc{lmo} step actually buys: a lower accuracy floor rather than a faster rate \textbf{[fill]} --- at a matched step size SignSGD descends faster, but its floor is the higher of the two, and it is the floor that a fixed-target iteration count ranks. Appendix~\ref{app:images_task} has the construction, the protocol and the measurements; Appendix~\ref{app:synthetic_v1} retains the earlier fixed-target comparison.
 
 \subsection{Centralized Learning}
 \begin{figure*}[!t]
@@ -509,11 +512,11 @@ The base model is a ResNet-18 architecture adapted to low-resolution images by u
 
 \paragraph{Step-size schedules.} Each experiment inherits the schedule conventional to its domain, and none of them is the constant rate our rates are proved for. The ResNet runs anneal cosinally to zero, the standard for this architecture and the premise of every accuracy we can be compared against; the nanoGPT runs keep record \#40's stable-then-decay schedule, flat for the first $55\%$ of steps and linear to $0.1\eta_0$ thereafter, because altering it would forfeit the reproduction that validates our port (Section~\ref{sec:exp_nanogpt}). The discrepancy is deliberate: matching the analysed step size would cost comparability on both benchmarks and close only one of several gaps between the theory and the runs, the others being Newton--Schulz in place of an exact oracle, momentum, and normalization layers. One measurement is exempt. A decaying rate makes the accumulated update saturate, so the growth exponent of Appendix~\ref{app:lrscale} would report the schedule instead of the alignment; that diagnostic alone is run at a constant rate.
 
-\paragraph{Protocol.} Every method is tuned and reported under one per-layer rule, the unit-gain rule of Appendix~\ref{app:lrscale}, so that $\eta_0$ means the same thing --- the per-step RMS gain --- for all eleven and no comparison is confounded by the scaling convention. The only tuned hyperparameter is $\eta_0$. Momentum is fixed at $0.9$ and weight decay at $0$ for the primary table: that is the setting our theorems analyse, the one the reference nanoGPT configuration uses, and the one \citet{mishra2026signmuon}'s own sweep selects; the regularized case is an ablation (Appendix~\ref{app:images_cen}). The auxiliary group --- embeddings, normalization parameters, the classifier head --- is AdamW at a fixed $10^{-3}$ for every method, so the matrix rule is the only thing that varies.
+\paragraph{Protocol.} Every method is tuned and reported under one per-layer rule, the unit-gain rule of Appendix~\ref{app:lrscale}, so that $\eta_0$ means the same thing --- the per-step RMS gain --- for every method and no comparison is confounded by the scaling convention. The only tuned hyperparameter is $\eta_0$. Momentum is fixed at $0.9$ and weight decay at $0$ for the primary table, the setting \citet{mishra2026signmuon}'s own sweep selects; the regularized case is an ablation (Appendix~\ref{app:images_cen}). The auxiliary group --- embeddings, normalization parameters, the classifier head --- is AdamW at a fixed $10^{-3}$ for every method, so the matrix rule is the only thing that varies.
 
 Selection uses a fixed $45$k/$5$k train/validation partition and validation accuracy alone, averaged over the last five epochs rather than read off a single one; \textbf{the test set is never consulted during tuning}. Each method receives the same number of configurations, drawn from a $1$--$2$--$5$ lattice (three points per decade), so that tuned rates are exactly reproducible from the tables and every method searches the same grid. An optimum landing on an endpoint is treated as a failure rather than a result: the grid is widened along the lattice and the method re-run, up to four times. The selected $\eta_0$ is then retrained on the full $50$k training set for $75$ epochs under a cosine schedule, at three seeds, and we report the mean and standard deviation of the test accuracy over the last five epochs. Differences smaller than the seed spread are not claimed as results.
 
-Alongside final accuracy we report the number of epochs to reach a fixed test accuracy. The two measure different things: with eleven methods within roughly a point of one another at $75$ epochs, final accuracy is close to the noise floor, whereas a threshold crossing on a monotonically rising curve separates the methods by factors rather than by tenths of a point, and is the analogue of the ``steps to $3.35$'' column of Table~\ref{tab:nanogpt}.
+Alongside final accuracy we report the number of epochs to reach a fixed test accuracy. The two measure different things: with every method except SignSGD landing within about a point of the others at $75$ epochs (Table~\ref{tab:cifar_central}), final accuracy is close to the noise floor, whereas a threshold crossing on a monotonically rising curve separates the methods by factors rather than by tenths of a point, and is the analogue of the ``steps to $3.35$'' column of Table~\ref{tab:nanogpt}.
 
 Results and selected hyperparameters are in Appendix Table~\ref{tab:cifar_central}; the loss and accuracy dynamics are in Figure~\ref{fig:cifar_results}.
 
@@ -555,9 +558,9 @@ For these experiments, we implemented a federated architecture with a central ag
 
 For a systematic analysis, we compare the proposed methods against classical baselines at two federation scales. At each scale we evaluate the proposed SignMuon and the Error-Feedback variants EF21-MuonUSign and EF21-MuonSign (Algorithms~\ref{alg:fed_workerlmo} and~\ref{alg:fed_serverlmo}) against the Muon, SignSGD, SGD, and Adam baselines.
 
-\textbf{Experiment~1: Comparison of the algorithms with $N=3$ clients.} We compare the optimizers with 3 clients, 2000 rounds, and 1 local step, a regime of limited federation resources. The results are reported in Appendix\ref{app:results_fed:2}.
+\textbf{Experiment~1: Comparison of the algorithms with $N=3$ clients.} We compare the optimizers with 3 clients, 2000 rounds, and 1 local step, a regime of limited federation resources. The results are reported in Appendix~\ref{app:results_fed:2}.
 
-\textbf{Experiment~2: Comparison of the algorithms with $N=10$ clients.} The potential of sign-based optimization is most fully revealed when the scale of the network and the amount of local computation increase, so at the final stage we increase the number of clients to 10 and use 3 local steps per client. In this regime SignMuon reaches the quality of Muon: with a sufficient number of clients ($N \ge 10$), SignMuon achieves a quality comparable to Muon while reducing the volume of transmitted data by a factor of ${\sim}32\times$, by transmitting only the signs of the gradients instead of their full values. The results are reported in Table~\ref{tab:exp_3} and Figure~\ref{fig:exp_3}. EF21-MuonUSign ($84.59\%$) performs on par with SignMuon ($84.57\%$), and the bidirectional EF21-MuonSign ($84.87\%$) matches them as well; at this scale the convergence guarantees cost no accuracy. All methods are evaluated, here and throughout, on the exact server model $\mathbf{X}_t$ -- the iterate Corollary~\ref{cor:smooth} bounds -- which for EF21-MuonSign is not the model the clients hold. The two coincide on ResNet-18 layer shapes but need not in general, since the downlink contraction degrades with the layer rank (Remark~\ref{rem:dimension}); the next section measures that on much wider matrices.
+\textbf{Experiment~2: Comparison of the algorithms with $N=10$ clients.} The potential of sign-based optimization is most fully revealed when the scale of the network and the amount of local computation increase, so at the final stage we increase the number of clients to 10 and use 3 local steps per client. In this regime SignMuon reaches the quality of Muon: with a sufficient number of clients ($N \ge 10$), SignMuon achieves a quality comparable to Muon while reducing the volume of transmitted data by a factor of ${\sim}32\times$, by transmitting only the signs of the gradients instead of their full values. The results are reported in Table~\ref{tab:exp_3} and Figure~\ref{fig:exp_3}. EF21-MuonUSign ($84.59\%$) performs on par with SignMuon ($84.57\%$), and the bidirectional EF21-MuonSign ($84.87\%$) matches them as well; at this scale the convergence guarantees cost no accuracy. All methods are evaluated, here and throughout, on the exact server model $\mathbf{X}_t$ -- the iterate Corollary~\ref{cor:smooth} bounds -- which for EF21-MuonSign is not the model the clients hold. The two coincide on the CNN2 layer shapes used here but need not in general, since the downlink contraction degrades with the layer rank (Remark~\ref{rem:dimension}); the next section measures that on much wider matrices.
 
 \subsection{Language Modelling}\label{sec:exp_nanogpt}
 
@@ -595,7 +598,7 @@ We test the methods where the matrices are large enough for the layer-rank depen
 
 Three things follow (Table~\ref{tab:nanogpt}, Figure~\ref{fig:nanogpt}). First, the matrix-aware 1-bit methods transfer to language modelling: all of them beat SignSGD by $0.08$--$0.12$ nats, and the best of them sit within $0.01$ of full-precision Muon, at equal wall-clock. Second, error feedback is cheap but not free. Its clean cost is the matched pair MuonUSign\,$\to$\,EF21-MuonUSign, $+0.024$ nats or ${\sim}8\%$ more steps -- the price of steering the LMO with an estimator that lags its target. EF21-SignMuon, whose target $\operatorname{polar}(\tilde{\mathbf{M}}_t)$ is orthogonal and hence isotropic, pays almost nothing and is the strongest compressed method here, notwithstanding Theorem~\ref{th:ef_div}: divergence there is a property of a constructed instance, not of transformer training.
 
-Third, the bidirectional method separates into two models. Its broadcast iterate $\mathbf{W}$ -- the one every gradient is evaluated at -- is indistinguishable from EF21-MuonUSign ($3.3213$ vs $3.3203$), so the compressed \emph{downlink} costs nothing where training happens. Its exact server iterate $\mathbf{X}$, which is what Corollary~\ref{cor:smooth} bounds, reaches only $5.52$ and rises monotonically after step~$750$. The diagnostic (Figure~\ref{fig:nanogpt_diag}) localizes this to one layer type: on the zero-initialized $\mathtt{c\_proj}$ the scaled sign achieves $\alpha(\boldsymbol{\Delta}^{\downarrow}) = 1.2\times10^{-4}$ instead of the $\Theta(10^{-1})$ it achieves everywhere else, and the gap $\|\mathbf{X}_t-\mathbf{W}_t\|_F/\|\mathbf{W}_t\|_F$ stalls at $8\%$ against ${<}1\%$ for every other layer. This is the mechanism of Remark~\ref{rem:dimension} rather than a tuning failure: a layer built from zero receives maximally correlated updates, its downlink residual concentrates, and a compressor that moves every coordinate by $\operatorname{mean}|\boldsymbol{\Delta}^{\downarrow}|$ cannot catch the coordinates that are driven hardest. Lowering $\eta_0$ does not repair it, because the admissible step size would have to shrink by the layer rank (Remark~\ref{rem:normmismatch}); a downlink compressor contractive in the \emph{spectral} norm would.
+Third, the bidirectional method separates into two models. Its broadcast iterate $\mathbf{W}$ -- the one every gradient is evaluated at -- is indistinguishable from EF21-MuonUSign ($3.3213$ vs $3.3203$), so the compressed \emph{downlink} costs nothing where training happens. Its exact server iterate $\mathbf{X}$, which is what Corollary~\ref{cor:smooth} bounds, sits at $4.20$ through step~$750$, rises to $5.52$ by step~$1500$ and then holds there ($5.51$--$5.58$ to the end): a persistent offset of ${\approx}2.2$ nats, not a divergence. The diagnostic (Figure~\ref{fig:nanogpt_diag}) localizes this to one layer type: on the zero-initialized $\mathtt{c\_proj}$ the scaled sign achieves $\alpha(\boldsymbol{\Delta}^{\downarrow}) = 1.2\times10^{-4}$ instead of the $\Theta(10^{-1})$ it achieves everywhere else, and the gap $\|\mathbf{X}_t-\mathbf{W}_t\|_F/\|\mathbf{W}_t\|_F$ stalls at $8\%$ against ${<}1\%$ for every other layer. This is the mechanism of Remark~\ref{rem:dimension} rather than a tuning failure: a layer built from zero receives maximally correlated updates, its downlink residual concentrates, and a compressor that moves every coordinate by $\operatorname{mean}|\boldsymbol{\Delta}^{\downarrow}|$ cannot catch the coordinates that are driven hardest. Lowering $\eta_0$ does not repair it, because the admissible step size would have to shrink by a further $\sqrt{r}$ in the layer rank (Remark~\ref{rem:normmismatch}); a downlink compressor contractive in the \emph{spectral} norm would.
 
 \section{Conclusion}\label{sec:conclusion}
 
@@ -744,24 +747,126 @@ The experiments were run on \textbf{[GPU model and memory, e.g.\ NVIDIA A100 80\
 \paragraph{Randomness and seeds.}
 All experiments use a single fixed random seed (default $0$), set through a \texttt{seed\_everything} routine that seeds the Python \texttt{random} module, NumPy, and PyTorch (including all CUDA devices) and enables deterministic cuDNN kernels (\texttt{cudnn.deterministic\,=\,True}, \texttt{cudnn.benchmark\,=\,False}). Each reported number corresponds to a single such run.
 
-\subsection{Results for the smooth convex problem}\label{app:images_task}
-To evaluate the effect of matrix structure on the optimization process (without the influence of stochastic noise or the complexity of DNN architectures), we begin our experiments with a deterministic $L$-smooth convex optimization problem. We consider the minimization of a quadratic form:
+\subsection{The smooth convex problem}\label{app:images_task}
+
+\paragraph{Construction.}
+To isolate the effect of matrix structure from stochastic noise and from the complexity of DNN architectures, we use a deterministic $L$-smooth convex quadratic:
 \begin{multline}
 F(\mathbf{X}) = \frac{1}{2} \|\mathbf{A}^{1/2} \mathbf{X} \mathbf{B}^{1/2}\|_F^2 \\
 = \frac{1}{2} \langle \mathbf{X}, \mathbf{A} \mathbf{X} \mathbf{B} \rangle \to \min_{\mathbf{X} \in \mathbb{R}^{m \times n}},
 \label{eq:synthetic_problem}
 \end{multline}
-where the parameter matrix $\mathbf{X} \in \mathbb{R}^{m \times n}$ has dimension $m = n = 500$, which is representative of the size of parameter matrices in deep neural networks. The matrices $\mathbf{A} \in \mathbb{S}_+^m$ and $\mathbf{B} \in \mathbb{S}_+^n$ are symmetric positive semidefinite. To generate the problem instance, we randomly construct the spectra of $\mathbf{A}$ and $\mathbf{B}$ by sampling their eigenvalues uniformly from the interval $(0, 1)$, which guarantees a smoothness constant $L \le 1$ with respect to the Frobenius norm. The parameter matrix $\mathbf{X}_0$ is initialized with elements sampled independently from a normal distribution $\mathcal{N}(0, 0.01)$.
+with $\mathbf{A} \in \mathbb{S}_{++}^m$, $\mathbf{B} \in \mathbb{S}_{++}^n$ symmetric and $\mathbf{X}_0$ drawn entrywise from $\mathcal{N}(0, 0.01)$. Eigenvalues are sampled uniformly from $(0,1)$ in a Haar-random eigenbasis, so the matrices are almost surely positive \emph{definite} and the minimizer is $\mathbf{X}^\star = \mathbf{0}$ with $F^\star = 0$.
 
-Since theoretical convergence guarantees depend on the choice of norm and the corresponding smoothness constants, we adopt an empirical evaluation criterion. Specifically, the optimizers are compared by the minimum number of iterations required to reach the target function $F(\mathbf{X}) \le 0.001$, with a maximum number of iterations set to $T_{\max} = 5000$.  We perform a grid search over the hyperparameter ranges for each of the optimization algorithms under consideration (Table~\ref{tab:grid_search}).
-% \begin{itemize}
-%     \item $\eta \in [0.005, 0.020]$ с шагом $0.001$ для Muon;
-%     \item $\eta \in [1\cdot 10^{-4}, 0.001]$ с шагом $10^{-4}$ для SignMuon;
-%     \item $\eta \in [5\cdot 10^{-5}, 2\cdot 10^{-4}]$ с шагом $10^{-5}$ для SignSGD;
-%     \item $\eta \in [0.01, 0.10]$ с шагом $0.01$ для SGD и Adam.
-% \end{itemize}
+Two facts about this instance are exact rather than estimated, and both are used below. The Hessian of $F$ is the Kronecker product $\mathbf{B} \otimes \mathbf{A}$, so its eigenvalues are the products $\lambda_i(\mathbf{A})\lambda_j(\mathbf{B})$: the Frobenius smoothness constant is $L = \max_{ij}\lambda_i\mu_j \le 1$ and the strong-convexity constant is $\sigma = \min_{ij}\lambda_i\mu_j > 0$. The uniform draw leaves the resulting condition number $L/\sigma$ uncontrolled --- it lands near $2.5 \times 10^{5}$ at $m = n = 500$ --- so where conditioning is the variable we instead use log-spaced spectra with $L = 1$ and $L/\sigma$ set exactly. And since $\nabla F(\mathbf{X}) = \mathbf{A}\mathbf{X}\mathbf{B}$ in closed form, the gradient can be evaluated at any point without an autograd graph, which is what lets the bidirectional method be scored on its exact model $\mathbf{X}$ while its gradient is taken at the broadcast model $\mathbf{W}$, as its algorithm requires.
 
-The results of the grid search with the number of iterations required to converge to 0.001, are summarized in Table~\ref{tab:synthetic_results}. Muon converges in 1122 iterations, comparable to SGD (972) but slower than Adam (202). SignMuon reaches the target in 2104 iterations, significantly outperforming SignSGD (3120). EF21-MuonUSign requires 3694 iterations and EF21-MuonSign requires 3564 iterations; its overhead on this benign convex problem is expected, since its purpose is to guarantee convergence on problems where SignMuon does not converge (Theorem~\ref{th:1}). The optimization trajectories are shown in Appendix\ref{app:images_task}, Figure~\ref{fig:synthetic_results}.
+\paragraph{What ``iterations to a target'' measures.}
+The natural criterion --- fewest iterations to $F(\mathbf{X}) \le 10^{-3}$ within $T_{\max} = 5000$, learning rate and momentum tuned per method --- turns out not to measure a convergence rate, and reporting it as one is misleading. Every method here except SGD takes a \emph{normalized} step: $\|\operatorname{sign}(\cdot)\|_F = \sqrt{mn}$ and $\|\mathrm{polar}(\cdot)\|_F = \sqrt{r}$ whatever the gradient does. A constant $\eta$ therefore cannot converge; the iterate settles into a ball of radius $\eta\|\mathbf{S}\|_F$ and $F$ plateaus. Measured directly, the plateau obeys $\|\nabla F\|_\infty \propto \eta$ and $F_\infty \propto \eta^2$, and the iteration count is $\text{const}/\eta$. The tuner thus returns the largest $\eta$ whose plateau still fits under the target, and the ranking it produces is a ranking of \emph{accuracy floors}. The two effects can disagree: at matched $\eta$, SignSGD descends faster per step than SignMuon, while SignMuon's floor is the lower of the two \textbf{[fill both from \texttt{results/synthetic/SUMMARY.md}, floor section]}. We therefore report the floor and the rate separately, and read the descent lemma
+\begin{equation}
+F(\mathbf{X}_{t+1}) \le F(\mathbf{X}_t) - \eta \langle \nabla F(\mathbf{X}_t), \mathbf{D}_t\rangle + \tfrac{\eta^2 L}{2}\|\mathbf{D}_t\|_F^2
+\label{eq:descent_lemma}
+\end{equation}
+as the statement that separates them: the second term is the floor, the first is the rate.
+
+\paragraph{Alignment.}
+Equation~\eqref{eq:descent_lemma} makes progress contingent on a single scalar, the normalized alignment between the gradient and the step actually taken,
+\begin{equation}
+\rho_t := \frac{\langle \nabla F(\mathbf{X}_t), \mathbf{D}_t\rangle}{\|\nabla F(\mathbf{X}_t)\|_F \, \|\mathbf{D}_t\|_F} \in [-1, 1].
+\label{eq:alignment}
+\end{equation}
+Theorems~\ref{th:1}--\ref{th:3} are constructions that drive $\rho_t$ negative. Table~\ref{tab:synthetic_alignment} reports its distribution along the tuned trajectory on random instances, which is the empirical counterpart of those theorems and the one measurement here that is about the methods rather than about the tuning protocol. Three closed forms anchor it: $\rho = 1$ for SGD, $\rho = \|\mathbf{G}\|_1 / (\|\mathbf{G}\|_F\sqrt{mn})$ for SignSGD, and $\rho = \|\mathbf{G}\|_* / (\|\mathbf{G}\|_F\sqrt{r})$ for Muon. The three sign-around-the-\textsc{lmo} methods admit none, which is the subject of this paper.
+
+\begin{table*}[!t]
+\centering
+\small
+\begin{tabular}{@{}lrrrrrl@{}}
+\toprule
+\textbf{Algorithm} & \textbf{$\min_t \rho_t$} & \textbf{median $\rho_t$} & \textbf{mean $\rho_t$} & \textbf{\% of steps with $\rho_t<0$} & \textbf{closed form} & \textbf{tuned $(\eta,\mu)$} \\
+\midrule
+SignMuon       & & & & & --- & \\
+MuonUSign      & & & & & --- & \\
+MuonSign       & & & & & --- & \\
+EF21-SignMuon  & & & & & --- & \\
+EF21-MuonUSign & & & & & --- & \\
+EF21-MuonSign  & & & & & --- & \\
+Muon           & & & & & & \\
+SignSGD        & & & & & & \\
+SGD            & --- & --- & --- & --- & $1$ & \\
+\bottomrule
+\end{tabular}
+\caption{Gradient/step alignment $\rho_t$ of Equation~\eqref{eq:alignment} along the tuned trajectory. \textbf{[fill from \texttt{SUMMARY.md}, alignment section]} The closed-form column is evaluated at $\mathbf{X}_0$ without momentum, so it is comparable only to rows whose tuned $\mu$ is $0$; with momentum the step is built from $\mathbf{M}_t$ rather than the current gradient and $\rho_t$ falls accordingly.}
+\label{tab:synthetic_alignment}
+\end{table*}
+
+\paragraph{Floor, budget and stability.}
+Three further measurements, each testing a quantity the theory predicts in closed form. (i)~The floor: the fitted slope of $\log\|\nabla F\|_\infty$ against $\log\eta$, against the $1$ that Equation~\eqref{eq:descent_lemma} predicts, with coefficient $L\|\mathbf{S}\|_F^2/2\rho$. Since SignMuon and SignSGD share $\|\mathbf{S}\|_F^2 = mn$ exactly, any gap between their floors is attributable to $\rho$ alone. (ii)~The budget exponent: tuning $(\eta, \mu, \text{schedule})$ separately at each horizon $T$ and fitting $\text{err} \propto T^{-p}$, $\eta^\star \propto T^{-q}$. The nonconvex bound our theorems prove gives $p = q = 1/2$; a strongly convex problem gives $p = q = 1$, because the rate term contracts geometrically and the error is floor-limited. The fit therefore reports which regime the instance is in --- and this one, having $\sigma > 0$, need not be the regime the theorems describe. The schedule is tuned per method rather than imposed, since nothing requires the eight methods to prefer the same one. (iii)~The stability edge: the largest stable $\eta$, with SGD as a control, since its value must reproduce the textbook $2/L$. Reported as a step length $\eta_{\max}\|\mathbf{S}\|_F$, this would be family-independent if the operative trust region were the Frobenius ball; the spread measures how far the Frobenius bound is from the geometry each step actually lives in.
+
+\begin{table*}[!t]
+\centering
+\small
+\begin{tabular}{@{}lrrrrrrr@{}}
+\toprule
+& \multicolumn{2}{c}{\textbf{floor}} & \multicolumn{4}{c}{\textbf{budget}} & \textbf{stability} \\
+\cmidrule(lr){2-3}\cmidrule(lr){4-7}\cmidrule(lr){8-8}
+\textbf{Algorithm} & $\mathrm{d}\log\|\nabla F\|_\infty / \mathrm{d}\log\eta$ & $R^2$ & $p$ & $R^2$ & $q$ & $R^2$ & $\eta_{\max}\|\mathbf{S}\|_F$ \\
+\midrule
+SignMuon       & & & & & & & \\
+MuonUSign      & & & & & & & \\
+MuonSign       & & & & & & & \\
+EF21-SignMuon  & & & & & & & \\
+EF21-MuonUSign & & & & & & & \\
+EF21-MuonSign  & & & & & & & \\
+Muon           & & & & & & & \\
+SignSGD        & & & & & & & \\
+SGD            & & & & & & & \\
+Adam           & & & & & & & \\
+\midrule
+\emph{predicted} & $1$ & & $1/2$ or $1$ & & $1/2$ or $1$ & & $2/L$ \\
+\bottomrule
+\end{tabular}
+\caption{Floor exponent, budget exponents and stability edge. \textbf{[fill from \texttt{SUMMARY.md}, floor / budget scaling / stability sections]} SGD has no floor --- its step vanishes with the gradient --- so its floor columns are empty by construction, and its $\eta_{\max}$ is the control that must reproduce $2/L$.}
+\label{tab:synthetic_dynamics}
+\end{table*}
+
+\begin{figure}[!t]
+    \centering
+    \begin{subfigure}[b]{0.48\columnwidth}
+        \centering
+        % \includegraphics[width=\textwidth]{images/synt/floor.pdf}
+        \rule{0pt}{3cm}
+        \caption{Floor $\|\nabla F\|_\infty$ vs.\ $\eta$}
+        \label{fig:synthetic_floor}
+    \end{subfigure}
+    \hfill
+    \begin{subfigure}[b]{0.48\columnwidth}
+        \centering
+        % \includegraphics[width=\textwidth]{images/synt/horizon.pdf}
+        \rule{0pt}{3cm}
+        \caption{Error vs.\ budget $T$}
+        \label{fig:synthetic_horizon}
+    \end{subfigure}
+    \caption{\textbf{[placeholder --- generate from \texttt{results/synthetic/}]} Log--log fits behind Table~\ref{tab:synthetic_dynamics}. Left: the accuracy floor of a constant step. Right: best error at each tuned budget.}
+    \label{fig:synthetic_dynamics}
+\end{figure}
+
+\paragraph{Conditioning.}
+Conditioning is the only knob that governs the dynamics of a quadratic, and the construction above leaves it to chance. Figure~\ref{fig:synthetic_kappa} sweeps it over decades at fixed $L = 1$.
+
+\begin{figure}[!t]
+    \centering
+    % \includegraphics[width=0.9\columnwidth]{images/synt/kappa.pdf}
+    \rule{0pt}{4cm}
+    \caption{\textbf{[placeholder --- generate from \texttt{results/synthetic/}]} Best $\|\nabla F\|$ within the budget against the condition number $L/\sigma$, tuned at each point.}
+    \label{fig:synthetic_kappa}
+\end{figure}
+
+\paragraph{Protocol and reproduction.}
+Learning rates are searched on logarithmic grids spanning three to four decades. The one-decade linear grids used for the earlier results below were narrow enough to leave optima censored at a grid boundary, which is not a tuned value but an upper bound; the search now flags any optimum landing on an edge. Every number in this subsection is produced by \texttt{python3 -m synthetic.run\_gpu}, which writes each stage to \texttt{results/synthetic/} together with the commit, GPU and wall time it ran under.
+
+\subsection{Superseded results for the smooth convex problem}\label{app:synthetic_v1}
+The tables and figure below are the earlier version of this experiment, retained for comparison. They use the protocol criticized above --- fewest iterations to $F \le 10^{-3}$ at $m = n = 500$, one-decade linear grids, a single instance --- so they rank accuracy floors rather than convergence rates. Two rows are additionally not tuned values: SGD's $(\eta,\mu) = (0.1, 0.95)$ is the upper corner of both of its grids, and the two EF21 optima lie below the grid Table~\ref{tab:grid_search} states for them.
+
+The results of the grid search with the number of iterations required to converge to 0.001, are summarized in Table~\ref{tab:synthetic_results}. Muon converges in 1122 iterations, comparable to SGD (972) but slower than Adam (202). SignMuon reaches the target in 2104 iterations, outperforming SignSGD (3120). EF21-MuonUSign requires 3694 iterations and EF21-MuonSign 3564; their overhead on this benign convex problem is expected, since their purpose is to guarantee convergence on problems where SignMuon does not (Theorem~\ref{th:1}). The optimization trajectories are shown in Figure~\ref{fig:synthetic_results}.
 
 
 \begin{table*}[!t]
@@ -835,7 +940,7 @@ Table~\ref{tab:cifar_central} reports the centralized CIFAR-10 results on ResNet
 \centering
 \small
 \renewcommand{\arraystretch}{1.2}
-\begin{tabular}{|c|c|c|c|c|c|c|c|c|c|}
+\begin{tabular}{|c|c|c|c|c|c|c|c|c|}
 \hline
 \textbf{Dataset} & \textbf{Optimizer} & \textbf{Epoch} & \textbf{Batch} & \textbf{LR} & \textbf{LR Aux} & \textbf{Mom} & \textbf{Train Acc} & \textbf{Test Acc} \\
 \hline
@@ -962,7 +1067,7 @@ Figure~\ref{fig:exp_3} (together with Table~\ref{tab:exp_3} in the main text) re
 \begin{figure}[!t]
 \centering
 \includegraphics[width=\columnwidth]{images/nanogpt/fig_nanogpt_diag.pdf}
-\caption{The downlink measurement for EF21-MuonSign, per layer type: the contraction $\alpha(\boldsymbol{\Delta}^{\downarrow})$ the scaled sign actually achieves (solid) and the resulting server/broadcast gap $\|\mathbf{X}_t-\mathbf{W}_t\|_F/\|\mathbf{W}_t\|_F$ (dashed). On the zero-initialized $\mathtt{c\_proj}$ the contraction collapses by three orders of magnitude and the gap stalls near $10^{-1}$; every other layer type contracts at $\Theta(10^{-1})$ and closes its gap by ${\sim}65\times$ over the run. This is Remark~\ref{rem:dimension} measured.}
+\caption{The downlink measurement for EF21-MuonSign, per layer type: the contraction $\alpha(\boldsymbol{\Delta}^{\downarrow})$ the scaled sign actually achieves (solid) and the resulting server/broadcast gap $\|\mathbf{X}_t-\mathbf{W}_t\|_F/\|\mathbf{W}_t\|_F$ (dashed). On the zero-initialized $\mathtt{c\_proj}$ the contraction is two orders of magnitude below the rest from step~$250$ on and falls a further two by the end, and the gap stalls near $10^{-1}$; every other layer type contracts at $\Theta(10^{-1})$ and closes its gap by $6$--$64\times$ over the run, ending below $10^{-2}$. This is Remark~\ref{rem:dimension} measured.}
 \label{fig:nanogpt_diag}
 \end{figure}
 

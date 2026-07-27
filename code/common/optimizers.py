@@ -187,6 +187,14 @@ class _BaseMethod(Optimizer):
     #: Step family, see ``common.lr_scaling``. Together with the parameter shape
     #: this fixes the per-layer learning-rate multiplier.
     family = FAMILY_LMO
+    #: When true, :meth:`step` stashes a copy of each parameter's step direction
+    #: ``d_t`` in ``state["last_direction"]``. Off by default -- it costs one
+    #: clone per parameter per step, and the tensor must be copied because the
+    #: EF21 methods return a state buffer that they mutate in place next step.
+    #: ``synthetic.benchmark --mode alignment`` turns it on to measure
+    #: ``<grad F, d_t>``, the quantity the descent lemma rests on and the one the
+    #: divergence theorems drive negative.
+    capture_direction = False
 
     def __init__(
         self,
@@ -278,6 +286,8 @@ class _BaseMethod(Optimizer):
 
                 # 2) method-specific step direction
                 d_t = self._direction(m_tilde, state, group)
+                if self.capture_direction:
+                    state["last_direction"] = d_t.clone()
 
                 # 3) decoupled weight decay + parameter step
                 target = self._step_target(p, state)

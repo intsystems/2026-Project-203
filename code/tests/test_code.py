@@ -332,8 +332,14 @@ def _centralized_reference(method, rounds, lr, lr_aux, momentum, seed=0,
                                   weight_decay=weight_decay,
                                   decoupled_weight_decay=True,
                                   lmo_dtype=torch.float32)
+    # weight_decay=0.0, not `weight_decay`: `centralized.train.build_optimizers`
+    # never decays the auxiliary group -- decaying normalization scales is not
+    # standard practice, and keeping it at zero for every method is what makes
+    # `--weight-decay` describe the matrix parameters alone. This reference used
+    # to decay it, which pinned the federated driver to a convention the real
+    # centralized path does not use.
     aux = torch.optim.AdamW([named[n] for n in aux_names], lr=lr_aux,
-                            weight_decay=weight_decay)
+                            weight_decay=0.0)
 
     loader = tiny_loader()
     criterion = nn.CrossEntropyLoss()
@@ -832,6 +838,765 @@ def test_aggregate_groups_by_seed(tmp_path=None):
     assert agg["steps"] == [0, 1] and agg["n_runs"] == 3
     assert abs(agg["mean"][-1] - 82.0) < 1e-12
     assert abs(agg["std"][-1] - 2.0) < 1e-12          # sample std of 80, 82, 84
+
+
+# --------------------------------------------------------------------------
+# Federated protocol: per-layer scaling, data split, GPU augmentation
+# --------------------------------------------------------------------------
+
+
+def test_federated_legacy_rule_is_the_old_convention():
+    """``lr_scaling='legacy'`` must reproduce ``scale_aspect=True``, bit for bit.
+
+    The driver now applies the shape factor *outside* the oracle
+    (``scale_aspect=False`` plus a per-layer multiplier), as the centralized path
+    does. Under ``legacy`` the LMO family's multiplier IS the aspect factor, so
+    the two conventions have to coincide -- otherwise switching the plumbing would
+    silently have changed every published federated number.
+    """
+    from common.optimizers import muon_lmo
+
+    torch.manual_seed(0)
+    for shape in [(10, 4), (4, 10), (7, 7), (6, 3, 2, 2)]:
+        G = torch.randn(*shape)
+        inside = muon_lmo(G, ns_steps=5, dtype=torch.float32, scale_aspect=True)
+        m = shape[0]
+        n = 1
+        for s in shape[1:]:
+            n *= s
+        outside = muon_lmo(G, ns_steps=5, dtype=torch.float32, scale_aspect=False) \
+            * math.sqrt(max(1.0, m / n))
+        assert torch.allclose(inside, outside, atol=1e-6), shape
+
+
+def test_federated_per_layer_scaling_matches_centralized():
+    """N=1 federated under a rule == the centralized optimizer under the same rule.
+
+    The load-bearing equivalence, extended past ``legacy``: with the shape factor
+    switched on, the two drivers must still agree, or the federated and
+    centralized tables would be reporting different algorithms under one name.
+    """
+    from common.lr_scaling import layer_multiplier, resolve_rule
+    from federated.algorithms import method_family
+
+    rule = resolve_rule("unit-gain")
+    failures = []
+    for method in CENTRAL_CLASSES:
+        torch.manual_seed(0)
+        ref_model = TinyNet()
+        matrix_names, aux_names = split_param_names(ref_model, 2)
+        named = dict(ref_model.named_parameters())
+        family = method_family(method)
+        groups = [{"params": [named[n]],
+                   "lambda_mult": layer_multiplier(rule, family, tuple(named[n].shape))}
+                  for n in matrix_names]
+        opt = CENTRAL_CLASSES[method](groups, lr=0.05, momentum=0.8,
+                                      lmo_dtype=torch.float32, scale_aspect=False)
+        aux = torch.optim.AdamW([named[n] for n in aux_names], lr=0.01, weight_decay=0.0)
+        criterion = nn.CrossEntropyLoss()
+        for _ in range(5):
+            for x, y in tiny_loader():
+                ref_model.zero_grad(set_to_none=True)
+                criterion(ref_model(x), y).backward()
+                opt.step()
+                aux.step()
+        if hasattr(opt, "restore_exact"):
+            opt.restore_exact()
+
+        torch.manual_seed(0)
+        fed_model = TinyNet()
+        run_federated(method, fed_model, [tiny_loader()], [tiny_loader()],
+                      rounds=5, n_steps=1, lr=0.05, lr_aux=0.01, momentum=0.8,
+                      eval_freq=10 ** 9, device="cpu", cosine_schedule=False,
+                      lmo_dtype=torch.float32, lr_scaling="unit-gain", verbose=False)
+        for (n, a), (_, b) in zip(ref_model.named_parameters(),
+                                  fed_model.named_parameters()):
+            if not torch.allclose(a, b, atol=TOL):
+                failures.append(f"{method}/{n}: max|diff| = {(a - b).abs().max():.3e}")
+    assert not failures, "unit-gain federated != centralized:\n  " + "\n  ".join(failures)
+
+
+def test_method_families_are_tagged_consistently():
+    """The family decides the multiplier, so a wrong tag mis-scales a whole method."""
+    from common.lr_scaling import FAMILY_LMO, FAMILY_SIGN
+    from federated.algorithms import METHODS, method_family
+
+    expected = {"signmuon": FAMILY_SIGN, "muonsign": FAMILY_SIGN, "signsgd": FAMILY_SIGN,
+                "ef21signmuon": FAMILY_LMO, "muonusign": FAMILY_LMO,
+                "ef21muonusign": FAMILY_LMO, "ef21muonsign": FAMILY_LMO,
+                "muon": FAMILY_LMO, "muonserver": FAMILY_LMO,
+                "sgd": None, "adam": None}
+    assert set(expected) == set(METHODS)
+    for name, want in expected.items():
+        assert method_family(name) == want, name
+    # --scale-baselines is the only thing that gives SGD/Adam a rule.
+    assert method_family("adam", scale_baselines=True) == FAMILY_SIGN
+    assert method_family("muon", scale_baselines=True) == FAMILY_LMO
+
+
+def test_federated_step_norms_match_the_family():
+    """A sign-family step has ``||s||_F = sqrt(mn)``; an LMO one ``~sqrt(min(m,n))``.
+
+    This is the premise the whole per-layer rule rests on, checked on the real
+    driver rather than on the step maps in isolation.
+    """
+    from common.lr_scaling import FAMILY_SIGN
+    from federated.algorithms import method_family
+
+    for method in ("signmuon", "muonsign", "signsgd", "muonusign", "ef21muonusign"):
+        torch.manual_seed(0)
+        model = TinyNet()
+        before = {n: p.detach().clone() for n, p in model.named_parameters()}
+        run_federated(method, model, [tiny_loader()], [tiny_loader()],
+                      rounds=1, n_steps=1, lr=1.0, lr_aux=0.0, momentum=0.0,
+                      eval_freq=10 ** 9, device="cpu", cosine_schedule=False,
+                      lmo_dtype=torch.float32, lr_scaling="none", verbose=False)
+        p = dict(model.named_parameters())["fc1.weight"]
+        norm = (p.detach() - before["fc1.weight"]).norm().item()
+        m, n = p.shape
+        if method_family(method) == FAMILY_SIGN:
+            assert abs(norm / math.sqrt(m * n) - 1.0) < 1e-5, f"{method}: {norm}"
+        else:
+            # Newton-Schulz only approximates the polar factor's norm.
+            assert 0.7 < norm / math.sqrt(min(m, n)) < 1.3, f"{method}: {norm}"
+
+
+def test_majority_vote_ties_are_recorded():
+    """An even client split abstains, and the driver has to say how often.
+
+    ``sign(sum_j s^(j))`` is zero wherever the clients split evenly, so the
+    aggregate is NOT in ``{-1,+1}`` for even ``N`` -- contrary to the paper's
+    prose. The fraction is recorded rather than silently absorbed into the step
+    size.
+    """
+    torch.manual_seed(0)
+    loaders = [tiny_loader(seed=s) for s in range(4)]        # even N, different data
+    h = run_federated("signmuon", TinyNet(), loaders, [tiny_loader()],
+                      rounds=3, n_steps=1, lr=0.01, eval_freq=1, device="cpu",
+                      lmo_dtype=torch.float32, verbose=False)
+    ties = h.values("mv_tie_frac")
+    assert len(ties) == 3, "one tie fraction per evaluated training round"
+    assert all(0.0 <= t <= 1.0 for t in ties)
+
+    # ... and the EF21 uplink has no vote at all, so nothing is recorded.
+    h2 = run_federated("ef21muonusign", TinyNet(), loaders, [tiny_loader()],
+                       rounds=2, n_steps=1, lr=0.01, eval_freq=1, device="cpu",
+                       lmo_dtype=torch.float32, verbose=False)
+    assert not h2.values("mv_tie_frac")
+
+
+def test_the_uplink_alphabet_is_ternary_unless_asked_otherwise():
+    """`sign(0) = 0`, so a client transmits from `{-1, 0, +1}`, not `{-1, +1}`.
+
+    Not a corner case: `polar(M)` has an exactly-zero column wherever `M` does, and
+    `M` does wherever a feature was zero across the whole local batch -- which after
+    ReLU and MaxPool is common (measured at 8-17% of entries on CNN2). So
+
+    * the uplink is not literally one bit per parameter, and
+    * an ODD client count does not by itself prevent ties, because a zero vote is
+      not `+-1`.
+
+    Both were assumed rather than checked before this test existed.
+    """
+    M = torch.randn(6, 8)
+    M[2] = 0.0                                    # a dead unit's gradient row
+    s = torch.sign(muon_lmo(M, ns_steps=5, dtype=torch.float32, scale_aspect=False))
+    assert int((s == 0).sum()) >= 8, "a zero row of M must give zeros in sign(polar(M))"
+
+    # ... and the driver measures it rather than assuming it away.
+    loaders = [tiny_loader(seed=s) for s in range(5)]        # ODD client count
+    h = run_federated("signmuon", TinyNet(), loaders, [tiny_loader()],
+                      rounds=2, n_steps=1, lr=0.01, eval_freq=1, device="cpu",
+                      lmo_dtype=torch.float32, verbose=False)
+    assert len(h.values("uplink_zero_frac")) == 2
+    assert all(0.0 <= z <= 1.0 for z in h.values("uplink_zero_frac"))
+
+    # Forcing the zeros to +-1 makes the channel a genuine one bit, and then an
+    # odd count really cannot tie.
+    for rule in ("random", "positive"):
+        h2 = run_federated("signmuon", TinyNet(), loaders, [tiny_loader()],
+                           rounds=2, n_steps=1, lr=0.01, eval_freq=1, device="cpu",
+                           lmo_dtype=torch.float32, uplink_zeros=rule, verbose=False)
+        assert all(t == 0.0 for t in h2.values("mv_tie_frac")), \
+            f"uplink_zeros={rule} at odd N must never tie, got {h2.values('mv_tie_frac')}"
+        # The zero fraction still reports the RAW compressor output, so the
+        # diagnostic does not vanish when the rule hides the zeros.
+        assert h2.values("uplink_zero_frac") == h.values("uplink_zero_frac")
+
+
+def test_random_tie_break_yields_a_true_sign_matrix():
+    """`--mv-ties random` restores ||s||_F = sqrt(mn), which unit-gain assumes.
+
+    Also pins the two properties that make it safe to offer: the recorded tie
+    fraction still measures the *vote* (it is counted before the break), and the
+    run stays reproducible because the coin comes from the seeded global RNG.
+    """
+    def go(rule, seed):
+        torch.manual_seed(seed)
+        model = TinyNet()
+        before = {n: p.detach().clone() for n, p in model.named_parameters()}
+        h = run_federated("signmuon", model, [tiny_loader(seed=s) for s in range(4)],
+                          [tiny_loader()], rounds=1, n_steps=1, lr=1.0, lr_aux=0.0,
+                          momentum=0.0, eval_freq=1, device="cpu",
+                          cosine_schedule=False, lr_scaling="none",
+                          lmo_dtype=torch.float32, mv_ties=rule, verbose=False)
+        p = dict(model.named_parameters())["fc1.weight"]
+        return (p.detach() - before["fc1.weight"]), h.values("mv_tie_frac")[-1]
+
+    step_zero, frac_zero = go("zero", 0)
+    step_rand, frac_rand = go("random", 0)
+    m, n = step_zero.shape
+
+    assert frac_zero > 0, "the fixture must actually produce ties at N=4"
+    assert abs(frac_rand - frac_zero) < 1e-12, \
+        "mv_tie_frac must count the vote, not the post-break result"
+    # Abstaining shortens the step; breaking the tie restores the full sign norm.
+    assert step_zero.norm().item() < 0.999 * math.sqrt(m * n)
+    assert abs(step_rand.norm().item() / math.sqrt(m * n) - 1.0) < 1e-5
+    # Every entry is a unit sign step. Compared with a tolerance, not for exact
+    # equality: the step is recovered as `p - p_before`, and that subtraction
+    # carries float32 rounding of order 1e-7.
+    assert (step_rand.abs() - 1.0).abs().max().item() < 1e-6
+
+    # Reproducible: same seed, same coins.
+    again, _ = go("random", 0)
+    assert torch.equal(step_rand, again)
+
+
+def test_averaging_polar_factors_shrinks_the_step_but_polar_of_the_average_does_not():
+    """Why there are two full-precision Muon controls, not one.
+
+    `muon` orthogonalizes on the worker and the server averages the polar factors;
+    `muonserver` averages first and orthogonalizes once. The second is the
+    uncompressed control for MuonUSign / EF21-MuonUSign / EF21-MuonSign, because it
+    is what those methods become when the compressor is the identity.
+
+    They are not interchangeable: averaging near-orthogonal matrices *shortens* the
+    step, by an amount that grows with the client count and with heterogeneity,
+    while `polar(mean)` keeps its norm at every `N`. Comparing the server-LMO
+    family against `muon` would therefore confound "what does the 1-bit uplink
+    cost?" with "what does averaging orthogonal matrices cost?".
+    """
+    m, n = 40, 96
+    r = math.sqrt(min(m, n))
+    torch.manual_seed(0)
+    shared = torch.randn(m, n)
+
+    def norms(N, q):
+        Ms = [shared + q * torch.randn(m, n) for _ in range(N)]
+        avg = sum(muon_lmo(M, 5, torch.float32, False) for M in Ms) / N
+        srv = muon_lmo(sum(Ms) / N, 5, torch.float32, False)
+        return avg.norm().item() / r, srv.norm().item() / r
+
+    one_avg, one_srv = norms(1, 1.0)
+    many_avg, many_srv = norms(11, 1.0)
+
+    assert many_avg < 0.85 * one_avg, (
+        f"averaging polar factors must shorten the step: {one_avg:.3f} -> {many_avg:.3f}")
+    assert abs(many_srv / one_srv - 1.0) < 0.05, (
+        f"polar(mean) must be N-independent: {one_srv:.3f} -> {many_srv:.3f}")
+
+    # ... and the shrinkage grows with heterogeneity, so a tuned eta_0 -- which is
+    # one constant -- cannot absorb it.
+    mild, _ = norms(11, 0.1)
+    wild, _ = norms(11, 3.0)
+    assert wild < mild, f"shrinkage must grow with heterogeneity: {mild:.3f} vs {wild:.3f}"
+
+
+def test_communication_accounting_is_honest_about_the_round_trip():
+    """The "32x reduction" holds for the uplink alone, not for the round trip.
+
+    Four of the six methods broadcast a full-precision model every round, so their
+    round-trip saving is under 2x however good the uplink is. Only the two
+    bidirectional methods compress both ways. That is the argument *for* them, and
+    it is why the number has to be computed rather than quoted.
+    """
+    from federated.algorithms import communication_bits
+
+    n_mat, n_aux = 762_560, 2_146            # CNN2
+
+    # Even a strictly +-1 uplink costs MORE than 1 bit per parameter model-wide,
+    # because the auxiliary group rides along uncompressed. On CNN2 that group is
+    # 0.28% of the parameters and adds 0.09 bits; on a model with a larger head it
+    # would dominate. This is the "+ epsilon" in "1 bit per parameter".
+    clean = communication_bits("signmuon", n_mat, n_aux, uplink_zero_frac=0.0)
+    assert 1.0 < clean["uplink_bits_per_param"] < 1.12, clean["uplink_bits_per_param"]
+
+    # The measured ternary alphabet costs more again.
+    real = communication_bits("signmuon", n_mat, n_aux, uplink_zero_frac=0.10)
+    assert 1.40 < real["uplink_bits_per_param"] < 1.50, real["uplink_bits_per_param"]
+    assert real["uplink_reduction"] < clean["uplink_reduction"]
+    assert 20 < real["uplink_reduction"] < 25, real["uplink_reduction"]
+
+    # Uplink-only methods: the round trip is dominated by the 32-bit downlink.
+    for name in ("signmuon", "muonusign", "ef21muonusign", "ef21signmuon"):
+        c = communication_bits(name, n_mat, n_aux, 0.10)
+        assert c["downlink_reduction"] < 1.01, name
+        assert c["round_trip_reduction"] < 2.0, (name, c["round_trip_reduction"])
+
+    # Bidirectional methods actually deliver an order of magnitude.
+    for name in ("muonsign", "ef21muonsign"):
+        c = communication_bits(name, n_mat, n_aux, 0.10)
+        assert c["round_trip_reduction"] > 20, (name, c["round_trip_reduction"])
+
+    # The uncompressed references save nothing, in either direction.
+    for name in ("muon", "muonserver", "sgd", "adam"):
+        c = communication_bits(name, n_mat, n_aux, 0.0)
+        assert abs(c["round_trip_reduction"] - 1.0) < 1e-9, name
+
+    # The auxiliary group is never compressed, so it caps the achievable ratio.
+    huge_head = communication_bits("muonsign", n_mat, n_mat, 0.0)
+    assert huge_head["round_trip_reduction"] < 2.0, \
+        "a model that is half uncompressed head cannot reach 32x"
+
+
+def test_federated_val_split_is_held_out_before_partitioning():
+    """No client may hold a validation image, and the split must match centrally."""
+    import numpy as np
+
+    from centralized.data import _split_indices
+    from federated.data import partition_indices
+
+    y_train = np.arange(1000) % 10
+    y_test = np.arange(200) % 10
+    train_pool, val_idx = _split_indices(1000, 100, val_seed=12345)
+
+    tr, te = partition_indices(y_train, y_test, "homo", 5,
+                               rng=np.random.default_rng(0), train_pool=train_pool)
+    held = set(val_idx.tolist())
+    for j, idx in tr.items():
+        assert not (set(idx.tolist()) & held), f"client {j} holds validation images"
+    assert sum(len(v) for v in tr.values()) == 900
+    assert sum(len(v) for v in te.values()) == 200
+
+    # Dirichlet honours the pool too, and every client keeps some data.
+    tr2, _ = partition_indices(y_train, y_test, "noniid-labeldir", 5, beta=0.5,
+                               rng=np.random.default_rng(0), train_pool=train_pool)
+    assert not (set(np.concatenate(list(tr2.values())).tolist()) & held)
+    assert min(len(v) for v in tr2.values()) >= 10
+
+
+def test_gpu_shard_augmentation_matches_torchvision():
+    """The device-resident augmentation must be the torchvision one.
+
+    ``RandomCrop(32, padding=4)`` + ``RandomHorizontalFlip()`` is reimplemented as
+    tensor ops so the dataset can live on the GPU. The randomness differs (a
+    different generator), so the check is distributional plus an exact check of
+    the two deterministic corners: zero offset with no flip is the identity, and
+    the normalization matches.
+    """
+    from federated.data import GpuEvalSet, GpuShard
+
+    torch.manual_seed(0)
+    x = torch.randint(0, 256, (64, 3, 32, 32), dtype=torch.uint8)
+    y = torch.randint(0, 10, (64,))
+
+    ev = GpuEvalSet(x, y, batch_size=32, dataset="cifar10")
+    batches = list(ev)
+    assert len(batches) == 2 and batches[0][0].shape == (32, 3, 32, 32)
+    # The eval path is exactly ToTensor + Normalize.
+    mean = torch.tensor((0.4914, 0.4822, 0.4465)).view(1, 3, 1, 1)
+    std = torch.tensor((0.2023, 0.1994, 0.2010)).view(1, 3, 1, 1)
+    want = (x[:32].float() / 255.0 - mean) / std
+    assert torch.allclose(batches[0][0], want, atol=1e-6)
+
+    sh = GpuShard(x, y, batch_size=16, dataset="cifar10", seed=0)
+    xb, yb = sh.next_batch()
+    assert xb.shape == (16, 3, 32, 32) and yb.shape == (16,)
+    # Cropping from a zero-padded image can only introduce zero-valued *pixels*,
+    # which normalize to -mean/std; nothing else may appear.
+    floor = float((-mean / std).min())
+    assert xb.min().item() >= floor - 1e-4
+    # A shard sweeps its whole content before repeating.
+    seen = {int(i) for _ in range(4) for i in sh.next_batch()[1]}
+    assert len(seen) <= 10, "labels are only 0-9, so this just checks it runs"
+
+    # Augmentation off (MNIST has padding 0) is the identity plus normalization.
+    xm = torch.randint(0, 256, (8, 1, 28, 28), dtype=torch.uint8)
+    shm = GpuShard(xm, y[:8], batch_size=8, dataset="mnist", seed=0)
+    xbm, _ = shm.next_batch()
+    assert xbm.shape == (8, 1, 28, 28)
+
+
+def test_gpu_crop_and_flip_match_torchvision_distributionally():
+    """The device-side crop must have torchvision's offset distribution.
+
+    An off-by-one in the padding would still produce plausible-looking images, so
+    shape checks cannot catch it. This compares the per-row probability that an
+    output row came from the zero padding -- which is exactly what the offset
+    distribution determines -- against ``RandomCrop(32, padding=4)`` itself, over
+    2000 draws each.
+    """
+    from torchvision import transforms
+
+    from federated.data import GpuShard
+
+    n, size, pad = 2000, 32, 4
+    ones = torch.full((n, 3, size, size), 255, dtype=torch.uint8)
+
+    # torchvision: how often is output row i entirely padding?
+    crop = transforms.RandomCrop(size, padding=pad)
+    torch.manual_seed(0)
+    ref = torch.zeros(size)
+    for i in range(n):
+        out = crop(ones[i].float())
+        ref += (out[0].sum(dim=1) == 0).float()
+    ref /= n
+
+    # ours: same statistic, straight off the shard
+    sh = GpuShard(ones, torch.zeros(n, dtype=torch.long), batch_size=n,
+                  dataset="cifar10", seed=0)
+    sh.mean = torch.zeros(1, 3, 1, 1)      # strip normalization for the comparison
+    sh.std = torch.ones(1, 3, 1, 1)
+    xb, _ = sh.next_batch()
+    got = (xb[:, 0].sum(dim=2) == 0).float().mean(dim=0)
+
+    assert torch.allclose(ref, got, atol=0.04), \
+        f"padding-row profile differs:\n  torchvision {ref[:6].tolist()}\n  ours {got[:6].tolist()}"
+    # Both must actually pad sometimes, or the test would pass on two no-ops.
+    assert ref[0] > 0.3 and ref[size // 2] == 0.0
+
+    # And the flip is a fair coin applied per sample. Probed with the crop
+    # neutralized (pad = 0 makes the offsets degenerate), so a shifted window
+    # cannot be mistaken for a flip.
+    asym = torch.zeros(64, 3, 8, 8, dtype=torch.uint8)
+    asym[:, :, :, 0] = 255
+    sf = GpuShard(asym, torch.zeros(64, dtype=torch.long), batch_size=64,
+                  dataset="cifar10", seed=3)
+    sf.pad = 0
+    assert sf.augment, "cifar10 shards must augment"
+    flipped = 0
+    for _ in range(20):
+        xb, _ = sf.next_batch()
+        flipped += int((xb[:, 0, 0, -1] > xb[:, 0, 0, 0]).sum())
+    assert 0.4 < flipped / (20 * 64) < 0.6, flipped / (20 * 64)
+
+    # MNIST is deliberately NOT augmented -- `get_mnist_transform` never was.
+    plain = GpuShard(torch.zeros(8, 1, 28, 28, dtype=torch.uint8),
+                     torch.zeros(8, dtype=torch.long), batch_size=8,
+                     dataset="mnist", seed=0)
+    assert not plain.augment
+
+
+def test_gpu_shard_sweeps_its_whole_shard():
+    """Every sample must be visited once per epoch, in a seed-stable order."""
+    from federated.data import GpuShard
+
+    x = torch.arange(20 * 1 * 4 * 4, dtype=torch.uint8).reshape(20, 1, 4, 4)
+    y = torch.arange(20)
+    a = GpuShard(x, y, batch_size=5, dataset="mnist", seed=7, augment=False)
+    b = GpuShard(x, y, batch_size=5, dataset="mnist", seed=7, augment=False)
+    seen = []
+    for _ in range(4):
+        ya = a.next_batch()[1]
+        assert torch.equal(ya, b.next_batch()[1]), "same seed must give same order"
+        seen += ya.tolist()
+    assert sorted(seen) == list(range(20)), "one epoch must cover the shard exactly"
+
+
+def test_federated_anchors_transport_between_rules():
+    """A rule changes what eta_0 means; the anchor has to move with it.
+
+    Under ``legacy`` the transported anchor is the published value itself, and
+    under ``unit-gain`` the LMO family is untouched (its multiplier is the same
+    aspect factor) while the sign family moves by the geometric-mean fan-in.
+    """
+    from federated.tune import LEGACY_ANCHORS, anchor_for
+
+    shapes = [("conv1", (64, 3, 5, 5)), ("conv2", (128, 64, 5, 5)),
+              ("fc1", (120, 4608))]
+    for m, want in LEGACY_ANCHORS.items():
+        assert abs(anchor_for(m, "legacy", shapes) - want) < 1e-12, m
+
+    # LMO family: unchanged, because lambda is the aspect factor under both rules.
+    for m in ("muon", "muonusign", "ef21muonusign", "ef21muonsign", "ef21signmuon"):
+        assert abs(anchor_for(m, "unit-gain", shapes) - LEGACY_ANCHORS[m]) < 1e-12, m
+
+    # Sign family: multiplied by the geometric mean of sqrt(fan_in).
+    boost = math.exp(sum(math.log(math.sqrt(n)) for n in (75, 1600, 4608)) / 3)
+    for m in ("signmuon", "muonsign", "signsgd"):
+        assert abs(anchor_for(m, "unit-gain", shapes) / LEGACY_ANCHORS[m] - boost) < 1e-9, m
+    assert 25.0 < boost < 30.0, boost
+
+    # The baselines have no family, so no rule moves them.
+    for m in ("sgd", "adam"):
+        for rule in ("legacy", "unit-gain", "mup"):
+            assert anchor_for(m, rule, shapes) == LEGACY_ANCHORS[m]
+    assert anchor_for("adam", "unit-gain", shapes, scale_baselines=True) > \
+        LEGACY_ANCHORS["adam"]
+
+
+# --------------------------------------------------------------------------
+# Synthetic benchmark
+# --------------------------------------------------------------------------
+
+
+def test_quadratic_constants_are_exact():
+    """``L``, ``sigma`` and the gradient are closed forms, not estimates.
+
+    The Hessian of ``F(X) = 1/2 <X-C, A(X-C)B>`` is ``B (x) A``, so its extreme
+    eigenvalues are the extreme products of the two spectra. The benchmark reads
+    ``L`` off that identity and never estimates it; if the identity broke, every
+    ``L``-relative number the sweeps print would be silently wrong.
+    """
+    from synthetic.benchmark import Quadratic
+
+    prob = Quadratic(9, 7, torch.device("cpu"), seed=3, spectrum="uniform")
+
+    la = torch.linalg.eigvalsh(prob.A)
+    lb = torch.linalg.eigvalsh(prob.B)
+    prod = torch.outer(la, lb)
+    # float32 throughout, so compare relatively.
+    assert abs(prob.L / float(prod.max()) - 1) < 1e-5, prob.L
+    assert abs(prob.sigma / float(prod.min()) - 1) < 1e-4, prob.sigma
+
+    # The closed-form gradient must agree with autograd, since the benchmark
+    # replaced the autograd path with it.
+    X = torch.randn(9, 7, dtype=torch.double, requires_grad=True)
+    A, B = prob.A.double(), prob.B.double()
+    f = 0.5 * torch.sum(X * (A @ X @ B))
+    f.backward()
+    assert torch.allclose(X.grad, A @ X.detach() @ B, atol=1e-10)
+
+    f_val, g = prob.value_and_grad(X.detach().float())
+    assert abs(f_val - float(f)) < 1e-4
+    assert torch.allclose(g.double(), X.grad, atol=1e-4)
+
+
+def test_logspace_spectrum_hits_the_requested_condition_number():
+    from synthetic.benchmark import Quadratic
+
+    for kappa in (1e2, 1e4, 1e6):
+        prob = Quadratic(16, 16, torch.device("cpu"), seed=0,
+                         spectrum="logspace", kappa=kappa)
+        assert abs(prob.L - 1.0) < 1e-5, prob.L
+        assert abs(prob.kappa / kappa - 1.0) < 1e-3, (prob.kappa, kappa)
+
+
+def test_lr_grid_parsing_linear_and_log():
+    from synthetic.benchmark import parse_lr_grid
+
+    linear = parse_lr_grid("1e-4:1e-3:1e-4")     # Table 3's form
+    assert len(linear) == 10
+    assert abs(linear[0] - 1e-4) < 1e-15 and abs(linear[-1] - 1e-3) < 1e-15
+    assert 2e-4 in linear                        # the paper's SignMuon optimum
+
+    log = parse_lr_grid("1e-4:1e-1:x6")          # 6 points per decade, 3 decades
+    assert len(log) == 19
+    assert abs(log[0] - 1e-4) < 1e-15 and abs(log[-1] - 1e-1) < 1e-12
+    ratios = [log[i + 1] / log[i] for i in range(len(log) - 1)]
+    assert max(ratios) - min(ratios) < 1e-9      # geometric
+
+
+def test_step_norms_match_the_lr_scaling_module():
+    """``||s||_F`` is what turns a floor slope into a claim about ``rho``."""
+    from synthetic.benchmark import step_norm
+
+    m, n = 12, 20
+    for method in ("signmuon", "muonsign", "signsgd"):
+        assert abs(step_norm(method, m, n) - math.sqrt(m * n)) < 1e-12
+    for method in ("muon", "muonusign", "ef21muonusign", "ef21muonsign"):
+        assert abs(step_norm(method, m, n) - math.sqrt(min(m, n))) < 1e-12
+
+    # The sign step realizes its norm exactly -- a +-1 matrix has no slack.
+    G = torch.randn(m, n)
+    assert abs(float(torch.sign(G).norm()) - math.sqrt(m * n)) < 1e-4
+
+    # The exact LMO realizes sqrt(r) exactly ...
+    U, _, Vt = torch.linalg.svd(G, full_matrices=False)
+    assert abs(float((U @ Vt).norm()) - math.sqrt(min(m, n))) < 1e-4
+
+
+def test_newton_schulz_step_is_measurably_shorter_than_the_exact_lmo():
+    """Five NS steps leave the singular values in a band around 1, not at 1.
+
+    So every LMO-family run takes a step 6-22% shorter than the ``sqrt(r)`` its
+    theory assumes, which rescales the effective learning rate by the same
+    factor. ``step_norm`` documents the gap; this pins it down so it cannot
+    drift unnoticed if the coefficients are ever retuned.
+    """
+    torch.manual_seed(0)
+    ratios = {}
+    for m, n in ((64, 64), (100, 100), (64, 576), (500, 500)):
+        r = math.sqrt(min(m, n))
+        got = sum(float(muon_lmo(torch.randn(m, n), dtype=None,
+                                 scale_aspect=False).norm())
+                  for _ in range(3)) / 3
+        ratios[(m, n)] = got / r
+
+    assert 0.75 < min(ratios.values()) < 0.95, ratios
+    assert max(ratios.values()) < 0.99, ratios          # never reaches sqrt(r)
+    assert ratios[(64, 576)] < ratios[(500, 500)], ratios   # worse when oblong
+
+
+def test_capture_direction_records_the_step_actually_taken():
+    """``alignment`` mode is only meaningful if ``d_t`` is the realized step."""
+    torch.manual_seed(0)
+    for name, cls in CENTRAL_CLASSES.items():
+        p = nn.Parameter(torch.randn(6, 5))
+        opt = cls([p], lr=0.1, momentum=0.0, lmo_dtype=None)
+        opt.capture_direction = True
+        p.grad = torch.randn(6, 5)
+
+        # EF21MuonSign advances the exact model X rather than p.data, and
+        # creates it lazily inside the first step -- but it is initialized from
+        # p.data, so before the first step the two agree.
+        before = p.data.clone()
+        opt.step()
+        after = (opt.state[p]["exact_model"] if name == "ef21muonsign" else p.data)
+
+        d = opt.state[p]["last_direction"]
+        assert torch.allclose(before - after, 0.1 * d, atol=1e-5), name
+
+    # And the hook stays off unless asked for.
+    p = nn.Parameter(torch.randn(6, 5))
+    opt = SignMuon([p], lr=0.1)
+    p.grad = torch.randn(6, 5)
+    opt.step()
+    assert "last_direction" not in opt.state[p]
+
+
+def test_plateau_detector_separates_settled_from_still_descending():
+    from synthetic.benchmark import _plateau
+
+    settled = [1.0] * 50 + [0.5] * 50
+    level, ok = _plateau(settled)
+    assert ok and abs(level - 0.5) < 1e-12
+
+    descending = [2.0 ** -(i / 10.0) for i in range(200)]
+    _, ok = _plateau(descending)
+    assert not ok
+
+
+def test_loglog_fit_recovers_a_known_exponent():
+    from synthetic.benchmark import loglog_fit
+
+    xs = [1.0, 2.0, 4.0, 8.0, 16.0]
+    slope, r2 = loglog_fit(xs, [3.0 * x ** -0.5 for x in xs])
+    assert abs(slope + 0.5) < 1e-9 and abs(r2 - 1.0) < 1e-9
+    assert math.isnan(loglog_fit([1.0], [1.0])[0])
+
+
+def test_sign_step_floor_scales_linearly_in_eta():
+    """The measurement the appendix's floor table rests on, in miniature.
+
+    A ``+-1`` step has fixed length ``eta*sqrt(mn)``, so a constant step size
+    cannot converge: the gradient norm settles at a level proportional to
+    ``eta``. Halving ``eta`` must halve that level.
+    """
+    from synthetic.benchmark import Quadratic, run_one, _plateau
+
+    prob = Quadratic(20, 20, torch.device("cpu"), seed=11,
+                     spectrum="logspace", kappa=1e3)
+    levels = []
+    for lr in (4e-3, 2e-3, 1e-3):
+        r = run_one("signsgd", {"lr": lr, "momentum": 0.0}, prob,
+                    target_loss=0.0, max_iters=int(6000 * 4e-3 / lr),
+                    lmo_dtype="float32", keep_history=True)
+        level, settled = _plateau(r["grad_norm_history"])
+        assert settled, (lr, level)
+        levels.append(level)
+
+    for a, b in zip(levels, levels[1:]):
+        assert abs(a / b - 2.0) < 0.15, levels
+
+
+# --------------------------------------------------------------------------
+# Double-blind supplement
+# --------------------------------------------------------------------------
+
+
+def test_no_identifying_material():
+    """`code/` must stay anonymous, checked here rather than remembered.
+
+    Author names and absolute paths arrive one docstring at a time, so the scan
+    belongs in the suite that runs before every night, not in a pre-submission
+    checklist that gets read once.
+    """
+    import anonymize
+
+    findings, _ = anonymize.scan_tree()
+    assert not findings, (
+        "identifying material in code/ -- run `python3 -m anonymize --check`:\n  "
+        + "\n  ".join(str(f) for f in findings[:20]))
+
+
+def test_anonymity_scan_actually_catches_things():
+    """A scan that cannot fail is not a check.
+
+    Feeds the scanner one line per rule and requires a hit, so that a botched regex
+    (or an over-broad ALLOW entry) shows up here rather than as a clean bill of
+    health on a leaky bundle.
+    """
+    import anonymize
+
+    # Each fixture is a leak the scanner must catch, so each line would trip the
+    # scan on this very file. The `anonymize: allow` pragma exempts them
+    # individually -- visibly, and without exempting the rest of the file.
+    for text, rule in [
+        ("# thanks to Alexey for the CNN2 baseline", "project-identifier"),   # anonymize: allow
+        ("contact: someone@example.org", "email"),                           # anonymize: allow
+        ('DATA = "/home/jdoe/project/data"', "home-path"),                    # anonymize: allow
+        ("see https://github.com/intsystems/some-repo", "project-repo"),      # anonymize: allow
+        ("ORCID 0000-0002-1825-0097", "orcid"),                               # anonymize: allow
+    ]:
+        hits = anonymize.scan_text("fake.py", text)
+        assert hits, f"rule {rule!r} failed to fire on: {text}"
+
+    # A name inside a FILENAME is the shape a `\b...\b` rule misses, because `\b`
+    # counts `_` as a word character. This is the leak that got past the first
+    # version of the scanner, so it is pinned explicitly.
+    for text in ("from lesha_nanogpt import Model",          # anonymize: allow
+                 "| `lesha_nanogpt.py` | superseded |",      # anonymize: allow
+                 "smirnova_2026.tex",                        # anonymize: allow
+                 "handle: alexey1"):                         # anonymize: allow
+        assert anonymize.scan_text("fake.py", text), \
+            f"a name joined by _ . or a digit must still be caught: {text}"
+
+    # ... and upstream citations must NOT fire, or the fix would be to delete them.
+    for text in ("from https://github.com/KellerJordan/modded-nanogpt",
+                 "adapted from https://github.com/NoahAmsel/PolarExpress by @varunneal",
+                 "    @torch.compile",
+                 "the polar factor is released under a permissive licence"):
+        assert not anonymize.scan_text("fake.py", text), f"false positive on: {text}"
+
+
+def test_notebook_stripping_removes_outputs_not_source():
+    """The bundler must clear outputs and leave the code intact."""
+    import json
+
+    import anonymize
+
+    leak = "/home/" + "jdoe"          # assembled, so this file stays scannable
+    nb = {"cells": [{"cell_type": "code", "source": [f"print('{leak}')\n"],
+                     "execution_count": 7,
+                     "outputs": [{"output_type": "stream", "text": [leak + "\n"]}]},
+                    {"cell_type": "markdown", "source": ["# title\n"]}],
+          "metadata": {}, "nbformat": 4, "nbformat_minor": 5}
+    out = json.loads(anonymize.strip_notebook(json.dumps(nb)))
+    assert out["cells"][0]["outputs"] == []
+    assert out["cells"][0]["execution_count"] is None
+    assert out["cells"][0]["source"] == [f"print('{leak}')\n"], "source must survive"
+    assert out["cells"][1] == nb["cells"][1], "markdown cells are untouched"
+
+
+def test_every_code_section_has_a_readme():
+    """Each section of the tree documents itself, so the supplement is navigable.
+
+    A reviewer opening `code/` should be able to find the thing they want without
+    reading source. Adding a package without a README is the easy way to break that,
+    so it fails here.
+    """
+    from pathlib import Path
+
+    root = Path(__file__).resolve().parents[1]
+    sections = {"common", "centralized", "federated", "synthetic",
+                "counterexamples", "nanogpt", "tests", "notebooks"}
+    missing = sorted(name for name in sections
+                     if (root / name).is_dir() and not (root / name / "README.md").exists())
+    assert not missing, f"no README.md in: {missing}"
+    for doc in ("README.md", "REPRODUCE.md", "ANONYMIZATION.md"):
+        assert (root / doc).exists(), f"code/{doc} is missing"
 
 
 # --------------------------------------------------------------------------
