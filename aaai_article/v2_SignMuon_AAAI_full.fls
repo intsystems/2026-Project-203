@@ -150,6 +150,11 @@ INPUT C:\Users\Alex\AppData\Local\Programs\MiKTeX\tex\latex\epstopdf-pkg\epstopd
 INPUT C:\Users\Alex\AppData\Local\Programs\MiKTeX\tex\latex\00miktex\epstopdf-sys.cfg
 INPUT C:\Users\Alex\AppData\Local\Programs\MiKTeX\tex\latex\00miktex\epstopdf-sys.cfg
 INPUT C:\Users\Alex\AppData\Local\Programs\MiKTeX\tex\latex\00miktex\epstopdf-sys.cfg
+INPUT .\signmuon_body.tex
+INPUT .\signmuon_body.tex
+INPUT .\signmuon_body.tex
+INPUT .\signmuon_body.tex
+INPUT signmuon_body.tex
 INPUT C:\Users\Alex\AppData\Local\Programs\MiKTeX\fonts\tfm\public\newtx\ntx-Regular-tlf-t1.tfm
 INPUT C:\Users\Alex\AppData\Local\Programs\MiKTeX\fonts\tfm\public\newtx\ntx-Bold-tlf-t1.tfm
 INPUT C:\Users\Alex\AppData\Local\Programs\MiKTeX\fonts\tfm\public\newtx\ntx-Regular-tlf-t1.tfm
