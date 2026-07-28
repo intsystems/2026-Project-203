@@ -108,11 +108,20 @@ references it is read against are `ρ = 1` (SGD), `ρ = ‖G‖₁/(‖G‖_F√
 
 ## Two conventions that move numbers
 
-* **Grids are logarithmic and 3–4 decades wide**, because the optimal `η` spans
-  that much across these methods. A narrower grid lands its optimum on an edge,
-  which is an upper bound rather than a tuned value; the tuner prints
-  `[BOUNDARY]` and records `on_grid_boundary` in the JSON when that happens, and
-  such a row should have its grid widened before it is reported.
+* **Grids are logarithmic, four decades wide, and set per step-norm family.**
+  A sign step has length `η√(mn)` and an LMO step `η√r`, so at `100×100` their
+  optimal `η` are a decade apart and they need different windows; each window
+  runs up to the stability edge that `--mode stability` measures for its family
+  (`η_max ≈ 0.11` for a sign step, `≈ 1.5` for an LMO one), so it spans the whole
+  usable range. Override a whole family at once with `--lr-grid sign=lo:hi:xN`
+  or `--lr-grid lmo=...`; a method name still overrides one method. Enumerating
+  the ten grids by hand instead is what put `muonusign` and `ef21signmuon` — both
+  of which take an LMO-length step — on the sign window, so keep them derived
+  from `SIGN_FAMILY`/`LMO_FAMILY` as `family_lr_grids` does.
+  An optimum landing on an edge is an upper bound rather than a tuned value; the
+  tuner prints `[BOUNDARY]`, records `on_grid_boundary` in the JSON, and
+  `SUMMARY.md` daggers the censored cell. Such a row should have its grid
+  widened before it is reported.
 * **`--spectrum uniform`** (the default) leaves the condition number to the draw
   — near `1e4` at `m = n = 100`. `--spectrum logspace --kappa K` fixes `L = 1`
   and `L/σ = K` exactly, which is what `kappa` sweeps.

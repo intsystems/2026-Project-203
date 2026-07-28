@@ -170,25 +170,47 @@ DUAL_NORM: Dict[str, str] = {
 # Grid syntax: ``"lo:hi:step"`` is linear, ``"lo:hi:xN"`` logarithmic with N
 # points per decade; both endpoints inclusive.
 #
-# The grids below are logarithmic and three to four decades wide, because the
-# optimal eta differs by three orders of magnitude across these methods -- the
-# sign family's step has fixed length eta*sqrt(mn) and SGD's scales with the
+# The grids below are logarithmic and four decades wide, because the optimal eta
+# differs by three orders of magnitude across these methods -- a sign step has
+# fixed length eta*sqrt(mn), an LMO step eta*sqrt(r), and SGD's scales with the
 # gradient. A grid narrow enough to miss that lands its optimum on an edge,
 # which is an upper bound and not a tuned value; ``tune`` flags any such row.
-DEFAULT_LR_GRIDS: Dict[str, str] = {
-    "signmuon":      "1e-5:1e-2:x6",
-    "muonusign":     "1e-5:1e-2:x6",
-    "muonsign":      "1e-5:1e-2:x6",
-    "ef21signmuon":  "1e-5:1e-2:x6",
-    "ef21muonusign": "1e-4:1e-1:x6",
-    "ef21muonsign":  "1e-4:1e-1:x6",
-    "muon":          "1e-4:1e-1:x6",
-    "signsgd":       "1e-5:1e-2:x6",
-    "sgd":           "1e-3:1e+1:x6",
-    "adam":          "1e-3:1e+1:x6",
+#
+# One spec per *family* rather than per method, keyed off the same
+# SIGN_FAMILY/LMO_FAMILY lists that ``step_norm`` and ``DUAL_NORM`` use. Written
+# out by hand, the two drifted apart: ``muonusign`` and ``ef21signmuon`` take an
+# LMO-length step (``||s||_F = sqrt(r)``, so their optimal eta is ~10x that of a
+# sign step at 100x100) but had been given the sign-family grid, which censored
+# ``muonusign``'s optimum at the upper edge in the grid and horizon stages and
+# left ``ef21signmuon``'s smallest floor point still unsettled after 60k
+# iterations. Deriving the grid from the family is what stops that recurring.
+#
+# The upper end of each normalized family's grid sits at the stability edge
+# measured by ``--mode stability`` (eta_max ~ 0.11-0.13 for a sign step, ~1.5-1.9
+# for an LMO step at 100x100), so the grid spans the whole usable range: an
+# optimum still landing on the top point is at the edge of *stability*, which is
+# a fact about the method, not a grid too narrow to contain it.
+def family_lr_grids(sign: str, lmo: str, sgd: str, adam: str) -> Dict[str, str]:
+    """One grid spec per method, expanded from one spec per step-norm family."""
+    grids = {m: sign for m in SIGN_FAMILY}
+    grids.update({m: lmo for m in LMO_FAMILY})
+    grids["sgd"], grids["adam"] = sgd, adam
+    return grids
+
+
+#: Family names accepted by ``--lr-grid`` in place of a method name.
+LR_GRID_FAMILIES: Dict[str, Sequence[str]] = {
+    "sign": SIGN_FAMILY, "lmo": LMO_FAMILY,
 }
 
-DEFAULT_MOMENTUM_GRID = "0.0,0.5,0.9,0.95"
+DEFAULT_LR_GRIDS: Dict[str, str] = family_lr_grids(
+    sign="1e-5:1e-1:x6", lmo="1e-4:1e+0:x6",
+    sgd="1e-3:1e+1:x6", adam="1e-3:1e+1:x6",
+)
+
+#: Momentum is bounded below by 0 and above by 1; 0.99 is here because SGD's
+#: optimum reached 0.95 -- the previous top point -- at the two longest budgets.
+DEFAULT_MOMENTUM_GRID = "0.0,0.5,0.9,0.95,0.99"
 
 #: One instance per seed, results averaged. Three draws rather than one, because
 #: every statement here is about a *random* instance and one draw cannot support
@@ -1081,12 +1103,20 @@ def mode_kappa(args, problems, lr_grids, momenta, out_root) -> List[Dict]:
                         target_loss=args.target_loss, max_iters=args.max_iters,
                         init_seed=args.init_seed, lmo_dtype=args.lmo_dtype)
             rows.append({"kappa": kappa, "lr": best["kwargs"]["lr"],
+                         "momentum": best["kwargs"].get("momentum"),
+                         "schedule": best["schedule"],
                          "iters": best["iters_to_converge"],
                          "reached": best["reached_target"],
                          "best_f": best["best_f"],
-                         "best_gnorm": best["best_gnorm"]})
+                         "best_gnorm": best["best_gnorm"],
+                         # Recorded here for the same reason as in every other
+                         # tuning mode: without it a censored optimum reads as a
+                         # measured one, and this sweep tunes at every kappa.
+                         "on_grid_boundary": best["on_grid_boundary"]})
+            flag = ("  [BOUNDARY: " + ", ".join(rows[-1]["on_grid_boundary"]) + "]"
+                    if rows[-1]["on_grid_boundary"] else "")
             print(f"  -> lr*={rows[-1]['lr']:.4g} iters={rows[-1]['iters']:.0f} "
-                  f"best_gn={rows[-1]['best_gnorm']:.4e}")
+                  f"best_gn={rows[-1]['best_gnorm']:.4e}{flag}")
         slope, r2 = loglog_fit([r["kappa"] for r in rows],
                                [r["best_gnorm"] for r in rows])
         rec = {"method": method, "rows": rows, "kappas": list(args.kappas),
@@ -1227,8 +1257,10 @@ def get_args():
 
     g = p.add_argument_group("grids")
     g.add_argument("--lr-grid", nargs="*", default=[],
-                   metavar="METHOD=lo:hi:step", help="override one method's grid; "
-                   "'lo:hi:step' is linear, 'lo:hi:xN' is N points per decade")
+                   metavar="METHOD|FAMILY=lo:hi:step",
+                   help="override the grid of one method, or of a whole "
+                        "step-norm family ('sign', 'lmo'); 'lo:hi:step' is "
+                        "linear, 'lo:hi:xN' is N points per decade")
     g.add_argument("--momentum-grid", type=str, default=None)
     g.add_argument("--schedules", nargs="+", default=None,
                    choices=list(SCHEDULES),
@@ -1282,9 +1314,13 @@ def main() -> None:
     lr_grids = dict(DEFAULT_LR_GRIDS)
     for override in args.lr_grid:
         key, _, spec = override.partition("=")
-        if key not in METHOD_CLASSES:
-            raise ValueError(f"--lr-grid: unknown method {key!r}")
-        lr_grids[key] = spec
+        if key in LR_GRID_FAMILIES:
+            lr_grids.update({m: spec for m in LR_GRID_FAMILIES[key]})
+        elif key in METHOD_CLASSES:
+            lr_grids[key] = spec
+        else:
+            raise ValueError(f"--lr-grid: unknown method or family {key!r} "
+                             f"(families: {', '.join(LR_GRID_FAMILIES)})")
     momenta = parse_momentum_grid(args.momentum_grid)
 
     problems = [Quadratic(args.m, args.n, args.device, seed,

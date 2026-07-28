@@ -36,8 +36,9 @@ steps, not their size. The batched runner advances a whole
 ``(eta, momentum, schedule)`` grid as one ``[B, m, n]`` trajectory for about
 what a single trajectory costs, which leaves the iteration counts -- not the
 grids -- as what a stage is paying for. Trim a grid because it tells you
-nothing, not because it is expensive. The estimates below are derived that way
-rather than measured; treat the first full run as the measurement.
+nothing, not because it is expensive. The estimates below are the 2026-07-29
+A4000 run (68 min for all seven), scaled by the 1.65x the widened learning-rate
+and momentum grids added to the four tuning stages.
 """
 
 from __future__ import annotations
@@ -91,7 +92,7 @@ STAGES: List[Stage] = [
         "Largest stable eta per method, and the step length eta_max*||S||_F it "
         "corresponds to. SGD is the built-in control: its eta_max must land on "
         "the textbook 2/L, and if it does not, nothing else here is trustworthy.",
-        estimate="~5 min",
+        estimate="~2 min",
         quick_args=["--m", "64", "--n", "64", "--stability-iters", "150",
                     "--problem-seeds", "1337"],
     ),
@@ -101,13 +102,10 @@ STAGES: List[Stage] = [
         "the tuned trajectory -- the quantity the descent lemma needs positive "
         "and the divergence theorems drive negative. The one measurement here "
         "that is about the methods rather than the tuning protocol.",
-        estimate="~5 min",
+        estimate="~3 min",
         quick_args=["--m", "64", "--n", "64", "--align-iters", "300",
                     "--problem-seeds", "1337", "--momentum-grid", "0.0,0.9",
-                    "--lr-grid", "signmuon=1e-4:1e-2:x2", "muonsign=1e-4:1e-2:x2",
-                    "signsgd=1e-4:1e-2:x2", "ef21signmuon=1e-4:1e-2:x2",
-                    "muon=1e-3:1e-1:x2", "muonusign=1e-3:1e-1:x2",
-                    "ef21muonusign=1e-3:1e-1:x2", "ef21muonsign=1e-3:1e-1:x2",
+                    "--lr-grid", "sign=1e-4:1e-2:x2", "lmo=1e-3:1e-1:x2",
                     "sgd=1e-2:1e0:x2", "adam=1e-2:1e0:x2"],
     ),
     Stage(
@@ -120,18 +118,18 @@ STAGES: List[Stage] = [
         # like 1/eta, so the budget does too, and widening the grid costs
         # superlinearly for no extra slope. The longest budget sets the wall
         # clock of this stage, which is why it is the slowest of the seven.
+        # One spec per step-norm family, not per method: written out per method,
+        # ``ef21signmuon`` had been given the sign-family window although its
+        # step is an LMO one, and its smallest eta was then still 10x too small
+        # to plateau inside 60k iterations.
         args=["--floor-iters", "3000", "--floor-max-iters", "60000",
-              "--lr-grid", "signmuon=6e-5:2e-3:x4", "muonsign=6e-5:2e-3:x4",
-              "signsgd=6e-5:2e-3:x4", "ef21signmuon=6e-5:2e-3:x4",
-              "muon=6e-4:2e-2:x4", "muonusign=6e-4:2e-2:x4",
-              "ef21muonusign=6e-4:2e-2:x4", "ef21muonsign=6e-4:2e-2:x4",
+              "--lr-grid", "sign=6e-5:2e-3:x4", "lmo=6e-4:2e-2:x4",
               "sgd=6e-3:2e-1:x4", "adam=6e-4:2e-2:x4"],
-        estimate="~25 min",
+        estimate="~35 min",
         quick_args=["--m", "64", "--n", "64", "--floor-iters", "1200",
                     "--floor-max-iters", "20000", "--problem-seeds", "1337",
                     "--methods", "signmuon", "signsgd", "muonsign", "muon",
-                    "--lr-grid", "signmuon=2e-4:2e-3:x3", "muonsign=2e-4:2e-3:x3",
-                    "signsgd=2e-4:2e-3:x3", "muon=2e-3:2e-2:x3"],
+                    "--lr-grid", "sign=2e-4:2e-3:x3", "lmo=2e-3:2e-2:x3"],
     ),
     Stage(
         "horizon", "horizon",
@@ -140,12 +138,12 @@ STAGES: List[Stage] = [
         "dual to each method's LMO ball. p = q = 1/2 is the nonconvex regime "
         "the theorems prove, p = q = 1 the strongly convex one.",
         args=["--budgets", "125", "250", "500", "1000", "2000"],
-        estimate="~10 min",
+        estimate="~15 min",
         quick_args=["--m", "64", "--n", "64", "--budgets", "125", "250", "500",
                     "--problem-seeds", "1337", "--momentum-grid", "0.0,0.9",
                     "--methods", "signmuon", "signsgd", "muon", "sgd",
-                    "--lr-grid", "signmuon=1e-4:1e-2:x3", "signsgd=1e-4:1e-2:x3",
-                    "muon=1e-3:1e-1:x3", "sgd=1e-2:1e1:x3"],
+                    "--lr-grid", "sign=1e-4:1e-2:x3", "lmo=1e-3:1e-1:x3",
+                    "sgd=1e-2:1e1:x3"],
     ),
     Stage(
         "kappa", "kappa",
@@ -153,34 +151,34 @@ STAGES: List[Stage] = [
         "decades at L = 1. Conditioning is the only knob that governs the "
         "dynamics of a quadratic, and the uniform draw leaves it to chance.",
         args=["--max-iters", "3000"],
-        estimate="~15 min",
+        estimate="~18 min",
         quick_args=["--m", "40", "--n", "40", "--max-iters", "1500",
                     "--kappas", "1e2", "1e3", "1e4", "--problem-seeds", "1337",
                     "--methods", "signmuon", "signsgd", "muon",
                     "--momentum-grid", "0.0,0.9",
-                    "--lr-grid", "signmuon=1e-4:1e-2:x3", "signsgd=1e-4:1e-2:x3",
-                    "muon=1e-3:1e-1:x3"],
+                    "--lr-grid", "sign=1e-4:1e-2:x3", "lmo=1e-3:1e-1:x3"],
     ),
     Stage(
         "grid", "grid",
         "The fixed-target criterion: fewest iterations to F <= 1e-3 within "
         "5000, eta and momentum tuned per method. Grids are logarithmic and "
-        "three to four decades wide, since the optimal eta spans that much "
-        "across these methods; any optimum landing on an edge is flagged "
-        "[BOUNDARY] and is an upper bound rather than a tuned value.",
-        estimate="~5 min",
+        "four decades wide, since the optimal eta spans three across these "
+        "methods, and each normalized family's grid runs up to its measured "
+        "stability edge; any optimum landing on an edge is flagged [BOUNDARY] "
+        "and is an upper bound rather than a tuned value.",
+        estimate="~10 min",
         quick_args=["--m", "64", "--n", "64", "--max-iters", "1500",
                     "--methods", "signmuon", "signsgd", "muon", "sgd",
                     "--momentum-grid", "0.0,0.9",
-                    "--lr-grid", "signmuon=1e-4:1e-2:x3", "signsgd=1e-4:1e-2:x3",
-                    "muon=1e-3:1e-1:x3", "sgd=1e-2:1e1:x3"],
+                    "--lr-grid", "sign=1e-4:1e-2:x3", "lmo=1e-3:1e-1:x3",
+                    "sgd=1e-2:1e1:x3"],
     ),
     Stage(
         "final", "final",
         "Re-runs the optima the grid stage found, with --save-histories, for "
         "the loss and gradient-norm curves.",
         args=["--save-histories"],
-        estimate="~2 min",
+        estimate="~3 min",
         quick_args=["--m", "64", "--n", "64", "--max-iters", "1500",
                     "--methods", "signmuon", "signsgd", "muon", "sgd"],
     ),
@@ -330,6 +328,22 @@ def _fmt(value, spec: str = ".4g") -> str:
         return str(value)
 
 
+_EDGE_LEGEND = ("A `†` marks a value censored at its grid edge: an upper bound "
+                "rather than a tuned optimum.")
+
+
+def _edge_flag(record: Dict, axis: str) -> str:
+    """Mark a tuned value censored at a grid edge, on the axis that was censored.
+
+    The flag was recorded by every tuning mode but rendered only in the tuned
+    comparison, so a censored optimum in the per-budget or per-kappa breakdown
+    read as a measured one. It goes on the cell it belongs to -- a momentum hit
+    marks momentum, not the perfectly good learning rate beside it -- and is a
+    dagger rather than a column because most rows do not carry it.
+    """
+    return "†" if axis in (record.get("on_grid_boundary") or []) else ""
+
+
 def summarize(out: Path) -> str:
     """Rebuild SUMMARY.md from whatever result JSON is on disk."""
     lines: List[str] = ["# Synthetic benchmark results", ""]
@@ -351,10 +365,12 @@ def summarize(out: Path) -> str:
         lines += rows + [""]
 
     # -- grid / final ---------------------------------------------------
-    for mode, title in (("grid", "Tuned comparison (`tab:synthetic_results`, "
-                                 "`tab:grid_search`)"),
+    # `tab:synthetic_results` / `fig:synthetic_results` are the *superseded*
+    # 500x500 run and are not regenerated from here; these two stages feed the
+    # current-protocol pair.
+    for mode, title in (("grid", "Tuned comparison (`tab:synthetic_tuned`)"),
                         ("final", "Re-run at the tuned optima "
-                                  "(`fig:synthetic_results`)")):
+                                  "(`fig:synthetic_main`)")):
         payloads = _load(out, mode)
         if not payloads:
             continue
@@ -381,15 +397,17 @@ def summarize(out: Path) -> str:
                   "The descent lemma needs it positive; the divergence theorems "
                   "make it negative. The reference column is the closed form for "
                   "`d = compressor(grad F)` at `X_0` with no momentum, so it is "
-                  "only comparable to a row whose tuned momentum is 0.", "",
+                  "only comparable to a row whose tuned momentum is 0. "
+                  + _EDGE_LEGEND, "",
                   _problem_line(payloads),
                   "| method | min rho | 1st pct | median | mean | % negative | closed form | tuned |",
                   "| :--- | ---: | ---: | ---: | ---: | ---: | ---: | :--- |"]
         for p in payloads:
             r = p["result"]
             rho = r.get("rho")
-            cfg = (f"eta={_fmt(r['kwargs']['lr'])}, "
-                   f"mu={_fmt(r['kwargs'].get('momentum', 0))}")
+            cfg = (f"eta={_fmt(r['kwargs']['lr'])}{_edge_flag(r, 'lr')}, "
+                   f"mu={_fmt(r['kwargs'].get('momentum', 0))}"
+                   f"{_edge_flag(r, 'momentum')}")
             ref = _fmt(r.get("rho_reference_at_X0"), ".4f")
             if not rho:
                 lines.append(f"| {p['_method']} | — | — | — | — | — | {ref} | {cfg} |")
@@ -448,7 +466,8 @@ def summarize(out: Path) -> str:
                   "family; the Frobenius column is the same trajectory in a "
                   "family-independent norm. `p = q = 1/2` is the nonconvex "
                   "L-smooth regime the theorems prove, `p = q = 1` the strongly "
-                  "convex one. SGD has no floor, so no power law fits it.", "",
+                  "convex one. SGD has no floor, so no power law fits it. "
+                  + _EDGE_LEGEND, "",
                   _problem_line(payloads),
                   "| method | dual | p (‖∇F‖_*²) | R² | p (‖∇F‖_F) | R² | p (F) | R² | q (η*) | R² |",
                   "| :--- | :--- | ---: | ---: | ---: | ---: | ---: | ---: | ---: | ---: |"]
@@ -469,8 +488,9 @@ def summarize(out: Path) -> str:
                       "| ---: | ---: | ---: | :--- | ---: | ---: | ---: |"]
             for row in p["result"].get("rows", []):
                 lines.append(
-                    f"| {row['T']} | {_fmt(row['lr'])} | "
-                    f"{_fmt(row.get('momentum'))} | {row.get('schedule', '?')} | "
+                    f"| {row['T']} | {_fmt(row['lr'])}{_edge_flag(row, 'lr')} | "
+                    f"{_fmt(row.get('momentum'))}{_edge_flag(row, 'momentum')} | "
+                    f"{row.get('schedule', '?')} | "
                     f"{_fmt(row['best_f'], '.4e')} | "
                     f"{_fmt(row['best_gnorm'], '.4e')} | "
                     f"{_fmt(row.get('best_dual'), '.4e')} |")
@@ -515,7 +535,8 @@ def summarize(out: Path) -> str:
         header = " | ".join(f"κ={k:g}" for k in kappas)
         lines += ["## Condition-number sweep", "",
                   "Best `‖∇F‖` reached within the budget, tuned at each κ. "
-                  "Spectra are log-spaced with `L = 1`, so κ is exact.", "",
+                  "Spectra are log-spaced with `L = 1`, so κ is exact. "
+                  + _EDGE_LEGEND, "",
                   _problem_line(payloads),
                   f"| method | {header} | d log‖∇F‖/d log κ | R² |",
                   "| :--- |" + " ---: |" * (len(kappas) + 2)]
@@ -526,7 +547,20 @@ def summarize(out: Path) -> str:
             lines.append(f"| {p['_method']} | {cells} | "
                          f"{_fmt(r.get('exponent_kappa'), '.3f')} | "
                          f"{_fmt(r.get('r2_kappa'), '.3f')} |")
-        lines.append("")
+        lines += ["", "<details><summary>Per-κ optima</summary>", ""]
+        for p in payloads:
+            lines += [f"**{p['_method']}**", "",
+                      "| κ | η* | momentum | schedule | iterations | min ‖∇F‖ |",
+                      "| ---: | ---: | ---: | :--- | ---: | ---: |"]
+            for row in p["result"].get("rows", []):
+                it = (f"{row['iters']:.0f}" if row.get("reached") else "none")
+                lines.append(
+                    f"| {row['kappa']:g} | {_fmt(row['lr'])}{_edge_flag(row, 'lr')} | "
+                    f"{_fmt(row.get('momentum'))}{_edge_flag(row, 'momentum')} | "
+                    f"{row.get('schedule', '?')} | "
+                    f"{it} | {_fmt(row['best_gnorm'], '.4e')} |")
+            lines.append("")
+        lines += ["</details>", ""]
 
     if len(lines) <= 2:
         lines.append("_No result files found._")

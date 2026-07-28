@@ -46,6 +46,12 @@ use_paper_style()
 #: 5 pt ones. The paper's own figure is ``fig_trajectories``, at TEXT_WIDTH.
 PANEL_WIDTH = 0.48 * TEXT_WIDTH
 
+#: Most entries a shared legend fits across ``TEXT_WIDTH`` before it overruns the
+#: figure. Set from the longest label set here (``EF21-MuonUSign`` and friends);
+#: shorter labels would fit more, but the cost of being conservative is one line
+#: of white space and the cost of being wrong is a silently clipped label.
+MAX_LEGEND_COLS = 5
+
 #: ``stage -> the figures that need it``. Used to report what a partial run is
 #: missing, instead of failing on the first absent file.
 FIGURES = {
@@ -126,9 +132,15 @@ def fig_trajectories(plt, data: Dict[str, dict]):
 
     Two panels rather than two separate subfigures, for the same reason the CIFAR
     and counterexample figures are laid out this way: the panels draw the same
-    seven methods, so a shared legend under both says once what two legends would
-    say twice -- and at a two-column width neither panel has to give up a third
-    of its area to hold it.
+    methods, so a shared legend under both says once what two legends would say
+    twice -- and at a two-column width neither panel has to give up a third of
+    its area to hold it.
+
+    The legend wraps past ``MAX_LEGEND_COLS``. In one row, ten entries of these
+    lengths overrun ``TEXT_WIDTH`` at both ends, and matplotlib centres the
+    overrun rather than reporting it: the outermost labels are simply clipped
+    off the page, which in the first version of this figure cost SignMuon its
+    name and Adam its entry.
     """
     fig, axes = plt.subplots(1, 2, figsize=(TEXT_WIDTH, 2.4), squeeze=False)
     specs = [("loss_history", "$F(X_t)$"),
@@ -141,9 +153,11 @@ def fig_trajectories(plt, data: Dict[str, dict]):
     axes[0][0].set_title(_problem_caption(list(data.values())), color=MUTED,
                          fontsize=FS_ANNOT - 1.5, loc="left", pad=6)
     handles, labels = axes[0][0].get_legend_handles_labels()
-    figure_legend(fig, handles, labels, ncol=len(labels))
-    fig.subplots_adjust(left=0.08, right=0.99, top=0.90, bottom=0.30,
-                        wspace=0.22)
+    rows = 1 + (len(labels) - 1) // MAX_LEGEND_COLS
+    ncol = -(-len(labels) // rows)          # balance the rows, don't fill-then-spill
+    figure_legend(fig, handles, labels, ncol=ncol)
+    fig.subplots_adjust(left=0.08, right=0.99, top=0.90,
+                        bottom=0.30 + 0.08 * (rows - 1), wspace=0.22)
     return fig
 
 
