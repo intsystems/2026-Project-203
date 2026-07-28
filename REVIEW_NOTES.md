@@ -600,3 +600,576 @@ Unchanged from §6 above and re-confirmed against the current `.tex`:
 * six `Appendix\ref{...}` without a space (lines 469, 474, …) render as
   "AppendixA"; Table 5's MuonUSign row still reads `-%`.
 * Algorithm 1 still omits Muon's `√max(1,m/n)` factor, which the code applies.
+
+---
+
+# Theory vetting — 2026-07-28
+
+Full re-derivation of every theorem, lemma, corollary, proposition and remark in
+`aaai_article/` (main text + the three `\input`ed appendices), in exact
+rational/symbolic arithmetic where possible, plus an independent audit of every
+citation of `EF_Muon_Friends/template.tex` (Gruntkowska et al., EF21-Muon) and a
+code-vs-boxes cross-check. Experiments were out of scope except where a number
+feeds a theoretical claim.
+
+## A. What is confirmed correct
+
+Everything load-bearing. Specifically re-derived and confirmed:
+
+* **Prop. `prop:reduction`** — `M~_t = g_t G`, `g_t > 0` under both momentum
+  rules; increment identity; divergence under non-summable steps.
+* **Thm. 1** — `O` orthogonal; `O v1 = u1`; `<u1 v1^T, S> = -43/103`;
+  `||O||_1 = 532/103`; `polar(G) = O` with `sigma = (1001,1,1,1)`;
+  `<G, sign(polar(G))> = -42468/103`. The displayed numeric `G` matches
+  `1000*u1 v1^T + O` in every entry to the printed precision.
+* **Thms. 2-3** — `D_42 = -0.2425356250` (`= -1/sqrt(17)`); `sign(D)` disagrees
+  with `S` at exactly `(4,2)` and nowhere else; `C = 10.3656412507`;
+  `<G,D> = -13.8879213`; `<G, sign(D)> = -76` exactly.
+* **Thm. 4 (EF21-SignMuon)** — the *entire* construction, in exact rationals:
+  the alpha table `7/10, 21/20, 131/200, 24/25`; the period-2 cycle `d_B, d_A`
+  from `t = 3` (checked to `t = 25`); every residual entrywise nonzero; the
+  `(2,2)` average `+7/40` against the target `-7/25`; `X_0,X_1,X_2 = Z_1,Z_2,Z_3`;
+  the constant shift `[[-7/20, 21/20],[-7/20,-7/20]]`; the residues `W_12 mod p_1`
+  and `W_21 mod p_2` alternating `rho^+/rho^-` with the parity the proof needs;
+  band disjointness including the wrap-around at `rho_2^- = 0`; ball disjointness
+  `||Z_j - Z_k||_F >= 7/10 > 2r`; `max_t (X_t)_22 = 7/10` (so Rem.
+  `rem:efsm_bdd` holds); the rescaling lemma; and `49/240` per period = `49/480`
+  per step.
+* **Thm. 4, the Nesterov branch** — this is the one step that could not be
+  checked by hand, and it is right. Solving `H_3[0,1] = H_3[1,0]` symbolically
+  in mu returns `T = 4(mu+1)(35mu^2+48mu+24)/(117mu(2mu+1))`, *identically equal*
+  to the printed `T`. Under `mu = s/(1+s)` the two leading minors of `H_3` have
+  numerators `702s^3+1291s^2+699s+120` and a degree-7 polynomial with
+  coefficients `[600444, 2335316, 3919204, 3721944, 2156145, 751938, 144405,
+  11700]` — all strictly positive, so `H_3 > 0` on `(0,1)` and
+  `polar(M~_3) = Dbar^-`. `T > 0` throughout. Also confirmed:
+  `Mbar^+- = Dbar^+- * [[24/25, -+7/25],[-+7/25, 337/300]]` with the second
+  factor SPD and `det = 1`; singular values `3/4, 4/3`; `A_std = (1+mu)/(1-mu)`
+  and `A_Nes = (1+mu)/((1-mu)(1+2mu))` both forced by
+  `(1-mu)G^+- = Mbar^+- - mu Mbar^-+`. An independent float64 implementation
+  written from the LaTeX alone reproduces `49/240` per period for
+  `mu in {0, .5, .9, .95, .99}` x {standard, Nesterov} to `2.5e-14`.
+* **Lem. `lem:signcontr`** — the identity, the `(1 - 1/d)` bound, the exact
+  `alpha(Y) = (2 - ||Y||_0/d)||Y||_1^2/(d||Y||_F^2)`, the `2/pi` Gaussian limit,
+  the `(2d-1)/d^2` 1-sparse value, and "`1/d` is an infimum, not attained".
+* **Rem. `rem:normmismatch`** — the `Y_delta = (1-delta)I + delta*J` computation
+  (`C(Y)-Y = (1-delta)(J/n - I)`, eigenvalues `0, -(1-delta)`,
+  `||Y_delta||_{2->2} = 1+(n-1)delta`, ratio -> 1).
+* **Rem. `rem:dimension`** — the downlink residual recursion is exactly what
+  `central_alg_ud` produces.
+* **Rem. `rem:gluon`** — the conic-combination bound
+  `rhobar <= (sum_j alpha_j/rhobar^(j))^-1` is correct given the source's `rho`
+  convention.
+* **`eq:wd_ball`** — the decoupled-decay gain bound
+  `gamma(W_t) <= max{gamma(W_0), 1/lambda_wd}`.
+* **Unit-gain appendix** — `gamma(A) = ||A||_F/sqrt(m)`;
+  `lambda_l = sqrt(m)/||s||_F`; the closed forms `sqrt(max(1,m/n))` and
+  `1/sqrt(n)`; He/Kaiming gains `sqrt(2)` and `1/sqrt(3)`; the factor-13 span
+  across ResNet-18; `sqrt(27) -> sqrt(512)`; the Nesterov-deviation inequality
+  `E||grad f - M~_t||^2 <= (1-beta)^2 E||grad f - M_t||^2 + 3 beta^2 sigma^2`
+  (correctly labelled an expectation, not a corollary).
+* **`app:mishra`** — the internal algebra is right: the sign-error identity, the
+  step from `<G, sign(polar(G))> < 0` to `sum |G_ij| q_ij > (1/2)||G||_1`,
+  `R_T > G_T`, and the per-step increase `(eta/4)(42468/103)`.
+* **The EF21-Muon reduction, against the actual source.** Every one of the eight
+  citations lands on the right object. Def. 1, Alg. 3's loop order, the
+  `beta = 1-mu` correspondence, the `K = T+1` index shift and the duplicated
+  `X_0` term, Thm. 19's threshold `gamma_i <= (2 L_i^0 + 2 sqrt(zeta_i))^-1` and
+  its `gamma`-weighted LHS, the sharp step `G^sharp = ||G||_* U V^T`, Rem. 23
+  (exactly the two `alpha_P^-2` terms get the `rhobar_i^2` factor), App. D's
+  `alpha > 1 - rhounder^2/rhobar^2` (so **`r_i`, not `sqrt(r_i)`**, and it really
+  is App. D), dropout `alpha_P = p`, Top-K SVD
+  `alpha_P = 1 - sigma_{K+1}^2/sigma_1^2`, `(rhounder_i, rhobar_i) =
+  (1, sqrt(r_i))` from their Rem. 7, and the Assumption correspondence including
+  "`f_j >= f_j^*` only for the `(L0,L1)` result". The source imposes **no**
+  bounded-iterate, smoothness-region or client-sampling hypothesis, and `N = 1`
+  is covered.
+* **The `cor:l0l1` footnote is accurate.** Their printed second step-size
+  condition in Thm. 24 *is* tighter than the display its own proof establishes,
+  by exactly `K+1`. (The same slip is in their `p = 1` Thm. 6.) The correction is
+  load-bearing: the printed version tightens with `K` and would kill the
+  constant-`eta_i` claim.
+* **Code vs. algorithm boxes** — no sign placement is swapped in any of the three
+  independent implementations; the update is `X <- X - eta D` with `D = +U V^T`
+  everywhere; EF21 residuals and `alpha = mean|Delta|` match; the exact-SVD LMO
+  truncates to rank `r`; the NS quintic is an odd polynomial in `X` so it never
+  fabricates a null-space completion; unit-gain is implemented as
+  `eq:unit_gain_closed` with the paper's family assignment; `59/59` tests pass.
+
+## B. Errors — things that are stated and are not true
+
+**B1. The Newton-Schulz verification claim in the proof of Thm. 2 is false.**
+`v2_SignMuon_AAAI.tex:747` says of `<G,D> = -13.89`: *"which we verified for both
+the exact polar factor and the Newton--Schulz approximation used in practice."*
+At the paper's own 5-step quintic (`a,b,c` of Alg. 1, Frobenius normalisation)
+the value is **`+5.86 > 0` — it descends.** Measured:
+
+| NS steps | `D_42` | `C` | `<G,D>` at `M=100` |
+| ---: | ---: | ---: | ---: |
+| 3 | -0.00473 | 11.033 | **+10.56** |
+| 5 | -0.05033 | 10.897 | **+5.86** |
+| 6 | -0.38635 | 7.642 | -30.99 |
+| 8 | -0.43300 | 8.021 | -35.28 |
+| exact | -0.24254 | 10.366 | -13.89 |
+
+It turns negative only from 6 NS steps, or at `M >~ 216` with 5. This is the
+number `REVIEW_NOTES section 1` already recorded (`+5.86`); the decision taken
+there was to state the theorems for the exact oracle and keep the constants —
+which is fine — but the sentence claiming NS verification was never removed.
+**Either delete the clause, or raise `M` to 500** (`<G,D> = -110.90` exact,
+negative at every NS step count in `{5,6,8,10,20}`), which costs nothing since
+the proof is "exhibit a `G`". Thm. 3 needs no change: `<G, sign(D)> = -76` under
+every oracle.
+
+**B2. "Compressing *before* the oracle removes the coupling" (line 428) is
+wrong.** EF21-MuonUSign uses the *same* single magnitude
+`alpha_t = mean|Delta_t|` coupling all coordinates (`eq:ef21_central`,
+`central_alg_ef`). Nothing is decoupled. The appendix states the real reason
+correctly (`ef21_musign_reduction.tex:136`): EF21-SignMuon "tracks the
+non-Lipschitz polar factor and the momentum-tracking step breaks". That is
+exactly what the counterexample exploits — `D_t` jumps by `Theta(1)` between
+`Dbar^+` and `Dbar^-` regardless of `eta`, whereas the EF21 lemma needs a target
+that moves `O(eta)` per round. The main text should say that, not "removes the
+coupling".
+
+**B3. Coupled weight decay: `L -> L + lambda_wd` is off by a factor `r_i`
+(line 1194).** Adding `(lambda_wd/2)||W||_F^2` contributes
+`grad h = lambda_wd W`, and under **Assumption `as:2`** (nuclear-dual /
+spectral-primal) the sharp constant is
+`||lambda_wd Z||_* <= lambda_wd * r_i * ||Z||_{2->2}` (tight at `Z = I_r`). So
+the rates carry over with `L_i -> L_i + lambda_wd r_i`. `L -> L + lambda_wd` is
+the Euclidean statement, and the paper's rates are not Euclidean.
+
+**B4. The floor coefficient in `app:images_task` (line 824) has one power of
+`||S||_F` too many.** Balancing `eq:descent_lemma` gives
+`eta rho ||grad F||_F ||D||_F = eta^2 L ||D||_F^2 / 2`, i.e.
+`||grad F||_F = eta L ||S||_F / (2 rho)`. The text writes `L ||S||_F^2 / 2rho`.
+(The predicted slope of 1 and the "gap attributable to rho alone" remark are
+unaffected.)
+
+**B5. "...cannot shrink `W_t` at all" (line 1192) contradicts the same
+paragraph.** Fourteen lines later: "the update degenerates towards
+`-sign(W_t)`" — which does shrink `||W||`. The correct claim is that coupled
+decay cannot change the *step length* (fixed by `eq:two_families`) and therefore
+supplies no contraction factor; it acts by rotating the direction, and in the
+`rho_t >> 1` limit that rotation happens to point at `-sign(W_t)`.
+
+**B6. `thm:conv` (i) and the main-text display (lines 297-301) drop the
+`gamma`-weights.** The source bounds `sum_i w_i E||grad_i f||^2` with
+`w_i = gamma_i/((1/p) sum_l gamma_l)`; the two coincide only for a **common**
+`gamma_i`, but `thm:conv` (i) says "tuned `(gamma_i, mu)`" and then writes the
+unweighted quantity. `cor:smooth` states it correctly, and the appendix preamble
+flags it — the headline statements do not.
+
+**B7. `tab:dict` puts the sign downlink in `B_2(alpha_P)`.** Thm. 19 *as printed*
+requires `C_i^k in B(alpha_P)` (layer norm); only Rem. 23 licenses the `B_2`
+variant, at the `rhobar_i^2` price. The proof of `cor:smooth` says this; the
+table and its caption do not.
+
+**B8. `cor:smooth` cites [Cor. 2], which is stated for `p = 1`.** The layer-wise
+momentum tuning is not literally in the source (their Cor. 1 only substitutes the
+initialisation). The extension is routine, but cite "Cor. 1-2" or say "the same
+tuning applied per layer".
+
+**B9. `as:2`'s `(L0,L1)` sentence drops the subscripts.** It writes
+`L^0 + L^1 ||grad_i g(X)||_*`, but their Assumptions 8/9 carry `L^0_i, L^1_i` and
+`L^0_{i,j}, L^1_{i,j}` — and `cor:l0l1`'s own `L^1_{i,max}` presupposes the
+subscripted form.
+
+**B10. Fig. 2's caption cites the wrong lemma**
+(`ef21_signmuon_divergence.tex:31`): mu/variant-independence of the trajectory
+comes from `lem:efsm_realize` (each mu gets its own `f~` producing the same
+target sequence), not from `lem:efsm_reduction` (which removes `L` and `eta`).
+
+**B11. Line 469, `s_t^(j) = sign(A(M_t^(j)))` — still an ascent step.** Carried
+over from sections 6a/15, re-confirmed against the current `.tex` and the code.
+`A` is the argmin, so this is `-sign(polar(M))`. Should be `sign(D_t^(j))`.
+
+## C. Overstatements and scope gaps — true-ish, but a referee will press
+
+**C1. Thms. 1-3 are proved on a linear objective, which violates Assumption
+`as:1`.** Every convergence guarantee in the field assumes `f >= f^*`, so as
+stated the counterexamples sit outside the assumption set and a referee can call
+them vacuous. The fix is one remark and costs nothing: the iterates move along a
+fixed ray on which `f` increases, so replacing `f` by any `C^infty` function
+agreeing with `<G,W>` on `{f >= f(X_0) - 1}` and constant far below leaves the
+whole trajectory unchanged while making `f` bounded below — *exactly* the trick
+already used in `rem:efsm_bdd` for Thm. 4. Worth doing, if only for consistency
+of rigour between Thm. 4 and Thms. 1-3.
+
+**C2. "The matrices involved have condition number 16/9" (line 425 and
+`ef21_signmuon_divergence.tex:56`) is not literally true.** It holds for the tail
+`Mbar^+-`/`Dbar^+-`, which is where the divergence lives. But the preamble target
+`S_2` is **rank one** (cond = infinity), and in the Nesterov branch
+`M~_1 = S_1 H_1` has cond `= 1+T -> infinity` as `mu -> 0+` (`8.2e7` at
+`mu = 1e-8`). Rephrase as "the matrices driving the divergent tail".
+
+**C3. Thm. 4 tacitly fixes the rank-truncated LMO selection.** At `t = 2` the
+input `M~_2 = S_2` is rank one, where the spectral-ball LMO is genuinely
+non-unique — and the reduction appendix itself says so ("At rank-deficient `G`
+the LMO is non-unique, but any selection works"). For the *convergence* side any
+selection does work; for a *counterexample* the selection is part of the claim.
+Line 343 does define `polar` via the rank-truncated SVD, so the paper is
+internally consistent, but the theorem should say it. Relatedly, line 343 calls
+that object "the orthogonal polar factor" — for rank-deficient `Y` it is a
+partial isometry, not orthogonal.
+
+**C4. "An exhaustive numerical search found no such `G` for `N_dim <= 3`"
+(line 673) is not exhaustive, and no code in the repo produces it.** `grep` finds
+no script backing this claim anywhere under `code/`. It is also weaker than what
+is provable. Write `G = QH` (polar, `H >= 0`); then
+
+    <G, sign(polar(G))> = <H, sym(Q^T sign(Q))>,
+
+so **a counterexample with polar factor `Q` exists iff
+`lambda_min(sym(Q^T sign(Q))) < 0`**, and the whole question is a property of
+`O(n)` alone. For `n = 2` this *proves* the claim: writing `Q` as a rotation
+`[[c,-s],[s,c]]` or a reflection `[[c,s],[s,-c]]`, in both cases
+`Q^T sign(Q) = (|c|+|s|) I + (antisymmetric)`, and `H` symmetric kills the
+antisymmetric part, so `<G, sign(polar(G))> = (|c|+|s|) tr(H) > 0`. (Numerics:
+`min lambda_min = 1.000` over `2e5` Haar `Q`.) For `n = 3` several independent
+searches — `5e5` Haar draws, Nelder-Mead/Powell multistart, and a vectorised
+annealed hill-climb — bottom out at `+0.005 ... +0.046`, never negative. For
+`n = 4` the same search reaches `-0.72`, and the paper's own `O` gives
+`spec sym(O^T sign(O)) = (-0.4175, 1.5825, 2, 2)` — i.e. the published instance
+is not even the worst one. **Recommend:** replace "exhaustive numerical search"
+with the `n = 2` proof plus "no `3x3` instance was found in a search over
+`O(3)`", and state the `lambda_min(sym(Q^T sign(Q)))` characterisation — it is
+two lines and it turns a soft claim into a sharp one.
+
+**C5. The unit-gain rule's premise fails for the oracle actually used.**
+`eq:unit_gain_closed` is derived from `||U V^T||_F = sqrt(r)` *exactly*. The
+5-step Newton-Schulz step used in every reported experiment is **6-22% shorter**
+than `sqrt(min(m,n))`
+(`test_newton_schulz_step_is_measurably_shorter_than_the_exact_lmo`; the drivers
+print a `gain spread` warning past 1.15x). So the realized per-layer gain of the
+LMO family is not flat, and `eta_0` is not exactly the per-step RMS gain for
+those methods. Worth one sentence in `app:lrscale`.
+
+**C6. The `{+-1}` / "1 bit" / "32x" framing is still unqualified.**
+`sign(0) = 0`, so the alphabet is ternary on both the majority-vote uplink and
+the EF21 uplink; the repo measures **8-17% zeros** on CNN2, `~1.37` bits/symbol
+and a `~23x` (not `32x`) uplink reduction. Line 476's "the resulting sign is
+equal to `+1` or `-1` in each component" is false as implemented — the code's
+majority vote abstains on ties (`mv_ties="zero"`) and the paper never mentions
+ties. Carried over from section 12; still open.
+
+**C7. Fig. 1's caption over-generalises mu-independence (line 404).** The
+sentence follows the list of baselines and reads as covering the whole figure,
+but `prop:reduction` covers only the three sign placements. Muon is also
+mu-independent (`polar(gamma_t G) = polar(G)`), but **SGD and the two EF21
+baselines are not**: under EMA momentum `M_t = (1-mu^t)G`, so their steps depend
+on mu (only asymptotically not). Restrict the sentence to the three methods it is
+about.
+
+**C8. "...is always a descent direction, since `<grad f, U_t V_t^T> ~=
+||grad f||_*`" (lines 445-447).** `U_t V_t^T` is the polar factor of the
+*momentum* (indeed of the EF21 estimator of it), not of `grad f`; the identity
+`<grad f, polar(grad f)> = ||grad f||_*` holds only when the two coincide. The
+`~=` is doing a lot of work, and this is the one place where the paper's
+rhetorical claim about EF21-MuonUSign is not backed by the appendix. Either drop
+it or point to `cor:smooth`.
+
+**C9. "...transfer without any new analysis" (line 297)** — `lem:signcontr` and
+`prop:instance` are new analysis. "...transfer without re-deriving the rates"
+would be accurate.
+
+**C10. Rem. `rem:dimension`'s "the framework admits iteration-dependent
+`alpha`"** is a shade firmer than the source's Rem. 12, which says it "admits a
+straightforward extension to iteration-dependent compression parameters" — i.e.
+asserts extensibility rather than proving it.
+
+**C11. Assumptions `as:1`/`as:2` are stated after their first use.** They live in
+`ef21_musign_reduction.tex`, which is `\input` at line 764 — *after*
+`ef21_signmuon_divergence.tex` (line 762), whose Thm. 4 invokes both, and long
+after the main text's first reference at line 260. Consider hoisting the two
+assumptions into the main text.
+
+**C12. Notation clashes.** (a) Line 788 uses `mu_j` for eigenvalues of `B` while
+`mu` is the momentum coefficient everywhere else. (b) Line 240 writes S-Muon's
+step as `alpha U V^T + (1-alpha) eta sign(M_t)` — the `eta` is the paper's
+learning-rate symbol appearing inside a conic combination. (c) `alpha` is the
+compressor contraction (`lem:signcontr`), the exponent in
+`lambda_l^sign = n^-alpha`, *and* the S-Muon mixing weight.
+
+**C13. `app:images_task`'s "the nonconvex bound our theorems prove gives
+`p = q = 1/2`" is only true if `err` is the *squared* gradient norm.** The
+theorems give `min_t E||grad f||_*^2 = O(T^-1/2)`; if `err` is the norm itself
+the prediction is `p = 1/4`. `err` is never defined. (Also: the stability column
+reports `eta_max ||S||_F`, but the "predicted `2/L`" row is SGD's `eta_max`, and
+for SGD `||S||_F = ||grad F||_F` is not a constant.)
+
+**C14. "Both converge on the counterexamples above" (line 223)** — on a linear
+objective there is nothing to converge to. They *descend*.
+
+## D. Not checkable from this repo
+
+* **`app:mishra` depends on quoting `\citet{mishra2026signmuon}`'s inequality
+  (`eq:mishra_generic`) and their `R_T` estimate faithfully.** The internal
+  algebra is right, but no copy of their paper is in the repo, so the
+  transcription of their bound — and hence the fairly strong claim that "their
+  finalized rate in fact covers only the gradient-sign instantiation" — could not
+  be verified here. Given it is an assertion about a concurrent submission, it is
+  worth one more read against their actual text before submission.
+* The `330`-configuration / top-ten weight-decay observation attributed to them
+  (line 1192), same reason.
+
+## E. Code/paper mismatches with theoretical bite
+
+(From the code cross-check; see also B11.)
+
+1. `run_federated`'s Python default is `lr_scaling="legacy"` while the CLI
+   default is `unit-gain` — a programmatic caller silently gets the old
+   convention.
+2. The synthetic arm applies **no** per-layer rule (`benchmark.py:349-359`), an
+   exception to `app:lrscale`'s "for both families and every experiment reported
+   here". Harmless (square problem, per-method eta) but stated too broadly.
+3. `lmo_dtype` defaults to `bfloat16`, which can flip near-zero entries of
+   `polar(M)` for the two sign-after methods. Documented in code, absent from the
+   paper.
+4. Federated runs use `freeze_bn_stats=True` for the whole run; not stated.
+5. `centralized/train.py` reports EF21-MuonSign's *training* loss at `W` but its
+   test/val at `X`, so Fig. 2's bottom row mixes iterates for that one method.
+6. `code/counterexamples/problems.py` builds `psi_i` with half-period plateaus
+   and sine ramps rather than the paper's `delta`-bands, and its cutoff
+   `cos^2(pi s/2)` equals 1 only at `0` whereas `eq:bump` wants `phi == 1` on
+   `[0,1/2]`; the resulting `f` is `C^1`, not `C^infty`. Trajectories coincide,
+   and the module docstring flags most of it — but the claim that code and LaTeX
+   "describe one object" is not literally true.
+7. `REPRODUCE.md` section 4a still documents the Table-2 commands under
+   `--lr-scaling legacy`; the current results are unit-gain. Stale.
+
+---
+
+# Code debugging pass — 2026-07-28
+
+Six parallel audits (counterexamples vs. the theorems; federated vs. centralized
+vs. the algorithm boxes; synthetic + per-layer LR + the centralized loop; every
+`.md` against the argparse definitions; the test suite and every entry point;
+nanoGPT and the support modules), then fixes. Complements the theory vetting
+above, which covered the `.tex`; this one covers `code/`.
+
+**Environment note.** `torch` was not installed and `C:` had 0.6 GB free, so the
+test suite and every torch-dependent check had been unrunnable. Installed CPU
+torch 2.8.0 into a venv on `D:` (`D:\signmuon-venv`), outside the repo. Three of
+the six audits fell back to NumPy replicas because of this; their conclusions
+were re-confirmed afterwards against the real code.
+
+## A. Bugs fixed — these changed results
+
+1. **`problems.py:219,226` — `Phi` was not the antiderivative of `psi`.** Both
+   down-ramp branches integrated the wrong function: branch 3 should be
+   `(2τ/π)·cos(π(t−p/2)/(2τ))`, branch 5 should carry a minus sign. Consequences:
+   `loss_fn` was *not* the potential of `grad_fn` (max FD error 2.0 at μ=0, 398 at
+   μ=0.99), and `Phi` jumped by `8τ/π` at every period boundary — so the "single
+   smooth `f`" the proof promises was not the object the code evaluated, and every
+   plotted `f` curve used it. **Theorem 4 is unaffected**: `grad_fn` was always
+   correct and `Phi` was exactly `p`-periodic, so the per-period objective change
+   never moved (`f(X_{t+2})−f(X_t) = 0.204166666666667` vs `49/240`). After the
+   fix `max|grad_fn − FD(loss_fn)|` is 1.6e-08 / 1.1e-07 / 3.3e-06 at
+   μ = 0 / 0.9-Nesterov / 0.99, i.e. finite-difference truncation error.
+2. **Parity-mismatched slope window** in `plot_ef21_momentum.py:112` and
+   `run_counterexamples.py:125`. `f` is period-two, and the window compared
+   `f[999]` (odd) with `f[500]` (even), leaking half an oscillation into the
+   slope — so the script the appendix cites as *confirming the exact rate* never
+   printed it (0.0963–0.1003 instead of 0.1020833). The denominator was also off
+   by one. Both now report exactly `49/480` for all ten (μ, variant) settings, and
+   `run_counterexamples` shows `0.0000` for every non-diverging method instead of
+   noise.
+3. **`anonymize.py:197` — one ALLOW substring silenced an entire line, all
+   rules.** 144 lines in `code/` contained an ALLOW token and were exempt from the
+   whole scan. The exempt shape ("ported from KellerJordan's repo by \<author>
+   \<email>") is exactly the shape a real leak takes here. ALLOW is now applied
+   per *match*. Also: personal-fork repo URLs (`github.com/<handle>/SignMuon`) and
+   names glued to other letters (`AlexKravatsky`) were missed — identifiers are
+   now split into a bare-match list and a word-boundary list. Nine leak shapes
+   that previously passed are now caught; `--check` is still clean on the tree.
+4. **`--scale-baselines` was a silent no-op for `adam`** (`algorithms.py:789`
+   `continue`s past the only place `lam` is applied). The overnight driver runs a
+   whole `(adam, scale_baselines=True)` track — a tuning grid plus three final
+   seeds — and reported "the better of the two" as evidence Adam was not
+   handicapped. `server_adam` now gets one param group per tensor with `lr·λ`
+   folded in, annealed from each group's own `initial_lr`.
+5. **`grid-paper` overwrote `grid.json`.** `--grid-preset paper` shares
+   `mode="grid"`, so it wrote the same file as the tuned grid — and `--mode final`
+   reads that file. The "checkable discrepancy" could only be checked by
+   destroying the result it was compared against. Now writes `grid-paper.json`.
+6. **`aggregate.py` crashed** (`TypeError: '<' not supported between int and
+   NoneType`) on any run without a `seed` key — i.e. exactly the pre-refactor
+   files `load_runs` goes out of its way to support. Also `n_seeds` counted runs,
+   not distinct seeds, and counted runs that lacked the metric. Now reports
+   `n_runs` / `n_distinct_seeds`, prints `n/a` rather than `± 0.0000` for a single
+   run, and warns on repeated seeds and on runs missing the metric.
+7. **`--stage lr`'s "fine" pass re-ran configurations it had already measured.**
+   `refine_grid` returns lattice *neighbours* and `coarse` is a run of consecutive
+   lattice points, so for an interior winner all three were duplicates — ~30% of a
+   ~10 GPU-h stage, and the reported config count was wrong. Now deduped.
+8. **`run_federated(decoupled_weight_decay=…)` was dead** for all eight matrix
+   methods (the server step shrank `X` unconditionally); no CLI ever set it. The
+   federated coupled-decay ablation was unreachable. Now wired to a real
+   `--weight-decay-mode`, matching `centralized.main`.
+9. **`sgd`'s decay convention differed between the drivers** — coupled centrally
+   (deliberately: SGD's step is not scale-invariant), decoupled federated. Now
+   coupled in both.
+10. **`run_federated`'s library default was `lr_scaling="legacy"`** while the CLI
+    default is `unit-gain`. Aligned; the equivalence tests now pass `legacy`
+    explicitly, since that is genuinely the convention they compare against.
+
+## B. Test coverage — the load-bearing check did not pin the theory at all
+
+This is the most important finding of the pass, and it was established by
+**mutation testing**: injecting a bug in memory and seeing whether the suite
+notices.
+
+**Nothing pinned any step rule to its algorithm box.** The
+federated↔centralized equality tests pin the two *implementations to each other*,
+so a bug applied consistently to both is invisible. Measured, before the fix:
+
+| injected bug | old suite |
+| :--- | :--- |
+| `SignMuon`→`MuonSign`'s formula, centralized only | caught |
+| **`SignMuon` ↔ `MuonSign` swapped consistently in both** | **all 9 federated tests pass** |
+| **EF21-before-oracle ↔ EF21-after-oracle swapped consistently** — literally the Theorem 4 distinction | **all 9 federated tests pass** |
+
+The second and third are the ones that matter: the entire paper turns on *where*
+the sign and the EF21 recursion sit relative to the LMO, and the suite could not
+tell. The only tests that fired at all on the EF21 swap did so on incidental
+artifacts — a state-dict key name, and a hard-coded `name != "ef21signmuon"`
+exclusion elsewhere. Rename the key and the suite goes silent.
+
+Added **`test_each_direction_is_the_documented_formula`**: a `_reference_trajectory`
+helper transcribing each algorithm box literally and independently (sharing no
+code with `common/optimizers.py`), driven by a fixed iterate-independent gradient
+sequence over four momentum steps, plus a pairwise-distinctness guard so a
+consistent swap cannot satisfy it by accident. Re-ran the mutations against it:
+
+```
+CAUGHT   SignMuon <-> MuonSign swapped consistently
+CAUGHT   EF21-SignMuon <-> EF21-MuonUSign swapped consistently
+CAUGHT   SignMuon signs before the LMO
+CAUGHT   MuonSign drops the downlink sign
+CAUGHT   EF21 scale = max|delta| instead of mean|delta|
+```
+
+**Weight decay was pinned only at `lambda == 1`.** `TinyNet`'s only matrix is
+`(4, 6)` at the default `legacy` rule, so every multiplier is exactly 1 and
+"decay is *not* scaled by the per-layer factor" was untestable. Scaling decoupled
+decay by `lambda_mult` passed all 9 federated and all 4 decay tests. Added
+`test_decoupled_decay_is_not_scaled_by_the_per_layer_multiplier` (direct, zero
+gradient, `lambda = 0.25`) and
+`test_the_two_drivers_agree_on_weight_decay_at_a_nontrivial_multiplier`; both
+catch that mutation, and the pre-existing test still cannot — which is the point.
+
+**The aspect factor was vacuous too.** Same `(4, 6)` cause: `sqrt(max(1,m/n)) == 1`,
+so the bit-for-bit claim the READMEs make ("the factor lives in `lambda`
+federated and in `scale_aspect` centrally") held trivially. Added `TallNet`
+(`(12, 4)`, factor `sqrt(3)`), generalized the rule comparison into
+`_compare_drivers_under_rule(rule, net, loader, weight_decay)`, and ran the
+`unit-gain` equivalence on **both** fixtures.
+
+**`muonserver` was absent from `CENTRAL_CLASSES`** with no explanation. Pinned by
+`test_federated_muonserver_equals_centralized_muon_at_one_client` — at N=1 there
+is nothing to average, so centralized `Muon` is the right reference. No federated
+matrix method is now unpinned.
+
+**`counterexamples/` was imported by no test** — the package that prints the
+published Theorem 1–3 numbers. The suite re-implemented the instances in torch
+inside `test_code.py`, so the two could drift apart silently. Added
+`test_the_counterexample_package_reproduces_the_theorem_constants` and
+`test_the_exact_svd_lmo_truncates_to_the_rank` (the rank-truncation property is
+load-bearing — `sign(G)` is often low-rank and untruncated `U @ Vt` is non-unique
+there, but the suite's local `exact_polar` does not truncate and only ever saw
+full-rank Gaussians).
+
+Also: `common/utils.seed_worker` existed, was documented, and was **wired into no
+`DataLoader`** — dead code backing a promise. Now passed to the training loader.
+`pytest` was documented as a supported runner and absent from `requirements.txt`.
+
+## C. Removed (all recoverable from git)
+
+`scrap/` — superseded by `counterexamples/`, and two of its scripts wrote
+`ef21_signmuon_momentum.pdf` straight into `aaai_article/images/counterexamples/`
+from the **superseded quadratic-valley** construction, overwriting the live
+appendix figure. `nanogpt/train_nanogpt{,_classic}.py` — stale forks;
+`train_nanogpt.py` imported only 7 of 8 methods (EF21-SignMuon, the Theorem 4
+method, was missing) and used the retired legacy scaling. Three pre-fix nanoGPT
+EF21 logs. `plot_nano.ipynb`, `log_synt.txt`, and `notebooks/` (all four read
+`saves*/` and the retired `EF-UDSignMuon`). Three pre-rewrite shims in
+`federated/data.py` that were exported and called from nowhere.
+
+## D. Added
+
+* `common/plotting.py` — one palette, one method→colour map, one save helper, so
+  a method keeps its colour across every figure in the repo.
+* `synthetic/plot_synthetic.py` — `loss`, `GN` (`fig:synthetic_results`), `floor`,
+  `horizon` (`fig:synthetic_dynamics`), `kappa` (`fig:synthetic_kappa`). **The
+  last three `\includegraphics` are commented out in the paper** — those files had
+  never been produced by anything.
+* `federated/plot_federated.py` — per-method curves with a ±1 sample-std band over
+  seeds, grouped by `aggregate.group_key`.
+* `synthetic/run_gpu --m/--n` — override the problem size for every stage, keeping
+  the real grids, writing to `results/synthetic_<M>x<N>/` so a small pass cannot
+  land where the reported numbers belong.
+* `federated.tune --stage votes` — the majority-vote alignment table that
+  justifies `--n_parties 11`. It is quoted in three places and was produced by
+  nothing; it is now a command, and reproduces to Monte-Carlo error.
+* `--stage anchors` now prints the per-layer multipliers and spreads for both
+  families and the per-layer step-length ratio, which three docs claimed it
+  already did.
+* `centralized/train.py`'s summary now prints train accuracy and test loss, which
+  two READMEs claimed it did.
+
+## E. Documentation corrections of record
+
+* **`REPRODUCE.md` §4a documented a table the paper no longer contains** — the
+  `legacy`/`--head-adamw auto` seven-row block. Not one `lr` matched
+  `tab:cifar_central`, which is now ten rows, three seeds, `unit-gain`. Rewritten.
+* Every `Table N` / `Figure N` in `REPRODUCE.md` was stale against the current
+  float order, in a file that already warned against numbering. All now labels.
+* **"12 of its 20 conv layers … ~63% of the parameters"** (in `REPRODUCE.md` and
+  `centralized/README.md`) is wrong twice over. Measured: **13 of 20**, holding
+  **84.5%** of all parameters. The 63% is a different fact — the single shape
+  `(512, 4608)`, appearing three times, is 63.3% of the model.
+* **"SignSGD reaches only ~93% train"** is contradicted by the paper's own table
+  (99.97%, and every method within 0.05 points).
+* **"the test set is never loaded"** (six sites) is false — `load_raw` reads both
+  splits. What is true, and is what matters, is that no test image is ever scored
+  or ranked on under `--split tune`. Reworded.
+* `counterexamples/README.md` — every command in it failed (wrong cwd, not `-m`);
+  the stated default `μ = 0.8` is `μ = 0.0`; and it still asserted
+  `MuonUSign = MuonSign`, the retired convention, in a repo whose naming section
+  says otherwise.
+* `verify_ns_oracle --mu/--nesterov` do not exist. `plot_ef21_momentum`'s μ set is
+  `{0, 0.5, 0.9, 0.95, 0.99}`, not `{0, 0.25, …}`. `tests/README.md` said 43
+  checks. "ten methods" → eleven in four places. `--verify-horizon` is documented
+  in `tune.py` and does not exist.
+* `63.7×` for `fc1`'s step-length ratio is not derivable from the stated formula;
+  it is **67.9×** (`√(mn)/√min(m,n)`), now printed by `--stage anchors`.
+* nanoGPT is **not** "not part of the paper's tables" — `tab:nanogpt` and
+  `fig:nanogpt` are main text.
+* `--live-bn-stats` does not make BatchNorm statistics live: the local model is
+  rebuilt each round and never written back, so the flag *introduces* a train/eval
+  mismatch rather than removing one. Help text now says so.
+* EF21-MuonSign's train metrics are at `W` and its test/val at `X` — unavoidable
+  (the gradient must be at `W`) but now stated in the summary and at the recorder.
+
+## F. Still open
+
+* **`--grid-preset paper` is ~5× the cost it is billed at**: the paper grids are
+  linear and fine, so the preset is ~3850 configurations against the default's
+  ~733, while `run_gpu` estimates it at "~2 h" next to `grid`'s "~3 h".
+* **The two `overnight.py` drivers duplicate ~430 lines** of scheduler (19 of 23
+  top-level names shared; five functions byte-identical). Worth lifting the
+  state/report/schedule/sigint core into one module.
+* **Unsourced measurements of record**: the 8–17% uplink-zero range, the
+  `ns_steps`/gain-spread table, the polar-averaging shrinkage table, and the
+  floor/iteration table (quoted at momentum 0.2 and `η = 2e-4`, neither of them a
+  default). The floor table now carries the exact command that would reproduce it;
+  the others still need either a script or a "measured once, on this hardware"
+  label.
+* The nanoGPT sharded path has **never been exercised with real collectives** on
+  this machine — the gloo leg skips on Windows (no libuv). The passing result is
+  the single-process simulation. Run it on Linux before the next LM runs.
+* `train_gpt.py` is CRLF while `train_gpt_rec40_reference.py` is LF, so a plain
+  `diff` against the reference shows the whole file as changed, defeating the
+  point of keeping it. Its diffs are also unmarked, unlike `train_gpt_a100.py`'s.
