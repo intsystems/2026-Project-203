@@ -196,10 +196,23 @@ def preflight(args) -> Optional[float]:
     print(f"      {tail[0]}")
     if proc.returncode != 0:
         print("      FAILED -- fix this before running overnight. Failing tests:")
+        # Print the assertion detail, not just the test name: the indented lines
+        # that follow a FAIL are what say *which* file leaked, *which* value
+        # disagreed. Without them a preflight failure needs a second run to
+        # diagnose, which is exactly when nobody has patience for one.
+        emit = False
         for line in proc.stdout.splitlines():
             if line.startswith(("FAIL", "ERROR")):
                 print(f"        {line}")
+                emit = True
+            elif emit and (line.startswith((" ", "	")) and line.strip()):
+                print(f"        {line.rstrip()}")
+            elif line.strip():
+                emit = False
         if not args.force:
+            print("      (re-run with --force to train anyway; for an anonymity "
+                  "hit try `python3 -m anonymize --check`, which prints file:line "
+                  "-- untracked logs and scratch files under code/ are scanned)")
             return None
         print("      --force given, continuing anyway")
 
