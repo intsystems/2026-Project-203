@@ -45,6 +45,7 @@ __all__ = [
     "muon_lmo",
     "muon_orthogonalized_update",
     "scaled_sign",
+    "sign_pm1",
     "Muon",
     "SignSGD",
     "SignMuon",
@@ -150,12 +151,36 @@ def muon_lmo(
 muon_orthogonalized_update = muon_lmo
 
 
+def sign_pm1(Y: Tensor) -> Tensor:
+    """Elementwise sign with exact zeros mapped to independent random ``+-1``.
+
+    The paper's convention: every transmitted sign message is exactly one bit
+    per parameter. Zeros are not exotic -- a channel inactive over a whole local
+    batch zeroes a row of the gradient and hence of the momentum, and the exact
+    zero survives both the LMO's rank truncation and the (odd) Newton-Schulz
+    polynomial -- so ``sign(0) = 0`` would make the alphabet ternary. Randomizing
+    costs nothing in expected descent (a zeroed entry carries no directional
+    information) and keeps the scaled-sign contraction lemma, whose identity
+    ``||C(Y) - Y||_F^2 = ||Y||_F^2 - ||Y||_1^2/d`` holds for any tie-breaking.
+
+    Draws from the global torch RNG *only when zeros are present*, so dense
+    inputs leave the RNG stream untouched and runs stay reproducible under
+    ``seed_everything``.
+    """
+    s = torch.sign(Y)
+    zero = s == 0
+    if bool(zero.any()):
+        r = torch.randint(0, 2, s.shape, device=s.device).to(s.dtype).mul_(2).sub_(1)
+        s = torch.where(zero, r, s)
+    return s
+
+
 def scaled_sign(Y: Tensor) -> Tensor:
-    """Contractive 1-bit compressor ``mean|Y| * sign(Y)`` (the USign operator).
+    """Contractive 1-bit compressor ``mean|Y| * sign_pm1(Y)`` (the USign operator).
 
     One bit per entry plus a single shared magnitude scalar per tensor.
     """
-    return Y.abs().mean() * torch.sign(Y)
+    return Y.abs().mean() * sign_pm1(Y)
 
 
 # --------------------------------------------------------------------------
@@ -187,6 +212,14 @@ class _BaseMethod(Optimizer):
     #: Step family, see ``common.lr_scaling``. Together with the parameter shape
     #: this fixes the per-layer learning-rate multiplier.
     family = FAMILY_LMO
+    #: When true, :meth:`step` stashes a copy of each parameter's step direction
+    #: ``d_t`` in ``state["last_direction"]``. Off by default -- it costs one
+    #: clone per parameter per step, and the tensor must be copied because the
+    #: EF21 methods return a state buffer that they mutate in place next step.
+    #: ``synthetic.benchmark --mode alignment`` turns it on to measure
+    #: ``<grad F, d_t>``, the quantity the descent lemma rests on and the one the
+    #: divergence theorems drive negative.
+    capture_direction = False
 
     def __init__(
         self,
@@ -278,6 +311,8 @@ class _BaseMethod(Optimizer):
 
                 # 2) method-specific step direction
                 d_t = self._direction(m_tilde, state, group)
+                if self.capture_direction:
+                    state["last_direction"] = d_t.clone()
 
                 # 3) decoupled weight decay + parameter step
                 target = self._step_target(p, state)
@@ -313,7 +348,7 @@ class _EF21Mixin:
             state[key] = torch.zeros_like(target)
         est = state[key]
         delta = target - est
-        est.add_(delta.abs().mean() * torch.sign(delta))
+        est.add_(delta.abs().mean() * sign_pm1(delta))
         return est
 
 
@@ -342,7 +377,7 @@ class SignSGD(_BaseMethod):
     family = FAMILY_SIGN
 
     def _direction(self, m_tilde, state, group):
-        return torch.sign(m_tilde)
+        return sign_pm1(m_tilde)
 
 
 # --------------------------------------------------------------------------
@@ -357,7 +392,7 @@ class SignMuon(_BaseMethod):
     family = FAMILY_SIGN
 
     def _direction(self, m_tilde, state, group):
-        return torch.sign(self._lmo(m_tilde, group))
+        return sign_pm1(self._lmo(m_tilde, group))
 
 
 class MuonUSign(_BaseMethod):
@@ -371,7 +406,7 @@ class MuonUSign(_BaseMethod):
     family = FAMILY_LMO
 
     def _direction(self, m_tilde, state, group):
-        return self._lmo(torch.sign(m_tilde), group)
+        return self._lmo(sign_pm1(m_tilde), group)
 
 
 class MuonSign(_BaseMethod):
@@ -384,7 +419,7 @@ class MuonSign(_BaseMethod):
     family = FAMILY_SIGN
 
     def _direction(self, m_tilde, state, group):
-        return torch.sign(self._lmo(torch.sign(m_tilde), group))
+        return sign_pm1(self._lmo(sign_pm1(m_tilde), group))
 
 
 # --------------------------------------------------------------------------
@@ -463,7 +498,7 @@ class EF21MuonSign(_BaseMethod, _EF21Mixin):
     def _post_step(self, p, state, group):
         # Downlink EF21-P: broadcast a scaled sign of the model shift X - W.
         delta = state["exact_model"] - p.data
-        p.data.add_(delta.abs().mean() * torch.sign(delta))
+        p.data.add_(delta.abs().mean() * sign_pm1(delta))
 
     # -- exposing the exact model ----------------------------------------
     @torch.no_grad()

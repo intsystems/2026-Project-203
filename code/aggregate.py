@@ -189,18 +189,29 @@ def main() -> None:
 
     rows, curves = [], {}
     for key, group in sorted(groups.items(), key=lambda kv: labels[kv[0]]):
-        config = group[0]["config"]
         label = labels[key]
-        seeds = sorted(r["config"].get("seed") for r in group)
         agg = aggregate_group(group, args.metric)
         if agg is None:
             print(f"  ! {label}: metric {args.metric!r} absent")
             continue
+        # A pre-refactor ``metrics.json`` has no ``seed`` field at all, so None
+        # is a real value here and must not reach sorted() next to ints.
+        raw = [r["config"].get("seed") for r in group]
+        known = sorted(s for s in raw if s is not None)
+        n_unknown = len(raw) - len(known)
+        seed_label = ",".join(str(s) for s in known)
+        if n_unknown:
+            seed_label = (seed_label + "," if seed_label else "") + f"{n_unknown}x?"
         final_mean, final_std = agg["mean"][-1], agg["std"][-1]
         rows.append({
             "label": label,
-            "seeds": ",".join(str(s) for s in seeds),
-            "n_seeds": len(seeds),
+            "seeds": seed_label,
+            # What the std is actually over: runs that carried the metric. Two
+            # runs at the same seed are two runs but ONE seed, and a run missing
+            # the metric contributes to neither.
+            "n_runs": agg["n_runs"],
+            "n_distinct_seeds": len(set(known)) + n_unknown,
+            "n_runs_found": len(group),
             f"final_{args.metric}_mean": final_mean,
             f"final_{args.metric}_std": final_std,
             "final_step": agg["steps"][-1],
@@ -216,12 +227,24 @@ def main() -> None:
     print("-" * (width + 36))
     for r in sorted(rows, key=lambda r: -r[f"final_{args.metric}_mean"]):
         mean, std = r[f"final_{args.metric}_mean"], r[f"final_{args.metric}_std"]
-        print(f"{r['label']:<{width}}  {r['n_seeds']:>5}  {mean:>14.4f} +/- {std:<8.4f}")
+        disp = "  n/a   " if r["n_runs"] < 2 else f"{std:<8.4f}"
+        print(f"{r['label']:<{width}}  {r['n_runs']:>5}  {mean:>14.4f} +/- {disp}")
 
-    if len(set(r["n_seeds"] for r in rows)) > 1:
-        print("\nNote: groups have different seed counts; std values are not comparable.")
-    if any(r["n_seeds"] == 1 for r in rows):
-        print("Note: single-seed groups report std = 0 (no dispersion measured).")
+    if len(set(r["n_runs"] for r in rows)) > 1:
+        print("\nNote: groups have different run counts; std values are not comparable.")
+    if any(r["n_runs"] == 1 for r in rows):
+        print("Note: single-run groups show 'n/a' -- no dispersion was measured. "
+              "The CSV records std = 0 for them; do not read it as agreement.")
+    dup = [r for r in rows if r["n_distinct_seeds"] < r["n_runs"]]
+    if dup:
+        print(f"Note: {len(dup)} group(s) contain repeated seeds "
+              f"({', '.join(r['label'] for r in dup[:3])}"
+              f"{', ...' if len(dup) > 3 else ''}); the std understates the "
+              f"true seed-to-seed spread.")
+    partial = [r for r in rows if r["n_runs"] < r["n_runs_found"]]
+    if partial:
+        print(f"Note: {len(partial)} group(s) had runs without the metric "
+              f"{args.metric!r}; those runs are excluded from mean and std.")
 
     if args.csv:
         with open(args.csv, "w", newline="", encoding="utf-8") as f:

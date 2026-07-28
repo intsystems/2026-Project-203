@@ -2,7 +2,8 @@
 
 Self-contained, exact-SVD implementations of the eight optimizers from
 *"SignMuon, MuonSign, and the Role of Error Feedback"*, run on the two linear
-divergence counterexamples from the paper (Theorems 1 and 2).
+divergence counterexamples of Theorems 1-3 and on the universal 2x2 instance of
+Theorem 4 (`th:ef_div`).
 
 Every method reproduces the corresponding pseudocode box in the paper,
 with two deliberate choices:
@@ -13,9 +14,10 @@ with two deliberate choices:
   `U @ Vᵀ` from the full SVD is non-unique on rank-deficient inputs — and
   `sign(G)` is often low-rank.
 * **Momentum.** EMA / heavy-ball momentum `Mₜ = μ·Mₜ₋₁ + (1−μ)·Gₜ` with an
-  optional Nesterov look-ahead `M̃ₜ = (1−μ)·Gₜ + μ·Mₜ`. Defaults: `μ = 0.8`,
-  standard (non-Nesterov) momentum. Both are parameters — change them freely to
-  re-test how robust each counterexample is.
+  optional Nesterov look-ahead `M̃ₜ = (1−μ)·Gₜ + μ·Mₜ`. The runner defaults to
+  `μ = 0.0`, standard (non-Nesterov) momentum — the `Optimizer` class default of
+  `0.8` is always overridden by `run_counterexamples.py`. Both are parameters, and
+  by Proposition 1 neither can change a verdict on the linear problems.
 
 ## Files
 
@@ -25,6 +27,7 @@ with two deliberate choices:
 | [`problems.py`](problems.py) | The 4×4 and 5×5 linear counterexamples, the universal 2×2 EF21-SignMuon counterexample (exact theorem construction, per `(μ, variant)`), and a `_self_check` reproducing the paper's exact constants |
 | [`run_counterexamples.py`](run_counterexamples.py) | Runs every method on all three problems, prints verdict tables, saves the figures |
 | [`plot_ef21_momentum.py`](plot_ef21_momentum.py) | Runs EF21-SignMuon on the `(μ, variant)`-specific universal instance for `μ ∈ {0, 0.5, 0.9, 0.95, 0.99}`, both variants; shows divergence at the common slope `49/480` (momentum does not restore convergence) |
+| [`verify_ns_oracle.py`](verify_ns_oracle.py) | The same instances under the *implemented* Newton–Schulz oracle instead of the exact SVD, over step counts and dtypes — which choices of `σ₁`/`M` survive the approximation |
 | `figures/` | Generated plots (`*.png`, `*.pdf`) |
 
 ## Methods
@@ -36,7 +39,7 @@ is the exact polar factor; `sign` is elementwise; `scaled_sign(Y) = mean|Y|·sig
 |--------|--------------------------------------|
 | `SignMuon` | `sign(LMO(M̃))` — sign **after** LMO |
 | `EF21-SignMuon` | EF21 estimator of `LMO(M̃)` (scaled-sign on the residual) |
-| `MuonUSign` | `LMO(sign(M̃))` — sign **before** LMO (= MuonSign; LMO is scale-invariant) |
+| `MuonUSign` | `LMO(sign(M̃))` — sign **before** LMO |
 | `MuonSign` | `sign(LMO(sign(M̃)))` — sign before *and* after LMO |
 | `EF21-MuonUSign` | `LMO(g_est)`, where `g_est` is a scaled-sign EF21 estimate of `M̃` |
 | `EF21-MuonSign` | as above + a second EF21-P loop compressing the downlink model shift |
@@ -45,14 +48,20 @@ is the exact polar factor; `sign` is elementwise; `scaled_sign(Y) = mean|Y|·sig
 
 ## Running
 
+Run from `code/`, the package root — not from this directory.
+
 ```bash
-cd code/counterexamples
-python problems.py             # sanity check: reproduces −412.311, −13.888, and the EF21-SignMuon rate
-python run_counterexamples.py  # μ=0.8 for the linear problems; writes figures/
-python run_counterexamples.py --nesterov          # Nesterov momentum
-python run_counterexamples.py --mu 0.9 --eta 2e-3 --T 120
-python plot_ef21_momentum.py   # momentum sweep for Counterexample 3; writes figures/
+cd code
+python3 -m counterexamples.problems             # reproduces −412.311, −13.888 and the 49/480 table
+python3 -m counterexamples.run_counterexamples  # μ=0 by default; also prints −76; writes figures/
+python3 -m counterexamples.run_counterexamples --nesterov
+python3 -m counterexamples.run_counterexamples --mu 0.9 --eta 2e-3 --T 120
+python3 -m counterexamples.plot_ef21_momentum   # momentum sweep for Counterexample 3
+python3 -m counterexamples.verify_ns_oracle     # exact vs Newton–Schulz oracle
 ```
+
+`run_counterexamples.py` writes **three** figures, to both `figures/` (PNG + PDF)
+and `../aaai_article/images/counterexamples/` (PDF, which is what LaTeX includes).
 
 For the linear objectives `f(W) = Tr(Gᵀ W)` the gradient is constant, so
 `f` decreases **iff** the per-step descent inner product `⟨G, dₜ⟩` is positive.
@@ -62,9 +71,18 @@ Counterexample 3 uses `verdict_mode="slope"` instead: its ascent is
 **second-order** (the compressor overshoot, not a downhill step), so `⟨G, dₜ⟩`
 stays positive while `f` rises, and divergence is read off the positive tail
 slope of `f`. It is rebuilt for the run's `(μ, variant)` and diverges for every
-choice, so `--mu`/`--nesterov` change the constants but not the verdict.
+choice.
 
-## Results (defaults: μ = 0.8, standard momentum)
+> At `μ = 0` (the default) the slope test cleanly separates EF21-SignMuon from
+> everything else. At large `μ` it does **not**: the periodic term of the
+> Counterexample-3 landscape scales with `A(μ)` (199 at `μ = 0.99`), so the
+> bounded methods wander over a range that a *fixed absolute* `SLOPE_TOL` reads
+> as ascent. The divergence of EF21-SignMuon is `μ`-independent — its exact rate
+> is `49/480` for every `μ` — but the *verdict column* is only meaningful at
+> small `μ`. Use `counterexamples.problems`, which measures over whole periods,
+> to check the rate at any `μ`.
+
+## Results (defaults: μ = 0, standard momentum)
 
 **Counterexample 1 — SignMuon (Theorem 1, 4×4).** `G = 1000·u₁v₁ᵀ + O`, so
 `LMO(G) = O` but `⟨G, sign(O)⟩ = −412.311 < 0`. Only **SignMuon** diverges;

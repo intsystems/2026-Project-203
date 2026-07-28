@@ -12,19 +12,25 @@
 Three properties make this a defensible protocol rather than a sweep:
 
 1. **Selection is on validation accuracy only** (``--split tune``, a fixed 45k/5k
-   partition). The test set is never read during tuning.
+   partition). ``best_of`` ranks on ``val_acc`` and nothing else. Test accuracy is
+   still *computed and logged* every epoch -- it is simply never used to choose,
+   which is the property that matters. (``federated.tune`` goes further and does
+   not evaluate the test set at all under ``--split tune``.)
 2. **Equal budget.** Every method gets the same number of configurations, on a grid
    that is *multiplicatively* anchored -- a shared absolute grid would be unfair
    because the families have genuinely different natural scales.
-3. **Boundary check.** If a method's winner sits at an endpoint of its grid, that
-   is reported as a failure, not a result: the grid is extended and re-run. An
-   optimum on the boundary is the second-most-common reviewer catch after
-   test-set tuning.
+3. **Boundary check.** If a method's winner sits at an endpoint of its grid, that is
+   reported as a failure rather than a result -- an optimum on the boundary is the
+   second-most-common reviewer catch after test-set tuning. This module *reports*
+   it; the automatic widen-and-re-run loop lives in ``centralized.overnight``
+   (``extend_grid``, up to four widenings), because it needs the resumable job
+   state that only the overnight driver keeps.
 
-The search is coarse (``sqrt(10)`` spacing) then fine (``2x`` around the winner) and
-runs at a reduced epoch count; ``--verify-horizon`` re-runs the top-``k`` at the full
-budget to confirm the ranking is horizon-stable, which is the assumption a short
-proxy makes.
+The search is coarse (``sqrt(10)`` spacing) then fine (the lattice neighbours of the
+winner, deduped against the coarse grid) and runs at a reduced epoch count. The
+horizon-stability check -- re-running the top few at the full budget to confirm a
+short proxy did not reorder the ranking -- is the overnight driver's ``verify``
+phase (``--phases ... verify ...``).
 """
 
 from __future__ import annotations
@@ -444,18 +450,31 @@ def stage_lr(args) -> Dict:
         if warn:
             print(warn)
 
-        fine = refine_grid(best["lr"], factor=2.0, points=4)
-        print(f"  fine (4 pts around {best['lr']:.4g}):")
-        results += [run_one(args, lr=lr, lr_aux=args.lr_aux, lr_scaling=args.lr_scaling,
-                            method=method, epochs=args.epochs,
-                            tag=f"lr_{method}_{args.lr_scaling}_f{lr:.4g}")
-                    for lr in fine]
+        # ``refine_grid`` returns lattice NEIGHBOURS, and ``coarse`` is a run of
+        # consecutive lattice points -- so for an interior winner every "fine"
+        # point is already measured. Dedupe, or the stage silently pays for 3
+        # duplicate runs per method (~30% of its budget) and reports a config
+        # count it never ran.
+        measured = {f"{lr:.6g}" for lr in coarse}
+        fine = [lr for lr in refine_grid(best["lr"], factor=2.0, points=4)
+                if f"{lr:.6g}" not in measured]
+        if fine:
+            print(f"  fine ({len(fine)} new pt(s) around {best['lr']:.4g}):")
+            results += [run_one(args, lr=lr, lr_aux=args.lr_aux,
+                                lr_scaling=args.lr_scaling,
+                                method=method, epochs=args.epochs,
+                                tag=f"lr_{method}_{args.lr_scaling}_f{lr:.4g}")
+                        for lr in fine]
+        else:
+            print(f"  fine: the lattice neighbours of {best['lr']:.4g} are all "
+                  f"in the coarse grid already -- nothing to refine")
+        n_configs = len(coarse) + len(fine)
         best = best_of(results)
         out[method] = {"best": best, "all": [r for r in results if r],
-                       "n_configs": len(coarse) + len(fine),
+                       "n_configs": n_configs,
                        "boundary_warning": warn}
         print(f"  BEST: lr={best['lr']:.6g}, val {best['val_acc']:.2f}% "
-              f"({len(coarse) + len(fine)} configs)")
+              f"({n_configs} configs)")
 
     if out:
         print(f"\n--- eta_0 per method (rule '{args.lr_scaling}', "
@@ -519,7 +538,9 @@ def get_args():
     p.add_argument("--dataset", type=str, default="cifar10")
     p.add_argument("--model", type=str, default="resnet18")
     p.add_argument("--epochs", type=int, default=20,
-                   help="Short proxy horizon for tuning; verify with --verify-horizon")
+                   help="Short proxy horizon for tuning. Confirm the ranking "
+                        "survives the full budget with the overnight driver's "
+                        "'verify' phase")
     p.add_argument("--batch-size", type=int, default=128)
     p.add_argument("--lr-aux", type=float, default=1e-3)
     p.add_argument("--momentum", type=float, default=0.9)
@@ -557,7 +578,8 @@ def main() -> None:
                    "epochs": args.epochs, "selection_metric": "val_acc (last-k mean)",
                    "results": out}, f, indent=2)
     print(f"\nWritten to {path}")
-    print("Selection used validation accuracy only; the test set was not read.")
+    print("Selection used validation accuracy only. (Test accuracy is logged "
+          "each epoch but never enters the ranking.)")
 
 
 if __name__ == "__main__":

@@ -4,16 +4,20 @@ methods diverge.
 
 Usage
 -----
-    python run_counterexamples.py                 # default mu=0.8, standard momentum
-    python run_counterexamples.py --nesterov      # Nesterov momentum
-    python run_counterexamples.py --mu 0.9 --T 80 --eta 2e-3
+Run from ``code/``, the package root:
+
+    python3 -m counterexamples.run_counterexamples             # default mu=0.0
+    python3 -m counterexamples.run_counterexamples --nesterov  # Nesterov momentum
+    python3 -m counterexamples.run_counterexamples --mu 0.9 --T 80 --eta 2e-3
 
 Outputs
 -------
 * a per-problem table of  f[0], f[T-1], the mean per-step descent inner product
   <G, d_t>, and a DIVERGES / descends verdict, and
-* two figures (``figures/signmuon_counterexample.{png,pdf}`` and
-  ``figures/muonsign_counterexample.{png,pdf}``).
+* three figures -- ``signmuon_counterexample``, ``muonsign_counterexample`` and
+  ``ef21_signmuon_counterexample`` -- written as PNG + PDF to ``figures/`` and as
+  PDF to ``../aaai_article/images/counterexamples/``, which is what LaTeX
+  includes.
 """
 
 from __future__ import annotations
@@ -67,9 +71,14 @@ DISPLAY_NAMES = {
 # Divergence tests.  For a LINEAR objective f(W)=Tr(G^T W), f decreases iff the
 # per-step descent inner product <G, d_t> is positive, so the exact, eta/T-free
 # test is "mean <G, d_t> persistently negative" (verdict_mode="inner").  For the
-# QUADRATIC EF21-SignMuon instance the ascent is second-order: <G, d_t> stays
-# POSITIVE while f rises, so we instead test the tail slope of f
-# (verdict_mode="slope").
+# universal EF21-SignMuon instance (periodic ramps, not a quadratic) the ascent is
+# second-order: <G, d_t> stays POSITIVE while f rises, so we instead test the tail
+# slope of f (verdict_mode="slope").
+#
+# SLOPE_TOL is ABSOLUTE, and the instance's periodic term scales with A(mu) -- 199
+# at mu=0.99.  The slope verdict is therefore only discriminating at small mu; the
+# mu-independent check of the exact 49/480 rate is counterexamples.problems, which
+# measures over whole periods.
 DIVERGE_TOL = 1e-6
 SLOPE_TOL = 1e-3
 
@@ -121,7 +130,11 @@ def run_problem(title, grad_fn, loss_fn, shape, T, eta, mu, nesterov,
         losses, mean_inner = run(OPTIMIZERS[name], grad_fn, loss_fn,
                                  shape, T, eta, mu, nesterov)
         results[name] = losses
+        # Measure over a whole number of periods: the EF21-SignMuon trajectory
+        # is period-two, so mismatched endpoint parity leaks half an oscillation
+        # into the slope and hides the exact rate.
         half = T // 2
+        half -= (T - 1 - half) % 2
         slope = float((losses[-1] - losses[half]) / max(1, (T - 1 - half))) / eta
         if verdict_mode == "slope":
             is_div = slope > SLOPE_TOL

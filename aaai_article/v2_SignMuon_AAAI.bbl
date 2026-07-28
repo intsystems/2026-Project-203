@@ -1,4 +1,4 @@
-\begin{thebibliography}{25}
+\begin{thebibliography}{33}
 \providecommand{\natexlab}[1]{#1}
 
 \bibitem[{Ahn et~al.(2025)Ahn, Xu, Abreu, Fan, Magakyan, Sharma, Zhan, and
@@ -13,6 +13,13 @@ Amsel, N.; Persson, D.; Musco, C.; and Gower, R.~M. 2026.
 \newblock The {P}olar {E}xpress: Optimal Matrix Sign Methods and Their
   Application to the {M}uon Algorithm.
 \newblock arXiv:2505.16932.
+
+\bibitem[{Bernstein(2025)}]{bernstein2025deriving}
+Bernstein, J. 2025.
+\newblock Deriving {M}uon.
+\newblock \url{https://jeremybernste.in/writing/deriving-muon}.
+\newblock Blog. Explains the theoretical derivation and intuition behind the
+  Muon optimizer.
 
 \bibitem[{Bernstein and Newhouse(2024)}]{bernstein2024old}
 Bernstein, J.; and Newhouse, L. 2024.
@@ -38,6 +45,18 @@ Beznosikov, A.; Horváth, S.; Richtárik, P.; and Safaryan, M. 2024.
 \newblock On Biased Compression for Distributed Learning.
 \newblock arXiv:2002.12410.
 
+\bibitem[{Bolatov et~al.(2026)Bolatov, Riabinin, Kornilov, Veprikov,
+  Horv\'{a}th, Tak\'{a}\v{c}, and Beznosikov}]{bolatov2026lionmuon}
+Bolatov, A.; Riabinin, A.; Kornilov, N.; Veprikov, A.; Horv\'{a}th, S.;
+  Tak\'{a}\v{c}, M.; and Beznosikov, A. 2026.
+\newblock {L}ion{M}uon: Alternating Spectral and Sign Descent for Efficient
+  Training.
+\newblock arXiv:2605.19811.
+
+\bibitem[{Cesista(2025)}]{cesista2025schattenp}
+Cesista, F.~L. 2025.
+\newblock Steepest Descent Under {S}chatten-$p$ Norms.
+
 \bibitem[{Chen et~al.(2020)Chen, Chen, Sun, Wu, and Hong}]{chen2020median}
 Chen, X.; Chen, T.; Sun, H.; Wu, Z.~S.; and Hong, M. 2020.
 \newblock Distributed training with heterogeneous data: bridging median- and
@@ -51,6 +70,12 @@ Chen, X.; Chen, T.; Sun, H.; Wu, Z.~S.; and Hong, M. 2020.
 {Essential AI}. 2025.
 \newblock Practical Efficiency of {M}uon for Pretraining.
 \newblock arXiv:2505.02222.
+
+\bibitem[{Grishina, Smirnov, and Rakhuba(2025)}]{grishina2025chebyshev}
+Grishina, E.; Smirnov, M.; and Rakhuba, M. 2025.
+\newblock Accelerating {Newton--Schulz} Iteration for Orthogonalization via
+  {Chebyshev}-type Polynomials.
+\newblock \emph{arXiv preprint arXiv:2506.10935}.
 
 \bibitem[{Gruntkowska et~al.(2025)Gruntkowska, Gaponov, Tovmasyan, and
   Richtárik}]{gruntkowska2025error}
@@ -93,9 +118,23 @@ Kovalev, D. 2025.
   Non-{E}uclidean Trust-Region Optimization.
 \newblock arXiv:2503.12645.
 
+\bibitem[{Kravatskiy et~al.(2026)Kravatskiy, Kozyrev, Kozlov, Vinogradov,
+  Merkulov, and Oseledets}]{kravatskiy2026kyfannorms}
+Kravatskiy, A.; Kozyrev, I.; Kozlov, N.; Vinogradov, A.; Merkulov, D.; and
+  Oseledets, I. 2026.
+\newblock {K}y {F}an Norms and Beyond: Dual Norms and Combinations for Matrix
+  Optimization.
+\newblock arXiv:2512.09678.
+
 \bibitem[{Krizhevsky, Hinton et~al.(2009)}]{krizhevsky2009cifar}
 Krizhevsky, A.; Hinton, G.; et~al. 2009.
 \newblock Learning multiple layers of features from tiny images.
+
+\bibitem[{Large et~al.(2024)Large, Liu, Huh, Bahng, Isola, and
+  Bernstein}]{large2024modular}
+Large, T.; Liu, Y.; Huh, M.; Bahng, H.; Isola, P.; and Bernstein, J. 2024.
+\newblock Scalable Optimization in the Modular Norm.
+\newblock arXiv:2405.14813.
 
 \bibitem[{Li and Hong(2025)}]{li2025note}
 Li, J.; and Hong, M. 2025.
@@ -159,6 +198,12 @@ Safaryan, M.; and Richtarik, P. 2021.
   International Conference on Machine Learning}, volume 139 of
   \emph{Proceedings of Machine Learning Research}, 9224--9234. PMLR.
 
+\bibitem[{Shulgin et~al.(2025)Shulgin, AlRashed, Orabona, and
+  Richt{'a}rik}]{shulgin2025inexactmuon}
+Shulgin, E.; AlRashed, S.; Orabona, F.; and Richt{'a}rik, P. 2025.
+\newblock Beyond the Ideal: Analyzing the Inexact {M}uon Update.
+\newblock \emph{arXiv preprint arXiv:2510.19933}.
+
 \bibitem[{Yang et~al.(2021)Yang, Hu, Babuschkin, Sidor, Liu, Farhi, Ryder,
   Pachocki, Chen, and Gao}]{yang2021tuning}
 Yang, G.; Hu, E.~J.; Babuschkin, I.; Sidor, S.; Liu, X.; Farhi, D.; Ryder, N.;
@@ -166,5 +211,10 @@ Yang, G.; Hu, E.~J.; Babuschkin, I.; Sidor, S.; Liu, X.; Farhi, D.; Ryder, N.;
 \newblock Tuning Large Neural Networks via Zero-Shot Hyperparameter Transfer.
 \newblock In \emph{Advances in Neural Information Processing Systems
   (NeurIPS)}.
+
+\bibitem[{Yang, Simon, and Bernstein(2023)}]{yang2023spectral}
+Yang, G.; Simon, J.~B.; and Bernstein, J. 2023.
+\newblock A Spectral Condition for Feature Learning.
+\newblock arXiv:2310.17813.
 
 \end{thebibliography}

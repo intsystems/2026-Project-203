@@ -15,8 +15,10 @@ This script evaluates each theorem's descent inner product under
 and reports, for each instance's free parameter (``sigma1`` for Theorem 1, ``M``
 for Theorems 2-3), the values for which *every* oracle ascends.
 
-    python3 verify_ns_oracle.py
-    python3 verify_ns_oracle.py --steps 5 6 8 10 20 --trajectories
+Run from ``code/``, the package root:
+
+    python3 -m counterexamples.verify_ns_oracle
+    python3 -m counterexamples.verify_ns_oracle --steps 5 6 8 10 20 --trajectories
 
 Summary of what it finds (see the module docstrings in ``problems.py``):
 

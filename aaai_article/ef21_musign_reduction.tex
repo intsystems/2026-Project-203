@@ -3,172 +3,151 @@
 %  the EF21-Muon framework of Gruntkowska, Burlachenko & Richtarik (2025),
 %  arXiv:2510.00643 (source: EF_Muon_Friends/template.tex).
 %
-%  We do NOT restate their (very long) per-layer bounds. The reduction rests
-%  on one non-trivial fact -- the scaled sign is a contractive compressor
-%  (Lemma) -- plus routine bookkeeping (LMO step, momentum, loop order). The
-%  rates and stepsize rules are stated in our notation; the exact
-%  non-asymptotic constants are their Theorems 19 and 24 under the
-%  substitution of Table 3.
+%  We do NOT restate their per-layer bounds. The reduction rests on one
+%  non-trivial fact -- the scaled sign is a contractive compressor (Lemma) --
+%  plus bookkeeping (LMO step, momentum, loop order). Rates and stepsize
+%  rules are in our notation; the constants are their Theorems 19 and 24
+%  under the substitution of Table 3.
+%  Assumptions as:1/as:2 are stated in the main text (Problem Statement).
 % =====================================================================
 \subsection{Convergence of EF21-MuonUSign and EF21-MuonSign}\label{app:hyp}
 
-We do not analyze the Error-Feedback methods from scratch. Instead we show that EF21-MuonUSign and EF21-MuonSign are \emph{exact instances} of EF21-Muon \citep[Algorithm~3]{gruntkowska2025error}, whose convergence is already established in the layer-wise, stochastic, federated setting. The whole task is to check that our algorithms meet the framework's hypotheses; the guarantees then transfer verbatim. Only one of these checks is non-trivial -- that the scaled sign is a valid compressor (Lemma~\ref{lem:signcontr}); the rest is bookkeeping. We keep the reduction in our own notation and defer the single change of variables to Table~\ref{tab:dict}.
+We do not analyse the error-feedback methods from scratch. EF21-MuonUSign and EF21-MuonSign are \emph{exact instances} of EF21-Muon \citep[Algorithm~3]{gruntkowska2025error}, already analysed in the layer-wise, stochastic, federated setting. Three things must be checked before its guarantees transfer: our step is their LMO step, our loop is their loop (Proposition~\ref{prop:instance}), and our messages come from contractive compressors (Lemma~\ref{lem:signcontr}). Only the last is non-trivial. Table~\ref{tab:dict} is the change of variables.
 
-Throughout, the model is the tuple of matrix layers $\mathbf{X} = [\mathbf{X}_1,\dots,\mathbf{X}_p]$, $\mathbf{X}_i \in \mathbb{R}^{m_i\times n_i}$, with $d_i := m_i n_i$, $r_i := \min(m_i,n_i)$, $d_{\max} := \max_i d_i$; a second subscript selects a layer ($\mathbf{X}_{t,i}$, $\mathbf{G}_{t,i}$). We use $\|\mathbf{Y}\|_{2\to2} \le \|\mathbf{Y}\|_F \le \|\mathbf{Y}\|_{*} \le \sqrt{\operatorname{rank}\mathbf{Y}}\,\|\mathbf{Y}\|_F$ between the spectral, Frobenius and nuclear norms.
-
-\subsubsection{Assumptions}
-
-We use the standard assumptions of the framework, specialized to the spectral (Muon) geometry.
-
-\begin{assumption}[\textbf{Lower boundedness}]\label{as:1}
-$f(\mathbf{X}) \ge f^*$ for all $\mathbf{X}$, and (only for Corollary~\ref{cor:l0l1}) each local $f_j \ge f_j^*$.
-\end{assumption}
-
-\begin{assumption}[\textbf{Layer-wise smoothness}]\label{as:2}
-Each layer carries the spectral norm $\|\cdot\|_{2\to 2}$, dual to the nuclear norm $\|\cdot\|_{*}$. For every layer $i$ and all $\mathbf{X},\mathbf{Y}$,
-\begin{equation}
-\|\nabla_i g(\mathbf{X}) - \nabla_i g(\mathbf{Y})\|_{*} \le L_i^{g}\,\|\mathbf{X}_i - \mathbf{Y}_i\|_{2\to 2},
-\end{equation}
-for $g = f$ (constant $L_i$) and $g = f_j$ (constant $L_{i,j}$); set $\tilde{L}_i^2 := \frac{1}{N}\sum_j L_{i,j}^2$ and $L := \max_i L_i$. The weaker layer-wise $(L^0,L^1)$-smoothness \citep{riabinin2025gluon,pethick2025generalized} replaces $L_i^{g}$ by $L^0 + L^1\|\nabla_i g(\mathbf{X})\|_{*}$; it reduces to the above when $L^1 = 0$.
-\end{assumption}
+\paragraph{Notation and constants.} For the layer tuple $\mathbf{X} = [\mathbf{X}_1,\dots,\mathbf{X}_p]$, $\mathbf{X}_i \in \mathbb{R}^{m_i\times n_i}$, of the Problem Statement write $d_i := m_i n_i$, $r_i := \min(m_i,n_i)$, $d_{\max} := \max_i d_i$; a second subscript selects a layer ($\mathbf{X}_{t,i}$, $\mathbf{G}_{t,i}$). We use $\|\mathbf{Y}\|_{2\to2} \le \|\mathbf{Y}\|_F \le \|\mathbf{Y}\|_{*} \le \sqrt{\operatorname{rank}\mathbf{Y}}\,\|\mathbf{Y}\|_F$. Smoothness constants: $L_i$ for $f$ and $L_{i,j}$ for $f_j$ in Assumption~\ref{as:2}, with $\tilde{L}_i^2 := \frac{1}{N}\sum_j L_{i,j}^2$ and $L := \max_i L_i$; in the $(L^0,L^1)$ form the pairs are again per layer for $f$ and per layer and client for $f_j$, with $L^1_{i,\max} := \max_j L^1_{i,j}$.
 
 \begin{assumption}[\textbf{Stochastic gradient}]\label{as:3}
 Each client's stochastic gradient is unbiased, $\mathbb{E}_{\xi}[\nabla f_j(\mathbf{X};\xi)] = \nabla f_j(\mathbf{X})$, with bounded variance $\mathbb{E}_{\xi}\|\nabla f_j(\mathbf{X};\xi) - \nabla f_j(\mathbf{X})\|_*^2 \le \sigma^2$.
 \end{assumption}
 
-These are Assumptions~1--2 and~6--10 of \citet{gruntkowska2025error} with the layer norms taken spectral; the variance bound is (mildly) stronger than theirs, which is stated in the Frobenius norm and implied by ours via $\|\cdot\|_F \le \|\cdot\|_{*}$.
+Assumptions~\ref{as:1}--\ref{as:3} are Assumptions~1--2 and~6--10 of \citet{gruntkowska2025error} with the layer norms taken spectral; our variance bound is stated in the nuclear norm and implies theirs via $\|\cdot\|_F \le \|\cdot\|_{*}$. The clause $f_j \ge f_j^*$ of Assumption~\ref{as:1} is needed only for Corollary~\ref{cor:l0l1}.
 
 \subsubsection{Main result}
 
 \begin{theorem}[\textbf{Convergence of the EF21 methods}]\label{thm:conv}
-Run the federated Algorithm~\ref{alg:fed_serverlmo} with the EF21 uplink and EMA momentum $\mu \in [0,1)$. Then both methods are exact instances of EF21-Muon (Proposition~\ref{prop:instance}), and:
+Run the federated Algorithm~\ref{alg:fed_serverlmo} with the EF21 uplink and EMA momentum $\mu \in [0,1)$. Then:
 \begin{itemize}
-\item[\emph{(i)}] \emph{(smooth; both methods)} Under Assumptions~\ref{as:1}--\ref{as:3}, with the sharp learning rate $\eta_{t,i} = \gamma_i\|\mathbf{G}_{t,i}\|_{*}$ and suitably tuned $(\gamma_i,\mu)$, EF21-MuonUSign and the bidirectional EF21-MuonSign both reach
-\begin{equation*}
-\tfrac{1}{T}\textstyle\sum_{t<T}\mathbb{E}\|\nabla f(\mathbf{X}_t)\|_*^2 = \mathcal{O}(T^{-1/2})
-\end{equation*}
-(Corollary~\ref{cor:smooth}).
-\item[\emph{(ii)}] \emph{(generalized smooth; uplink only)} Under the weaker $(L^0,L^1)$-smoothness, EF21-MuonUSign with a plain \emph{constant} learning rate reaches $\min_{t\le T}\mathbb{E}\|\nabla f(\mathbf{X}_t)\|_* = \mathcal{O}(T^{-1/4})$ (Corollary~\ref{cor:l0l1}).
+\item[\emph{(i)}] \emph{(smooth; both methods)} under Assumptions~\ref{as:1}--\ref{as:3}, with the sharp learning rate $\eta_{t,i} = \gamma_i\|\mathbf{G}_{t,i}\|_{*}$ and tuned $(\gamma_i,\mu)$, both reach $\tfrac{1}{T}\sum_{t<T}\mathbb{E}\|\nabla f(\mathbf{X}_t)\|_*^2 = \mathcal{O}(T^{-1/2})$ (Corollary~\ref{cor:smooth});
+\item[\emph{(ii)}] \emph{(generalized smooth; uplink only)} under $(L^0,L^1)$-smoothness, EF21-MuonUSign with a plain \emph{constant} learning rate reaches $\min_{t\le T}\sum_i\mathbb{E}\|\nabla_i f(\mathbf{X}_t)\|_* = \mathcal{O}(T^{-1/4})$ (Corollary~\ref{cor:l0l1}).
 \end{itemize}
-By contrast, the majority-vote placements SignMuon, MuonUSign, MuonSign (Theorems~\ref{th:1}--\ref{th:3}) and EF21-SignMuon (Theorem~\ref{th:ef_div}) admit no such guarantee.
+Both statements are written for a per-layer constant common to all layers ($\gamma_i \equiv \gamma$, $\eta_i \equiv \eta$); for unequal constants the left-hand sides carry the step-size weights of Corollaries~\ref{cor:smooth}--\ref{cor:l0l1}. The majority-vote placements (Theorems~\ref{th:1}--\ref{th:3}) and EF21-SignMuon (Theorem~\ref{th:ef_div}) admit no such guarantee.
 \end{theorem}
 
-Part~(i) gives the $\mathcal{O}(T^{-1/2})$ rate announced in the main text (via $\min_t \le$ average); the centralized Algorithms~\ref{central_alg_ef}--\ref{central_alg_ud} are the case $N=1$. The rest of this section proves the theorem by verifying the framework's four requirements.
+Part~(i) is the rate announced in the main text (via $\min_t \le$ average); the centralized Algorithms~\ref{central_alg_ef}--\ref{central_alg_ud}, and hence $\mathbf{X}_t$ in (i), are the case $N=1$.
 
-\subsubsection{The three routine checks}
+\subsubsection{The reduction}
 
-\paragraph{The step is a spectral LMO step.}
-Writing $\mathbf{G} = \mathbf{U}\boldsymbol{\Sigma}\mathbf{V}^\top$, the framework's oracle over the spectral ball of radius $\tau$ is $\mathrm{lmo}(\mathbf{G}) = \mathbf{X} - \tau\mathbf{U}\mathbf{V}^\top$. Our server step is exactly this with $\tau = \eta_{t,i}$, since $\mathbf{D}_{t,i} = -A(\mathbf{G}_{t,i}) = \mathbf{U}_{t,i}\mathbf{V}_{t,i}^\top$:
+\paragraph{The step is their LMO step.}
+For $\mathbf{G} = \mathbf{U}\boldsymbol{\Sigma}\mathbf{V}^\top$ the framework's oracle over the spectral ball of radius $\tau$ is $\mathrm{lmo}(\mathbf{G}) = \mathbf{X} - \tau\mathbf{U}\mathbf{V}^\top$, which is our server step with $\tau = \eta_{t,i}$, since $\mathbf{D}_{t,i} = -A(\mathbf{G}_{t,i}) = \mathbf{U}_{t,i}\mathbf{V}_{t,i}^\top$:
 \begin{equation}\label{eq:lmo_step_ours}
 \mathbf{X}_{t,i} = \mathbf{X}_{t-1,i} - \eta_{t,i}\,\mathbf{D}_{t,i} = \mathrm{lmo}_{\mathcal{B}(\mathbf{X}_{t-1,i},\eta_{t,i})}(\mathbf{G}_{t,i}).
 \end{equation}
-The framework's ``sharp'' step $\mathbf{X} - \gamma\,\mathbf{G}^{\sharp}$ uses $\mathbf{G}^{\sharp} = \|\mathbf{G}\|_{*}\mathbf{U}\mathbf{V}^\top$ for the spectral norm; it is recovered by the schedule $\eta_{t,i} = \gamma_i\|\mathbf{G}_{t,i}\|_{*}$ (used in Corollary~\ref{cor:smooth}), while a constant $\eta_{t,i}$ is the plain Muon rate (Corollary~\ref{cor:l0l1}). Both are learning-rate choices, not algorithmic changes. For the spectral norm the norm-equivalence constants are $\underline{\rho}_i = 1$, $\bar{\rho}_i = \sqrt{r_i}$. At rank-deficient $\mathbf{G}$ the LMO is non-unique; any selection works, since the analysis uses only $\langle\mathbf{G},\mathrm{lmo}(\mathbf{G})\rangle = -\tau\|\mathbf{G}\|_{*}$ and $\|\mathrm{lmo}(\mathbf{G})\|_{2\to2}\le\tau$.
+Their ``sharp'' step $\mathbf{X} - \gamma\,\mathbf{G}^{\sharp}$ uses $\mathbf{G}^{\sharp} = \|\mathbf{G}\|_{*}\mathbf{U}\mathbf{V}^\top$, so a constant $\gamma_i$ \emph{is} the schedule $\eta_{t,i} = \gamma_i\|\mathbf{G}_{t,i}\|_{*}$ and a constant $\eta_{t,i}$ is the plain Muon rate: both are learning-rate choices, not algorithmic changes. The spectral norm-equivalence constants are $\underline{\rho}_i = 1$, $\bar{\rho}_i = \sqrt{r_i}$. At rank-deficient $\mathbf{G}$ the LMO is non-unique, but any selection works: the analysis uses only $\langle\mathbf{G},\mathrm{lmo}(\mathbf{G})\rangle = -\tau\|\mathbf{G}\|_{*}$ and $\|\mathrm{lmo}(\mathbf{G})\|_{2\to2}\le\tau$, with $\mathbf{G}=\mathbf{0}$ read as the zero step ($\mathbf{0}^{\sharp}=\mathbf{0}$).
 
-\paragraph{Momentum and loop order.}
-Algorithm~\ref{alg:fed_serverlmo} uses EMA momentum $\mathbf{M}_t = \mu\mathbf{M}_{t-1} + (1-\mu)\mathbf{G}_t$, which is the framework's momentum with $\beta = 1-\mu$. Its heavy-ball form (Equation~\ref{eq:signa_general}) gives \emph{identical iterates}: with zero initialization one checks by induction that the heavy-ball states are the EMA states scaled by $1/(1-\mu)$, and both $\operatorname{sign}(\cdot)$ and the Muon LMO are invariant under positive scaling, so $\mathbf{X}_t$ is unchanged. (The optional Nesterov branch is not covered; see Remark~\ref{rem:scope}.) The only remaining discrepancy is the order of operations within a round, which is resolved next.
+\paragraph{The momentum is their momentum.}
+Algorithm~\ref{alg:fed_serverlmo} uses $\mathbf{M}_t = \mu\mathbf{M}_{t-1} + (1-\mu)\mathbf{G}_t$, the framework's momentum with $\beta = 1-\mu$. From zero initialization the heavy-ball form of \eqref{eq:signa_general} differs only by the constant factor $1/(1-\mu)$ on the momentum stream; the EF21 recursion is positively homogeneous and the Muon LMO scale-invariant, so that factor leaves the iterates unchanged under a constant $\eta_{t,i}$ and is absorbed into $\gamma_i$ under the sharp schedule. (The Nesterov branch is a different filter; see the end of this appendix.)
 
 \begin{proposition}[\textbf{Exact instance}]\label{prop:instance}
 Fix $\mu$, a learning-rate schedule, and the LMO selection above. Started from $\mathbf{M}_0^{(j)} = \mathbf{g}_0^{(j)} = \mathbf{G}_0 = \mathbf{0}$, $\mathbf{W}_0 = \mathbf{X}_0$, Algorithm~\ref{alg:fed_serverlmo} with the EF21 uplink and either downlink mode ($\mathcal{C}^{\downarrow} \in \{\text{exact},\text{EF21-P}\}$) produces the same trajectory as Algorithm~3 of \citet{gruntkowska2025error} with spectral norms, scaled-sign worker compressors, identity/scaled-sign server compressor, $\beta = 1-\mu$, and radii $t_i^k = \eta_{k,i}$ -- up to a one-step index shift $X^{t+1} = \mathbf{X}_t$.
 \end{proposition}
-\paragraph{Proof} The two loops differ only in where the round is cut: \citet{gruntkowska2025error} order it \emph{step $\to$ downlink $\to$ gradient $\to$ uplink}, we order it \emph{downlink $\to$ gradient $\to$ uplink $\to$ step}. Their iteration $k=0$ is vacuous under our initialization: $\mathbf{G}_0 = \mathbf{0}$ gives $X^1 = X^0 = \mathbf{X}_0$ and a zero downlink residual, so $W^1 = \mathbf{X}_0$. Thereafter each of their iterations $k = t$ performs our round $t$ verbatim -- same momentum, same compressed residual added to the estimator, same LMO step \eqref{eq:lmo_step_ours} -- giving $X^{t+1} = \mathbf{X}_t$, $W^{t+1} = \mathbf{W}_t$ by induction. Hence running their method for $K = T+1$ iterations yields the iterates $\{\mathbf{X}_0,\mathbf{X}_0,\mathbf{X}_1,\dots,\mathbf{X}_{T-1}\}$, and any average or minimum over them equals ours up to one duplicated (nonnegative) term. $\blacksquare$
+\paragraph{Proof} The loops differ only in where the round is cut: they order it \emph{step $\to$ downlink $\to$ gradient $\to$ uplink}, we order it \emph{downlink $\to$ gradient $\to$ uplink $\to$ step}. Their iteration $k=0$ is vacuous under our initialization: $\mathbf{G}_0 = \mathbf{0}$ gives $X^1 = X^0 = \mathbf{X}_0$ and a zero downlink residual, so $W^1 = \mathbf{X}_0$. Thereafter their iteration $k = t$ performs our round $t$ verbatim -- same momentum, same compressed residual, same LMO step \eqref{eq:lmo_step_ours} -- giving $X^{t+1} = \mathbf{X}_t$, $W^{t+1} = \mathbf{W}_t$ by induction. Running their method for $K = T+1$ iterations therefore yields $\{\mathbf{X}_0,\mathbf{X}_0,\mathbf{X}_1,\dots,\mathbf{X}_{T-1}\}$, and any average or minimum over these equals ours up to one duplicated nonnegative term. $\blacksquare$
 
-Zero initialization also makes the framework's initial-error constant explicit: the $\|\mathbf{M}_0 - \mathbf{g}_0\|$ term vanishes and the gradient-deviation terms become $\|\nabla_i f(\mathbf{X}_0)\|$, so $\Psi^0$ is a finite constant.
+Zero initialization also makes their initial-error constant $\Psi^0$ explicit: the $\|\mathbf{M}_0 - \mathbf{g}_0\|$ term vanishes and the gradient-deviation terms become $\|\nabla_i f(\mathbf{X}_0)\|$. The $\beta^{-1}$ surviving in $\Psi^0$ enters only through the $\Psi^0/T$ term, which $T^{-1/2}$ dominates.
 
 \subsubsection{The one real check: the scaled sign is a compressor}
 
-The framework needs every transmitted message to come from a \emph{contractive compressor}: a map $\mathcal{C}$ with $\mathbb{E}\|\mathcal{C}(\mathbf{Y})-\mathbf{Y}\|^2 \le (1-\alpha)\|\mathbf{Y}\|^2$ for some $\alpha \in (0,1]$ \citep[Def.~1]{gruntkowska2025error}. This is exactly the property that fails for a bare sign and holds once it is scaled.
+The framework needs every transmitted message to come from a \emph{contractive compressor}: a map with $\mathbb{E}\|\mathcal{C}(\mathbf{Y})-\mathbf{Y}\|^2 \le (1-\alpha)\|\mathbf{Y}\|^2$ for some $\alpha \in (0,1]$ \citep[Def.~1]{gruntkowska2025error}. This is exactly what fails for a bare sign and holds once it is scaled.
 
 \begin{lemma}[\textbf{Contractivity of the scaled sign}]\label{lem:signcontr}
-For every $\mathbf{Y} \in \mathbb{R}^{m\times n}$ ($d = mn$), the scaled sign $\mathcal{C}(\mathbf{Y}) = \operatorname{mean}(|\mathbf{Y}|)\operatorname{sign}(\mathbf{Y})$ satisfies
-\begin{multline}\label{eq:sign_identity}
-\|\mathcal{C}(\mathbf{Y})-\mathbf{Y}\|_F^2 = \|\mathbf{Y}\|_F^2 - \tfrac{2}{d}\|\mathbf{Y}\|_1^2 + \tfrac{\|\mathbf{Y}\|_0}{d^2}\|\mathbf{Y}\|_1^2 \\
-\le \bigl(1-\tfrac{1}{d}\bigr)\|\mathbf{Y}\|_F^2,
-\end{multline}
-so $\mathcal{C}$ is contractive in the Euclidean norm with $\alpha = 1/d$. The bound $\alpha = 1/d$ is met only by $1$-sparse inputs; for dense $\mathbf{Y}$ the true contraction is $\alpha(\mathbf{Y}) = \|\mathbf{Y}\|_1^2/(d\|\mathbf{Y}\|_F^2) = \Theta(1)$ (e.g.\ $\to 2/\pi$ for i.i.d.\ Gaussian entries).
-\end{lemma}
-\paragraph{Proof} With $c := \|\mathbf{Y}\|_1/d$, zero entries contribute nothing and each nonzero entry contributes $(|Y_{kl}|-c)^2$, giving $\|\mathcal{C}(\mathbf{Y})-\mathbf{Y}\|_F^2 = \|\mathbf{Y}\|_F^2 - 2c\|\mathbf{Y}\|_1 + c^2\|\mathbf{Y}\|_0$, i.e.\ \eqref{eq:sign_identity}. Then $\|\mathbf{Y}\|_0 \le d$ and $\|\mathbf{Y}\|_1 \ge \|\mathbf{Y}\|_F$ give the bound; the dense case sets $\|\mathbf{Y}\|_0 = d$, and the Gaussian limit uses $\mathbb{E}|Y_{kl}| = \sqrt{2/\pi}\,\sigma$. $\blacksquare$
-
-\begin{remark}[\textbf{Why the scaling is decisive}]\label{rem:whyscale}
-The \emph{unscaled} sign is not contractive for any $\alpha$: as $\|\mathbf{Y}\|_F \to 0$ on a fixed support, $\|\operatorname{sign}(\mathbf{Y})-\mathbf{Y}\|_F \to \sqrt{\|\mathbf{Y}\|_0}$ does not vanish. This is the exact line between our divergent and convergent methods. SignMuon, MuonUSign and MuonSign broadcast unscaled signs of full quantities -- outside every error-feedback theory, and indeed divergent (Theorems~\ref{th:1}--\ref{th:3}). The EF21 variants instead send the \emph{scaled} sign of a \emph{residual}; the one extra scalar $\operatorname{mean}(|\cdot|)$ per layer per round, negligible on top of one bit per parameter, is what makes the compressor contractive.
-\end{remark}
-
-Applied per layer, the uplink scaled sign lies in $\mathbb{B}_2(1/d_i) \subseteq \mathbb{B}_2(\alpha)$ with the common parameter
-\begin{equation}\label{eq:alpha_def}
-\alpha := 1/d_{\max}.
+For every $\mathbf{Y} \in \mathbb{R}^{m\times n}$ ($d = mn$), the scaled sign $\mathcal{C}(\mathbf{Y}) = \operatorname{mean}(|\mathbf{Y}|)\operatorname{sign}(\mathbf{Y})$, with exact zeros resolved to $\pm1$ as in Section~\ref{sec:theory}, satisfies
+\begin{equation}\label{eq:sign_identity}
+\|\mathcal{C}(\mathbf{Y})-\mathbf{Y}\|_F^2 = \|\mathbf{Y}\|_F^2 - \tfrac{1}{d}\|\mathbf{Y}\|_1^2 \le \bigl(1-\tfrac{1}{d}\bigr)\|\mathbf{Y}\|_F^2 ,
 \end{equation}
-The two methods differ only on the downlink: EF21-MuonUSign broadcasts the exact model (server compressor $= \mathcal{I}$, $\alpha_P = 1$), while EF21-MuonSign applies the same scaled sign, contributing a second contractive compressor in $\mathbb{B}_2(\alpha)$.
+so $\mathcal{C}$ is Euclidean-contractive with $\alpha = 1/d$. The identity holds for every draw of the random signs, not merely in expectation, and gives the exact contraction $\alpha(\mathbf{Y}) = \|\mathbf{Y}\|_1^2/(d\|\mathbf{Y}\|_F^2)$, which is $\Theta(1)$ for dense $\mathbf{Y}$ (e.g.\ $\to 2/\pi$ for i.i.d.\ Gaussian entries) and equals $1/d$ exactly at any $1$-sparse $\mathbf{Y}$.
+\end{lemma}
+\paragraph{Proof} Write $c := \|\mathbf{Y}\|_1/d$ and $s_{kl}=\pm1$ for the transmitted signs. A nonzero entry contributes $(|Y_{kl}|-c)^2$ and a zero entry contributes $(c\,s_{kl})^2 = c^2$ whichever sign was drawn, so
+$\|\mathcal{C}(\mathbf{Y})-\mathbf{Y}\|_F^2 = \|\mathbf{Y}\|_F^2 - 2c\|\mathbf{Y}\|_1 + c^2\|\mathbf{Y}\|_0 + c^2(d-\|\mathbf{Y}\|_0) = \|\mathbf{Y}\|_F^2 - 2c\|\mathbf{Y}\|_1 + dc^2$, which is \eqref{eq:sign_identity} on substituting $c$. The bound then follows from $\|\mathbf{Y}\|_1 \ge \|\mathbf{Y}\|_F$, with equality exactly at the $1$-sparse $\mathbf{Y}$; the Gaussian limit uses $\mathbb{E}|Y_{kl}| = \sqrt{2/\pi}\,\sigma$. $\blacksquare$
+
+The $\|\mathbf{Y}\|_0$ terms cancelling is the convention paying for itself: under $\operatorname{sign}(0)=0$ the same computation leaves a sparsity-dependent identity, and $1/d$ becomes an unattained infimum.
+
+The scaling is what carries the lemma. A bare sign contracts for no $\alpha$ at all: as $\|\mathbf{Y}\|_F \to 0$ on a fixed support, $\|\operatorname{sign}(\mathbf{Y})-\mathbf{Y}\|_F \to \sqrt{\|\mathbf{Y}\|_0}$. That is the line between our divergent and convergent methods: the majority-vote methods transmit unscaled signs of full quantities, the EF21 variants the scaled sign of a \emph{residual}, at the cost of one extra scalar per layer per round. Per layer the uplink scaled sign lies in $\mathbb{B}_2(1/d_i) \subseteq \mathbb{B}_2(\alpha)$ with $\alpha := 1/d_{\max}$; the downlink is exact for EF21-MuonUSign ($\alpha_P = 1$) and the same scaled sign for EF21-MuonSign.
 
 \subsubsection{Transferred guarantees}
 
-All four requirements hold, so the framework's theorems apply through the change of variables of Table~\ref{tab:dict} ($\underline{\rho}_i = 1$, $\bar{\rho}_i = \sqrt{r_i}$, $\alpha_D = \alpha$). We state the resulting rates and stepsize rules; the explicit non-asymptotic bounds are those of \citet{gruntkowska2025error}, Theorem~19 (smooth) and Theorem~24 ($(L^0,L^1)$), evaluated at these constants, and we do not reproduce them.
+All requirements hold, so the framework's theorems apply through Table~\ref{tab:dict}. We state the rates and stepsize rules; the explicit non-asymptotic bounds are \citet{gruntkowska2025error}, Theorem~19 (smooth) and Theorem~24 ($(L^0,L^1)$), at these constants.
 
 \begin{table}[!t]
 \centering\footnotesize
 \setlength{\tabcolsep}{4pt}
 \begin{tabular}{@{}lll@{}}
 \toprule
- & \textbf{This paper} & \textbf{\citet{gruntkowska2025error}} \\
+ & \textbf{This paper} & \textbf{EF21-Muon} \\
 \midrule
 clients / rounds & $N$, $T$ & $n$, $K = T+1$ \\
 iterate & $\mathbf{X}_t$ & $X^{t+1}$ \\
 momentum & $\mu$ & $1 - \beta$ \\
 learning rate & $\eta_{t,i}$ & radius $t_i^{t}$ \\
-layer norm / dual & $\|\cdot\|_{2\to2}$, $\|\cdot\|_{*}$ & $\|\cdot\|_{(i)}$, $\|\cdot\|_{(i)\star}$ \\
 norm equivalence & $1,\ \sqrt{r_i}$ & $\underline{\rho}_i,\ \bar{\rho}_i$ \\
 uplink compr. & scaled sign & $\mathbb{B}_2(\alpha_D)$ \\
-downlink compr. & exact / sign & $\mathcal{I}$ / $\mathbb{B}_2(\alpha_P)$ \\
+downlink compr. & exact / sign & $\mathcal{I}$ / $\mathbb{B}_2(\alpha_P)^{\dagger}$ \\
 compression $\alpha$ & $1/d_{\max}$ & $\alpha_D$ \\
-smoothness & $L_i,\ \tilde{L}_i$ & $L_i^0,\ \tilde{L}_i^0$ \\
 \bottomrule
 \end{tabular}
-\caption{Change of variables from our notation to that of \citet{gruntkowska2025error}. The one-step index shift is Proposition~\ref{prop:instance}.}
+\caption{Change of variables from our notation to that of \citet{gruntkowska2025error}. Layer norms $\|\cdot\|_{(i)},\|\cdot\|_{(i)\star}$ are read as $\|\cdot\|_{2\to2},\|\cdot\|_{*}$ and smoothness constants $L_i^0,\tilde{L}_i^0$ as $L_i,\tilde{L}_i$; the index shift is Proposition~\ref{prop:instance}. $^{\dagger}$Their Theorem~19 as printed asks for a server compressor in $\mathbb{B}(\alpha_P)$, contractive in the \emph{layer} norm; the Euclidean class $\mathbb{B}_2(\alpha_P)$ that the scaled sign belongs to is licensed only by their Remark~23, at the $\bar\rho_i^2$ price charged in Corollary~\ref{cor:smooth} and Remark~\ref{rem:normmismatch}.}
 \label{tab:dict}
 \end{table}
 
 \begin{corollary}[\textbf{Smooth case; both methods}]\label{cor:smooth}
-Let Assumptions~\ref{as:1}--\ref{as:3} hold. Run Algorithm~\ref{alg:fed_serverlmo} with the EF21 uplink, EMA momentum, and the sharp learning rate $\eta_{t,i} = \gamma_i\|\mathbf{G}_{t,i}\|_{*}$ with any constants $\gamma_i$ below the per-layer threshold of \citet[Thm.~19]{gruntkowska2025error} under Table~\ref{tab:dict}. Then, tuning $\mu$ as in \citet[Cor.~2]{gruntkowska2025error},
+Let Assumptions~\ref{as:1}--\ref{as:3} hold. Run Algorithm~\ref{alg:fed_serverlmo} with the EF21 uplink, EMA momentum, and $\eta_{t,i} = \gamma_i\|\mathbf{G}_{t,i}\|_{*}$ with any $\gamma_i$ below the per-layer threshold of \citet[Thm.~19]{gruntkowska2025error} under Table~\ref{tab:dict}. Then, applying the momentum tuning of \citet[Cor.~2]{gruntkowska2025error} per layer (their Corollaries~1--2 state it for the layer-wise initialization and for $p=1$ respectively; the combination is routine),
 \begin{equation*}
-\tfrac{1}{T}\textstyle\sum_{t<T}\mathbb{E}\|\nabla f(\mathbf{X}_t)\|_*^2 = \mathcal{O}(T^{-1/2}).
+\tfrac{1}{T}\textstyle\sum_{t<T}\sum_{i=1}^p w_i\,\mathbb{E}\|\nabla_i f(\mathbf{X}_t)\|_*^2 = \mathcal{O}(T^{-1/2}),
 \end{equation*}
+with $w_i := \gamma_i/(\tfrac{1}{p}\sum_l\gamma_l)$; for a common $\gamma_i$ all $w_i = 1$ and the left side is $\tfrac{1}{T}\sum_{t<T}\mathbb{E}\|\nabla f(\mathbf{X}_t)\|_*^2$.
 \end{corollary}
-\paragraph{Proof} By Proposition~\ref{prop:instance} the run is an instance of Algorithm~3 for $K = T+1$ iterations, and by Lemma~\ref{lem:signcontr} its compressors satisfy $\alpha_D = \alpha$ (uplink) and $\alpha_P \in \{1,\alpha\}$ (downlink; EF21-MuonSign's Euclidean downlink is admissible by their Remark~23, which adds a factor $\bar{\rho}_i^2 = r_i$ to the primal terms of the threshold). Substituting $\underline{\rho}_i = 1$, $\bar{\rho}_i = \sqrt{r_i}$ into \citet[Thm.~19]{gruntkowska2025error} gives the stepsize threshold and the $\mathcal{O}(T^{-1/2})$ rate; the duplicated $\mathbf{X}_0$-term contributes only a $\frac{T+1}{T}$ factor. $\blacksquare$
+\paragraph{Proof} By Proposition~\ref{prop:instance} the run is an instance of Algorithm~3 with $K = T+1$, and by Lemma~\ref{lem:signcontr} its compressors satisfy $\alpha_D = \alpha$ and $\alpha_P \in \{1,\alpha\}$ (EF21-MuonSign's Euclidean downlink is admissible by their Remark~23, which multiplies the $\alpha_P$-terms of the threshold constant $\zeta_i$ by $\bar{\rho}_i^2 = r_i$). Substituting $\underline{\rho}_i = 1$, $\bar{\rho}_i = \sqrt{r_i}$ into \citet[Thm.~19]{gruntkowska2025error} gives the threshold and the rate; the duplicated $\mathbf{X}_0$-term costs a factor $\frac{T+1}{T}$. $\blacksquare$
 
-The threshold shrinks polynomially in the layer dimension $d_i$ (through $\bar{\rho}_i^2 = r_i$ and the uplink $\alpha = 1/d_{\max}$), and for EF21-MuonSign carries an extra $r_i$ from the compressed downlink -- the price of the spectral geometry and of one-bit messages (Remark~\ref{rem:dimension}). For the bidirectional method this penalty is structural: the scaled sign cannot satisfy the layer-norm contractivity that the unpenalized branch requires, for any layer of rank above one (Remark~\ref{rem:normmismatch}).
+Since $\gamma_i \lesssim \zeta_i^{-1/2}$, the threshold shrinks polynomially in the layer dimension -- through $\bar{\rho}_i = \sqrt{r_i}$ and the uplink $\alpha = 1/d_{\max}$ -- and for EF21-MuonSign by a further $\sqrt{r_i}$ from the compressed downlink. That extra factor is structural: the scaled sign is spectrally contractive for no parameter at all (Remark~\ref{rem:normmismatch}).
 
 \begin{corollary}[\textbf{$(L^0,L^1)$ case; EF21-MuonUSign}]\label{cor:l0l1}
-Let Assumption~\ref{as:2} hold in its $(L^0,L^1)$ form. Run EF21-MuonUSign (exact downlink) with $S := T+2$, momentum $\mu = 1 - S^{-1/2}$, and the \emph{constant} per-layer rate $\eta_{t,i} \equiv \eta_i/S^{3/4}$ for any $\eta_i$ small enough that $\eta_i \le 1$ and $\eta_i^2\sqrt{r_i}\,(L^1_{i,\max})^2 = \mathcal{O}(1)$ (the explicit bound is \citet[Thm.~24]{gruntkowska2025error}). Then
+Let Assumption~\ref{as:2} hold in its $(L^0,L^1)$ form. Run EF21-MuonUSign (exact downlink) with $S := T+2$, momentum $\mu = 1 - S^{-1/2}$, and the \emph{constant} per-layer rate $\eta_{t,i} \equiv \eta_i/S^{3/4}$ for any $\eta_i \le 1$ with $\eta_i^2\sqrt{r_i}\,(L^1_{i,\max})^2 = \mathcal{O}(1)$.\footnote{These are the binding conditions of \citet[Thm.~24]{gruntkowska2025error}; the two remaining ones relax as $T$ grows. Their printed second condition is tighter than the display its own proof establishes by a factor $K+1$; we quote the latter.} Then
 \begin{equation*}
-\min_{0\le t\le T}\mathbb{E}\|\nabla f(\mathbf{X}_t)\|_* = \mathcal{O}(T^{-1/4}).
+\min_{0\le t\le T}\ \textstyle\sum_{i=1}^p v_i\,\mathbb{E}\|\nabla_i f(\mathbf{X}_t)\|_* = \mathcal{O}(T^{-1/4}),\quad v_i := \tfrac{\eta_i}{\frac{1}{p}\sum_l\eta_l}.
 \end{equation*}
 \end{corollary}
-\paragraph{Proof} Their Theorem~24 requires the identity server compressor, which is exactly the exact downlink of EF21-MuonUSign (hence EF21-MuonSign is excluded here; Remark~\ref{rem:scope}). Applying it with $K = T+1$, $\beta = S^{-1/2}$ and the dictionary substitution yields the stated schedule and rate. $\blacksquare$
+\paragraph{Proof} Their Theorem~24 requires the identity server compressor, i.e.\ the exact downlink of EF21-MuonUSign (so EF21-MuonSign is excluded). Applying it with $K = T+1$, $\beta = S^{-1/2}$ and Table~\ref{tab:dict} gives the schedule and the rate. $\blacksquare$
 
-\begin{remark}[\textbf{The variant we actually run}]\label{rem:const_lr_smooth}
-Under plain smoothness ($L^1 = 0$) the constraint in Corollary~\ref{cor:l0l1} collapses to $\eta_i \le 1$. So the \emph{constant-learning-rate} EF21-MuonUSign used in our experiments -- with no gradient-norm-dependent scaling -- already converges at rate $\mathcal{O}(T^{-1/4})$; the sharp schedule of Corollary~\ref{cor:smooth} is needed only to obtain the faster $\mathcal{O}(T^{-1/2})$ rate in squared norm.
-\end{remark}
+Under plain smoothness ($L^1 = 0$) every constraint above collapses to $\eta_i \le 1$. The \emph{constant}-learning-rate EF21-MuonUSign we actually run therefore already converges at $\mathcal{O}(T^{-1/4})$; the sharp schedule buys only the faster $\mathcal{O}(T^{-1/2})$ in squared norm.
 
-\subsubsection{Scope and consequences}
+\subsubsection{Scope}
 
-\begin{remark}[\textbf{What the reduction does and does not cover}]\label{rem:scope}
-It covers the two Error-Feedback methods and no others, matching our negative results. \emph{(i)}~The majority-vote methods send unscaled signs and fall outside the framework (Remark~\ref{rem:whyscale}); Theorems~\ref{th:1}--\ref{th:3} confirm they diverge. \emph{(ii)}~EF21-SignMuon compresses the LMO \emph{output} rather than the gradient, so it tracks the non-Lipschitz polar factor, the framework's momentum-tracking step breaks, and it diverges for every $L$-based step size (Theorem~\ref{th:ef_div}). \emph{(iii)}~EF21-MuonSign gets the smooth guarantee (Corollary~\ref{cor:smooth}) but not the $(L^0,L^1)$ one, since the generalized-smooth theory of \citet{gruntkowska2025error} assumes an uncompressed downlink. \emph{(iv)}~The guarantees are for the default EMA branch; the Nesterov branch is not analyzed.
-\end{remark}
+The reduction covers the two error-feedback methods and no others, which matches our negative results. The majority-vote methods send unscaled signs and fall outside the framework. EF21-SignMuon compresses the LMO \emph{output} rather than the gradient, so it tracks the non-Lipschitz polar factor and the momentum-tracking step breaks (Theorem~\ref{th:ef_div}). EF21-MuonSign gets the smooth guarantee but not the $(L^0,L^1)$ one, whose theory assumes an uncompressed downlink.
+
+The remaining gap is the Nesterov branch, which our language-model runs use (Appendix~\ref{app:nanogpt}): with $\beta := 1-\mu$ it steers by $\tilde{\mathbf{M}}_t = (1-\beta)\mathbf{M}_t + \beta\mathbf{G}_t$ rather than by the buffer $\mathbf{M}_t$, a two-tap filter of the gradients where the framework wants a first-order recursion. The discrepancy is small and explicit: writing $\mathbf{n}_t := \mathbf{G}_t - \nabla_i f(\mathbf{X}_t)$, we have $\nabla_i f - \tilde{\mathbf{M}}_t = (1-\beta)(\nabla_i f - \mathbf{M}_t) - \beta\,\mathbf{n}_t$, and since $\mathbb{E}\langle \nabla_i f - \mathbf{M}_t,\mathbf{n}_t\rangle = -\beta\,\mathbb{E}\|\mathbf{n}_t\|_2^2$,
+\begin{equation*}
+\mathbb{E}\|\nabla_i f - \tilde{\mathbf{M}}_t\|_2^2 \le (1-\beta)^2\,\mathbb{E}\|\nabla_i f - \mathbf{M}_t\|_2^2 + 3\beta^2\sigma_i^2 .
+\end{equation*}
+The first term is exactly the deviation \citet[Thm.~19]{gruntkowska2025error} already tracks, contracted rather than enlarged; the second is dominated by the $\beta\sigma_i^2$ term already in its bound. Nesterov should therefore cost constants, not the rate --- but we state this as an expectation, not as a corollary, since the tracking recursion for $\|\tilde{\mathbf{M}}_{t+1}-\tilde{\mathbf{M}}_t\|$ would have to be redone as well.
 
 \begin{remark}[\textbf{The price of one bit}]\label{rem:dimension}
-The uplink parameter $\alpha = 1/d_{\max}$ is what makes the stepsize threshold of Corollary~\ref{cor:smooth} shrink with the dimension -- the worst-case cost of one-bit messages, of the same nature as for Top-$1$ compressors in Euclidean EF21 \citep{richtarik2021ef21}. \emph{On the uplink} it is a worst case only: it needs $1$-sparse residuals, whereas the momentum residual is dense with $\alpha(\boldsymbol{\Delta}) = \Theta(1)$ (Lemma~\ref{lem:signcontr}), and the framework admits iteration-dependent $\alpha$ \citep[Rem.~12]{gruntkowska2025error}, recovering the constants realized in practice.
+The uplink $\alpha = 1/d_{\max}$ is what makes the threshold of Corollary~\ref{cor:smooth} shrink with the dimension -- the worst-case cost of one-bit messages, as for Top-$1$ compressors in Euclidean EF21 \citep{richtarik2021ef21}. \emph{On the uplink} it is worst-case only: it needs an all-but-one-coordinate-negligible residual, whereas the momentum residual is dense with $\alpha(\boldsymbol{\Delta}) = \Theta(1)$ (Lemma~\ref{lem:signcontr}), and the framework is stated to extend straightforwardly to iteration-dependent $\alpha$ \citep[Rem.~12]{gruntkowska2025error}.
 
-\emph{The downlink of EF21-MuonSign does not inherit this reassurance.} Its residual is not a difference of gradients refreshed by fresh stochasticity each round, but the output of the compressor's own recursion
+\emph{The downlink of EF21-MuonSign does not inherit this.} Its residual is not a gradient difference refreshed by fresh stochasticity, but the output of the compressor's own recursion
 \begin{equation*}
-\boldsymbol{\Delta}_{t+1}^{\downarrow} = \boldsymbol{\Delta}_t^{\downarrow} - \eta_t \mathbf{D}_t - \operatorname{mean}|\boldsymbol{\Delta}_t^{\downarrow}|\operatorname{sign}(\boldsymbol{\Delta}_t^{\downarrow}),
+\boldsymbol{\Delta}_{t+1}^{\downarrow} = \boldsymbol{\Delta}_t^{\downarrow} - \eta_{t+1} \mathbf{D}_{t+1} - \operatorname{mean}|\boldsymbol{\Delta}_t^{\downarrow}|\operatorname{sign}(\boldsymbol{\Delta}_t^{\downarrow}),
 \end{equation*}
-in which every coordinate is corrected by the \emph{same} amount. Coordinates driven persistently harder than that mean are never caught while the bulk holds the mean down, so the residual concentrates -- and concentration is what drives $\alpha$ towards its $1/d$ floor. This positive feedback is absent from the uplink, and we observe it: $\alpha(\boldsymbol{\Delta}^{\downarrow})$ falls to $1.2\times10^{-4}$ on the layers built from a zero initialization, four orders of magnitude below its own uplink on the same layers (Section~\ref{sec:exp_nanogpt}). For the bidirectional method the dimension dependence of Corollary~\ref{cor:smooth} is therefore realizable, not pessimistic.
+in which every coordinate is corrected by the \emph{same} amount. Coordinates driven harder than that mean are never caught while the bulk holds the mean down, so the residual concentrates -- and concentration is what drives $\alpha$ down. We observe it: $\alpha(\boldsymbol{\Delta}^{\downarrow})$ falls to $1.2\times10^{-4}$ on the layers built from a zero initialization, nearly four orders of magnitude below its own uplink on the same layers (Section~\ref{sec:exp_nanogpt}). That is still far above the $1/d = 4.2\times10^{-7}$ floor, so the dimension dependence of Corollary~\ref{cor:smooth} is not attained; what is lost is the $\Theta(1)$ contraction that makes it harmless upstream.
 \end{remark}
 
 \begin{remark}[\textbf{Why the sharp route is closed}]\label{rem:normmismatch}
-Corollary~\ref{cor:smooth} reaches EF21-MuonSign only through the $\bar{\rho}_i^2$-penalized branch of \citet[Rem.~23]{gruntkowska2025error}, and this is forced rather than convenient. The sharp branch asks for a server compressor in $\mathbb{B}(\alpha_P)$, contractive in the \emph{layer} norm; by the norm-equivalence argument of \citet[App.~C]{gruntkowska2025error} a compressor in $\mathbb{B}_2(\alpha)$ lies there only if $\alpha > 1 - \underline{\rho}_i^2/\bar{\rho}_i^2 = 1 - 1/r_i$. The scaled sign has $\alpha \le 1$, with equality only on the trivial input, so for any layer of rank $r_i>1$ it can \emph{never} qualify -- for our $768\times3072$ matrices the bar is $\alpha > 0.9987$ against an isotropic $2/\pi$. The factor $\bar{\rho}_i^2 = r_i$ is thus not removable by a sharper analysis of this compressor, only by changing it. Two admissible replacements are cheap: random dropout ($\mathcal{C}(\mathbf{Y}) = \mathbf{Y}$ with probability $p$, else $\mathbf{0}$) lies in $\mathbb{B}(p)$ for \emph{every} norm, and the Top-$K$ SVD compressor lies in $\mathbb{B}(1-\sigma_{K+1}^2/\sigma_1^2)$ for the spectral norm \citep[App.~C]{gruntkowska2025error}. Both restore the sharp branch at a comparable budget, giving up the strictly one-bit downlink.
+Corollary~\ref{cor:smooth} reaches EF21-MuonSign only through the $\bar{\rho}_i^2$-penalized branch of \citet[Rem.~23]{gruntkowska2025error}, and this is forced. The sharp branch asks for a server compressor in $\mathbb{B}(\alpha_P)$, contractive in the \emph{layer} norm, and the scaled sign is in no such class for any $\alpha_P>0$. Take $\mathbf{Y}_\delta = (1-\delta)\mathbf{I}_n + \delta\mathbf{J}_n$, with $\mathbf{J}_n$ all ones, $0<\delta<1$ and $n \ge 2$. Every entry is positive, so $\operatorname{sign}(\mathbf{Y}_\delta) = \mathbf{J}_n$ and $\operatorname{mean}|\mathbf{Y}_\delta| = (1+(n-1)\delta)/n$, whence
+\begin{equation*}
+\mathcal{C}(\mathbf{Y}_\delta) - \mathbf{Y}_\delta = (1-\delta)\bigl(\tfrac{1}{n}\mathbf{J}_n - \mathbf{I}_n\bigr),
+\end{equation*}
+with eigenvalues $0$ and $-(1-\delta)$. So $\|\mathcal{C}(\mathbf{Y}_\delta)-\mathbf{Y}_\delta\|_{2\to2} = 1-\delta$ against $\|\mathbf{Y}_\delta\|_{2\to2} = 1+(n-1)\delta$, a ratio tending to $1$ as $\delta\downarrow 0$: no $\alpha_P > 0$ survives, on any layer of rank above one. The framework's sufficient condition is hopeless for the same reason -- by the norm-equivalence argument of \citet[App.~D]{gruntkowska2025error} a compressor in $\mathbb{B}_2(\alpha)$ is certified to lie in $\mathbb{B}(\alpha_P)$ only if $\alpha > 1-1/r_i$, i.e.\ $\alpha > 0.9987$ for our $768\times3072$ matrices, against an isotropic $2/\pi$. The factor $\bar{\rho}_i^2 = r_i$ in $\zeta_i$ is therefore not removable by a sharper analysis of this compressor, only by changing it -- to random dropout or a Top-$K$ SVD compressor, both layer-norm contractive at a comparable budget \citep[App.~D]{gruntkowska2025error}, and neither strictly one-bit.
 \end{remark}
 
 \begin{remark}[\textbf{From Muon to Gluon}]\label{rem:gluon}
-Only the constants $(\underline{\rho}_i,\bar{\rho}_i) = (1,\sqrt{r_i})$ are spectral-norm-specific: Lemma~\ref{lem:signcontr} is a Euclidean statement and the framework's theorems hold for arbitrary layer norms. Replacing the Muon LMO with any per-layer norm -- the Gluon setting \citep{riabinin2025gluon}, e.g.\ Scion's $\ell_1\to\ell_\infty$ geometry for embeddings \citep{pethick2025training} -- gives \emph{EF21-GluonUSign} and \emph{EF21-GluonSign}, for which both corollaries hold with the corresponding $(\underline{\rho}_i,\bar{\rho}_i)$. Convergence is thus a property of error feedback plus scaled-sign compression, not of the spectral geometry.
+Only $(\underline{\rho}_i,\bar{\rho}_i) = (1,\sqrt{r_i})$ is spectral-norm-specific: Lemma~\ref{lem:signcontr} is Euclidean and the framework's theorems hold for arbitrary layer norms. A new geometry has to supply only its LMO and its norm-equivalence pair; both corollaries then hold with those constants in place of $(1,\sqrt{r_i})$, giving \emph{EF21-GluonUSign} and \emph{EF21-GluonSign} for the Gluon setting \citep{riabinin2025gluon}. Admissible geometries abound -- $\ell_1\to\ell_\infty$ for embeddings \citep{pethick2025training}, the Schatten-$p$ norms \citep{cesista2025schattenp}, the Ky Fan duals of the Fanion family \citep{kravatskiy2026kyfannorms} -- and, by the closure property of the last work, conic combinations of them, with $\bar{\rho}_i \le \bigl(\sum_j\alpha_j/\bar{\rho}_i^{(j)}\bigr)^{-1}$ for the mixture $\|\mathbf{X}_i\| = \sum_j\alpha_j\|\mathbf{X}_i\|_{(j)}$. Convergence is thus a property of error feedback plus scaled-sign compression, not of the spectral geometry. The two ways to bring a sign into a Muon step stay cleanly apart: inside the oracle it changes the norm and the guarantee follows the norm; outside it, it is a compressor and the guarantee has to come from error feedback.
 \end{remark}
 
-We assume the exact spectral LMO, as do all analyses of Muon-type methods \citep{li2025note,kovalev2025understanding,riabinin2025gluon,gruntkowska2025error}; in practice it is the five-step Newton--Schulz approximation of Algorithm~\ref{alg:muon_lmo} \citep{amsel2025polar}, and vector parameters and the last layer are trained with AdamW, as is standard for Muon \citep{jordan2024muon}. Finally, we note that although SignMuon carries no worst-case guarantee, empirically it stays within $1$--$1.5\%$ of full-precision Muon while cutting uplink communication $\sim32\times$ and beating SignSGD, in both the centralized and federated regimes.
+We assume the exact spectral LMO, as do all analyses of Muon-type methods \citep{li2025note,kovalev2025understanding,riabinin2025gluon,gruntkowska2025error}; in practice it is the five-step iteration of Algorithm~\ref{alg:muon_lmo} \citep{amsel2025polar,grishina2025chebyshev}, with vector parameters and the last layer trained by AdamW as usual \citep{jordan2024muon}. That substitution is not covered by the reduction either, but it is the mildest of the gaps: \citet{shulgin2025inexactmuon} analyse the inexact Muon update directly and find the method tolerant of oracle error, which is consistent with our runs --- the five-step approximation reproduces record~\#40 to within seed noise (Table~\ref{tab:nanogpt}).

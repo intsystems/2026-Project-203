@@ -216,14 +216,14 @@ class _PeriodicRamp:
         if r <= p / 2 - tau:
             return out
         t = min(r, p / 2 + tau)
-        out += (2 * tau / np.pi) * (np.sin(np.pi * (t - p / 2) / (2 * tau)) + 1)
+        out += (2 * tau / np.pi) * np.cos(np.pi * (t - p / 2) / (2 * tau))
         if r <= p / 2 + tau:
             return out
         t = min(r, p - tau)
         out += -(t - p / 2 - tau)
         if r <= p - tau:
             return out
-        out += (2 * tau / np.pi) * np.cos(np.pi * (p - r) / (2 * tau))
+        out += -(2 * tau / np.pi) * np.cos(np.pi * (p - r) / (2 * tau))
         return out
 
 

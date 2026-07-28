@@ -18,14 +18,12 @@ figure in ``run_counterexamples.py``.
 """
 
 import os
-import sys
 import numpy as np
 import matplotlib
 
 matplotlib.use("Agg")
 import matplotlib.pyplot as plt
 
-sys.path.insert(0, os.path.dirname(os.path.abspath(__file__)))
 from counterexamples.optimizers import EF21SignMuon                       # noqa: E402
 from counterexamples.problems import ef21_signmuon_counterexample         # noqa: E402
 
@@ -109,7 +107,12 @@ def main():
     for nesterov in (False, True):
         for mu in MUS:
             f = trajectory(mu, nesterov)
-            s = (f[-1] - f[T // 2]) / (T - T // 2)
+            # ``f`` is period-two once settled, so the two endpoints of the
+            # window must have the SAME parity -- otherwise half an oscillation
+            # leaks into the slope and the exact rate 49/480 is never printed.
+            i0 = T // 2
+            i0 -= (T - 1 - i0) % 2
+            s = (f[-1] - f[i0]) / (T - 1 - i0)
             print(f"{'Nesterov' if nesterov else 'standard':<9}{mu:>6}"
                   f"{s:>12.6f}")
 
