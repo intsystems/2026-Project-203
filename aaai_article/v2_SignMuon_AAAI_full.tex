@@ -1,16 +1,10 @@
 %%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%
-%  MAIN PAPER -- AAAI submission (7 pages + <=2 pages references).
-%  The appendix lives in the separate supplementary document
-%  v2_SignMuon_AAAI_supp.tex, which shares this preamble.
-%  Cross-references between the two are resolved by the xr package:
-%  build BOTH documents, then build BOTH again so each picks up the
-%  other's .aux (latexmk v2_SignMuon_AAAI && latexmk supp && latexmk main).
-%  v2_SignMuon_AAAI_full.tex rejoins the two for arXiv.
+%  ARXIV / SELF-CONTAINED BUILD -- main paper with the appendix rejoined,
+%  one PDF, no xr and so no cross-document reference dance.
+%  The AAAI submission uses v2_SignMuon_AAAI.tex (main) plus
+%  v2_SignMuon_AAAI_supp.tex (supplementary) instead.
 %%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%
 \input{signmuon_preamble}
-
-\usepackage{xr}
-\externaldocument{v2_SignMuon_AAAI_supp}
 
 \begin{document}
 \maketitle
@@ -380,5 +374,8 @@ An open tension remains. On every task we measure --- centralized, federated and
 
 % \bibliographystyle{unsrtnat}  % aaai2027.sty sets the style automatically
 \bibliography{references}
+
+\onecolumn
+\input{signmuon_appendix}
 
 \end{document}

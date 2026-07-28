@@ -26,7 +26,7 @@ shift whenever a float is added elsewhere in the paper, and every stale
 | Paper artifact | Section here |
 | :--- | :--- |
 | Theorems 1–3, `fig:divergence_plot` | [1. Counterexamples](#1-counterexamples-figdivergence_plot-theorems-13) |
-| Theorem 4 (EF21-SignMuon), `fig:ef21_divergence`, `fig:ef21_momentum` | [2. EF21-SignMuon divergence](#2-ef21-signmuon-divergence-theorem-4) |
+| Theorem 4 (EF21-SignMuon), `fig:ef21_momentum` | [2. EF21-SignMuon divergence](#2-ef21-signmuon-divergence-theorem-4) |
 | `tab:synthetic_alignment`, `tab:synthetic_dynamics`, `tab:synthetic_results`, `tab:grid_search`, `fig:synthetic_*` | [3. Synthetic convex problem](#3-synthetic-convex-problem) |
 | `tab:cifar_main`, `tab:cifar_central`, `fig:cifar_results`, `fig:cifar_curves_appendix`, `fig:cifar_lr` | [4. Centralized CIFAR-10](#4-centralized-cifar-10-tabcifar_central-figcifar_results) |
 | `tab:fed_master`, `tab:exp_2`, `tab:exp_3`, `fig:exp_2`, `fig:exp_3` | [5. Federated CIFAR-10](#5-federated-cifar-10-tabexp_2-tabexp_3-figexp_2-figexp_3) |
@@ -63,9 +63,7 @@ Theorem 3's `<G, sign(LMO(sign(G)))> = -76` is printed by
 
 | File | Paper |
 | :--- | :--- |
-| `signmuon_counterexample.pdf` | `fig:divergence_plot` (a) |
-| `muonsign_counterexample.pdf` | `fig:divergence_plot` (b) |
-| `ef21_signmuon_counterexample.pdf` | `fig:ef21_divergence`, in `ef21_signmuon_divergence.tex` |
+| `counterexamples_main.pdf` | `fig:divergence_plot` — all three instances, one panel each (SignMuon 4×4, MuonUSign/MuonSign 5×5, EF21-SignMuon 2×2) |
 
 The LMO here is an **exact rank-truncated SVD**, matching the theorem statements.
 Deep-learning runs use the Newton–Schulz approximation, as practitioners do. To see
@@ -98,169 +96,123 @@ here, fixed 2026-07-28.
 
 ## 3. Synthetic convex problem
 
-`F(X) = ½⟨X, AXB⟩`, `m = n = 500`, target `F ≤ 1e-3`, `T_max = 5000`.
+`F(X) = ½⟨X, AXB⟩` on `100 × 100` matrices, three independent draws of `(A, B)`,
+`X₀ ~ N(0, 0.01)` entrywise. `A` and `B` are symmetric with a prescribed spectrum
+in a Haar-random eigenbasis, so `L` and `σ` are the extreme products
+`λᵢ(A)λⱼ(B)` in closed form and nothing is estimated.
 
-`tab:synthetic_alignment` and `tab:synthetic_dynamics` plus `fig:synthetic_dynamics`
-and `fig:synthetic_kappa` are the current measurements; `tab:synthetic_results`,
-`tab:grid_search` and `fig:synthetic_results` are the superseded fixed-target
-comparison retained in `app:synthetic_v1`.
-
-> **Start small.** `--m` overrides the problem size for every stage, keeping the
-> real grids and iteration counts, and writes to its own tree — so
-> `--m 20` lands in `results/synthetic_20x20/` and cannot be confused with the
-> reported numbers. Cost grows steeply (the LMO is an SVD or a Newton–Schulz
-> iteration per step), so check the pipeline and the figures at `--m 20` before
-> committing to 500×500.
-
-### Everything in one command
+### Two commands
 
 ```bash
-python3 -m synthetic.run_gpu --list      # what the stages are and what they cost
-python3 -m synthetic.run_gpu --quick     # ~5 min at tiny sizes — RUN THIS FIRST
-python3 -m synthetic.run_gpu --m 20      # every stage at 20x20, real grids
-python3 -m synthetic.run_gpu             # the real thing, ~5 h on one A100
+python3 -m synthetic.run_gpu              # every stage, ~1 h on one GPU
+python3 -m synthetic.run_gpu --archive    # rebuild SUMMARY.md + the .zip
 ```
 
-`--quick` writes to `results/synthetic_quick/` and `--m N` to
-`results/synthetic_NxN/`, so neither a smoke test nor a small-size pass can land
-where the real results belong. The five dynamics sweeps take ~2h05 together
-(5 + 20 + 25 + 45 + 30 min); the remaining ~3 h is the `grid` stage re-running
-`tab:synthetic_results` at 500×500. Split them if you would rather not hold one
-job open that long:
-
-```bash
-python3 -m synthetic.run_gpu --stages stability alignment floor horizon kappa
-python3 -m synthetic.run_gpu --stages grid final
-```
-
-Stages run cheapest-first as separate subprocesses, so one failure does not take
-the rest down, and a stage is skipped if its output already exists (`--force` to
-redo). Everything lands under `results/synthetic/`:
+The first runs `tests/test_code.py` as a preflight and refuses to start if it
+fails, then all seven stages, then writes the archive itself; the second only
+rebuilds it from what is already on disk. Everything lands under
+`results/synthetic/`:
 
 | Path | What it is |
 | :--- | :--- |
 | `SUMMARY.md` | every table in one file — **this is the one to read** |
-| `MANIFEST.json` | commit, GPU, torch version, argv and wall time per stage |
-| `logs/<stage>.log` | full console output of that stage |
+| `MANIFEST.json` | commit, GPU, CPU, RAM, OS, torch/CUDA/driver, argv and wall time per stage |
+| `logs/<stage>.log` | full console output, including the preflight |
 | `<method>/<mode>.json` | machine-readable results |
 
-It also writes `results/synthetic_results.zip` with all of the above, since
-`results/` is gitignored and a remote GPU box otherwise leaves nothing single to
-bring back. `--summarize-only` rebuilds `SUMMARY.md` and the bundle from the JSON
-already on disk, without re-running anything.
+**`results/synthetic_results.zip` is the one file to bring back.** In VS Code,
+right-click it in the Explorer under `code/results/` and choose Download;
+`results/` is gitignored, so nothing else leaves the box on its own.
 
-### Or one stage at a time
-
-`tab:grid_search` is the search grid; `tab:synthetic_results` is its result.
-Full grid, all ten methods, ~2 h:
+Useful variants:
 
 ```bash
-python3 -m synthetic.benchmark --mode grid --device cuda:0
+python3 -m synthetic.run_gpu --list                 # what each stage measures
+python3 -m synthetic.run_gpu --quick                # ~2 min smoke test, own tree
+python3 -m synthetic.run_gpu --stages floor horizon # split the run
+python3 -m synthetic.run_gpu --force                # redo a stage already on disk
 ```
 
-Per-method (the grid is large; this is how to split it):
+`--quick` writes to `results/synthetic_quick/` and `--m N` to
+`results/synthetic_NxN/`, so no smoke test can land where the reported numbers
+belong. `--m` is not a cost knob: below ~200×200 a step is dominated by
+kernel-launch latency rather than arithmetic, so `--m 20` and `--m 100` take
+about the same time. What a sweep costs is (configurations × iterations).
+
+### The stages
+
+| Stage | Measures | Feeds |
+| :--- | :--- | :--- |
+| `stability` | Largest stable `η`, and the step length `η_max‖S‖_F`. SGD is the control: it must return `2/L` | `tab:synthetic_dynamics` |
+| `alignment` | Distribution of `ρ_t = ⟨∇F, D_t⟩/(‖∇F‖_F‖D_t‖_F)` along the tuned trajectory | `tab:synthetic_alignment` |
+| `floor` | Plateau `F∞(η)`, `‖∇F‖∞(η)` of a constant step and their exponents in `η` | `tab:synthetic_dynamics`, `fig:synthetic_floor` |
+| `horizon` | `err ~ T^-p`, `η* ~ T^-q` tuned separately at each budget | `tab:synthetic_dynamics`, `fig:synthetic_horizon` |
+| `kappa` | The tuned comparison swept over condition number at `L = 1` | `fig:synthetic_kappa` |
+| `grid` | Fewest iterations to `F ≤ 1e-3` within `T_max = 5000`, `η` and `μ` tuned per method | `tab:synthetic_results`, `tab:grid_search` |
+| `final` | Re-runs those optima with saved curves | `fig:synthetic_results` |
+
+Three points where the code has to match the theory exactly, and does:
+
+* **`horizon` fits `p` on the dual norm.** `err := min_t ‖∇F(X_t)‖²_*` is the
+  squared *dual* norm the theorems bound, and which norm that is depends on the
+  ball the LMO minimizes over: `ℓ1` for the sign family (`ℓ∞` ball), nuclear for
+  the LMO family (spectral ball). `DUAL_NORM` in `synthetic/benchmark.py` is the
+  map. `SUMMARY.md` reports that exponent and carries the Frobenius one beside
+  it so rows stay comparable across families. Reporting the norm rather than its
+  square halves `p` and leaves `q` unchanged.
+* **`floor` predicts slope 1.** Balancing the two terms of the descent lemma
+  gives a gradient floor linear in `η` with coefficient `L‖S‖_F/2ρ`. SignMuon and
+  SignSGD share `‖S‖_F = √(mn)` exactly, so any gap between their floors is
+  attributable to `ρ` alone.
+* **EF21-MuonSign is scored on `X`,** the exact model the guarantee bounds, while
+  its gradient is taken at the broadcast `W` — which the closed-form gradient
+  makes free.
+
+### Figures
 
 ```bash
-python3 -m synthetic.benchmark --mode grid --device cuda:0 --methods signmuon
-python3 -m synthetic.benchmark --mode grid --device cuda:0 --methods muonusign muonsign
-python3 -m synthetic.benchmark --mode grid --device cuda:0 --methods ef21muonusign ef21muonsign
-python3 -m synthetic.benchmark --mode grid --device cuda:0 --methods muon signsgd sgd adam
+python3 -m synthetic.plot_synthetic       # reads results/synthetic/
 ```
 
-To re-run only the tuned optima (~2 min) for the `fig:synthetic_results` curves.
-This reads `results/synthetic/<method>/grid.json` if the grid stage has run, and
-falls back to the paper's printed table otherwise; the run log says which it used:
+Writes `loss`, `GN`, `floor`, `horizon` and `kappa` as PDF + PNG into
+`results/synthetic/figures/`, and reports which stages have not been run rather
+than failing. Nothing is copied into `aaai_article/` automatically; do that
+deliberately.
 
-```bash
-python3 -m synthetic.benchmark --mode final --device cuda:0 --save-histories
-```
+### What is pinned, and what is not
 
-Results land in `results/synthetic/<method>/{grid,final}.json`; `--save-histories`
-adds the loss and gradient-norm curves. Draw every synthetic figure with:
+Re-running a stage on the same machine reproduces it exactly, and `grid` and
+`final` agree digit for digit on the run they share. Three things make that true:
+`--init-seed` fixes `X₀`, `--problem-seeds` fixes `(A, B)`, and the tie-break RNG
+— `sign(0)` draws a random `±1`, and exact zeros do occur in bfloat16 `polar`
+output — is forked and re-seeded per run, so a configuration does not depend on
+what was run before it. `grid` also re-runs its winner alone before reporting it,
+since in bfloat16 a matmul of a different batch width can round differently.
 
-```bash
-python3 -m synthetic.plot_synthetic                          # results/synthetic/
-python3 -m synthetic.plot_synthetic --results results/synthetic_20x20
-```
+Across machines it is *not* bit-exact, and cannot be: a different GPU or BLAS
+perturbs a gradient at the last bit, and `sign` is discontinuous, so an entry
+within rounding of zero flips and the step changes by `O(1)`. That is the
+instability this paper is about. What survives is everything the tables report —
+plateau levels, fitted slopes, `ρ` distributions — because each is a statistic
+over a trajectory rather than a single iterate. Measured between two float32
+reduction orders at `100 × 100` over 800 steps, those agree to `3e-3` at worst
+and `1e-5` on the alignment statistics.
 
-It writes `loss`, `GN` (`fig:synthetic_results`), `floor`, `horizon`
-(`fig:synthetic_dynamics`) and `kappa` (`fig:synthetic_kappa`) as PDF + PNG into
-`<results>/figures/`, and reports which stages have not been run rather than
-failing. The last three of those `\includegraphics` lines are currently
-**commented out in the paper** — the files had never been produced.
-Nothing is copied into `aaai_article/` automatically; do that deliberately.
+### Conventions that move numbers
 
-> **Three caveats.** (i) `--mode final` prefers `results/synthetic/<method>/grid.json`
-> and only falls back to the paper's printed optima, **three** of which are not on
-> the grid `tab:grid_search` states: Muon (`6.5e-3`, grid step `1e-3`),
-> EF21-MuonUSign (`3.3e-3`) and EF21-MuonSign (`2.8e-3`). `PAPER_LR_GRIDS` in
-> `synthetic/benchmark.py` holds that table verbatim and `--grid-preset paper`
-> selects it, so the discrepancy is checkable — it writes `grid-paper.json`, a
-> *different* file from the tuned `grid.json`, so running it cannot overwrite the
-> result it is being compared against. Budget for it: the paper grids are linear
-> and fine, so the preset is ~3850 configurations against the default's ~733.
-> (ii) The default `--lmo-dtype bfloat16` matches the reference Muon
-> implementation; pass `--lmo-dtype float32` for a precise LMO. Both are reported
-> in the output JSON.
-> (iii) **The default grids are no longer `tab:grid_search`'s.** Those grids are
-> linear and one decade wide, which left SGD censored at its own boundary — its
-> reported `(η, μ) = (0.1, 0.95)` is the *top* of both grids, and at `m=n=100` the
-> tuned value is roughly `η = 1.6` reaching the target in ~164 iterations against
-> 2691 at `η = 0.1`. "SGD: 972" is therefore an upper bound, not a tuned number,
-> and it is what makes Adam look dominant in `tab:synthetic_results`. The defaults
-> are now logarithmic and 3–4 decades wide; the tuner prints `[BOUNDARY]` and
-> records `on_grid_boundary` in the JSON whenever an optimum still lands on an
-> edge. **`tab:synthetic_results` and `tab:grid_search` must both be re-run and
-> re-typeset**; the paper currently files them under `app:synthetic_v1`
-> ("superseded results") with the censoring disclosed in the text.
-
-### 3b. What the iteration count actually measures
-
-On this problem every sign-family method has an accuracy floor: a `±1` step has
-fixed length `η√(mn)`, so a constant step size cannot converge and `F` plateaus.
-Measured at `m=n=100`, the plateau is `F∞ ∝ η²` (equivalently `‖∇F‖∞ ∝ η`) to
-three digits, and "iterations to `1e-3`" is exactly `const/η`. The tuner
-therefore returns the largest `η` whose plateau still fits under the target, so
-`tab:synthetic_results` ranks methods by *floor*, not by rate. The two effects
-pull in opposite directions and must be reported separately:
-
-| at `m=n=100`, momentum 0.2 | SignMuon | SignSGD |
-| :--- | ---: | ---: |
-| floor `F∞` at `η = 2e-4` | `2.57e-5` | `1.72e-4` |
-| iterations to `1e-3` at matched `η = 2e-4` | 1532 | **1190** |
-| iterations to `1e-3` at each method's tuned `η` | **~1830** | 2036 |
-
-SignMuon's advantage is a ~2× lower floor; it *loses* ~28% on per-step descent.
-
-> The table above is a **measurement of record** taken at momentum `0.2` and
-> `η = 2e-4`, neither of which is a default: `--mode floor` uses `momenta[0]`,
-> which is `0.0` under the default grid, and `2e-4` is not on the default lr
-> grid. Reproduce it explicitly with
-> ```bash
-> python3 -m synthetic.benchmark --mode floor --momentum-grid 0.2 \
->     --lr-grid signmuon=1e-4:8e-4:x2 signsgd=1e-4:8e-4:x2 \
->     --methods signmuon signsgd --problem-seeds 1337
-> ```
-> and re-state the numbers from that run rather than quoting these.
-Four modes measure these directly (all default to `m=n=100`, ~minutes each):
-
-```bash
-python3 -m synthetic.benchmark --mode alignment --device cuda:0   # <g,d>/(|g||d|) along the trajectory
-python3 -m synthetic.benchmark --mode floor     --device cuda:0   # F∞(η), ‖∇F‖∞(η) and their exponents
-python3 -m synthetic.benchmark --mode horizon   --device cuda:0   # err ~ T^-p and η* ~ T^-q vs the predicted 1/2
-python3 -m synthetic.benchmark --mode stability --device cuda:0   # largest stable η vs the Frobenius trust region
-python3 -m synthetic.benchmark --mode kappa     --device cuda:0   # the same at controlled condition number
-```
-
-`alignment` is the one that is about the methods rather than the protocol: it
-reports the distribution of `ρ_t = ⟨∇F(X_t), d_t⟩ / (‖∇F(X_t)‖_F‖d_t‖_F)`, the
-quantity the descent lemma needs positive and the one the divergence theorems
-drive negative, against the closed-form references `ρ = 1` (SGD),
-`ρ = ‖G‖₁/(‖G‖_F√(mn)) → √(2/π)` (SignSGD) and `ρ = ‖G‖_*/(‖G‖_F√r)` (Muon).
-
-`horizon` tunes `(η, μ, schedule)` *separately at each budget* `T` rather than
-imposing one schedule on all methods, and `--schedules const sqrt` (its default)
-lets each method pick.
+* `--lmo-dtype bfloat16` (default) matches the reference Muon implementation.
+  It carries ~3 decimal digits, so for the methods that sign the LMO *output* an
+  entry of `polar(M)` near zero can flip; `--lmo-dtype float32` removes that. The
+  value used is recorded in every output JSON.
+* Learning-rate grids are logarithmic and 3–4 decades wide, because the optimal
+  `η` spans that much across these methods. An optimum landing on a grid edge is
+  an upper bound rather than a tuned value; the tuner prints `[BOUNDARY]` and
+  records `on_grid_boundary` in the JSON, and such a row needs its grid widened
+  before it is reported.
+* Sweeps run batched — the whole `(η, μ, schedule)` grid advances as one
+  `[B, m, n]` trajectory (`synthetic/batched.py`). `--runner sequential` is the
+  reference one-at-a-time loop the batched one is tested against, and is hours
+  slower.
 
 ## 4. Centralized CIFAR-10 (`tab:cifar_central`, `fig:cifar_results`)
 
@@ -374,7 +326,10 @@ Four properties, enforced by the code rather than by discipline:
    rule.
 
 ```bash
-TUNE="--dataset cifar10 --model resnet18 --epochs 20 --head-adamw always \
+# --epochs 15 matches the reported runs: overnight.py drives these stages at its
+# --tune-epochs default of 15, whereas centralized.tune's own --epochs default is
+# 20, so the horizon has to be passed explicitly when driving the stages by hand.
+TUNE="--dataset cifar10 --model resnet18 --epochs 15 --head-adamw always \
       --device cuda:0 --data ./data"
 
 # Stage 1 (~2 GPU-h): is the optimal auxiliary rate method-independent?
@@ -762,7 +717,7 @@ claimed.
 
   | figure | script |
   | :--- | :--- |
-  | `fig:divergence_plot`, `fig:ef21_divergence` | `counterexamples.run_counterexamples` |
+  | `fig:divergence_plot` | `counterexamples.run_counterexamples` |
   | `fig:ef21_momentum` | `counterexamples.plot_ef21_momentum` |
   | `fig:synthetic_*` | `synthetic.plot_synthetic` |
   | `fig:cifar_*` | `centralized.plot_analysis` |
@@ -771,6 +726,14 @@ claimed.
 
   Only the two counterexample scripts write into `aaai_article/`; the rest write
   to `results/` and you copy over deliberately.
+* **One style, in [`common/plotting.py`](common/README.md#plottingpy).** Every
+  script above calls `use_paper_style()` and takes its colours from `color_of`,
+  so a method keeps its colour across figures and every figure matches
+  `aaai2027.sty` — Times text, STIX math, and TrueType outlines rather than the
+  Type 3 fonts matplotlib emits by default and AAAI forbids. Figures are authored
+  at their printed width (`TEXT_WIDTH` / `COLUMN_WIDTH`) and included at
+  `width=\textwidth` / `\columnwidth`, so a 9 pt label is 9 pt on the page. If
+  you add a figure, do the same rather than styling it locally.
 * **`nanogpt/`** (the modded-nanogpt speedrun adaptation) has its own
   [README](nanogpt/README.md). It *is* in the paper — `tab:nanogpt` and
   `fig:nanogpt` are main text, `tab:nanogpt_diag`, `fig:nanogpt_appendix` and

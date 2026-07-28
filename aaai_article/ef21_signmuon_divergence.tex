@@ -19,21 +19,6 @@ followed by $\mathbf X_t=\mathbf X_{t-1}-\eta\,\mathbf d_t^{\mathrm{est}}$. A
 once; this coupling is what the counterexample exploits. We now prove
 Theorem~\ref{th:ef_div}.
 
-\begin{figure*}[t]
-\centering
-\includegraphics[width=\textwidth]{images/counterexamples/ef21_signmuon_counterexample.pdf}
-\caption{All eight methods on the $2\times2$ instance of Theorem~\ref{th:ef_div}
-(normalized units, $\eta=1$, $\mu=0$). \emph{Left:} full scale --- EF21-SignMuon
-is the only method whose objective increases, rising at the exact rate
-$\tfrac{49}{480}$ per step. \emph{Right:} the same runs magnified to the band of
-the seven remaining methods (EF21-SignMuon leaves the frame): SignMuon,
-MuonUSign, MuonSign, EF21-MuonUSign, EF21-MuonSign, SignSGD and Muon all
-decrease and stay bounded. By Lemma~\ref{lem:efsm_realize} each $\mu$ and variant has its own $\tilde f$
-generating the same target sequence \eqref{eq:target_seq}, so the EF21-SignMuon
-trajectory shown is representative of all of them.}
-\label{fig:ef21_divergence}
-\end{figure*}
-
 \subsubsection*{Proof idea}
 Picture the target $\mathbf D_t$ as a $2\times2$ matrix whose off-diagonal is
 large and \emph{flips sign every step}, while its diagonal is a small constant.
@@ -44,7 +29,7 @@ therefore never settles: it oscillates with $\Theta(1)$ amplitude, and its
 time-average has the sign \emph{opposite} to the target. Being an average over
 an oscillation, this bias depends only on the oscillation's phase, which
 one-bit sign feedback cannot correct. It pushes one entry of $\mathbf X_t$
-monotonically to infinity (Figure~\ref{fig:ef21_divergence}).
+monotonically to infinity (Figure~\ref{fig:divergence_plot}, right).
 
 Two observations make the result independent of the parameters. First, the step
 size and smoothness only rescale the orbit, so we may fix $\eta=1$ and one value
@@ -325,8 +310,8 @@ $\mu\to1$, on top of the shared linear divergence.}
 The construction is checked in two independent ways: symbolically, in exact
 rational arithmetic, and numerically, by running the float64 reference
 implementation of Algorithm~\ref{ef21_signmuon} on the assembled $\tilde f$.
-Figure~\ref{fig:ef21_divergence} confirms that at $\mu=0$ EF21-SignMuon is the
-only one of the eight methods that diverges, the others
+The right panel of Figure~\ref{fig:divergence_plot} confirms that at $\mu=0$
+EF21-SignMuon is the only one of the eight methods that diverges, the others
 (SignMuon, MuonUSign, MuonSign, EF21-MuonUSign, EF21-MuonSign, SignSGD, Muon)
 staying bounded; Figure~\ref{fig:ef21_momentum} confirms that EF21-SignMuon
 diverges at the exact rate $\tfrac{49}{480}$ for every
