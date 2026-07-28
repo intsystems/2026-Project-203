@@ -98,9 +98,7 @@ Consider the \textbf{SignA} family, where A is any optimizer built on LMO direct
 \mathbf{X}_{t+1} &= \mathbf{X}_t - \eta_t \mathbf{s}_t & \text{(Parameter update)},
 \end{aligned}\)}
 \end{equation}
-where $\mathbf{X}_t \in \mathbb{R}^{m \times n}$ is the parameter matrix, $\mathbf{G}_t$ its stochastic gradient, $\mu \in [0, 1)$ the momentum coefficient and $\eta_t$ the learning rate; $A(\cdot)$ is a Linear Minimization Oracle (LMO) in a specified non-Euclidean norm, and $\operatorname{sign}(\cdot)$ acts element-wise on the structured direction $\mathbf{D}_t$.
-
-\paragraph{Exact zeros.} We resolve $\operatorname{sign}(0)$ to an independent random $\pm1$ rather than to $0$, on every channel in this paper: a third symbol would make the alphabet ternary and the channel wider than one bit, whereas randomizing incurs no cost in expected descent and makes exact two statements the ternary convention only approximates: $\|\mathbf{s}_t\|_F=\sqrt{mn}$, which the step-size rule below assumes, and the contraction identity of Lemma~\ref{lem:signcontr} (Appendix~\ref{app:hyp}). Everything below is stated under this convention, but none of the counterexamples invokes it: no instance in Theorems~\ref{th:1}--\ref{th:ef_div} has a zero entry.
+where $\mathbf{X}_t \in \mathbb{R}^{m \times n}$ is the parameter matrix, $\mathbf{G}_t$ its stochastic gradient, $\mu \in [0, 1)$ the momentum coefficient and $\eta_t$ the learning rate; $A(\cdot)$ is a Linear Minimization Oracle (LMO) in a specified non-Euclidean norm, and $\operatorname{sign}(\cdot)$ acts element-wise on the structured direction $\mathbf{D}_t$, with $\operatorname{sign}(0)$ resolved to an independent random $\pm1$ so that the transmitted alphabet stays binary; randomized sign operators are standard here \citep{chen2020median,safaryan2021ssdm,jin2024stosign}.
 
 SignMuon is a particular instance: it combines the orthogonalized LMO directions of Muon with the sign compression of SignSGD. MuonUSign is its mirror image, applying the sign \emph{before} the LMO. It compresses the effective direction to $\operatorname{sign}(\tilde{\mathbf{M}}_t)$ and steps along the Muon LMO of that sign matrix (Algorithm~\ref{alg:muon_usign}):
 \begin{equation}
@@ -117,11 +115,12 @@ For matrix parameters the key component is the orthonormal LMO direction $\mathb
 \paragraph{Per-layer step sizes: the unit-gain heuristic.} The methods of this paper produce step matrices from two families with \emph{exactly} known Frobenius norms: $\|\mathbf{U}\mathbf{V}^\top\|_F=\sqrt{r}$ for the \textsc{lmo}-terminated methods ($r=\min(m,n)$), and $\|\mathbf{s}\|_F=\sqrt{mn}$ for the \textsc{sign}-terminated ones. These scale differently with layer shape, so no single global $\eta$ is right for both families, or across layers within one. We fix the shape dependence a priori and tune only a shape-free base rate $\eta_0$, setting $\eta_\ell=\eta_0\lambda_\ell$ with
 \begin{equation}
 \label{eq:unit_gain_main}
-\lambda_\ell=\frac{\sqrt{m}}{\|\mathbf{s}_\ell\|_F},
-\qquad\text{i.e.}\qquad
-\lambda_\ell^{\textsc{lmo}}=\sqrt{\max\!\bigl(1,\tfrac{m}{n}\bigr)},
-\quad
-\lambda_\ell^{\textsc{sign}}=\tfrac{1}{\sqrt{\text{fan-in}}} .
+\lambda_\ell=\frac{\sqrt{m}}{\|\mathbf{s}_\ell\|_F}
+\quad\Longrightarrow\quad
+\begin{cases}
+\lambda_\ell^{\textsc{lmo}}=\sqrt{\max(1,m/n)},\\[2pt]
+\lambda_\ell^{\textsc{sign}}=1/\sqrt{\text{fan-in}}.
+\end{cases}
 \end{equation}
 The criterion is that every layer's update have the same root-mean-square input--output gain, the average-case form of the spectral scaling condition \citep{yang2023spectral,large2024modular}; $\eta_0$ is then literally the per-step RMS gain. We treat \eqref{eq:unit_gain_main} as a heuristic and use it uniformly, for one reason above all: its \textsc{lmo} branch \emph{reproduces} the aspect-ratio factor $\sqrt{\max(1,m/n)}$ that the reference Muon implementation already ships as a practical fix \citep{jordan2024muon}, so a criterion already accepted in practice for one family supplies the missing counterpart, $1/\sqrt{\text{fan-in}}$, for the other. Appendix~\ref{app:lrscale} gives the derivation, the measurement that selects the exponent $\tfrac12$ over $\mu$P's $1$, the caveats, and the sensitivity of our conclusions to the choice.
 
@@ -155,14 +154,14 @@ We refute the descent property on \emph{linear} objectives (the simplest smooth 
 \label{eq:lin_obj}
 f(\mathbf{W})=\langle \mathbf{G},\mathbf{W}\rangle=\operatorname{Tr}(\mathbf{G}^\top\mathbf{W}),\qquad \nabla f(\mathbf{W})\equiv \mathbf{G}.
 \end{equation}
-Gradient descent and full-precision Muon drive $f\to-\infty$ here; a rule that instead drives $f\to+\infty$ is unambiguously ascending. Such an $f$ is not bounded below, so Assumption~\ref{as:1} fails, but only formally: the iterates travel a fixed ray on which $f$ increases, and flattening $f$ far below that ray restores the assumption without moving a single trajectory of this section. The same device is used again, in detail, for Theorem~\ref{th:ef_div} (Remark~\ref{rem:efsm_bdd}).
+Gradient descent and full-precision Muon drive $f\to-\infty$ here, so a rule that instead drives $f\to+\infty$ is unambiguously ascending (Remark~\ref{rem:efsm_bdd} restores Assumption~\ref{as:1} without moving any trajectory below).
 
-Momentum plays no role on \eqref{eq:lin_obj}. The buffer is $\tilde{\mathbf{M}}_t=\gamma_t\mathbf{G}$ with $\gamma_t>0$ under both the Standard and the Nesterov rule, and $\operatorname{sign}(\cdot)$ and $\operatorname{polar}(\cdot)$ are invariant under positive scaling, so the step is the constant matrix $\mathbf{s}(\mathbf{G})$ and
+On \eqref{eq:lin_obj} the step is the constant matrix $\mathbf{s}(\mathbf{G})$ whatever the momentum, so momentum affects neither convergence nor divergence (Proposition~\ref{prop:reduction}, Appendix~\ref{app:proof_reduction}) and
 \begin{equation}
 \label{eq:lin_increment}
 f(\mathbf{X}_{t+1})-f(\mathbf{X}_t)=-\eta_t\,\bigl\langle \mathbf{G},\ \mathbf{s}(\mathbf{G})\bigr\rangle
 \end{equation}
-for every $\mu\in[0,1)$ and either variant (Proposition~\ref{prop:reduction}, Appendix~\ref{app:proof_reduction}). One gradient with $\langle\mathbf{G},\mathbf{s}(\mathbf{G})\rangle<0$ thus makes $f$ increase at \emph{every} step, at \emph{any} step size, with $f(\mathbf{X}_t)\to+\infty$ whenever $\sum_t\eta_t=\infty$.
+for every $\mu\in[0,1)$ and either momentum rule. One gradient with $\langle\mathbf{G},\mathbf{s}(\mathbf{G})\rangle<0$ thus makes $f$ increase at \emph{every} step, at \emph{any} step size, with $f(\mathbf{X}_t)\to+\infty$ whenever $\sum_t\eta_t=\infty$.
 
 Such a gradient exists for each placement: a $4\times4$ matrix defeats SignMuon, and a single $5\times5$ matrix defeats MuonUSign and MuonSign together. Informally, then:
 

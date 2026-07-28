@@ -250,12 +250,12 @@ INPUT C:\Users\Alex\AppData\Local\Programs\MiKTeX\tex\latex\psnfss\t1pcr.fd
 INPUT C:\Users\Alex\AppData\Local\Programs\MiKTeX\tex\latex\psnfss\t1pcr.fd
 INPUT C:\Users\Alex\AppData\Local\Programs\MiKTeX\tex\latex\psnfss\t1pcr.fd
 INPUT C:\Users\Alex\AppData\Local\Programs\MiKTeX\fonts\tfm\adobe\courier\pcrr8t.tfm
-INPUT C:\Users\Alex\AppData\Local\Programs\MiKTeX\fonts\vf\adobe\courier\pcrr8t.vf
-INPUT C:\Users\Alex\AppData\Local\Programs\MiKTeX\fonts\tfm\adobe\courier\pcrr8r.tfm
-INPUT C:\Users\Alex\AppData\Local\Programs\MiKTeX\fonts\enc\dvips\base\8r.enc
 INPUT .\signmuon_mishra_comparison.tex
 INPUT .\signmuon_mishra_comparison.tex
 INPUT signmuon_mishra_comparison.tex
+INPUT C:\Users\Alex\AppData\Local\Programs\MiKTeX\fonts\vf\adobe\courier\pcrr8t.vf
+INPUT C:\Users\Alex\AppData\Local\Programs\MiKTeX\fonts\tfm\adobe\courier\pcrr8r.tfm
+INPUT C:\Users\Alex\AppData\Local\Programs\MiKTeX\fonts\enc\dvips\base\8r.enc
 INPUT .\ef21_signmuon_divergence.tex
 INPUT .\ef21_signmuon_divergence.tex
 INPUT ef21_signmuon_divergence.tex

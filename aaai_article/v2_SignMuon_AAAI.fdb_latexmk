@@ -1,13 +1,13 @@
 # Fdb version 4
-["bibtex v2_SignMuon_AAAI"] 1785279576.76462 "v2_SignMuon_AAAI.aux" "v2_SignMuon_AAAI.bbl" "v2_SignMuon_AAAI" 1785279580.22716 0
+["bibtex v2_SignMuon_AAAI"] 1785280217.51966 "v2_SignMuon_AAAI.aux" "v2_SignMuon_AAAI.bbl" "v2_SignMuon_AAAI" 1785280233.29355 0
   "./aaai2027.bst" 1784372872.09358 31700 78a7412522b7a75ae1844843e9fe6300 ""
   "./references.bib" 1785274800.82658 23094 f9411755c8cd33563482c2fe5ca6158f ""
-  "v2_SignMuon_AAAI.aux" 1785279578.61357 6592 2aacd179597d375259be39a738c82869 "pdflatex"
+  "v2_SignMuon_AAAI.aux" 1785280232.0554 6650 c7888f74adab22bf8f5891d056af62f8 "pdflatex"
   (generated)
   "v2_SignMuon_AAAI.bbl"
   "v2_SignMuon_AAAI.blg"
   (rewritten before read)
-["pdflatex"] 1785279577.23385 "v2_SignMuon_AAAI.tex" "v2_SignMuon_AAAI.pdf" "v2_SignMuon_AAAI" 1785279580.22887 0
+["pdflatex"] 1785280231.00145 "v2_SignMuon_AAAI.tex" "v2_SignMuon_AAAI.pdf" "v2_SignMuon_AAAI" 1785280233.29476 0
   "C:/Users/Alex/AppData/Local/MiKTeX/fonts/map/pdftex/pdftex.map" 1785258241.15146 277445 6f46880da4bfcdb9db4b56d0acd70e14 ""
   "C:/Users/Alex/AppData/Local/MiKTeX/miktex/data/le/pdftex/pdflatex.fmt" 1741112456.67984 12015339 4b6bf11704e52ef6abfe6d06cad4bac2 ""
   "C:/Users/Alex/AppData/Local/Programs/MiKTeX/fonts/enc/dvips/newtx/ntx-ec-tlf-pc.enc" 1736607166 3136 bbe665bd0bb471a2da1e8fd326cff9fa ""
@@ -142,12 +142,12 @@
   "images/centralized_images/cifar_main.pdf" 1785274800.79658 45894 d819fe816da2e6daa5119813ffa606b6 ""
   "images/counterexamples/counterexamples_main.pdf" 1785274800.80358 63566 205d77b38c1bdb0d399e04141eb504a4 ""
   "images/nanogpt/fig_nanogpt_main.pdf" 1785274800.82158 37205 18634f89d033a4c1e4dc84ba81a30387 ""
-  "signmuon_body.tex" 1785278664.5454 52454 be9fb65c33ce4863571562fe22849d04 ""
+  "signmuon_body.tex" 1785280206.56594 51567 58d6899b1cbcb15d4d3f806f49a7d328 ""
   "signmuon_preamble.tex" 1785274800.83259 8420 ef2f29d59024157fd7d36f294be29495 ""
-  "v2_SignMuon_AAAI.aux" 1785279578.61357 6592 2aacd179597d375259be39a738c82869 "pdflatex"
-  "v2_SignMuon_AAAI.bbl" 1785279577.1247 6787 76771606c3dd1b9e3b5fb02dbb8cfe18 "bibtex v2_SignMuon_AAAI"
+  "v2_SignMuon_AAAI.aux" 1785280232.0554 6650 c7888f74adab22bf8f5891d056af62f8 "pdflatex"
+  "v2_SignMuon_AAAI.bbl" 1785280218.03291 6787 76771606c3dd1b9e3b5fb02dbb8cfe18 "bibtex v2_SignMuon_AAAI"
   "v2_SignMuon_AAAI.tex" 1785274800.85259 1007 9495da00f008a4320abb685cc4f70121 ""
-  "v2_SignMuon_AAAI_supp.aux" 1785278728.71328 16845 32637a9b959dd503f93043d2624d3da9 ""
+  "v2_SignMuon_AAAI_supp.aux" 1785280229.06499 16844 ae311b21bd8976606a56e6628998cab0 ""
   "v2_SignMuon_AAAI_supp.tex" 1785274800.9146 1314 40ef68682369a82abdd5a6b0d8342c36 ""
   (generated)
   "v2_SignMuon_AAAI.aux"
