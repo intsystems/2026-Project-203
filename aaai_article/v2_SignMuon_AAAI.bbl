@@ -1,4 +1,4 @@
-\begin{thebibliography}{31}
+\begin{thebibliography}{33}
 \providecommand{\natexlab}[1]{#1}
 
 \bibitem[{Ahn et~al.(2025)Ahn, Xu, Abreu, Fan, Magakyan, Sharma, Zhan, and
@@ -130,6 +130,12 @@ Kravatskiy, A.; Kozyrev, I.; Kozlov, N.; Vinogradov, A.; Merkulov, D.; and
 Krizhevsky, A.; Hinton, G.; et~al. 2009.
 \newblock Learning multiple layers of features from tiny images.
 
+\bibitem[{Large et~al.(2024)Large, Liu, Huh, Bahng, Isola, and
+  Bernstein}]{large2024modular}
+Large, T.; Liu, Y.; Huh, M.; Bahng, H.; Isola, P.; and Bernstein, J. 2024.
+\newblock Scalable Optimization in the Modular Norm.
+\newblock arXiv:2405.14813.
+
 \bibitem[{Li and Hong(2025)}]{li2025note}
 Li, J.; and Hong, M. 2025.
 \newblock A Note on the Convergence of {M}uon.
@@ -205,5 +211,10 @@ Yang, G.; Hu, E.~J.; Babuschkin, I.; Sidor, S.; Liu, X.; Farhi, D.; Ryder, N.;
 \newblock Tuning Large Neural Networks via Zero-Shot Hyperparameter Transfer.
 \newblock In \emph{Advances in Neural Information Processing Systems
   (NeurIPS)}.
+
+\bibitem[{Yang, Simon, and Bernstein(2023)}]{yang2023spectral}
+Yang, G.; Simon, J.~B.; and Bernstein, J. 2023.
+\newblock A Spectral Condition for Feature Learning.
+\newblock arXiv:2310.17813.
 
 \end{thebibliography}
