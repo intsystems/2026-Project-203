@@ -41,6 +41,37 @@ python3 -m synthetic.run_gpu --stages grid final  # ~3 h   Tables 3/8 re-run + F
 python3 -m synthetic.plot_synthetic               # all five figures
 ```
 
+### Running at 100x100 to save time
+
+Only `grid` and `final` use the paper's 500x500; the five sweep stages above
+already run at **100x100** by default, so most of this list is cheap already.
+To put everything at 100x100:
+
+```bash
+python3 -m synthetic.run_gpu --m 100 --n 100                       # all stages
+python3 -m synthetic.run_gpu --stages grid final --m 100 --n 100   # just the expensive two
+```
+
+That writes to `results/synthetic_100x100/`, a separate tree, so a small pass
+can never land where 500x500 numbers belong.
+
+**Pass `--m/--n` to every invocation of a given pass, or to none.** The tree name
+is chosen by whether the flag was given, not by the size that actually ran, so
+sweeps without it (`results/synthetic/`) and `grid` with it
+(`results/synthetic_100x100/`) end up split across two trees despite being the
+same size. The `--list` time estimates assume the default sizes and are far too
+pessimistic at 100x100.
+
+**One paper consequence, worth deciding before you run.** The appendix states
+500x500 in three places, and the superseded Table in `app:synthetic_v1` is a
+500x500 result. New numbers at 100x100 make the new-vs-superseded comparison
+apples-to-oranges, and the condition number changes with it (3.65e4 at 100x100
+against 1.645e7 for the 500x500 seed-1337 draw). Two clean options: keep `grid`
+at 500x500 purely for comparability with the published table, or run everything
+at 100x100 and relabel the superseded section as the historical 500x500 record.
+The sweeps are unaffected either way -- they measure exponents, which is the
+size-robust part.
+
 **Do not skip `stability`.** SGD's η_max reproducing the textbook `2/L` is the
 only end-to-end check that the harness is measuring what it claims; if that
 fails, every other number in the study is suspect.
