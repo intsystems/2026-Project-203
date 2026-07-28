@@ -201,6 +201,8 @@ code/data/
 # Experiment output. All runs now land under code/results/ ; the rest are the
 # pre-reorganization output directories, kept ignored so old runs stay untracked.
 code/results/
+code/results_old/
+
 code/saves/
 code/saves_federated/
 code/saves_synthetic*/
