@@ -228,11 +228,19 @@ def selftest(log_dir: Path) -> bool:
     out = subprocess.run([sys.executable, "-m", "tests.test_code"],
                          cwd=CODE_ROOT, capture_output=True, text=True,
                          encoding="utf-8", errors="replace")
-    text = out.stdout + out.stderr
-    log_path.write_text(text, encoding="utf-8")
-    lines = text.strip().splitlines()
-    bad = [ln for ln in lines if ln.startswith(("FAIL", "ERROR"))]
-    print("\n".join(bad + lines[-1:]), flush=True)
+    log_path.write_text(out.stdout + "\n--- stderr ---\n" + out.stderr,
+                        encoding="utf-8")
+    # The runner prints "FAIL <name>" and the assertion message on the *next*
+    # line, indented; without it a failure report says nothing at all. Warnings
+    # go to stderr, so read the tail from stdout or they crowd out the summary.
+    lines = out.stdout.strip().splitlines()
+    shown = []
+    for i, ln in enumerate(lines):
+        if ln.startswith(("FAIL", "ERROR")):
+            shown.append(ln)
+            shown += [x for x in lines[i + 1:i + 2] if x.startswith("      ")]
+    shown += [ln for ln in lines if "passed" in ln][-1:]
+    print("\n".join(shown), flush=True)
     if out.returncode != 0:
         print(f"\nSELFTEST FAILED -- nothing was run. Full output in {log_path}.\n"
               f"If the failures above are all in parts this sweep does not use "
