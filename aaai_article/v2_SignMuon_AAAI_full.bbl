@@ -1,12 +1,5 @@
-\begin{thebibliography}{33}
+\begin{thebibliography}{31}
 \providecommand{\natexlab}[1]{#1}
-
-\bibitem[{Ahn et~al.(2025)Ahn, Xu, Abreu, Fan, Magakyan, Sharma, Zhan, and
-  Langford}]{ahn2025dion}
-Ahn, K.; Xu, B.; Abreu, N.; Fan, Y.; Magakyan, G.; Sharma, P.; Zhan, Z.; and
-  Langford, J. 2025.
-\newblock Dion: Distributed Orthonormalized Updates.
-\newblock arXiv:2504.05295.
 
 \bibitem[{Amsel et~al.(2026)Amsel, Persson, Musco, and Gower}]{amsel2025polar}
 Amsel, N.; Persson, D.; Musco, C.; and Gower, R.~M. 2026.
@@ -82,13 +75,6 @@ Grishina, E.; Smirnov, M.; and Rakhuba, M. 2025.
 Gruntkowska, K.; Gaponov, A.; Tovmasyan, Z.; and Richtárik, P. 2025.
 \newblock Error Feedback for {M}uon and Friends.
 \newblock arXiv:2510.00643.
-
-\bibitem[{Horváth et~al.(2019)Horváth, Kovalev, Mishchenko, Stich, and
-  Richtárik}]{horvath2023stochastic}
-Horváth, S.; Kovalev, D.; Mishchenko, K.; Stich, S.; and Richtárik, P. 2019.
-\newblock Stochastic Distributed Learning with Gradient Quantization and
-  Variance Reduction.
-\newblock arXiv:1904.05115.
 
 \bibitem[{Jin et~al.(2025)Jin, Liu, Huang, He, Wu, and Dai}]{jin2024stosign}
 Jin, R.; Liu, Y.; Huang, Y.; He, X.; Wu, T.; and Dai, H. 2025.
