@@ -158,6 +158,22 @@ _POLAR_EXPRESS_COEFFS = [
 ]
 
 
+def sign_pm1(x):
+    """Elementwise sign with exact zeros mapped to independent random +-1.
+
+    The paper's convention: every transmitted sign message is exactly one bit
+    per parameter (matches ``common.optimizers.sign_pm1``; duplicated here to
+    keep this file self-contained for the speedrun). Draws from the global
+    torch RNG only when zeros are present.
+    """
+    s = torch.sign(x)
+    zero = s == 0
+    if bool(zero.any()):
+        r = torch.randint(0, 2, s.shape, device=s.device).to(s.dtype).mul_(2).sub_(1)
+        s = torch.where(zero, r, s)
+    return s
+
+
 def _polar_express_eager(G: Tensor, steps: int = 5) -> Tensor:
     """Polar Express iteration approximating the orthogonal polar factor
     ``U V^T`` of ``G = U S V^T`` (the Muon LMO), record #40's coefficients.
@@ -489,10 +505,10 @@ class _DistributedMatrixOptimizer(Optimizer):
             alpha = rb.abs().mean(dim=(-2, -1), keepdim=True)
             if slot is not None and self.diagnostics:
                 self._record_alpha(p, rb, slot)
-            return (alpha * rb.sign()).reshape(r.shape)
+            return (alpha * sign_pm1(rb)).reshape(r.shape)
         if slot is not None and self.diagnostics:
             self._record_alpha(p, r, slot)
-        return r.abs().mean() * r.sign()
+        return r.abs().mean() * sign_pm1(r)
 
     # ---- diagnostics (owning-rank scalars; see DIAG_SLOTS) -----------------
 
@@ -757,7 +773,7 @@ class SignSGD(_DistributedMatrixOptimizer):
         state = self.state[p]
         self._decoupled_weight_decay(p, p, group)
         m = self._effective_grad(p, group, state)
-        p.add_(m.sign(), alpha=-self._eff_lr(p, group))
+        p.add_(sign_pm1(m), alpha=-self._eff_lr(p, group))
 
 
 # ---------------------------------------------------------------------------
@@ -779,7 +795,7 @@ class SignMuon(_DistributedMatrixOptimizer):
         self._decoupled_weight_decay(p, p, group)
         m = self._effective_grad(p, group, state)
         d = self._lmo(m, p)
-        p.add_(d.sign(), alpha=-self._eff_lr(p, group))
+        p.add_(sign_pm1(d), alpha=-self._eff_lr(p, group))
 
 
 class MuonUSign(_DistributedMatrixOptimizer):
@@ -798,7 +814,7 @@ class MuonUSign(_DistributedMatrixOptimizer):
         state = self.state[p]
         self._decoupled_weight_decay(p, p, group)
         m = self._effective_grad(p, group, state)
-        d = self._lmo(m.sign(), p)
+        d = self._lmo(sign_pm1(m), p)
         p.add_(d, alpha=-self._eff_lr(p, group))
 
 
@@ -813,8 +829,8 @@ class MuonSign(_DistributedMatrixOptimizer):
         state = self.state[p]
         self._decoupled_weight_decay(p, p, group)
         m = self._effective_grad(p, group, state)
-        d = self._lmo(m.sign(), p)
-        p.add_(d.sign(), alpha=-self._eff_lr(p, group))
+        d = self._lmo(sign_pm1(m), p)
+        p.add_(sign_pm1(d), alpha=-self._eff_lr(p, group))
 
 
 # ---------------------------------------------------------------------------

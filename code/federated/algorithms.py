@@ -54,33 +54,33 @@ Conventions shared by every method (this uniformity is the point of the module)
   exception is ``sgd``, whose step *is* the momentum buffer and which therefore
   keeps the heavy-ball convention of ``torch.optim.SGD``.
 
-The uplink alphabet is ternary, not binary
-------------------------------------------
-``sign(x)`` is **zero** at ``x = 0``, so a client transmits a symbol from
-``{-1, 0, +1}``. That is not a corner case here. ``polar(M)`` has an exactly-zero
-column wherever ``M`` does, and ``M`` does wherever a feature was zero for the
-whole local batch -- which after ReLU and MaxPool is common. Measured on CNN2 with
-an odd client count, **8-17% of transmitted entries are zero**, every round.
+Every sign channel is a strict one-bit channel (the paper's convention)
+-----------------------------------------------------------------------
+``sign(x)`` is **zero** at ``x = 0``, and that is not a corner case here:
+``polar(M)`` has an exactly-zero column wherever ``M`` does, and ``M`` does
+wherever a feature was zero for the whole local batch -- which after ReLU and
+MaxPool is common. Measured on CNN2 with an odd client count, **8-17% of raw
+sign entries are zero**, every round (``uplink_zero_frac`` still records the
+raw rate, before any mapping).
 
-Two consequences, both recorded rather than assumed:
+The paper's convention, and the default here, maps every exact zero to an
+independent random ``+-1`` (``common.optimizers.sign_pm1``), on **all** sign
+channels -- the majority-vote uplink, both EF21 residual channels, and the
+MuonSign sign-downlink. This makes each channel exactly one bit per parameter,
+costs nothing in expected descent (a zeroed entry carries no directional
+information), and keeps the scaled-sign contraction lemma, whose identity
+``||C(Y)-Y||_F^2 = ||Y||_F^2 - ||Y||_1^2/d`` holds for any tie-breaking.
+With ``+-1`` client messages and an **odd** client count the majority vote
+cannot tie; ``mv_tie_frac`` still measures raw ties, counted *before* any
+tie-breaking, so it describes the vote and not the rule.
 
-* the uplink is not literally "1 bit per parameter": the ternary alphabet costs
-  ``H(0.45, 0.10, 0.45) ~ 1.37`` bits at the observed zero rate. ``uplink_zero_frac``
-  measures it.
-* the majority vote can tie at **any** ``N``, not just even ones, so parity alone
-  does not make the aggregate ``+-1``. ``mv_tie_frac`` measures that, always
-  counted *before* any tie-breaking so it describes the vote and not the rule.
+``uplink_zeros`` (majority-vote uplink): ``"random"`` (default, the paper's
+convention), ``"positive"`` (deterministic ``+1`` fill), or ``"keep"`` (the
+pre-convention ternary behaviour, for the alphabet diagnostic).
 
-``uplink_zeros`` chooses what the client does with a zero on the ``sign_mv``
-uplink: ``"keep"`` (the default, and the published behaviour) transmits the third
-symbol; ``"random"`` and ``"positive"`` map it to ``+-1``, making the uplink a
-genuine one-bit channel. The EF21 uplink is deliberately left alone -- its payload
-``alpha * sign(Delta)`` is zero exactly where the estimator is already on target,
-and pushing it off by ``alpha`` is the mechanism Theorem 4 exploits.
-
-``mv_ties`` chooses what the *server* does with a tie: ``"zero"`` (default) lets
-the coordinate abstain, ``"random"`` breaks it with a fair coin so the step is a
-true sign matrix again.
+``mv_ties`` (server tie-break, reachable only at an even client count under
+the default uplink): ``"random"`` (default) breaks ties with a fair coin,
+``"zero"`` abstains.
 
 How many clients?
 -----------------
@@ -140,7 +140,7 @@ import torch.nn as nn
 
 from common.lr_scaling import (FAMILY_LMO, FAMILY_SIGN, layer_multiplier,
                                describe_rule, resolve_rule)
-from common.optimizers import muon_lmo
+from common.optimizers import muon_lmo, sign_pm1
 from common.utils import History, cosine_lr, resolve_device, split_param_names
 
 __all__ = ["MethodSpec", "METHODS", "evaluate_model", "run_federated",
@@ -277,9 +277,12 @@ def communication_bits(name: str, n_matrix: int, n_aux: int,
     have to be counted for that number to mean anything, and this function counts
     all three:
 
-    * **The uplink alphabet is ternary.** ``sign(0) = 0``, so a symbol costs
-      ``H(p0, (1-p0)/2, (1-p0)/2)`` bits, not 1. At the ~10% zero rate CNN2 shows,
-      that is 1.37 bits and the uplink reduction is 22x, not 32x.
+    * **The uplink alphabet.** Under the paper's convention exact zeros are
+      randomized to +-1 (``sign_pm1``), so a symbol is a genuine 1 bit and the
+      uplink reduction is the full 32x. Under the legacy ``--uplink-zeros keep``
+      the alphabet is ternary and a symbol costs ``H(p0, (1-p0)/2, (1-p0)/2)``
+      bits -- 1.37 bits at the ~10% zero rate CNN2 shows, i.e. 22x. This
+      function reports whichever regime the run is in.
     * **The auxiliary group is never compressed.** Biases, BatchNorm scales and the
       head go uncompressed in both directions. On CNN2 they are 0.28% of the
       parameters, so this costs little -- but it is what turns "1 bit per
@@ -510,8 +513,8 @@ def run_federated(
     scale_baselines: bool = False,
     eval_name: str = "test",
     decoupled_weight_decay: bool = True,
-    mv_ties: str = "zero",
-    uplink_zeros: str = "keep",
+    mv_ties: str = "random",
+    uplink_zeros: str = "random",
     verbose: bool = True,
 ) -> History:
     """Train ``global_model`` with one of the eleven federated methods.
@@ -746,12 +749,12 @@ def run_federated(
                     est = client_estimator[j][n].to(device)
                     delta = target - est
                     alpha = delta.abs().mean()
-                    sign_delta = torch.sign(delta)
+                    raw_sign = torch.sign(delta)
+                    # Zero-fraction diagnostic is measured on the raw sign, BEFORE
+                    # the paper's randomized-zero convention maps it to +-1.
+                    sent_zero += int((raw_sign == 0).sum())
+                    sign_delta = sign_pm1(delta)
                     est.add_(alpha * sign_delta)
-                    # Left ternary on purpose: sign(Delta) = 0 exactly where the
-                    # estimator is already on target, and forcing it to +-1 would
-                    # push it off by alpha -- the mechanism of Theorem 4.
-                    sent_zero += int((sign_delta == 0).sum())
                     sent_total += sign_delta.numel()
                     payload[n] = sign_delta.to(buffer_device)
                     scales[n] = alpha.to(buffer_device)
@@ -833,7 +836,7 @@ def run_federated(
                     # step geometry.
                     target_tensor.mul_(1.0 - current_lr * weight_decay)
 
-                step = torch.sign(D) if spec.downlink == "sign" else D
+                step = sign_pm1(D) if spec.downlink == "sign" else D
                 realized_gain[n] = float(lam[n] * step.norm()
                                          / (params[n].shape[0] ** 0.5))
                 target_tensor.add_(step, alpha=-current_lr * lam[n])
@@ -841,7 +844,7 @@ def run_federated(
                 # 4) downlink error feedback: broadcast a scaled sign of X - W
                 if spec.downlink == "ef21p":
                     shift = server_exact[n] - params[n].data
-                    params[n].data.add_(shift.abs().mean() * torch.sign(shift))
+                    params[n].data.add_(shift.abs().mean() * sign_pm1(shift))
 
         if server_adam is not None:
             server_adam.step()

@@ -1185,3 +1185,181 @@ EF21 logs. `plot_nano.ipynb`, `log_synt.txt`, and `notebooks/` (all four read
 * `train_gpt.py` is CRLF while `train_gpt_rec40_reference.py` is LF, so a plain
   `diff` against the reference shows the whole file as changed, defeating the
   point of keeping it. Its diffs are also unmarked, unlike `train_gpt_a100.py`'s.
+
+---
+
+# Theory simplification pass — 2026-07-28 (second pass)
+
+Requested: simplify the theory (especially the Gruntkowska reduction), sort out
+the EF21-MuonSign X/W story, close the open vetting items, and check the
+scaling rules before the experiment re-runs.
+
+## What changed in the article
+
+1. **Assumptions hoisted (closes C11).** `as:1`/`as:2` now live in the main
+   text (Problem Statement), before Theorem 4 and every other first use; the
+   reduction appendix keeps only `as:3` and the constants.
+2. **The Gruntkowska appendix restructured** around "three checks, one real"
+   (step = their LMO step; loop = their loop, Prop `prop:instance`; compressors
+   contractive, Lem `lem:signcontr`). No claim, constant, corollary or remark
+   was dropped; every label survives. About a quarter shorter.
+3. **The X/W story rewritten** (`eq:two_models`): EF21-MuonSign explicitly
+   maintains a *server model* X (exact LMO step; the iterate `cor:smooth`
+   bounds) and a *broadcast model* W (one-bit error-feedback estimate of X;
+   where gradients, momentum and the uplink residual are computed). Exact
+   downlink => W = X => EF21-MuonUSign. The unsupported "the two coincide on
+   the CNN2 layer shapes" sentence (Experiment 2) is gone; the nanoGPT section
+   and the repro appendix now name the two models consistently.
+4. **Minimality of the Thm 2–3 instance (new, sourced).** The identity
+   `<G, polar(sign(G))> = sum |G_ij| S_ij D_ij` reduces existence to sign
+   patterns; `code/counterexamples/enumerate_minimality.py` enumerates them
+   (canonical under row/col sign flips; ternary patterns in full). Findings:
+   no ±1 mismatch at 4×4, 3×n (n<=9), 2×n (n<=12); first zero-free instances
+   at 4×5 (720 of 2^12 classes) and, square, 5×5 — where the published S
+   attains the deepest possible mismatch, |D_42| = 1/sqrt(17) exactly.
+   Ternary (zero-entry) patterns fail from 3×4 on (4×4: 2,777,088 of 3^16,
+   deepest 1/sqrt(13), mostly full rank), but a zero-entry witness is
+   knife-edge — perturbing a zero flips sign(G) discontinuously — so the dense
+   5×5 stays as the theorem's witness. Stated in `app:proof_th2`, one sentence
+   in the main text, one clause in the contribution list; D_42 upgraded to its
+   exact value.
+5. **C6 closed** (footnote `fn:onebit`): ternary alphabet, 8–17% zeros,
+   ~1.4 bits/symbol ~ 23×; the majority-vote "±1 in each component" now says
+   ties abstain; Experiment 2's 32× is labelled nominal and uplink-only;
+   `eq:signa_general`'s codomain fixed to {−1,0,1}.
+6. **C12 closed**: eigenvalues of B are written λ_j(B) (μ is momentum only);
+   S-Muon's mixing weights renamed τ, c; the LR-scaling exponent is now `a`
+   and the fitted growth exponent `h` (α is compressor contraction only).
+7. **Protocol overclaim fixed**: "every method under one per-layer rule" now
+   scopes to the eight sign/LMO-family rules; SGD and Adam are stated to run
+   with one global rate, matching the code default (`--scale-baselines` off).
+8. **Repro appendix**: new "Conventions with numerical bite" paragraph
+   (bfloat16 LMO, frozen federated BN statistics, W-train/X-eval logging for
+   EF21-MuonSign) — the paper side of E3–E5.
+9. Small consistency fixes: "converges on the counterexample" → "descends"
+   (theory section and conclusion); the memory-cost paragraph tightened.
+
+Compiles clean under MiKTeX (two benign `!h` float warnings; no undefined
+references or citations).
+
+## Scaling-rule verdict (the worry behind the re-runs)
+
+The unit-gain derivation was re-checked and is sound (γ(A)=||A||_F/√m,
+λ_ℓ=√m/||s||_F, both closed forms, the He/Kaiming constants). Its caveats are
+now all stated in the paper: the NS oracle realizes the LMO-family gain only to
+~1.3× (§16c), the growth-exponent diagnostic must run at a constant LR, and
+SGD/Adam sit outside the rule. Nothing was found that would invalidate
+re-running under `unit-gain`; the transported anchors of §10 remain the right
+starting grids.
+
+## Still open
+
+* **D** — the Mishra transcription still needs a read against their actual
+  paper (not in the repo).
+* nanoGPT's "0.03 for the sign family, fixed a priori by the unit-gain rule":
+  the rule fixes λ_ℓ, not the 0.06 → 0.03 halving *across families*. Document
+  where 0.03 comes from (or re-derive it) before the LM re-runs.
+* The synthetic `[fill]` slots and the federated re-runs (Tables 4–5) are
+  unchanged by this pass.
+
+---
+
+# Randomized-sign convention + reviewer fixes — 2026-07-28 (third pass)
+
+## The convention change (code and paper together)
+
+`sign(0)` now resolves to an independent random `±1` on **every** sign channel,
+in `common/optimizers.sign_pm1` and its nanoGPT twin, wired into: SignSGD,
+SignMuon, MuonUSign, MuonSign, both EF21 residual channels, the MuonSign
+downlink, the majority-vote uplink (`--uplink-zeros random`, now the default)
+and the vote tie-break (`--mv-ties random`, now the default). The ternary
+footnote is gone from the paper; the convention is stated once, where the
+sign operator is defined.
+
+**It pays for itself in the theory, which is why it is the right call and not
+just a bookkeeping dodge:**
+
+1. `Lemma lem:signcontr` **simplifies**. Under randomization the `||Y||_0` terms
+   cancel exactly:
+       ||C(Y) - Y||_F^2 = ||Y||_F^2 - ||Y||_1^2/d,
+   a two-term identity replacing the old three-term one, holding **pathwise**
+   (not merely in expectation, and independent of which signs were drawn), with
+   `alpha(Y) = ||Y||_1^2/(d||Y||_F^2)` exactly and `1/d` now **attained** at any
+   1-sparse Y rather than being an unattained infimum. Verified numerically to
+   1.4e-14 over 2000 random Y with zeros.
+2. `||s||_F = sqrt(mn)` becomes exact, which is precisely what the unit-gain
+   sign-family multiplier assumes. The ternary convention quietly violated it.
+3. The Thm 2-3 minimality enumeration becomes **complete** rather than
+   caveated: `sign(G)` is always a ±1 pattern, so the ±1 enumeration settles the
+   question, and the knife-edge ternary witnesses (3x4, 4x4) simply cannot arise.
+
+**Nothing published moved.** Verified: neither theorem instance has a zero entry
+anywhere in G, polar(G), sign(G) or polar(sign(G)), so all three constants
+reproduce exactly (-42468/103, -13.8879, -76); Theorem 4's residuals are never
+zero and the rate is still exactly 49/480 for every (mu, variant) tested.
+
+**One real behavioural consequence,** and it is correct: at an exactly zero
+gradient the sign family now takes a random ±1 step instead of standing still.
+That is the honest simulation of a 1-bit channel — standing still would require
+a third symbol. `test_decoupled_decay_is_not_scaled_by_the_per_layer_multiplier`
+assumed the old behaviour ("zero gradient ⇒ decay is the whole step") and was
+rewritten to capture the direction and subtract it, which pins the decay
+convention it is actually about. Suite is 66/66, plus a new
+`test_transmitted_signs_are_strictly_one_bit` (seed-reproducible, RNG stream
+untouched on dense inputs, and an end-to-end dead-channel check).
+
+## Reviewer's v2 issues — all five applied
+
+1. **Algorithm 9 downlink bug (real, and the important one).** The loop
+   broadcast a full-precision model every round regardless of `C_down`, then
+   *also* broadcast the compressed message — so the "1-bit downlink" method
+   broadcast the whole model. Fixed: `X_0` is broadcast **once**, each client
+   keeps a local copy `V` refreshed from the downlink message alone, and the
+   end-of-round broadcast is the only one. This also clarified a distinction the
+   paper had blurred: **MuonSign has one model** (clients apply the same
+   `-eta*sign(D_t)` and reconstruct `X_t` exactly), while **only EF21-MuonSign
+   has the X/W split**. The code was already right; the pseudocode was not.
+2. **A.10 exponent.** "for the norm itself both exponents halve" was wrong for
+   `q`: `q` describes the tuned step size and does not depend on which power of
+   the error is plotted. Only `p` halves.
+3. **Frozen BN hoisted to the main federated section**, since it changes the
+   model relative to a standard baseline — and it is also a plausible source of
+   the dead channels that produce exact zeros, which is now the motivation for
+   the convention rather than an awkward footnote.
+4. **"here and throughout"** scoped to the federated experiments, which removes
+   the contradiction with the nanoGPT figure drawing W.
+5. **Zero-fraction source** explained in one clause (a unit inactive across a
+   whole local batch zeroes a row of the momentum, and the row survives the LMO).
+
+## Unit gain: how it is now managed
+
+Per the author's call: **stated as a heuristic in the main text, derived in the
+appendix.** Main text now carries the rule itself as a display
+(`eq:unit_gain_main`), the criterion, the one-line reason to believe it (its LMO
+branch reproduces Muon's shipped aspect factor), and pointers to the derivation,
+the measured exponent, and the two caveats. The appendix opens by saying it is
+deriving the main-text heuristic.
+
+Added the missing external anchors, which was the substance of the author's
+"did you invent this?" worry: the criterion is the average-case form of the
+spectral scaling condition (`yang2023spectral`) and the modular norm
+(`large2024modular`), both now in `references.bib`; the rule itself is this
+paper's, and the text says so in as many words.
+
+**New: `tab:lr_ablation`**, a sensitivity check placed with the rule rather than
+in a benchmark appendix. Every sign-family method is re-tuned under three
+conventions (global, unit gain, muP) and the claim defended is narrow: the
+*ordering* does not move, even though the selected eta_0 does. Run on federated
+CNN2 because its sign multipliers span 7.8x with no dominant shape — the better
+instrument. No new code needed: `federated.tune --stage lr --lr-scaling {none,
+unit-gain,mup}`.
+
+## Re-run plan
+
+`RERUN_PLAN.md` at the repo root: ordered commands for the synthetic study
+(control stage first) and the federated night, what each is allowed to claim,
+which stale numbers must be regenerated rather than copied, and the three
+non-experimental gaps left (Mishra transcription, nanoGPT's 0.03, the sharded
+path on Linux).
+
+Article rebuilds clean: 38 pages, 0 undefined references or citations.

@@ -125,14 +125,16 @@ def get_params() -> argparse.ArgumentParser:
                         "tie with a fair coin, restoring ||s||_F = sqrt(mn). "
                         "Measured to be equivalent in expected descent -- a tie "
                         "carries no information either way")
-    p.add_argument("--uplink-zeros", type=str, default="keep",
-                   choices=["keep", "random", "positive"],
+    p.add_argument("--uplink-zeros", type=str, default="random",
+                   choices=["random", "positive", "keep"],
                    help="What a CLIENT does with sign(0) on the majority-vote "
-                        "uplink. keep (default, and the published behaviour) sends "
-                        "the third symbol, so the uplink alphabet is ternary and "
-                        "costs ~1.37 bits/parameter at the zero rate CNN2 exhibits; "
-                        "random or positive map it to +-1, making the channel a "
-                        "genuine 1 bit. Either way, uplink_zero_frac is recorded")
+                        "uplink. random (default) is the paper's convention: an "
+                        "independent +-1, so the channel is a genuine 1 bit; "
+                        "positive fills deterministically; keep sends the third "
+                        "symbol, making the alphabet ternary (~1.37 bits/parameter "
+                        "at the zero rate CNN2 exhibits) and is kept only for the "
+                        "alphabet diagnostic. Either way, uplink_zero_frac records "
+                        "the raw zero rate before any mapping")
 
     # --- per-layer learning-rate scaling ---------------------------------
     p.add_argument("--lr-scaling", type=str, default="unit-gain",

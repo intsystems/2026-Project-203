@@ -711,8 +711,9 @@ def build_report(args, state, budget, sec, tuned, notes: List[str]) -> str:
                       "`python3 -m aggregate --root results/federated`.",
                   "",
                   "**comm. saving** is the *round-trip* reduction against full "
-                  "precision, with the ternary uplink alphabet and the uncompressed "
-                  "auxiliary group counted in. It is ~1.9x for the uplink-only "
+                  "precision, with the uncompressed auxiliary group counted in "
+                  "(the sign alphabet is a genuine 1 bit under the randomized-zero "
+                  "convention). It is ~2x for the uplink-only "
                   "methods -- they still broadcast a full-precision model every "
                   "round -- and ~25x for the two that compress both directions. "
                   "**Quote this number, not the uplink-only one.**",
@@ -723,9 +724,10 @@ def build_report(args, state, budget, sec, tuned, notes: List[str]) -> str:
                   "the Newton-Schulz norm error, which is shape-dependent and so is "
                   "not absorbable into a single tuned `eta_0`.",
                   "",
-                  f"**MV ties** is the fraction of coordinates where the majority "
-                  f"vote came out exactly zero. It is not zero even at an odd `N`, "
-                  f"because `sign(0) = 0` makes the uplink alphabet ternary. This "
+                  f"**MV ties** is the fraction of coordinates where the RAW "
+                  f"vote came out exactly zero, counted before any tie-break. "
+                  f"Under the randomized-zero convention client messages are +-1, "
+                  f"so at an odd `N` the vote cannot actually tie. This "
                   f"run used **N = {args.n_parties}**"
                   + (" (odd)." if args.n_parties % 2
                      else f" (EVEN -- prefer {args.n_parties + 1})."), ""]

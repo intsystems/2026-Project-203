@@ -136,12 +136,15 @@ and the per-layer step-length ratio a single global rate would have to absorb
 
 ## Three caveats worth knowing
 
-* **The uplink alphabet is ternary, so "1 bit" is an approximation.** `sign(0) = 0`,
-  and `polar(M)` has an exactly-zero column wherever `M` does — which after ReLU and
-  MaxPool is common, because a feature that is zero across the whole local batch
-  gives an exactly-zero gradient column. Measured on CNN2: **8–17% of transmitted
-  entries are zero**, i.e. ≈1.37 bits/parameter. Every run records
-  `uplink_zero_frac`; `--uplink-zeros random` makes the channel a genuine one bit.
+* **Exact zeros are randomized, so every sign channel is a strict 1 bit.**
+  `sign(0) = 0` would make the alphabet ternary, and that is not a corner case:
+  `polar(M)` has an exactly-zero column wherever `M` does, which after ReLU and
+  MaxPool is common (a feature zero across the whole local batch gives an
+  exactly-zero gradient column) — **8–17% of raw sign entries on CNN2**. The
+  paper's convention maps each zero to an independent random `±1`
+  (`common.optimizers.sign_pm1`), on every sign channel. Runs still record
+  `uplink_zero_frac` (the raw rate, before mapping); `--uplink-zeros keep`
+  restores the ternary channel for diagnostics.
   See [`federated/README.md`](federated/README.md) for why the client count is 11.
 * **BatchNorm in the federated setting.** Local models are discarded each round and
   BatchNorm runs in inference mode during gradient accumulation, so the running

@@ -84,25 +84,25 @@ stops the two implementations diverging.
 
 ## Three things the numbers depend on
 
-### The uplink alphabet is ternary, so "1 bit" is an approximation
+### Exact zeros are randomized, so every sign channel is a strict 1 bit
 
-`sign(0) = 0`, so a client transmits from `{−1, 0, +1}`. Not a corner case:
-`polar(M)` has an exactly-zero column wherever `M` does, and `M` does wherever a
-feature was zero across the whole local batch — after ReLU and MaxPool, routinely.
-Measured on CNN2: **8–17% of transmitted entries are zero, every round**, i.e.
-≈1.37 bits per parameter rather than 1.
+`sign(0) = 0` would make a client transmit from `{−1, 0, +1}`, and that is not a
+corner case: `polar(M)` has an exactly-zero column wherever `M` does, and `M` does
+wherever a feature was zero across the whole local batch — after ReLU and MaxPool,
+routinely. Measured on CNN2: **8–17% of raw sign entries are zero, every round**.
 
-Two knock-ons, both now recorded rather than assumed. `uplink_zero_frac` measures
-the bit cost; `mv_tie_frac` measures how often the majority vote comes out zero —
-which, because a zero vote is not `±1`, can happen at **any** client count, not only
-even ones. `--uplink-zeros random` makes the channel a genuine one bit;
-`--mv-ties random` makes the server step a genuine sign matrix. Neither changes
-expected descent, because a tie carries no information about the true sign, so both
-default to the published behaviour.
+The paper's convention, and the default here, maps each zero to an independent
+random `±1` (`common.optimizers.sign_pm1`) on **every** sign channel — the
+majority-vote uplink, both EF21 residual channels, and the MuonSign downlink. The
+channel is then exactly one bit per parameter; expected descent is unchanged, since
+a zeroed coordinate carries no directional information; and two statements become
+exact rather than approximate: `||s||_F = sqrt(mn)`, which the unit-gain multiplier
+assumes, and the contraction identity `||C(Y)-Y||_F^2 = ||Y||_F^2 - ||Y||_1^2/d`.
 
-The EF21 uplink is deliberately left ternary: `α·sign(Δ)` is zero exactly where the
-estimator is already on target, and forcing it off by `α` is the mechanism the
-EF21-SignMuon divergence theorem exploits.
+`uplink_zero_frac` still records the raw zero rate before the mapping, and
+`mv_tie_frac` the raw tie rate before any tie-break. With `±1` client messages an
+odd `N` cannot tie at all. `--uplink-zeros keep` restores the pre-convention
+ternary channel for the alphabet diagnostic.
 
 ### What the compression actually saves
 
@@ -111,15 +111,17 @@ Every run prints the accounting rather than quoting a headline number
 
 | method | uplink | downlink | **round trip** |
 | :--- | ---: | ---: | ---: |
-| `signmuon`, `muonusign`, `ef21signmuon`, `ef21muonusign` | 22× | 1× | **1.9×** |
-| `muonsign`, `ef21muonsign` | 22× | 29× | **25×** |
+| `signmuon`, `muonusign`, `ef21signmuon`, `ef21muonusign` | 32× | 1× | **~2×** |
+| `muonsign`, `ef21muonsign` | 32× | 32× | **~29×** |
 | `muon`, `muonserver`, `sgd`, `adam` | 1× | 1× | 1× |
 
-Three corrections to "32×" are folded in: the ternary alphabet (1.37 bits, not 1),
-the auxiliary group riding along uncompressed in both directions (which alone puts
-a perfect 1-bit uplink at 1.087 bits/parameter model-wide), and — the big one — the
-fact that four of the six methods **broadcast a full-precision model every round**,
-so their round-trip saving cannot exceed 2× however good the uplink is.
+Two corrections to "32×" are folded in: the auxiliary group riding along
+uncompressed in both directions (which alone puts a perfect 1-bit uplink at 1.087
+bits/parameter model-wide), and — the big one — the fact that four of the six
+methods **broadcast a full-precision model every round**, so their round-trip
+saving cannot exceed 2× however good the uplink is. (The alphabet itself is a
+genuine 1 bit under the randomized-zero convention; `communication_bits` still
+reports the ternary cost if `--uplink-zeros keep` is used.)
 
 That is not an argument against the paper's methods. It is the argument *for* the
 bidirectional ones, and it is what makes "we measure what the downlink guarantee

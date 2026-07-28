@@ -629,20 +629,19 @@ multiplier spans **7.8×** — and at a single global rate a SignMuon step on
 > held fixed. (ii) BatchNorm running statistics are never updated from data in
 > the federated setting — see `README.md`.
 
-### 5e. The uplink is not literally one bit, and the vote can tie at any `N`
+### 5e. Exact zeros are randomized, so the channel is a strict one bit
 
-`sign(0) = 0`, so a client transmits a symbol from `{−1, 0, +1}`. That is not a
+`sign(0) = 0` would make a client transmit from `{−1, 0, +1}`, and that is not a
 corner case: `polar(M)` has an exactly-zero column wherever `M` does, and `M` does
 wherever a feature was zero across the whole local batch — which after ReLU and
-MaxPool is common. Measured on CNN2, **8–17% of transmitted entries are zero every
-round**, so the true uplink cost is ≈**1.37 bits per parameter**, not 1. Two
-consequences:
+MaxPool is common. Measured on CNN2, **8–17% of raw sign entries are zero every
+round**.
 
-* the "32× reduction" claim is really ~22×, and should either say so or force the
-  zeros to `±1` (`--uplink-zeros random`, which costs nothing in expected descent);
-* the aggregate `sign(Σⱼ sⱼ)` can be zero at **any** client count, not only even
-  ones — a zero vote is not `±1`, so parity alone does not save it. The main text's
-  "is equal to +1 or −1 in each component" is wrong as implemented.
+The paper's convention, and the default, maps each zero to an independent random
+`±1` (`common.optimizers.sign_pm1`) on every sign channel. So the uplink symbol
+is a genuine 1 bit, the "32×" uplink figure is exact, and with `±1` client
+messages an odd `N` cannot tie. `--uplink-zeros keep` restores the ternary channel
+for the alphabet diagnostic.
 
 Both are now measured, not assumed: every run records `uplink_zero_frac` and
 `mv_tie_frac` and prints them in the summary. The alignment table below is
@@ -663,15 +662,15 @@ At `q = 0` the classical parity pathology is visible: `N = 10` buys nothing over
 in `N`. Either way 11 beats 10, which is why it is the default — but the reason is
 "more voters", not parity.
 
-The *tie rule* does not matter: a tie carries no information about the true sign,
-so `--mv-ties zero` (abstain, the default) and `--mv-ties random` deliver the same
-expected descent, 0.6580 vs 0.6581 at `N = 10`. Randomizing only restores
-`‖s‖_F = √(mn)`, which the unit-gain multiplier assumes, by adding noise of the
-matching size.
+The *tie rule* does not matter for descent: a tie carries no information about the
+true sign, so abstaining and coin-flipping deliver the same expected descent
+(0.6580 vs 0.6581 at `N = 10`). Randomizing restores `‖s‖_F = √(mn)`, which the
+unit-gain multiplier assumes, and is the default — though under the randomized
+uplink it is reachable only at an even `N`.
 
-The EF21 uplink is deliberately left ternary: its payload `α·sign(Δ)` is zero
-exactly where the estimator is already on target, and pushing it off by `α` is the
-mechanism Theorem 4 exploits.
+The EF21 residual channels are randomized too. This is safe for Theorem 4: its
+construction has entrywise-nonzero residuals at every step (verified), so the
+convention never fires there and the divergence rate is still exactly 49/480.
 
 ### 5f. What the compression actually saves, end to end
 
@@ -680,24 +679,25 @@ measured 10% zero rate:
 
 | method | uplink | downlink | **round trip** |
 | :--- | ---: | ---: | ---: |
-| `signmuon`, `muonusign`, `ef21signmuon`, `ef21muonusign` | 22× | 1× | **1.9×** |
-| `muonsign`, `ef21muonsign` | 22× | 29× | **25×** |
+| `signmuon`, `muonusign`, `ef21signmuon`, `ef21muonusign` | 32× | 1× | **~2×** |
+| `muonsign`, `ef21muonsign` | 32× | 32× | **~29×** |
 | `muon`, `muonserver`, `sgd`, `adam` | 1× | 1× | 1× |
 
-Three corrections are folded in. The ternary alphabet costs 1.37 bits rather than
-1. The auxiliary group (biases, BatchNorm, head) is never compressed in either
+Two corrections are folded in (the alphabet itself is a genuine 1 bit under the
+randomized-zero convention). The auxiliary group (biases, BatchNorm, head) is never compressed in either
 direction, which alone puts a *perfect* 1-bit uplink at 1.087 bits/parameter
 model-wide — that is the "+ ε" in "1 bit per parameter", and it would not be
 negligible on a model with a larger head. And, dominating everything: **four of
 the six methods broadcast a full-precision model every round**, so their
 round-trip saving cannot exceed 2× however good the uplink is.
 
-The paper currently writes "reducing the volume of transmitted data by a factor of
-~32×" about SignMuon. That is an uplink-only figure for a method whose downlink is
-uncompressed. **The round-trip number for SignMuon is 1.9×.**
+The paper writes "reducing the volume of transmitted data by a factor of 32×"
+about SignMuon. That is an uplink-only figure for a method whose downlink is
+uncompressed, and the text now says so. **The round-trip number for SignMuon is
+~2×**; recompute it with `communication_bits` after any re-run.
 
 This is not a problem for the paper's argument — it is the argument. The methods
-that compress both directions reach 25×, and the paper's own framing ("compressing
+that compress both directions reach ~29×, and the paper's own framing ("compressing
 the downlink is where the guarantee starts to cost something, and we measure
 what") is exactly the right one. The fix is to quote the round trip and let
 EF21-MuonSign carry the communication claim.

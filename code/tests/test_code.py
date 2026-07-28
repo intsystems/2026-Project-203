@@ -511,20 +511,28 @@ def test_decoupled_decay_is_not_scaled_by_the_per_layer_multiplier():
     other test in this file.
     """
     lr, wd, lam = 0.1, 0.5, 0.25
+    torch.manual_seed(0)
     for cls in CENTRAL_CLASSES.values():
         p = nn.Parameter(torch.ones(4, 4))
-        p.grad = torch.zeros(4, 4)          # zero gradient: decay is the whole step
+        # A zero gradient no longer implies a zero step: under the randomized-zero
+        # convention the sign family transmits +-1 everywhere, so every coordinate
+        # moves by lr*lambda. Capture the direction and subtract it, which pins the
+        # decay factor itself -- the thing this test is about -- for every method.
+        p.grad = torch.zeros(4, 4)
         opt = cls([{"params": [p], "lambda_mult": lam}], lr=lr, momentum=0.0,
                   weight_decay=wd, decoupled_weight_decay=True,
                   lmo_dtype=torch.float32, scale_aspect=False)
+        opt.capture_direction = True
         opt.step()
         if hasattr(opt, "restore_exact"):
             opt.restore_exact()
-        got = float(p.detach()[0, 0])
-        assert abs(got - (1.0 - lr * wd)) < 1e-6, (
-            f"{cls.__name__}: decoupled decay gave {got:.6f}, expected "
-            f"{1 - lr * wd:.6f}. Scaled by lambda it would be "
-            f"{1 - lr * wd * lam:.6f}")
+        d = opt.state[p]["last_direction"]
+        expected = (1.0 - lr * wd) - lr * lam * d
+        got = p.detach()
+        assert torch.allclose(got, expected, atol=1e-6), (
+            f"{cls.__name__}: decoupled decay gave {float(got[0, 0]):.6f}, expected "
+            f"{float(expected[0, 0]):.6f}. Scaled by lambda the decay factor would "
+            f"be {1 - lr * wd * lam:.6f} rather than {1 - lr * wd:.6f}")
 
 
 def test_the_two_drivers_agree_on_weight_decay_at_a_nontrivial_multiplier():
@@ -1945,3 +1953,40 @@ def main() -> int:
 
 if __name__ == "__main__":
     sys.exit(main())
+
+
+def test_transmitted_signs_are_strictly_one_bit():
+    """The paper's randomized-zero convention: every transmitted sign message is
+    +-1 valued, even when the momentum -- and hence the LMO output -- has exact
+    zero rows (a dead channel). ``sign(0) = 0`` would make the alphabet ternary;
+    ``sign_pm1`` maps zeros to random +-1, reproducibly under the seed."""
+    from common.optimizers import sign_pm1
+
+    x = torch.zeros(4, 6)
+    x[0, 0], x[1, 2] = 1.5, -0.25
+    torch.manual_seed(7)
+    s1 = sign_pm1(x)
+    torch.manual_seed(7)
+    s2 = sign_pm1(x)
+    assert torch.equal(s1, s2), "randomized zeros must be seed-reproducible"
+    assert torch.equal(s1.abs(), torch.ones_like(s1)), "no zeros may survive"
+    assert s1[0, 0] == 1 and s1[1, 2] == -1, "nonzero entries keep their sign"
+    # dense inputs must not consume the RNG stream (reproducibility of old runs)
+    torch.manual_seed(11)
+    before = torch.get_rng_state()
+    sign_pm1(torch.randn(8, 8) + 10.0)
+    assert torch.equal(before, torch.get_rng_state())
+
+    # End-to-end: a dead output channel (zero gradient row) still yields a
+    # strictly +-1-valued step for every sign-terminated method.
+    torch.manual_seed(0)
+    for cls in (SignSGD, SignMuon, MuonSign):
+        p = nn.Parameter(torch.randn(5, 7))
+        opt = cls([p], lr=0.1, momentum=0.0)
+        opt.capture_direction = True
+        g = torch.randn(5, 7)
+        g[2] = 0.0  # dead channel: zero momentum row, zero LMO-output row
+        p.grad = g
+        opt.step()
+        d = opt.state[p]["last_direction"]
+        assert torch.equal(d.abs(), torch.ones_like(d)), cls.__name__
