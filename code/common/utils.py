@@ -33,7 +33,7 @@ import os
 import random
 from dataclasses import asdict, is_dataclass
 from pathlib import Path
-from typing import Any, Dict, Iterable, List, Optional
+from typing import Any, Dict, Iterable, List, Optional, Sequence
 
 import numpy as np
 import torch
@@ -302,3 +302,36 @@ def cosine_lr(base_lr: float, step: int, total_steps: int, min_lr: float = 0.0) 
         return base_lr
     cos = 0.5 * (1.0 + math.cos(math.pi * step / total_steps))
     return min_lr + (base_lr - min_lr) * cos
+
+
+def split_list_arg(values: Optional[Sequence[str]],
+                   valid: Optional[Sequence[str]] = None,
+                   name: str = "value") -> Optional[list[str]]:
+    """Flatten a list-valued CLI argument, accepting commas as well as spaces.
+
+    ``--stages grid final``, ``--stages grid,final`` and ``--stages grid, final``
+    all mean the same thing to a reader, so they should mean the same thing to
+    argparse. With ``nargs="+"`` alone the second and third fail on a token that
+    still has a comma stuck to it, and the error names the mangled token rather
+    than the mistake.
+
+    Order is preserved and duplicates dropped, so ``grid,grid final`` is
+    ``["grid", "final"]``. When ``valid`` is given, unknown names raise
+    ``ValueError`` listing what was accepted -- do the validation here rather
+    than through argparse's ``choices``, which fires before this can split.
+    """
+    if values is None:
+        return None
+    out: list[str] = []
+    for token in values:
+        for piece in str(token).split(","):
+            piece = piece.strip()
+            if piece and piece not in out:
+                out.append(piece)
+    if valid is not None:
+        unknown = [p for p in out if p not in valid]
+        if unknown:
+            raise ValueError(
+                f"unknown {name}{'s' if len(unknown) > 1 else ''}: "
+                f"{', '.join(unknown)}. Valid: {', '.join(valid)}")
+    return out

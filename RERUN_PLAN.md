@@ -8,14 +8,14 @@ that way:
 * **federated** — can these methods actually do federated learning?
 
 Nothing below needs a code change. The convention change (`sign_pm1`) is already
-in and the test suite is 66/66.
+in and the test suite is 70/70.
 
 ---
 
 ## 0. Before starting (10 min)
 
 ```bash
-python3 -m tests.test_code                    # must be 66/66
+python3 -m tests.test_code                    # must be 70/70
 python3 -m federated.tune --stage anchors     # per-layer multipliers + transported grid anchors
 python3 -m counterexamples.enumerate_minimality   # the Thm 2-3 minimality claims
 ```
@@ -37,7 +37,7 @@ python3 -m synthetic.run_gpu --stages alignment   # ~20 min rho_t > 0 on random 
 python3 -m synthetic.run_gpu --stages floor       # ~25 min floor slope = 1 (Table 7)
 python3 -m synthetic.run_gpu --stages horizon     # ~45 min p, q exponents (Table 7)
 python3 -m synthetic.run_gpu --stages kappa       # ~30 min conditioning sweep (Fig. 7)
-python3 -m synthetic.run_gpu --stages grid,final  # ~3 h   Tables 3/8 re-run + Fig. 6 curves
+python3 -m synthetic.run_gpu --stages grid final  # ~3 h   Tables 3/8 re-run + Fig. 6 curves
 python3 -m synthetic.plot_synthetic               # all five figures
 ```
 

@@ -2049,5 +2049,31 @@ def test_hardware_scan_groups_by_experiment_and_machine():
         assert fams["Federated CIFAR-10 (CNN2)"] == [("NVIDIA A100", 1)], fams
 
 
+def test_list_arguments_accept_commas_and_spaces():
+    """`--stages grid final`, `grid,final` and `grid, final` must agree.
+
+    A shell splits on spaces, so a comma the user typed for readability arrives
+    glued to a token and argparse rejects a name nobody wrote. Validation has to
+    happen after the split, which is why these options do not use argparse
+    `choices`; this pins both the splitting and the error message.
+    """
+    from common.utils import split_list_arg
+
+    valid = ["stability", "grid", "final"]
+    for spelling in (["grid", "final"], ["grid,final"], ["grid,", "final"],
+                     ["grid , final"]):
+        assert split_list_arg(spelling, valid, "stage") == ["grid", "final"], spelling
+
+    assert split_list_arg(["grid,grid", "final"], valid, "stage") == ["grid", "final"]
+    assert split_list_arg(None, valid, "stage") is None
+
+    try:
+        split_list_arg(["grid,flooor"], valid, "stage")
+    except ValueError as exc:
+        assert "flooor" in str(exc) and "stability" in str(exc), exc
+    else:
+        raise AssertionError("an unknown stage name must raise, naming the valid set")
+
+
 if __name__ == "__main__":
     sys.exit(main())

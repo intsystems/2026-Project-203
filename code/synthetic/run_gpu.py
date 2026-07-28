@@ -42,7 +42,7 @@ from dataclasses import dataclass, field
 from pathlib import Path
 from typing import Dict, List, Optional, Sequence
 
-from common.utils import results_root
+from common.utils import results_root, split_list_arg
 
 CODE_ROOT = Path(__file__).resolve().parents[1]
 
@@ -537,9 +537,13 @@ def get_args():
     p.add_argument("--device", default="cuda:0")
     p.add_argument("--out", default=None,
                    help="output directory (default: results/synthetic/)")
+    # No argparse `choices` here: it validates each token *before* commas can be
+    # split off, so `--stages grid,final` would fail on a token the user never
+    # typed. Validation happens after splitting, in main().
     p.add_argument("--stages", nargs="+", default=None, metavar="NAME",
-                   choices=[s.name for s in STAGES],
-                   help=f"default: everything except {sorted(OPTIONAL)}")
+                   help="space- or comma-separated. Choices: "
+                        + ", ".join(s.name for s in STAGES)
+                        + f". Default: everything except {sorted(OPTIONAL)}")
     p.add_argument("--quick", action="store_true",
                    help="tiny sizes and coarse grids, ~5 min for the whole "
                         "pipeline; run this first")
@@ -604,7 +608,12 @@ def main() -> int:
                   f"({archive.stat().st_size / 1024:.0f} KB)")
         return 0
 
-    names = args.stages or [s.name for s in STAGES if s.name not in OPTIONAL]
+    try:
+        requested = split_list_arg(args.stages, [s.name for s in STAGES], "stage")
+    except ValueError as exc:
+        print(f"error: {exc}")
+        return 2
+    names = requested or [s.name for s in STAGES if s.name not in OPTIONAL]
     selected = [BY_NAME[n] for n in names]
     log_dir = out / "logs"
     log_dir.mkdir(parents=True, exist_ok=True)
