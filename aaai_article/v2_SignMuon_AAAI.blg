@@ -1,50 +1,50 @@
 This is BibTeX, Version 0.99d
 Capacity: max_strings=200000, hash_size=200000, hash_prime=170003
-The top-level auxiliary file: .\v2_SignMuon_AAAI.aux
+The top-level auxiliary file: v2_SignMuon_AAAI.aux
 Reallocating 'name_of_file' (item size: 1) to 9 items.
 The style file: aaai2027.bst
 Reallocating 'name_of_file' (item size: 1) to 11 items.
 Database file #1: references.bib
 Warning--empty journal in krizhevsky2009cifar
-You've used 33 entries,
+You've used 23 entries,
             2840 wiz_defined-function locations,
-            742 strings with 11165 characters,
-and the built_in function-call counts, 22024 in all, are:
-= -- 1646
-> -- 1605
+            702 strings with 8944 characters,
+and the built_in function-call counts, 14995 in all, are:
+= -- 1164
+> -- 1013
 < -- 3
-+ -- 593
-- -- 555
-* -- 1735
-:= -- 3860
-add.period$ -- 134
-call.type$ -- 33
-change.case$ -- 304
-chr.to.int$ -- 34
-cite$ -- 34
-duplicate$ -- 1334
-empty$ -- 1143
-format.name$ -- 643
-if$ -- 4048
++ -- 371
+- -- 345
+* -- 1168
+:= -- 2596
+add.period$ -- 94
+call.type$ -- 23
+change.case$ -- 197
+chr.to.int$ -- 24
+cite$ -- 24
+duplicate$ -- 931
+empty$ -- 813
+format.name$ -- 412
+if$ -- 2792
 int.to.chr$ -- 1
 int.to.str$ -- 1
-missing$ -- 305
-newline$ -- 168
-num.names$ -- 136
-pop$ -- 736
+missing$ -- 203
+newline$ -- 118
+num.names$ -- 96
+pop$ -- 496
 preamble$ -- 1
-purify$ -- 293
+purify$ -- 189
 quote$ -- 0
-skip$ -- 607
+skip$ -- 424
 stack$ -- 0
-substring$ -- 518
-swap$ -- 701
+substring$ -- 404
+swap$ -- 489
 text.length$ -- 3
 text.prefix$ -- 0
 top$ -- 0
-type$ -- 297
+type$ -- 207
 warning$ -- 1
-while$ -- 144
+while$ -- 104
 width$ -- 0
-write$ -- 408
+write$ -- 288
 (There was 1 warning)

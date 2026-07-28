@@ -1,0 +1,137 @@
+\begin{thebibliography}{21}
+\providecommand{\natexlab}[1]{#1}
+
+\bibitem[{Amsel et~al.(2026)Amsel, Persson, Musco, and Gower}]{amsel2025polar}
+Amsel, N.; Persson, D.; Musco, C.; and Gower, R.~M. 2026.
+\newblock The {P}olar {E}xpress: Optimal Matrix Sign Methods and Their
+  Application to the {M}uon Algorithm.
+\newblock arXiv:2505.16932.
+
+\bibitem[{Bernstein(2025)}]{bernstein2025deriving}
+Bernstein, J. 2025.
+\newblock Deriving {M}uon.
+\newblock \url{https://jeremybernste.in/writing/deriving-muon}.
+\newblock Blog. Explains the theoretical derivation and intuition behind the
+  Muon optimizer.
+
+\bibitem[{Bernstein and Newhouse(2024)}]{bernstein2024old}
+Bernstein, J.; and Newhouse, L. 2024.
+\newblock Old Optimizer, New Norm: An Anthology.
+\newblock arXiv:2409.20325.
+
+\bibitem[{Cesista(2025)}]{cesista2025schattenp}
+Cesista, F.~L. 2025.
+\newblock Steepest Descent Under {S}chatten-$p$ Norms.
+
+\bibitem[{{Essential AI}(2025)}]{shah2025practical}
+{Essential AI}. 2025.
+\newblock Practical Efficiency of {M}uon for Pretraining.
+\newblock arXiv:2505.02222.
+
+\bibitem[{Grishina, Smirnov, and Rakhuba(2025)}]{grishina2025chebyshev}
+Grishina, E.; Smirnov, M.; and Rakhuba, M. 2025.
+\newblock Accelerating {Newton--Schulz} Iteration for Orthogonalization via
+  {Chebyshev}-type Polynomials.
+\newblock \emph{arXiv preprint arXiv:2506.10935}.
+
+\bibitem[{Gruntkowska et~al.(2025)Gruntkowska, Gaponov, Tovmasyan, and
+  Richtárik}]{gruntkowska2025error}
+Gruntkowska, K.; Gaponov, A.; Tovmasyan, Z.; and Richtárik, P. 2025.
+\newblock Error Feedback for {M}uon and Friends.
+\newblock arXiv:2510.00643.
+
+\bibitem[{Jordan et~al.(2024)Jordan, Jin, Boza, You, Cesista, Newhouse, and
+  Bernstein}]{jordan2024muon}
+Jordan, K.; Jin, Y.; Boza, V.; You, J.; Cesista, F.; Newhouse, L.; and
+  Bernstein, J. 2024.
+\newblock Muon: An optimizer for hidden layers in neural networks.
+
+\bibitem[{Kovalev(2025)}]{kovalev2025understanding}
+Kovalev, D. 2025.
+\newblock Understanding Gradient Orthogonalization for Deep Learning via
+  Non-{E}uclidean Trust-Region Optimization.
+\newblock arXiv:2503.12645.
+
+\bibitem[{Kravatskiy et~al.(2025)Kravatskiy, Kozyrev, Kozlov, Vinogradov,
+  Merkulov, and Oseledets}]{kravatskiy2025kyfannorms}
+Kravatskiy, A.; Kozyrev, I.; Kozlov, N.; Vinogradov, A.; Merkulov, D.; and
+  Oseledets, I. 2025.
+\newblock {K}y {F}an Norms and Beyond: Dual Norms and Combinations for Matrix
+  Optimization.
+\newblock arXiv:2512.09678.
+
+\bibitem[{Large et~al.(2024)Large, Liu, Huh, Bahng, Isola, and
+  Bernstein}]{large2024modular}
+Large, T.; Liu, Y.; Huh, M.; Bahng, H.; Isola, P.; and Bernstein, J. 2024.
+\newblock Scalable Optimization in the Modular Norm.
+\newblock arXiv:2405.14813.
+
+\bibitem[{Li and Hong(2025)}]{li2025note}
+Li, J.; and Hong, M. 2025.
+\newblock A Note on the Convergence of {M}uon.
+\newblock arXiv:2502.02900.
+
+\bibitem[{Liu et~al.(2025)Liu, Su, Yao, Jiang, Lai, Du, Qin, Xu, Lu, Yan, Chen,
+  Zheng, Liu, Liu, Yin, He, Zhu, Wang, Wang, Dong, Zhang, Kang, Zhang, Xu,
+  Zhang, Wu, Zhou, and Yang}]{liu2025muon}
+Liu, J.; Su, J.; Yao, X.; Jiang, Z.; Lai, G.; Du, Y.; Qin, Y.; Xu, W.; Lu, E.;
+  Yan, J.; Chen, Y.; Zheng, H.; Liu, Y.; Liu, S.; Yin, B.; He, W.; Zhu, H.;
+  Wang, Y.; Wang, J.; Dong, M.; Zhang, Z.; Kang, Y.; Zhang, H.; Xu, X.; Zhang,
+  Y.; Wu, Y.; Zhou, X.; and Yang, Z. 2025.
+\newblock Muon is Scalable for {LLM} Training.
+\newblock arXiv:2502.16982.
+
+\bibitem[{Mishra, Trivedi, and Kumar(2026)}]{mishra2026signmuon}
+Mishra, N.; Trivedi, K.; and Kumar, P. 2026.
+\newblock Sign{M}uon: Communication-Efficient Distributed {M}uon Optimization.
+\newblock arXiv:2605.16311.
+
+\bibitem[{Pethick et~al.(2025)Pethick, Xie, Antonakopoulos, Zhu, Silveti-Falls,
+  and Cevher}]{pethick2025training}
+Pethick, T.; Xie, W.; Antonakopoulos, K.; Zhu, Z.; Silveti-Falls, A.; and
+  Cevher, V. 2025.
+\newblock Training Deep Learning Models with Norm-Constrained {LMOs}.
+\newblock arXiv:2502.07529.
+
+\bibitem[{Pethick et~al.(2026)Pethick, Xie, Erdogan, Antonakopoulos,
+  Silveti-Falls, and Cevher}]{pethick2025generalized}
+Pethick, T.; Xie, W.; Erdogan, M.; Antonakopoulos, K.; Silveti-Falls, A.; and
+  Cevher, V. 2026.
+\newblock Generalized Gradient Norm Clipping \& Non-{E}uclidean
+  {$(L_0,L_1)$}-Smoothness.
+\newblock arXiv:2506.01913.
+
+\bibitem[{Riabinin et~al.(2025)Riabinin, Shulgin, Gruntkowska, and
+  Richtárik}]{riabinin2025gluon}
+Riabinin, A.; Shulgin, E.; Gruntkowska, K.; and Richtárik, P. 2025.
+\newblock {G}luon: Making {M}uon \& {S}cion Great Again! ({B}ridging Theory and
+  Practice of {LMO}-based Optimizers for {LLMs}).
+\newblock arXiv:2505.13416.
+
+\bibitem[{Richt{\'a}rik, Sokolov, and Fatkhullin(2021)}]{richtarik2021ef21}
+Richt{\'a}rik, P.; Sokolov, I.; and Fatkhullin, I. 2021.
+\newblock {EF21}: A new, simpler, theoretically better, and practically faster
+  error feedback.
+\newblock In \emph{Advances in Neural Information Processing Systems},
+  volume~34, 4384--4396.
+
+\bibitem[{Shulgin et~al.(2025)Shulgin, AlRashed, Orabona, and
+  Richt{'a}rik}]{shulgin2025inexactmuon}
+Shulgin, E.; AlRashed, S.; Orabona, F.; and Richt{'a}rik, P. 2025.
+\newblock Beyond the Ideal: Analyzing the Inexact {M}uon Update.
+\newblock \emph{arXiv preprint arXiv:2510.19933}.
+
+\bibitem[{Yang et~al.(2021)Yang, Hu, Babuschkin, Sidor, Liu, Farhi, Ryder,
+  Pachocki, Chen, and Gao}]{yang2021tuning}
+Yang, G.; Hu, E.~J.; Babuschkin, I.; Sidor, S.; Liu, X.; Farhi, D.; Ryder, N.;
+  Pachocki, J.; Chen, W.; and Gao, J. 2021.
+\newblock Tuning Large Neural Networks via Zero-Shot Hyperparameter Transfer.
+\newblock In \emph{Advances in Neural Information Processing Systems
+  (NeurIPS)}.
+
+\bibitem[{Yang, Simon, and Bernstein(2023)}]{yang2023spectral}
+Yang, G.; Simon, J.~B.; and Bernstein, J. 2023.
+\newblock A Spectral Condition for Feature Learning.
+\newblock arXiv:2310.17813.
+
+\end{thebibliography}

@@ -3,8 +3,8 @@
 ``plot_runs.py`` is the exploratory tool (titles, every method/axis combination,
 diagnostics of the port). This script emits only the figures that go into the
 paper, styled to match the CIFAR/federated/synthetic figures: the same rcParams,
-the same ``COLORS`` palette, no titles (the caption carries the description), and
-serif fonts at the article's sizes.
+the same method colours and no titles (the caption carries the description), all
+from ``common.plotting``.
 
     python parse_logs.py logs -o results
     python plot_article.py                    # -> figures/fig_nanogpt_*.pdf
@@ -23,9 +23,15 @@ Two figures:
     the downlink measurement: the contraction the scaled sign actually achieves
     and the resulting server/broadcast gap, per layer type, on a log axis.
 
-Colour identity is kept across the paper: SignMuon, Muon and SignSGD keep the
-colours they have in the federated figures, so a reader tracks a method by colour
-from one figure to the next.
+Colour identity is kept across the paper: every method takes its colour from
+``common.plotting.color_of``, the same map the CIFAR, synthetic and federated
+figures read, so a reader tracks a method by colour from one figure to the next.
+
+These three are the only figures in the paper authored LARGER than they print --
+the insets and the eight-way legends need the room, and re-laying them out at
+3.3 inches would cost more than it buys. ``SCALE`` is the ratio, and
+``use_paper_style(scale=SCALE)`` sizes every glyph and rule so that after LaTeX
+reduces the figure the printed result matches the rest of the paper.
 """
 
 from __future__ import annotations
@@ -41,47 +47,19 @@ import matplotlib.pyplot as plt
 import numpy as np
 from matplotlib.lines import Line2D
 
-# --------------------------------------------------------------------------
-# The article's style (verbatim from code/notebooks/plot_*.ipynb)
-# --------------------------------------------------------------------------
-plt.rcParams.update({
-    "font.family": "serif",
-    "font.serif": ["Times New Roman", "Times", "DejaVu Serif"],
-    "mathtext.fontset": "stix",
-    "font.size": 16,
-    "axes.labelsize": 20,
-    "axes.titlesize": 20,
-    "xtick.labelsize": 16,
-    "ytick.labelsize": 16,
-    "legend.fontsize": 16,
-    "axes.linewidth": 1.4,
-    "axes.spines.top": False,
-    "axes.spines.right": False,
-    "axes.grid": True,
-    "grid.alpha": 0.25,
-    "grid.linestyle": "--",
-    "grid.linewidth": 0.9,
-    "lines.linewidth": 3.5,
-    "lines.markersize": 11,
-    "xtick.direction": "out",
-    "ytick.direction": "out",
-    "xtick.major.size": 6,
-    "ytick.major.size": 6,
-    "xtick.major.width": 1.3,
-    "ytick.major.width": 1.3,
-    "legend.frameon": True,
-    "legend.framealpha": 0.95,
-    "legend.edgecolor": "0.75",
-    "legend.fancybox": False,
-    "figure.dpi": 120,
-    "savefig.dpi": 300,
-    "savefig.bbox": "tight",
-    "pdf.fonttype": 42,
-    "ps.fonttype": 42,
-})
+from common.plotting import (COLUMN_WIDTH, FS_LABEL, FS_LEGEND, INK_2,
+                             SERIES, SURFACE, TEXT_WIDTH, color_of,
+                             use_paper_style)
 
-COLORS = ["#1f77b4", "#ff7f0e", "#2ca02c", "#d62728",
-          "#915cc2", "#37200E", "#10C5D5", "#4A3322", "#bcbd22", "#17becf"]
+# --------------------------------------------------------------------------
+# The article's style, from common.plotting
+# --------------------------------------------------------------------------
+# Authored oversize and reduced by LaTeX: the main panel prints at \columnwidth,
+# so SCALE is how much bigger the canvas is than the page. Every point size and
+# rule width below is multiplied by it, which is what makes the printed result
+# match the figures that are authored 1:1.
+SCALE = 7.2 / COLUMN_WIDTH
+use_paper_style(scale=SCALE)
 
 #: The canonical run per method. Explicit rather than "latest matching log":
 #: ``logs/`` also holds the pre-fix EF21 runs, and a paper figure must not depend
@@ -100,14 +78,14 @@ COLORS = ["#1f77b4", "#ff7f0e", "#2ca02c", "#d62728",
 # individual curve through a bundle it cannot be separated from.
 RUNS = [
     # label,           run_id,                           colour,   dash,                marker, phase
-    ("Muon",           "Muon_lr0.06_5db64adc",           COLORS[1], "-",                 "o", 0),
-    ("SignSGD",        "SignSGD_lr0.03_1f0db2d4",        COLORS[2], "-",                 "s", 4),
-    ("SignMuon",       "SignMuon_lr0.03_19f64fe1",       COLORS[0], "-",                 "^", 1),
-    ("MuonUSign",      "MuonUSign_lr0.06_d9721bde",      COLORS[3], (0, (9, 2)),         "v", 3),
-    ("MuonSign",       "MuonSign_lr0.03_8ae069a3",       COLORS[4], "-",                 "D", 0),
-    ("EF21-SignMuon",  "EF21-SignMuon_lr0.06_bb803ec4",  COLORS[8], (0, (6, 2.5)),       "P", 2),
-    ("EF21-MuonUSign", "EF21-MuonUSign_lr0.06_2717df49", COLORS[5], (0, (1.7, 1.7)),     "X", 1),
-    ("EF21-MuonSign",  "EF21-MuonSign_lr0.06_e6770317",  COLORS[6], (0, (7, 2, 1.6, 2)), "*", 2),
+    ("Muon",           "Muon_lr0.06_5db64adc",           color_of("Muon"), "-",                 "o", 0),
+    ("SignSGD",        "SignSGD_lr0.03_1f0db2d4",        color_of("SignSGD"), "-",                 "s", 4),
+    ("SignMuon",       "SignMuon_lr0.03_19f64fe1",       color_of("SignMuon"), "-",                 "^", 1),
+    ("MuonUSign",      "MuonUSign_lr0.06_d9721bde",      color_of("MuonUSign"), (0, (9, 2)),         "v", 3),
+    ("MuonSign",       "MuonSign_lr0.03_8ae069a3",       color_of("MuonSign"), "-",                 "D", 0),
+    ("EF21-SignMuon",  "EF21-SignMuon_lr0.06_bb803ec4",  color_of("EF21-SignMuon"), (0, (6, 2.5)),       "P", 2),
+    ("EF21-MuonUSign", "EF21-MuonUSign_lr0.06_2717df49", color_of("EF21-MuonUSign"), (0, (1.7, 1.7)),     "X", 1),
+    ("EF21-MuonSign",  "EF21-MuonSign_lr0.06_e6770317",  color_of("EF21-MuonSign"), (0, (7, 2, 1.6, 2)), "*", 2),
 ]
 
 
@@ -121,7 +99,7 @@ def _legend_handles():
     in the inset.
     """
     handles = [Line2D([], [], color=c, ls=ls, lw=2.8, marker=mk, markersize=8,
-                      markeredgecolor="white", markeredgewidth=0.9)
+                      markeredgecolor=SURFACE, markeredgewidth=0.9)
                for _, _, c, ls, mk, _ in RUNS]
     labels = [lbl + (r" ($\mathbf{W}$)" if lbl in _USE_W else "")
               for lbl, *_ in RUNS]
@@ -141,14 +119,18 @@ def _mev(phase, n, tail=False):
     if tail:                                     # 3 visible points, 8 series
         return [max(0, n - 3 + phase % 3)]
     return (phase % 5, 5)
+
+
 #: which methods carry a separate broadcast model (plot W, not X, in panel (a))
 _USE_W = {"EF21-MuonSign"}
 
-#: layer types shown in the diagnostics panel, with the article's colours
+#: Layer types shown in the diagnostics panel. These are parameter groups, not
+#: methods, so they take the article's three categorical slots rather than a
+#: method colour -- nothing here is "the SignMuon curve".
 LAYERS = [
-    ("blocks.*.mlp.c_proj", r"$\mathtt{c\_proj}$", COLORS[3]),
-    ("blocks.*.mlp.c_fc",   r"$\mathtt{c\_fc}$",   COLORS[0]),
-    ("blocks.*.attn.qkvo_w", r"$\mathtt{qkvo\_w}$", COLORS[2]),
+    ("blocks.*.mlp.c_proj", r"$\mathtt{c\_proj}$", SERIES[0]),
+    ("blocks.*.mlp.c_fc",   r"$\mathtt{c\_fc}$",   SERIES[1]),
+    ("blocks.*.attn.qkvo_w", r"$\mathtt{qkvo\_w}$", SERIES[2]),
 ]
 
 TOKENS_PER_RANK = 32768   # train_loss is a per-rank SUM over this many tokens
@@ -247,7 +229,7 @@ def _draw_val(ax, steps, lw=3.0, ms=0.0, tail=False):
         ax.plot(x[keep], y[keep], color=color, ls=ls, lw=lw, alpha=0.9,
                 marker=mk if ms else None, markersize=ms,
                 markevery=_mev(ph, int(keep.sum()), tail),
-                markeredgecolor="white", markeredgewidth=0.9,
+                markeredgecolor=SURFACE, markeredgewidth=0.9,
                 solid_capstyle="round", zorder=3, label=lab)
     ax.axhline(3.28, color="0.3", ls=":", lw=1.6, zorder=1)
 
@@ -294,8 +276,11 @@ def panel_diag(ax, diag, run_id):
                 Line2D([], [], color="0.35", lw=3.0, ls="--")]
     labels += [r"$\alpha(\boldsymbol{\Delta}^{\downarrow})$",
                r"$\|\mathbf{X}-\mathbf{W}\|_F/\|\mathbf{W}\|_F$"]
-    ax.legend(handles, labels, loc="lower left", ncol=1, fontsize=15,
-              handlelength=1.9, labelspacing=0.32, borderpad=0.4)
+    leg = ax.legend(handles, labels, loc="lower left", ncol=1,
+                    fontsize=FS_LEGEND * SCALE, frameon=False,
+                    handlelength=1.9, labelspacing=0.32, borderpad=0.4)
+    for text in leg.get_texts():
+        text.set_color(INK_2)
 
 
 # --------------------------------------------------------------------------
@@ -310,7 +295,7 @@ def _draw_train(ax, steps, lw=2.6, ms=0.0, tail=False):
         ax.plot(x, _ema(y), color=color, ls=ls, lw=lw, alpha=0.95, zorder=3,
                 marker=mk if ms else None, markersize=ms,
                 markevery=_mev(ph, len(x), tail),
-                markeredgecolor="white", markeredgewidth=0.9, label=label)
+                markeredgecolor=SURFACE, markeredgewidth=0.9, label=label)
 
 
 def panel_train(ax, steps):
@@ -319,7 +304,7 @@ def panel_train(ax, steps):
     ax.set_ylabel("Training loss")
     ax.set_xlim(0, 2400)
     ax.set_ylim(3.25, 5.15)   # headroom for the legend + inset
-    ax.legend(*_legend_handles(), loc="upper right", ncol=2, fontsize=15,
+    ax.legend(*_legend_handles(), loc="upper right", ncol=2, fontsize=FS_LEGEND * SCALE,
               handlelength=2.4, columnspacing=1.1, labelspacing=0.32, borderpad=0.4)
     _zoom(ax, lambda a: _draw_train(a, steps, lw=2.0, ms=8.5, tail=True), (2050, 2345),
           (3.288, 3.408))
@@ -341,7 +326,7 @@ def _draw_time(ax, steps, lw=3.0, ms=0.0, tail=False):
         ax.plot(x, y, color=color, ls=ls, lw=lw, alpha=0.9, zorder=3,
                 marker=mk if ms else None, markersize=ms,
                 markevery=_mev(ph, len(x), tail),
-                markeredgecolor="white", markeredgewidth=0.9, label=lab)
+                markeredgecolor=SURFACE, markeredgewidth=0.9, label=lab)
     ax.axhline(3.28, color="0.3", ls=":", lw=1.6, zorder=1)
 
 
@@ -350,7 +335,7 @@ def panel_time(ax, steps):
     ax.set_xlabel("Training time (s, 8$\\times$H100)")
     ax.set_ylabel("Validation loss")
     ax.set_ylim(3.24, 5.10)   # headroom for the legend + inset
-    ax.legend(*_legend_handles(), loc="upper right", ncol=2, fontsize=15,
+    ax.legend(*_legend_handles(), loc="upper right", ncol=2, fontsize=FS_LEGEND * SCALE,
               handlelength=2.4, columnspacing=1.1, labelspacing=0.32, borderpad=0.4)
     _zoom(ax, lambda a: _draw_time(a, steps, lw=2.4, ms=9.5, tail=True), (119, 148),
           (3.268, 3.398))
@@ -377,31 +362,34 @@ def main():
     # two-panel figure is not affordable, and the diagnostics belong with the
     # appendix material they support. The legend goes below the axes so the
     # upper-right corner is free for the inset.
-    fig, ax = plt.subplots(figsize=(7.2, 5.9))
+    fig, ax = plt.subplots(figsize=(COLUMN_WIDTH * SCALE, 5.9))
     handles, labels = panel_val(ax, steps)
-    fig.legend(handles, labels, loc="lower center", ncol=3, fontsize=13.5,
-               frameon=True, framealpha=0.95, edgecolor="0.75", fancybox=False,
-               handlelength=2.4, columnspacing=1.1, labelspacing=0.35,
-               borderpad=0.45, bbox_to_anchor=(0.5, 0.004))
+    leg = fig.legend(handles, labels, loc="lower center", ncol=3,
+                     fontsize=FS_LEGEND * SCALE, frameon=False,
+                     handlelength=2.4, columnspacing=1.1, labelspacing=0.35,
+                     borderpad=0.45, bbox_to_anchor=(0.5, 0.004))
+    for text in leg.get_texts():
+        text.set_color(INK_2)
     fig.tight_layout(rect=(0, 0.125, 1, 1))
     for ext in ("pdf", "png"):
         fig.savefig(args.outdir / f"fig_nanogpt_main.{ext}")
     plt.close(fig)
 
     # --- appendix: supporting curves
-    fig, axes = plt.subplots(1, 2, figsize=(15.0, 5.6))
+    fig, axes = plt.subplots(1, 2, figsize=(TEXT_WIDTH * SCALE, 5.6))
     panel_train(axes[0], steps)
     panel_time(axes[1], steps)
     for a, tag in zip(axes, "ab"):
         a.text(-0.085, 1.02, f"({tag})", transform=a.transAxes,
-               fontsize=22, va="bottom")
+               fontsize=FS_LABEL * SCALE, va="bottom")
     fig.tight_layout(w_pad=3.0)
     for ext in ("pdf", "png"):
         fig.savefig(args.outdir / f"fig_nanogpt_appendix.{ext}")
     plt.close(fig)
 
     # --- appendix: the downlink measurement
-    fig, ax = plt.subplots(figsize=(7.2, 5.4))
+    # printed at 0.65 of the text width, so authored at 0.65 x SCALE
+    fig, ax = plt.subplots(figsize=(0.65 * TEXT_WIDTH * SCALE, 5.4))
     panel_diag(ax, diag, ef21ms)
     fig.tight_layout()
     for ext in ("pdf", "png"):

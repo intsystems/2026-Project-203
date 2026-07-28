@@ -13,8 +13,8 @@ both with::
                          --curves centralized/curves_train_loss.json
 
 Four figures: the learning-rate sweep at 15 epochs, the 75-epoch test-accuracy
-curves, the training-loss curves, and a combined accuracy/loss figure for the
-paper body. All share three panels -- the Muon family, the EF21-compressed
+curves, the training-loss curves, and a compact accuracy figure for the paper
+body. All share three panels -- the Muon family, the EF21-compressed
 variants, and the uncompressed baselines -- with Muon repeated in each as a gray
 reference, since every comparison in the paper is against it. Each is written as
 both PNG and PDF, and authored at its printed width so a point is a point.
@@ -37,15 +37,20 @@ import matplotlib
 matplotlib.use("Agg")
 import matplotlib.pyplot as plt
 
-# Categorical slots 1-3 of the validated palette. Three is the cap: the fourth
-# slot (green) collides with orange under simulated protanopia (OKLab dE 3.2,
-# against a floor of 6), so a fourth method in one panel would be unreadable for
-# a dichromat reader. Muon is therefore chrome-gray, not a fourth hue -- which is
-# also what it is conceptually, the reference every panel is read against.
-SERIES = ["#2a78d6", "#eb6834", "#1baf7a"]
-REFERENCE = "#898781"
-INK_2, MUTED = "#52514e", "#898781"
-GRID, AXIS, SURFACE = "#e1e0d9", "#c3c2b7", "#ffffff"
+# Palette, type scale and rcParams: one module for the whole paper.
+#
+# These panels use the categorical slots 1-3 rather than the per-method colours,
+# because each panel holds three methods and reads as its own small comparison.
+# Three is the cap: the fourth slot (green) collides with orange under simulated
+# protanopia (OKLab dE 3.2, against a floor of 6), so a fourth method in one
+# panel would be unreadable for a dichromat reader. Muon is therefore chrome-gray,
+# not a fourth hue -- which is also what it is conceptually, the reference every
+# panel is read against.
+from common.plotting import (FS_LABEL, GRID, INK_2, REFERENCE, SERIES,  # noqa: E402
+                             SURFACE, TEXT_WIDTH, panel_legend, style_axes,
+                             use_paper_style)
+
+use_paper_style()
 
 #: Panels: (grouping name, the three methods). The name is not drawn -- the
 #: figure caption says what each panel holds.
@@ -188,34 +193,6 @@ def best_curve(curves: Dict, method: str, rows: List[Dict],
 # --------------------------------------------------------------------------
 
 
-def style_axes(ax) -> None:
-    # Transparent, not the surface color: the direct labels sit in the gutter
-    # to the right of each panel, and an opaque neighbour paints over them.
-    ax.patch.set_alpha(0)
-    ax.grid(True, color=GRID, linewidth=0.6, zorder=0)
-    ax.set_axisbelow(True)
-    for side in ("top", "right"):
-        ax.spines[side].set_visible(False)
-    for side in ("left", "bottom"):
-        ax.spines[side].set_color(AXIS)
-        ax.spines[side].set_linewidth(0.8)
-    ax.tick_params(colors=MUTED, labelsize=8, length=3, width=0.8)
-
-
-def panel_legend(ax, loc: str, fontsize: float = 6.2) -> None:
-    """A compact legend in an empty corner of the panel.
-
-    Two of the series colours sit below 3:1 against a white page, which the
-    palette permits only with a visible label rather than hue alone; a legend
-    entry is that label, with the swatch adjacent to the name.
-    """
-    leg = ax.legend(loc=loc, fontsize=fontsize, frameon=False, handlelength=1.3,
-                    handletextpad=0.45, labelspacing=0.22, borderpad=0.15,
-                    borderaxespad=0.3)
-    for text in leg.get_texts():
-        text.set_color(INK_2)
-
-
 # --------------------------------------------------------------------------
 # Figure 1 -- learning-rate sensitivity
 # --------------------------------------------------------------------------
@@ -228,7 +205,7 @@ def figure_lr_sensitivity(rows: List[Dict], out: Path, epochs: int = 15) -> Path
     # Shared x: the sweeps cover different learning-rate ranges, and a panel that
     # stops early should look like it stopped early rather than be rescaled to
     # fill the axes.
-    fig, axes = plt.subplots(1, 3, figsize=(7.0, 2.6), sharey=True, sharex=True)
+    fig, axes = plt.subplots(1, 3, figsize=(TEXT_WIDTH, 2.6), sharey=True, sharex=True)
 
     for ax, (title, methods) in zip(axes, PANELS):
         style_axes(ax)
@@ -257,9 +234,9 @@ def figure_lr_sensitivity(rows: List[Dict], out: Path, epochs: int = 15) -> Path
                             markeredgecolor=color, markeredgewidth=1.0, zorder=3)
 
         panel_legend(ax, "lower right")
-        ax.set_xlabel("learning rate (log scale)", color=INK_2, fontsize=8)
+        ax.set_xlabel("learning rate (log scale)", color=INK_2, fontsize=FS_LABEL)
 
-    axes[0].set_ylabel(f"test accuracy (%) at {epochs} epochs", color=INK_2, fontsize=8.5)
+    axes[0].set_ylabel(f"test accuracy (%) at {epochs} epochs", color=INK_2, fontsize=FS_LABEL)
     axes[0].set_ylim(83.5, 95.2)
     axes[0].set_xlim(1.2e-4, 1.5)
 
@@ -279,7 +256,7 @@ def figure_lr_sensitivity(rows: List[Dict], out: Path, epochs: int = 15) -> Path
 
 def figure_curves(rows: List[Dict], curves: Dict, out: Path,
                   epochs: int = 75, first_epoch: int = 3) -> Tuple[Path, List[str]]:
-    fig, axes = plt.subplots(2, 3, figsize=(7.0, 4.6), squeeze=False)
+    fig, axes = plt.subplots(2, 3, figsize=(TEXT_WIDTH, 4.6), squeeze=False)
 
     ref = best_curve(curves, REF_METHOD, rows, epochs)
     degraded: List[str] = []
@@ -328,10 +305,10 @@ def figure_curves(rows: List[Dict], curves: Dict, out: Path,
             if row == 0:
                 panel_legend(ax, "lower right")
             else:
-                ax.set_xlabel("epoch", color=INK_2, fontsize=8)
+                ax.set_xlabel("epoch", color=INK_2, fontsize=FS_LABEL)
             ax.set_xlim(start - 1, epochs + 1)
             ax.set_ylim(*ylim)
-        axes[row][0].set_ylabel(f"test accuracy (%)\n({row_name})", color=INK_2, fontsize=8.5)
+        axes[row][0].set_ylabel(f"test accuracy (%)\n({row_name})", color=INK_2, fontsize=FS_LABEL)
 
 
     fig.subplots_adjust(left=0.112, right=0.985, top=0.975, bottom=0.085,
@@ -357,7 +334,7 @@ def figure_train_loss(rows: List[Dict], curves: Dict, out: Path,
     the same configurations as the accuracy figure, so the two can be read
     side by side.
     """
-    fig, axes = plt.subplots(1, 3, figsize=(7.0, 2.7), squeeze=False)
+    fig, axes = plt.subplots(1, 3, figsize=(TEXT_WIDTH, 2.7), squeeze=False)
     degraded: List[str] = []
 
     ref = best_curve(curves, REF_METHOD, rows, epochs)
@@ -393,11 +370,11 @@ def figure_train_loss(rows: List[Dict], curves: Dict, out: Path,
                 continue
             draw(ax, got[0], color, method, got[2], got[3])
         panel_legend(ax, "upper right")
-        ax.set_xlabel("epoch", color=INK_2, fontsize=8)
+        ax.set_xlabel("epoch", color=INK_2, fontsize=FS_LABEL)
         ax.set_xlim(first_epoch - 1, epochs + 1)
         ax.set_ylim(1e-4, 3.0)
 
-    axes[0][0].set_ylabel("training loss (log scale)", color=INK_2, fontsize=8.5)
+    axes[0][0].set_ylabel("training loss (log scale)", color=INK_2, fontsize=FS_LABEL)
 
 
     fig.subplots_adjust(left=0.078, right=0.985, top=0.975, bottom=0.175, wspace=0.17)
@@ -413,63 +390,58 @@ def figure_train_loss(rows: List[Dict], curves: Dict, out: Path,
 # --------------------------------------------------------------------------
 
 
-def figure_main(rows: List[Dict], acc_curves: Dict, loss_curves: Dict, out: Path,
+def figure_main(rows: List[Dict], acc_curves: Dict, out: Path,
                 epochs: int = 75) -> Path:
-    """Test accuracy over training loss, three panels, for the paper body.
+    """Test accuracy, three panels, for the paper body.
 
-    The appendix figures are one metric each and can afford a full-run row; this
-    one has a page budget. It keeps both metrics but shows accuracy only from
-    ``ZOOM_FROM``, where the methods are a few points apart instead of twenty --
-    the early rise is in the appendix version and says nothing the loss row
-    below does not already show.
+    One metric and one row: the body figure has a page budget, and the training
+    loss it used to carry underneath separates the methods less than the
+    accuracy does -- it is in the appendix (``train_loss_75ep``) for the reader
+    who wants it. Accuracy is shown only from ``ZOOM_FROM``, where the methods
+    are a few points apart instead of twenty; the early rise is in the appendix
+    version.
     """
-    fig, axes = plt.subplots(2, 3, figsize=(7.0, 4.3), squeeze=False)
+    fig, axes = plt.subplots(1, 3, figsize=(TEXT_WIDTH, 2.5), squeeze=False)
 
-    specs = [(acc_curves, ZOOM_FROM, (90.0, 95.2), False, "test accuracy (%)"),
-             (loss_curves, 1, (1e-4, 3.0), True, "training loss")]
+    start, ylim = ZOOM_FROM, (90.0, 95.2)
+    ref = best_curve(acc_curves, REF_METHOD, rows, epochs)
+    for col, (title, methods) in enumerate(PANELS):
+        ax = axes[0][col]
+        style_axes(ax)
 
-    for row, (curves, start, ylim, log, ylabel) in enumerate(specs):
-        ref = best_curve(curves, REF_METHOD, rows, epochs)
-        for col, (title, methods) in enumerate(PANELS):
-            ax = axes[row][col]
-            style_axes(ax)
-            if log:
-                ax.set_yscale("log")
+        for color, method, is_ref in ([(REFERENCE, REF_METHOD, True)] if ref else []) + \
+                                     [(c, m, False) for c, m in zip(SERIES, methods)]:
+            got = best_curve(acc_curves, method, rows, epochs)
+            if got is None:
+                continue
+            curve, _, n_seeds, _ = got
+            pts = [(s, m, sd) for s, m, sd in
+                   zip(curve["steps"], curve["mean"], curve["std"]) if s >= start]
+            xs = [s for s, _, _ in pts]
+            ys = [m for _, m, _ in pts]
+            sd = [d for _, _, d in pts]
+            ax.plot(xs, ys, color=color, linewidth=1.5 if is_ref else 1.9,
+                    linestyle=(0, (4, 2)) if (is_ref or n_seeds < 2) else "-",
+                    zorder=2 if is_ref else 3, label=PRETTY[method])
+            if n_seeds > 1:
+                ax.fill_between(xs, [m - d for m, d in zip(ys, sd)],
+                                [m + d for m, d in zip(ys, sd)],
+                                color=color, alpha=0.18, linewidth=0, zorder=1)
 
-            for color, method, is_ref in ([(REFERENCE, REF_METHOD, True)] if ref else []) + \
-                                         [(c, m, False) for c, m in zip(SERIES, methods)]:
-                got = best_curve(curves, method, rows, epochs)
-                if got is None:
-                    continue
-                curve, _, n_seeds, _ = got
-                pts = [(s, m, sd) for s, m, sd in
-                       zip(curve["steps"], curve["mean"], curve["std"])
-                       if s >= start and (not log or (m and m > 0))]
-                xs = [s for s, _, _ in pts]
-                ys = [m for _, m, _ in pts]
-                sd = [d for _, _, d in pts]
-                ax.plot(xs, ys, color=color, linewidth=1.5 if is_ref else 1.9,
-                        linestyle=(0, (4, 2)) if (is_ref or n_seeds < 2) else "-",
-                        zorder=2 if is_ref else 3, label=PRETTY[method])
-                if n_seeds > 1:
-                    lo = [max(m - d, m / 4) if log else m - d for m, d in zip(ys, sd)]
-                    ax.fill_between(xs, lo, [m + d for m, d in zip(ys, sd)],
-                                    color=color, alpha=0.18, linewidth=0, zorder=1)
+        # A legend in an empty corner, not labels in the gutter: at the
+        # printed width of this figure a gutter wide enough for
+        # "EF21-MuonUSign" would take a third of the panel.
+        panel_legend(ax, "lower right")
+        ax.set_xlabel("epoch", color=INK_2, fontsize=FS_LABEL)
+        ax.set_xlim(start - 1, epochs + 1)
+        # Auto ticks put the first label at 40, a third of the way in; the axis
+        # starts at 25 and should say so.
+        ax.set_xticks([30, 40, 50, 60, 70])
+        ax.set_ylim(*ylim)
+    axes[0][0].set_ylabel("test accuracy (%)", color=INK_2, fontsize=FS_LABEL)
 
-            # A legend in an empty corner, not labels in the gutter: at the
-            # printed width of this figure a gutter wide enough for
-            # "EF21-MuonUSign" would take a third of the panel.
-            if row == 0:
-                panel_legend(ax, "lower right")
-                ax.set_xticklabels([])
-            else:
-                ax.set_xlabel("epoch", color=INK_2, fontsize=8)
-            ax.set_xlim(start - 1, epochs + 1)
-            ax.set_ylim(*ylim)
-        axes[row][0].set_ylabel(ylabel, color=INK_2, fontsize=8)
-
-    fig.subplots_adjust(left=0.085, right=0.985, top=0.985, bottom=0.10,
-                        wspace=0.17, hspace=0.07)
+    fig.subplots_adjust(left=0.075, right=0.985, top=0.975, bottom=0.175,
+                        wspace=0.17)
     path = out / "cifar_main.png"
     for target in (path, path.with_suffix(".pdf")):
         fig.savefig(target, dpi=200, facecolor=SURFACE)
@@ -500,6 +472,8 @@ def main() -> None:
     print(f"Wrote {path}")
     degraded += thin
 
+    print(f"Wrote {figure_main(rows, curves, args.out)}")
+
     if args.train_loss_curves.exists():
         tl_metric, tl_curves = load_curves(args.train_loss_curves)
         if tl_metric != "train_loss":
@@ -507,10 +481,8 @@ def main() -> None:
         path, thin = figure_train_loss(rows, tl_curves, args.out)
         print(f"Wrote {path}")
         degraded += thin
-        print(f"Wrote {figure_main(rows, curves, tl_curves, args.out)}")
     else:
-        print(f"[skip] {args.train_loss_curves.name} not found; no training-loss "
-              "figure, and no combined main-text figure either")
+        print(f"[skip] {args.train_loss_curves.name} not found; no training-loss figure")
 
     if degraded:
         print(f"\n[warn] fewer seeds than the summary counted: {', '.join(sorted(set(degraded)))}")

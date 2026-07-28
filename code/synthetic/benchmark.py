@@ -24,92 +24,86 @@ used throughout:
   ``W`` while the metrics are scored at the exact model ``X``; with a closed-form
   gradient either point is one matmul away.
 
-``--spectrum uniform`` (the default, and what the paper's table used) draws the
-eigenvalues from ``U(0,1)``, which bounds ``L <= 1`` but leaves the condition
-number ``L/sigma`` uncontrolled -- it comes out near ``1e4`` at ``m=n=100`` and
-near ``2.5e5`` at ``m=n=500``, and the paper never reports it. ``--spectrum
-logspace --kappa K`` fixes ``L = 1`` and ``L/sigma = K`` exactly instead, which
-is what the ``kappa`` mode sweeps.
+``--spectrum uniform`` (the default) draws eigenvalues from ``U(0,1)``, which
+bounds ``L <= 1`` and leaves ``L/sigma`` to the draw. ``--spectrum logspace
+--kappa K`` fixes ``L = 1`` and ``L/sigma = K`` exactly, which is what ``kappa``
+sweeps. Every measurement averages over three independent draws of ``(A, B)``.
 
 What each mode measures
 -----------------------
-``grid`` / ``final``
-    The paper's protocol: fewest iterations to ``F(X) <= 1e-3``, learning rate
-    and momentum tuned per method. Reproduces Tables 1 and 3.
+Everything below is a reading of the descent lemma
 
-    Read the resulting number for what it is. For every sign-family method the
-    iteration count on this problem is *exactly* inversely proportional to eta
-    (measured at ``m=n=100``: SignMuon needs 385 / 729 / 1827 / 3657 iterations
-    at eta = 1e-3 / 5e-4 / 2e-4 / 1e-4) and there is a hard eta above which the
-    method never reaches the target at all. That is the signature of a constant
-    step size on a problem whose minimizer it cannot reach: a ``+-1`` step has
-    fixed length ``eta*sqrt(mn)``, so the iterate settles into a ball of that
-    radius and ``F`` plateaus. The tuner therefore returns the largest eta whose
-    plateau still fits under the target, and "iterations to target" is
-    ``const / eta_max`` -- a measurement of the *accuracy floor*, not of the
-    descent rate. At matched eta the ranking can invert (SignSGD reaches 1e-3 in
-    1553 iterations against SignMuon's 1827 at eta = 2e-4). The ``floor`` and
-    ``horizon`` modes below separate the two effects.
+    F(X_{t+1}) <= F(X_t) - eta <grad F(X_t), D_t> + (eta^2 L / 2) ||D_t||_F^2,
+
+whose first term is the rate and whose second is the floor.
 
 ``alignment``
-    The descent lemma behind every guarantee in the paper is
+    The distribution of the normalized alignment
 
-        F(X_{t+1}) <= F(X_t) - eta <grad F(X_t), d_t> + (eta^2 L / 2) ||d_t||_F^2,
+        rho_t := <grad F(X_t), D_t> / (||grad F(X_t)||_F ||D_t||_F)
 
-    so a method makes progress exactly insofar as its normalized alignment
-
-        rho_t := <grad F(X_t), d_t> / (||grad F(X_t)||_F ||d_t||_F)
-
-    stays positive. The divergence theorems construct instances where it does
-    not. This mode measures the distribution of ``rho_t`` along the tuned
-    trajectory on *random* instances -- the empirical counterpart of those
-    theorems, and the one number here that is about the methods rather than
-    about the tuning protocol. Closed-form references it is checked against:
-    ``rho = 1`` for SGD; ``rho = ||G||_1 / (||G||_F sqrt(mn)) -> sqrt(2/pi)``
-    for SignSGD on an incoherent gradient; ``rho = ||G||_nuc / (||G||_F sqrt(r))``
-    for Muon. SignMuon, MuonUSign and MuonSign have no closed form -- that gap is
-    the paper's subject.
-
-``horizon``
-    The theory's actual claim is not "reaches 1e-3 in N steps" but a rate: for a
-    budget ``T``, tuning the step size gives
-    ``eta*(T) = sqrt(2(F_0-F_*) / (L ||s||_F^2 T))`` and error ``O(T^{-1/2})``.
-    Both exponents are predictions. This mode tunes ``(eta, momentum, schedule)``
-    separately at each ``T`` and fits ``err ~ T^-p`` and ``eta* ~ T^-q``,
-    reporting ``p`` and ``q`` against the predicted ``1/2``. The schedule is
-    tuned per method rather than imposed, because nothing says the six methods
-    want the same one.
+    along the tuned trajectory. The descent lemma makes progress contingent on
+    it, and the divergence theorems are constructions that drive it negative;
+    this is their empirical counterpart on random instances, and the one
+    measurement here that is about the methods rather than the protocol. Three
+    closed forms anchor it: ``rho = 1`` for SGD, ``||G||_1/(||G||_F sqrt(mn))``
+    for SignSGD, ``||G||_nuc/(||G||_F sqrt(r))`` for Muon. The three
+    sign-around-the-LMO methods admit none, which is the subject of the paper.
 
 ``floor``
-    The plateau ``F_inf(eta)`` and ``||grad F||_inf(eta)`` of a constant step,
-    and the fitted exponent in ``eta``. The descent lemma predicts the gradient
-    floor is linear in ``eta`` with slope ``L ||s||_F^2 / 2 rho``; since
-    ``||s||_F^2 = mn`` for *both* SignMuon and SignSGD, any difference between
-    them is attributable to ``rho`` alone, which is the cleanest available
-    version of the paper's claim.
+    The plateau ``F_inf(eta)``, ``||grad F||_inf(eta)`` of a constant step and
+    their exponents in ``eta``. Every normalized step has a floor: ``||D_t||_F``
+    is ``sqrt(mn)`` for a sign step and ``sqrt(r)`` for an LMO step whatever the
+    gradient does, so a constant ``eta`` settles into a ball of radius
+    ``eta ||S||_F`` instead of converging. Balancing the two terms of the
+    descent lemma predicts a gradient floor linear in ``eta`` with coefficient
+    ``L ||S||_F / 2 rho``. SignMuon and SignSGD share ``||S||_F = sqrt(mn)``
+    exactly, so any gap between their floors is attributable to ``rho`` alone.
+
+``horizon``
+    The rate. Tunes ``(eta, momentum, schedule)`` separately at each budget
+    ``T`` and fits ``err ~ T^-p``, ``eta* ~ T^-q``, where
+    ``err := min_t ||grad F(X_t)||_*^2`` is the squared dual norm the theorems
+    bound -- ``l1`` for the sign family, nuclear for the LMO family, see
+    ``DUAL_NORM``. ``p = q = 1/2`` is the nonconvex L-smooth regime the theorems
+    prove; ``p = q = 1`` is strongly convex, which this quadratic also is. The
+    schedule is tuned per method rather than imposed.
 
 ``stability``
-    Largest stable ``eta`` per method, by bisection. Reported both raw and as a
-    step length ``eta_max * ||s||_F``: if the operative trust region were the
-    Frobenius ball the latter would be family-independent, so the spread across
-    families measures how wrong the Frobenius bound is.
+    Largest stable ``eta``, by bisection, with SGD as the control: its value
+    must reproduce the textbook ``2/L``. Reported as a step length
+    ``eta_max ||S||_F``, which would be family-independent if the operative
+    trust region were the Frobenius ball; the spread measures how far it is.
 
 ``kappa``
-    The above at a controlled condition number, swept over decades. Conditioning
-    is the only knob that governs quadratic dynamics, and the paper currently
-    reports one uncontrolled draw.
+    Conditioning is the only knob that governs the dynamics of a quadratic, and
+    the uniform draw leaves it to chance. This sweeps it over decades at
+    ``L = 1``.
 
-Two details that carry over from the previous version
------------------------------------------------------
-* ``--lmo-dtype float32`` runs the Newton-Schulz iteration in single precision.
-  The default ``bfloat16`` matches the reference Muon implementation and is what
-  the paper's numbers used, but bfloat16 carries only ~3 decimal digits, so for
-  the methods that *sign the LMO output* (SignMuon, MuonSign) entries of
-  ``polar(M)`` near zero can flip -- a real source of run-to-run variation in the
-  iteration count on a deterministic problem.
-* ``EF21MuonSign`` is scored on its **exact** model ``X``, not on the compressed
-  broadcast model ``W`` held in ``p.data``. ``X`` is the iterate the convergence
-  theory bounds. (Scripts before the 2026-07 refactor scored ``W``.)
+``grid`` / ``final``
+    Fixed-target protocol: fewest iterations to ``F(X) <= 1e-3``, tuned per
+    method, and the loss curves at those optima. Read it as a ranking of
+    accuracy floors rather than of rates -- the iteration count comes out as
+    ``const/eta_max``, so the tuner is returning the largest ``eta`` whose
+    plateau still fits under the target. ``floor`` and ``horizon`` separate the
+    two effects; this reports the criterion itself.
+
+How a sweep is executed
+-----------------------
+Every configuration in a grid is an independent trajectory over the same
+problem, so ``--runner batched`` (the default) advances the whole
+``(eta, momentum, schedule)`` grid at once as a ``[B, m, n]`` stack; see
+``synthetic.batched``. ``--runner sequential`` is :func:`run_one` in a loop, the
+reference implementation the batched one is tested against.
+
+Two conventions that move numbers
+---------------------------------
+* ``--lmo-dtype`` sets the Newton-Schulz working precision. The default
+  ``bfloat16`` matches the reference Muon implementation but carries ~3 decimal
+  digits, so for the methods that sign the LMO *output* an entry of
+  ``polar(M)`` near zero can flip; ``float32`` removes that.
+* ``EF21MuonSign`` is scored on its **exact** model ``X``, not on the broadcast
+  model ``W`` held in ``p.data``. ``X`` is the iterate the theory bounds.
 """
 
 from __future__ import annotations
@@ -125,6 +119,7 @@ import torch
 from torch import Tensor
 
 from common.utils import results_root
+from synthetic import batched
 from common.optimizers import (
     EF21MuonSign,
     EF21MuonUSign,
@@ -157,30 +152,29 @@ DEFAULT_METHODS = list(METHOD_CLASSES)
 SIGN_FAMILY = ("signmuon", "muonsign", "signsgd")
 LMO_FAMILY = ("muon", "muonusign", "ef21muonusign", "ef21muonsign", "ef21signmuon")
 
+#: Norm dual to each method's LMO ball -- the one the convergence theorems bound
+#: ``min_t ||grad F(X_t)||_*^2`` in. A sign step minimizes over the ``l_infty``
+#: ball, so its dual is ``l_1``; an LMO step over the spectral ball, so nuclear.
+#: SGD and Adam have no LMO ball; Frobenius is its own dual.
+DUAL_NORM: Dict[str, str] = {
+    **{m: "l1" for m in SIGN_FAMILY},
+    **{m: "nuclear" for m in LMO_FAMILY},
+    "sgd": "fro", "adam": "fro",
+}
+
 
 # --------------------------------------------------------------------------
 # Learning-rate / momentum grids
 # --------------------------------------------------------------------------
 
-# Grid syntax:
-#   "lo:hi:step"  linear, inclusive of both endpoints (the paper's Table 3 form)
-#   "lo:hi:xN"    logarithmic, N points per decade, inclusive of both endpoints
+# Grid syntax: ``"lo:hi:step"`` is linear, ``"lo:hi:xN"`` logarithmic with N
+# points per decade; both endpoints inclusive.
 #
-# The paper's Table 3 grids are linear and one decade wide, which was enough to
-# leave two rows censored at a boundary and so not optima at all:
-#
-#   * SGD's reported (eta, mu) = (0.1, 0.95) is the *top* of both of its grids
-#     ([1e-2, 1e-1] and {0.1 ... 0.95}), so "SGD: 972 iterations" is an upper
-#     bound on SGD's iteration count, not its tuned value.
-#   * The two EF21 rows report optima (3.3e-3, 2.8e-3) that lie *below* their
-#     stated grid [5e-3, 2e-2] -- they came from a run whose grid is not in the
-#     repository.
-#
-# Widening a one-decade linear grid to the four decades needed here would cost
-# hundreds of points per method, so the defaults below are logarithmic. This is
-# a deliberate departure from Table 3, which must be updated to match; the
-# paper's exact linear grids are kept in ``PAPER_LR_GRIDS`` and selectable with
-# ``--grid-preset paper``.
+# The grids below are logarithmic and three to four decades wide, because the
+# optimal eta differs by three orders of magnitude across these methods -- the
+# sign family's step has fixed length eta*sqrt(mn) and SGD's scales with the
+# gradient. A grid narrow enough to miss that lands its optimum on an edge,
+# which is an upper bound and not a tuned value; ``tune`` flags any such row.
 DEFAULT_LR_GRIDS: Dict[str, str] = {
     "signmuon":      "1e-5:1e-2:x6",
     "muonusign":     "1e-5:1e-2:x6",
@@ -194,38 +188,12 @@ DEFAULT_LR_GRIDS: Dict[str, str] = {
     "adam":          "1e-3:1e+1:x6",
 }
 
-#: Table 3 exactly as printed, for ``--grid-preset paper``. Two rows cannot
-#: reproduce their own reported optimum; see the note above.
-PAPER_LR_GRIDS: Dict[str, str] = {
-    "signmuon":      "1e-4:1e-3:1e-4",
-    "muonusign":     "1e-4:1e-3:1e-4",
-    "muonsign":      "1e-4:1e-3:1e-4",
-    "ef21signmuon":  "1e-4:1e-3:1e-4",
-    "ef21muonusign": "5e-3:2e-2:1e-4",
-    "ef21muonsign":  "5e-3:2e-2:1e-4",
-    "muon":          "5e-3:2e-2:1e-3",
-    "signsgd":       "5e-5:2e-4:1e-5",
-    "sgd":           "1e-2:1e-1:1e-2",
-    "adam":          "1e-2:1e-1:1e-2",
-}
-
 DEFAULT_MOMENTUM_GRID = "0.0,0.5,0.9,0.95"
-PAPER_MOMENTUM_GRID = "0.1,0.2,0.3,0.4,0.5,0.6,0.7,0.8,0.9,0.95"
 
-# Tuned hyperparameters currently reported in the paper (Table 1). Used by
-# ``--mode final``. ``None`` means "not yet tuned".
-REPORTED_BEST: Dict[str, Optional[Tuple[float, float]]] = {
-    "signmuon":      (2e-4, 0.2),
-    "muonusign":     None,
-    "muonsign":      None,
-    "ef21signmuon":  None,
-    "ef21muonusign": (3.3e-3, 0.1),
-    "ef21muonsign":  (2.8e-3, 0.1),
-    "muon":          (6.5e-3, 0.1),
-    "signsgd":       (1.5e-4, 0.8),
-    "sgd":           (1e-1, 0.95),
-    "adam":          (7e-2, 0.0),
-}
+#: One instance per seed, results averaged. Three draws rather than one, because
+#: every statement here is about a *random* instance and one draw cannot support
+#: it -- the alignment distribution least of all.
+DEFAULT_PROBLEM_SEEDS = (1337, 1338, 1339)
 
 
 def parse_lr_grid(spec: str) -> List[float]:
@@ -283,9 +251,8 @@ class Quadratic:
         gen = torch.Generator(device=device)
         gen.manual_seed(int(seed))
 
-        # A is drawn to completion before B, matching the draw order of the
-        # pre-2026-07 generator so that ``--mode grid`` keeps generating the
-        # instance the paper's table was tuned on.
+        # A is drawn to completion before B; the order is part of what the
+        # seed pins, so changing it would silently change every instance.
         la = self._spectrum(m, spectrum, kappa, device, gen)
         self.A = self._embed(la, basis, device, gen)
         lb = self._spectrum(n, spectrum, kappa, device, gen)
@@ -303,8 +270,7 @@ class Quadratic:
     @staticmethod
     def _spectrum(dim: int, kind: str, kappa: float, device, gen) -> Tensor:
         if kind == "uniform":
-            # The paper's construction: eigenvalues ~ U(0,1), so L <= 1 but the
-            # condition number is whatever the draw gives.
+            # Eigenvalues ~ U(0,1): L <= 1, condition number left to the draw.
             return torch.rand(dim, device=device, generator=gen)
         if kind == "logspace":
             # Each factor gets condition number sqrt(kappa) and top eigenvalue 1,
@@ -333,6 +299,19 @@ class Quadratic:
         D = X if self.C is None else X - self.C
         G = self.A @ D @ self.B
         return 0.5 * float(torch.sum(D * G)), G
+
+    def value_and_grad_batched(self, X: Tensor) -> Tuple[Tensor, Tensor]:
+        """``(F, grad F)`` for a stack of iterates ``[B, m, n]``; ``F`` is ``[B]``.
+
+        ``A @ X @ B`` already broadcasts over the leading axis -- the two
+        matmuls are batched and no slice sees another -- so the only change from
+        the scalar version is that the inner product reduces over the matrix
+        axes instead of everything, and that the value stays on the device
+        rather than being pulled to the host every step.
+        """
+        D = X if self.C is None else X - self.C
+        G = self.A @ D @ self.B
+        return 0.5 * torch.sum(D * G, dim=(-2, -1)), G
 
     def initial_point(self, seed: int, scale: float = 0.1) -> Tensor:
         gen = torch.Generator(device=self.A.device)
@@ -371,18 +350,31 @@ def run_one(
     capture_alignment: bool = False,
     keep_history: bool = False,
     stop_at_target: bool = False,
+    dual_norm: Optional[str] = None,
 ) -> Dict:
     """Run one ``(method, hyperparameter)`` configuration for ``max_iters`` steps.
 
     ``iters_to_converge`` records the first iteration at which
     ``F <= target_loss`` (``max_iters`` if never). ``stop_at_target`` returns
-    there, which is what the paper's protocol needs and all it needs; the sweeps
-    leave it off because they read the plateau, which only exists after the
-    target is passed.
+    there, which is all the fixed-target protocol needs; the sweeps leave it
+    off because they read the plateau, which only exists after the target is
+    passed.
 
     ``init_seed`` fixes ``X_0``, so every configuration starts from the same
-    point and the comparison is not confounded by initialization.
+    point and the comparison is not confounded by initialization. It also pins
+    the tie-break RNG, so the run depends only on its own seeds -- see
+    ``batched.deterministic_rng``.
     """
+    with batched.deterministic_rng(init_seed, problem.A.device):
+        return _run_one_body(method, kwargs, problem, target_loss, max_iters,
+                             init_seed, lmo_dtype, schedule, capture_alignment,
+                             keep_history, stop_at_target, dual_norm)
+
+
+def _run_one_body(method, kwargs, problem, target_loss, max_iters, init_seed,
+                  lmo_dtype, schedule, capture_alignment, keep_history,
+                  stop_at_target, dual_norm) -> Dict:
+    """The loop itself. See :func:`run_one`."""
     X = torch.nn.Parameter(problem.initial_point(init_seed))
     optimizer = _build(method, X, kwargs, lmo_dtype)
     lr0 = kwargs["lr"]
@@ -402,6 +394,7 @@ def run_one(
     iters_to_converge = max_iters
     best_f = math.inf
     best_gnorm = math.inf
+    best_dual = math.inf
     f_hist: List[float] = []
     g_hist: List[float] = []
     rho_hist: List[float] = []
@@ -419,6 +412,9 @@ def run_one(
         g_hist.append(g_norm)
         best_f = min(best_f, f_val)
         best_gnorm = min(best_gnorm, g_norm)
+        if dual_norm is not None:
+            best_dual = min(best_dual, float(
+                batched.dual_norm_of(g_tracked.unsqueeze(0), dual_norm)[0]))
         if f_val <= target_loss and iters_to_converge == max_iters:
             iters_to_converge = t + 1
             if stop_at_target:
@@ -451,6 +447,9 @@ def run_one(
         "diverged": diverged,
         "time_seconds": time.time() - start,
     }
+    if dual_norm is not None:
+        out["best_dual"] = best_dual
+        out["dual_norm"] = dual_norm
     if rho_hist:
         rho_hist.sort()
         k = len(rho_hist)
@@ -472,8 +471,8 @@ def run_one(
 # Tuning
 # --------------------------------------------------------------------------
 
-#: ``objective -> (metric key, want-small)``. ``iters`` is the paper's protocol;
-#: ``best_f`` / ``best_gnorm`` are what the theory's rate statements are about.
+#: ``objective -> (metric key, want-small)``. ``iters`` is the fixed-target
+#: criterion; ``best_f`` / ``best_gnorm`` are what the rate statements are about.
 OBJECTIVES = {
     "iters": ("iters_to_converge", True),
     "best_f": ("best_f", True),
@@ -491,6 +490,52 @@ def _score(metrics: Dict, objective: str) -> Tuple[float, float]:
     return (value, metrics["best_f"])
 
 
+def run_grid(
+    method: str,
+    problems: Sequence[Quadratic],
+    configs: Sequence[Dict],
+    runner: str = "batched",
+    **run_kwargs,
+) -> List[List[Dict]]:
+    """``[instance][config]`` run records, by whichever runner is selected.
+
+    ``batched`` advances the whole configuration list as one ``[B, m, n]``
+    trajectory (see ``synthetic.batched``); ``sequential`` is the original
+    one-configuration-at-a-time loop, kept as the reference implementation. Each
+    config is ``{"lr", "momentum"?, "schedule"?, "max_iters"?}`` -- the per-config
+    budget is what ``--mode floor`` needs, since it gives small steps a
+    proportionally longer run.
+    """
+    if runner == "batched":
+        return [batched.run_configs(method, prob, configs, **run_kwargs)
+                for prob in problems]
+    if runner != "sequential":
+        raise ValueError(f"unknown runner {runner!r}")
+
+    kw = dict(run_kwargs)
+    kw.pop("compact_every", None)                  # batched-only knob
+    default_T = kw.pop("max_iters", 5000)
+    out = []
+    for prob in problems:
+        runs = []
+        for c in configs:
+            cfg = {"lr": c["lr"]}
+            if method != "adam":
+                cfg["momentum"] = c.get("momentum", 0.0)
+            runs.append(run_one(method, cfg, prob,
+                                schedule=c.get("schedule", "const"),
+                                max_iters=int(c.get("max_iters", default_T)),
+                                **kw))
+        out.append(runs)
+    return out
+
+
+def _aggregate_over_instances(per_instance: Sequence[Sequence[Dict]]) -> List[Dict]:
+    """Collapse ``[instance][config]`` to one record per config."""
+    return [_aggregate([runs[i] for runs in per_instance])
+            for i in range(len(per_instance[0]))]
+
+
 def tune(
     method: str,
     problems: Sequence[Quadratic],
@@ -499,13 +544,18 @@ def tune(
     schedules: Sequence[str],
     objective: str = "iters",
     verbose: bool = True,
+    runner: str = "batched",
     **run_kwargs,
 ) -> Dict:
     """Grid-search ``(lr, momentum, schedule)``, averaging over problem instances.
 
     Averaging is geometric on the error metrics and arithmetic on the iteration
-    count. Multiple instances are the point: one draw of ``A``, ``B`` is a single
-    sample of a random problem, and the paper reports one.
+    count. Multiple instances are the point: one draw of ``A``, ``B`` is a
+    single sample of a random problem.
+
+    The whole grid goes to the runner at once rather than one configuration per
+    call, which is what lets the batched runner exist at all; the enumeration
+    order below is the order the verbose log prints in, and is unchanged.
     """
     best: Optional[Dict] = None
     boundary_lr = (lrs[0], lrs[-1])
@@ -517,22 +567,24 @@ def tune(
     # a failed measurement, would discard a perfectly good row.
     boundary_mom = tuple(m for m in (momenta[0], momenta[-1]) if m > 0.0)
 
-    for lr in lrs:
-        for mom in (momenta if method != "adam" else [0.0]):
-            for sch in schedules:
-                cfg = {"lr": lr} if method == "adam" else {"lr": lr, "momentum": mom}
-                runs = [run_one(method, cfg, prob, schedule=sch, **run_kwargs)
-                        for prob in problems]
-                agg = _aggregate(runs)
-                if best is None or _score(agg, objective) < _score(best, objective):
-                    best = agg
-                if verbose:
-                    it = agg["iters_to_converge"]
-                    reached = agg["reached_target"]
-                    print(f"    lr={lr:<10.4g} mom={mom:<5} sch={sch:<7}"
-                          f" iters={(f'{it:.0f}' if reached else 'none'):<8}"
-                          f" best_f={agg['best_f']:.3e}"
-                          f" best_gn={agg['best_gnorm']:.3e}")
+    configs = [{"lr": lr, "momentum": mom, "schedule": sch}
+               for lr in lrs
+               for mom in (momenta if method != "adam" else [0.0])
+               for sch in schedules]
+    results = _aggregate_over_instances(
+        run_grid(method, problems, configs, runner, **run_kwargs))
+
+    for cfg, agg in zip(configs, results):
+        if best is None or _score(agg, objective) < _score(best, objective):
+            best = agg
+        if verbose:
+            it = agg["iters_to_converge"]
+            reached = agg["reached_target"]
+            print(f"    lr={cfg['lr']:<10.4g} mom={cfg['momentum']:<5}"
+                  f" sch={cfg['schedule']:<7}"
+                  f" iters={(f'{it:.0f}' if reached else 'none'):<8}"
+                  f" best_f={agg['best_f']:.3e}"
+                  f" best_gn={agg['best_gnorm']:.3e}")
 
     assert best is not None
     edges = []
@@ -558,14 +610,24 @@ def _aggregate(runs: Sequence[Dict]) -> Dict:
     out["reached_target"] = all(r["reached_target"] for r in runs)
     out["diverged"] = any(r["diverged"] for r in runs)
     out["iters_to_converge"] = sum(r["iters_to_converge"] for r in runs) / len(runs)
-    for key in ("best_f", "best_gnorm", "final_loss"):
-        out[key] = _geomean([r[key] for r in runs])
+    for key in ("best_f", "best_gnorm", "final_loss", "best_dual"):
+        if key in runs[0]:
+            out[key] = _geomean([r[key] for r in runs])
     if "rho" in runs[0]:
         out["rho"] = {k: (min(r["rho"][k] for r in runs) if k in ("min", "p01")
                           else sum(r["rho"][k] for r in runs) / len(runs))
                       for k in runs[0]["rho"]}
-    out.pop("loss_history", None)
-    out.pop("grad_norm_history", None)
+    # Curves are averaged, not dropped: ``--mode final`` is what draws them, and
+    # it runs over the same three instances as everything else. Geometric mean
+    # elementwise, matching the scalars, over the common prefix -- the runs stop
+    # at the target and so can differ in length by a few steps.
+    for key in ("loss_history", "grad_norm_history"):
+        series = [r.get(key) for r in runs]
+        if any(s is None for s in series):
+            out.pop(key, None)
+            continue
+        n = min(len(s) for s in series)
+        out[key] = [_geomean([s[t] for s in series]) for t in range(n)]
     return out
 
 
@@ -658,45 +720,34 @@ def tuned_hyperparameters(out_root: Path, method: str
                           ) -> Optional[Tuple[float, float, str, str]]:
     """``(lr, momentum, schedule, source)`` for ``--mode final``.
 
-    A grid result written by this repository wins over ``REPORTED_BEST``, which
-    is only the paper's printed table and goes stale the moment the grid is
-    re-run. The source is returned so the run log says which was used.
+    Read from this run's own ``grid.json``, so the curves are drawn at the
+    optimum the grid stage actually found; ``None`` if it has not run.
     """
     path = out_root / method / "grid.json"
-    if path.exists():
-        with open(path, encoding="utf-8") as f:
-            result = json.load(f)["result"]
-        return (result["kwargs"]["lr"], result["kwargs"].get("momentum", 0.0),
-                result.get("schedule", "const"), str(path))
-    best = REPORTED_BEST.get(method)
-    return (best[0], best[1], "const", "paper table") if best else None
-
-
-def output_slug(args) -> str:
-    """Basename of the JSON a run writes, inside ``results/synthetic/<method>/``.
-
-    The grid preset is part of it. ``--grid-preset paper`` re-runs the *grid*
-    mode on Table 3's published ranges purely to document how the old table was
-    produced; writing that into ``grid.json`` would overwrite the current tuned
-    optimum with the superseded one -- and ``--mode final`` reads ``grid.json``,
-    so the two would silently swap. They are different measurements and get
-    different files.
-    """
-    if args.mode == "grid" and getattr(args, "grid_preset", "default") != "default":
-        return f"grid-{args.grid_preset}"
-    return args.mode
+    if not path.exists():
+        return None
+    with open(path, encoding="utf-8") as f:
+        result = json.load(f)["result"]
+    return (result["kwargs"]["lr"], result["kwargs"].get("momentum", 0.0),
+            result.get("schedule", "const"), str(path))
 
 
 def mode_grid(args, problems, lr_grids, momenta, out_root) -> List[Dict]:
-    """The paper's protocol: fewest iterations to the target loss."""
+    """Fixed-target protocol: fewest iterations to the target loss.
+
+    Every configuration runs the full budget rather than stopping at the target,
+    so ``best_f`` and ``best_gnorm`` are minima over the whole trajectory and are
+    comparable with the other modes; ``iters_to_converge`` is the first crossing
+    either way.
+    """
     summary = []
     for method in args.methods:
         schedules = args.schedules
         if args.mode == "final":
             best = tuned_hyperparameters(out_root, method)
             if best is None:
-                print(f"{method}: no tuned hyperparameters anywhere -- run "
-                      f"--mode grid first. Skipping.")
+                print(f"{method}: no grid.json in {out_root} -- run --mode grid "
+                      f"first. Skipping.")
                 continue
             lrs, moms, schedules = [best[0]], [best[1]], [best[2]]
             print(f"--- {method}: lr={best[0]:g} momentum={best[1]:g} "
@@ -708,14 +759,26 @@ def mode_grid(args, problems, lr_grids, momenta, out_root) -> List[Dict]:
                      * len(schedules))
             print(f"--- {method}: {n_cfg} configuration(s) x "
                   f"{len(problems)} instance(s) ---")
-        best_metrics = tune(
-            method, problems, lrs, moms, schedules, objective="iters",
-            target_loss=args.target_loss, max_iters=args.max_iters,
-            init_seed=args.init_seed, lmo_dtype=args.lmo_dtype,
-            keep_history=args.save_histories and args.mode == "final",
-            stop_at_target=True,
-        )
-        _write(out_root, method, output_slug(args), args, problems, best_metrics)
+        common = dict(target_loss=args.target_loss, max_iters=args.max_iters,
+                      init_seed=args.init_seed, lmo_dtype=args.lmo_dtype)
+        best_metrics = tune(method, problems, lrs, moms, schedules,
+                            objective="iters", runner=args.runner,
+                            keep_history=args.save_histories
+                            and args.mode == "final", **common)
+        if args.mode == "grid":
+            # Re-run the winner on its own before reporting it. The tuner ran it
+            # inside a batch of ~30 configurations, and in bfloat16 a matmul of
+            # a different batch width can round differently -- enough to move an
+            # iteration count by a percent or two. `final` re-runs the optimum
+            # alone, so without this the table and the figure it accompanies
+            # would quote slightly different numbers for the same run.
+            opt = dict(best_metrics["kwargs"])
+            opt["schedule"] = best_metrics["schedule"]
+            edges = best_metrics["on_grid_boundary"]
+            best_metrics = _aggregate_over_instances(
+                run_grid(method, problems, [opt], args.runner, **common))[0]
+            best_metrics["on_grid_boundary"] = edges
+        _write(out_root, method, args.mode, args, problems, best_metrics)
         summary.append(best_metrics)
 
     print(f"\n{'method':<16}{'iters':>10}{'best F':>14}{'||g||':>12}   hyperparameters")
@@ -741,6 +804,7 @@ def mode_alignment(args, problems, lr_grids, momenta, out_root) -> List[Dict]:
         print(f"--- {method} ---")
         best = tune(method, problems, lrs, momenta, args.schedules,
                     objective="best_gnorm", verbose=args.verbose,
+                    runner=args.runner,
                     target_loss=args.target_loss, max_iters=args.align_iters,
                     init_seed=args.init_seed, lmo_dtype=args.lmo_dtype,
                     capture_alignment=True)
@@ -759,7 +823,7 @@ def mode_alignment(args, problems, lr_grids, momenta, out_root) -> List[Dict]:
                f"{m['kwargs'].get('momentum', 0):g}")
         if r is None:
             # torch.optim's SGD and Adam have no capture hook. SGD's rho is 1 by
-            # definition; Adam's step is not one the paper's descent lemma covers.
+            # definition; Adam's step is not one the descent lemma covers.
             print(f"{m['method']:<16}" + f"{'--':>10}" * 4
                   + f"{'--':>8}{ref_s:>13}{cfg:>18}")
             continue
@@ -782,51 +846,72 @@ def mode_horizon(args, problems, lr_grids, momenta, out_root) -> List[Dict]:
     summary = []
     for method in args.methods:
         lrs = parse_lr_grid(lr_grids[method])
+        dual = DUAL_NORM[method]
         rows = []
         for T in budgets:
             print(f"--- {method}, T={T} ---")
             best = tune(method, problems, lrs, momenta, args.schedules,
                         objective=args.objective, verbose=args.verbose,
-                        target_loss=0.0, max_iters=T,
+                        runner=args.runner, target_loss=0.0, max_iters=T,
                         init_seed=args.init_seed, lmo_dtype=args.lmo_dtype)
+            # The theorems bound min_t ||grad F||_*^2 in the norm dual to this
+            # method's LMO ball, not the Frobenius norm the tuner ranks on. The
+            # dual norm costs an SVD per step for the LMO family, so it is
+            # measured once, on a re-run of the tuned optimum, rather than
+            # across the grid.
+            opt = dict(best["kwargs"])
+            opt["schedule"] = best["schedule"]
+            at_opt = _aggregate_over_instances(run_grid(
+                method, problems, [opt], args.runner, target_loss=0.0,
+                max_iters=T, init_seed=args.init_seed,
+                lmo_dtype=args.lmo_dtype, dual_norm=dual))[0]
             rows.append({"T": T, "lr": best["kwargs"]["lr"],
                          "momentum": best["kwargs"].get("momentum"),
                          "schedule": best["schedule"],
                          "best_f": best["best_f"],
                          "best_gnorm": best["best_gnorm"],
+                         "best_dual": at_opt["best_dual"],
                          "on_grid_boundary": best["on_grid_boundary"]})
             print(f"  -> lr*={rows[-1]['lr']:.4g} sch={rows[-1]['schedule']} "
                   f"best_f={rows[-1]['best_f']:.4e} "
-                  f"best_gn={rows[-1]['best_gnorm']:.4e}")
+                  f"best_gn={rows[-1]['best_gnorm']:.4e} "
+                  f"best_{dual}={rows[-1]['best_dual']:.4e}")
 
         p_f, r2_f = loglog_fit(budgets, [r["best_f"] for r in rows])
         p_g, r2_g = loglog_fit(budgets, [r["best_gnorm"] for r in rows])
+        p_d, r2_d = loglog_fit(budgets, [r["best_dual"] for r in rows])
         q, r2_q = loglog_fit(budgets, [r["lr"] for r in rows])
-        rec = {"method": method, "rows": rows,
+        rec = {"method": method, "rows": rows, "dual_norm": dual,
                "exponent_f": -p_f, "r2_f": r2_f,
                "exponent_gnorm": -p_g, "r2_gnorm": r2_g,
+               # The reported exponent is for the *squared* dual norm, which is
+               # what the theorems bound; squaring doubles the slope exactly and
+               # leaves R^2 untouched.
+               "exponent_dual_sq": -2.0 * p_d, "r2_dual": r2_d,
                "exponent_lr": -q, "r2_lr": r2_q}
         _write(out_root, method, "horizon", args, problems, rec)
         summary.append(rec)
 
-    print(f"\n{'method':<16}{'p (||g||)':>12}{'R2':>7}{'p (F)':>10}{'R2':>7}"
-          f"{'q (eta*)':>11}{'R2':>7}")
-    print("-" * 70)
+    print(f"\n{'method':<16}{'p (||g||_*^2)':>15}{'R2':>7}{'p (||g||_F)':>13}"
+          f"{'R2':>7}{'p (F)':>9}{'R2':>7}{'q (eta*)':>10}{'R2':>7}")
+    print("-" * 91)
     for r in summary:
-        print(f"{r['method']:<16}{r['exponent_gnorm']:>12.3f}{r['r2_gnorm']:>7.3f}"
-              f"{r['exponent_f']:>10.3f}{r['r2_f']:>7.3f}"
-              f"{r['exponent_lr']:>11.3f}{r['r2_lr']:>7.3f}")
-    print("\n  Two predictions, and the fit says which regime the problem is in."
-          "\n    p = q = 1/2  the nonconvex L-smooth bound the paper's theorems "
-          "prove: the rate\n                 term (F_0-F_*)/(eta T) balances the "
-          "floor eta L ||s||_F^2 / 2.\n    p = q = 1    strongly convex, which "
-          "this quadratic is (sigma > 0): the rate term\n                 "
-          "contracts geometrically instead, so the budget-optimal eta is just "
-          "the\n                 smallest one that finishes contracting within "
-          "T, and the error is\n                 floor-limited at eta ~ 1/T."
-          "\n  SGD converges linearly with no floor, so no power law fits it at "
-          "all -- expect a\n  large p, and read its q as 'eta* is the "
-          "stability-limited one at every budget'.")
+        print(f"{r['method']:<16}{r['exponent_dual_sq']:>15.3f}{r['r2_dual']:>7.3f}"
+              f"{r['exponent_gnorm']:>13.3f}{r['r2_gnorm']:>7.3f}"
+              f"{r['exponent_f']:>9.3f}{r['r2_f']:>7.3f}"
+              f"{r['exponent_lr']:>10.3f}{r['r2_lr']:>7.3f}")
+    print("\n  p is fitted on min_t ||grad F(X_t)||_*^2, the squared dual norm "
+          "the theorems\n  bound -- l1 for the sign family, nuclear for the LMO "
+          "family. The Frobenius\n  column is the same trajectory in a "
+          "family-independent norm, for comparison\n  across rows.")
+    print("  p = q = 1/2 is the nonconvex L-smooth rate the theorems prove: the "
+          "rate term\n  (F_0-F_*)/(eta T) balanced against the floor "
+          "eta L ||s||_F^2 / 2. p = q = 1 is what a\n  strongly convex problem "
+          "gives -- which this quadratic is, sigma > 0 -- because the\n  rate "
+          "term contracts geometrically and the error is floor-limited at "
+          "eta ~ 1/T.\n  The fit therefore says which regime the instance is in. "
+          "SGD has no floor, so no\n  power law fits it: expect a large p, and "
+          "read its q as 'eta* is stability-limited\n  at every budget'.")
     return summary
 
 
@@ -837,32 +922,36 @@ def mode_floor(args, problems, lr_grids, momenta, out_root) -> List[Dict]:
     for method in args.methods:
         lrs = parse_lr_grid(lr_grids[method])
         lr_max = max(lrs)
-        rows = []
         print(f"--- {method} (momentum={mom}) ---")
-        for lr in lrs:
-            # Time to reach the plateau scales like 1/eta, so a fixed budget
-            # would leave the small-eta runs still descending and fake a floor
-            # that is really just "how far it got". Budget is scaled to match,
-            # capped so the sweep terminates.
-            iters = min(args.floor_max_iters,
-                        int(round(args.floor_iters * lr_max / lr)))
-            cfg = {"lr": lr} if method == "adam" else {"lr": lr, "momentum": mom}
-            runs = [run_one(method, cfg, p, schedule="const", target_loss=0.0,
-                            max_iters=iters, init_seed=args.init_seed,
-                            lmo_dtype=args.lmo_dtype, keep_history=True)
-                    for p in problems]
+        # Time to reach the plateau scales like 1/eta, so a fixed budget would
+        # leave the small-eta runs still descending and fake a floor that is
+        # really just "how far it got". Budget is scaled to match, capped so the
+        # sweep terminates -- and carried per configuration, so the whole eta
+        # grid can still go to the runner in one batch.
+        configs = [{"lr": lr, "momentum": mom, "schedule": "const",
+                    "max_iters": min(args.floor_max_iters,
+                                     int(round(args.floor_iters * lr_max / lr)))}
+                   for lr in lrs]
+        per_instance = run_grid(method, problems, configs, args.runner,
+                                target_loss=0.0, init_seed=args.init_seed,
+                                lmo_dtype=args.lmo_dtype, keep_history=True)
+
+        rows = []
+        for i, cfg in enumerate(configs):
+            runs = [inst[i] for inst in per_instance]
             f_pairs = [_plateau(r["loss_history"]) for r in runs]
             g_pairs = [_plateau(r["grad_norm_history"]) for r in runs]
             f_inf = _geomean([v for v, _ in f_pairs])
             g_inf = _geomean([v for v, _ in g_pairs])
             stable = all(not r["diverged"] for r in runs)
             settled = stable and all(s for _, s in g_pairs)
-            rows.append({"lr": lr, "iters": iters, "f_inf": f_inf, "g_inf": g_inf,
+            rows.append({"lr": cfg["lr"], "iters": cfg["max_iters"],
+                         "f_inf": f_inf, "g_inf": g_inf,
                          "stable": stable, "settled": settled})
             note = ("" if settled else
                     ("   DIVERGED" if not stable else "   still descending"))
-            print(f"    lr={lr:<10.4g} T={iters:<7} F_inf={f_inf:.4e} "
-                  f"|g|_inf={g_inf:.4e}{note}")
+            print(f"    lr={cfg['lr']:<10.4g} T={cfg['max_iters']:<7} "
+                  f"F_inf={f_inf:.4e} |g|_inf={g_inf:.4e}{note}")
 
         good = [r for r in rows if r["settled"]]
         if len(good) < 2:
@@ -988,6 +1077,7 @@ def mode_kappa(args, problems, lr_grids, momenta, out_root) -> List[Dict]:
             print(f"--- {method}, kappa={kappa:g} ---")
             best = tune(method, probs, lrs, momenta, args.schedules,
                         objective=args.objective, verbose=args.verbose,
+                        runner=args.runner,
                         target_loss=args.target_loss, max_iters=args.max_iters,
                         init_seed=args.init_seed, lmo_dtype=args.lmo_dtype)
             rows.append({"kappa": kappa, "lr": best["kwargs"]["lr"],
@@ -1030,10 +1120,9 @@ MODES = {
     "kappa": mode_kappa,
 }
 
-#: ``grid``/``final`` keep the paper's 500x500 problem; the sweeps run many more
-#: configurations and default to 100x100, which the tuned rankings are unchanged
-#: by and which turns hours into minutes.
-DEFAULT_SIZE = {"grid": 500, "final": 500}
+#: One size for every mode, so all of the reported numbers describe the same
+#: instance family. Override per run with ``--m/--n``.
+DEFAULT_SIZE = 100
 
 
 def _plateau(history: Sequence[float], tol: float = 0.15) -> Tuple[float, bool]:
@@ -1074,7 +1163,7 @@ def _write(out_root: Path, method: str, mode: str, args, problems, payload) -> N
             "L": p0.L, "sigma": p0.sigma, "condition_number": p0.kappa,
             "target_loss": args.target_loss, "max_iters": args.max_iters,
             "problem_seeds": args.problem_seeds, "init_seed": args.init_seed,
-            "lmo_dtype": args.lmo_dtype,
+            "lmo_dtype": args.lmo_dtype, "runner": args.runner,
         },
         "schedules": args.schedules,
         "result": payload,
@@ -1097,13 +1186,22 @@ def get_args():
     p.add_argument("--device", type=str, default="cuda:0")
     p.add_argument("--verbose", action="store_true",
                    help="print every configuration, not just the tuned one")
+    p.add_argument("--runner", choices=["batched", "sequential"],
+                   default="batched",
+                   help="'batched' advances the whole (lr, momentum, schedule) "
+                        "grid as one [B, m, n] trajectory, which is 10-40x "
+                        "faster because the per-step cost here is kernel launch "
+                        "latency, not arithmetic; 'sequential' is the original "
+                        "one-run-at-a-time loop, kept as the reference "
+                        "implementation. The two agree exactly in float32 and "
+                        "to bfloat16 rounding otherwise")
 
     g = p.add_argument_group("problem")
     g.add_argument("--m", type=int, default=None,
                    help="default: 500 for grid/final, 100 for the sweeps")
     g.add_argument("--n", type=int, default=None)
     g.add_argument("--spectrum", choices=["uniform", "logspace"], default="uniform",
-                   help="uniform: the paper's U(0,1) draw (L<=1, kappa uncontrolled); "
+                   help="uniform: U(0,1) eigenvalues (L<=1, kappa left to the draw); "
                         "logspace: L=1 and condition number exactly --kappa")
     g.add_argument("--kappa", type=float, default=1e4,
                    help="condition number for --spectrum logspace")
@@ -1125,12 +1223,9 @@ def get_args():
     g.add_argument("--lmo-dtype", choices=["bfloat16", "float32"], default="bfloat16")
     g.add_argument("--objective", choices=list(OBJECTIVES), default="best_gnorm",
                    help="what the tuner minimizes in horizon/kappa mode "
-                        "(grid/final always use the paper's iteration count)")
+                        "(grid/final always use the iteration count)")
 
     g = p.add_argument_group("grids")
-    g.add_argument("--grid-preset", choices=["default", "paper"], default="default",
-                   help="'paper' restores Table 3's linear grids, two of whose "
-                        "rows cannot reproduce their own reported optimum")
     g.add_argument("--lr-grid", nargs="*", default=[],
                    metavar="METHOD=lo:hi:step", help="override one method's grid; "
                    "'lo:hi:step' is linear, 'lo:hi:xN' is N points per decade")
@@ -1173,22 +1268,18 @@ def main() -> None:
     args = get_args()
     args.device = torch.device(args.device if torch.cuda.is_available() else "cpu")
 
-    size = DEFAULT_SIZE.get(args.mode, 100)
     if args.m is None:
-        args.m = size
+        args.m = DEFAULT_SIZE
     if args.n is None:
-        args.n = size
+        args.n = DEFAULT_SIZE
     if args.problem_seeds is None:
-        args.problem_seeds = ([1337] if args.mode in ("grid", "final")
-                              else [1337, 1338, 1339])
+        args.problem_seeds = list(DEFAULT_PROBLEM_SEEDS)
     if args.momentum_grid is None:
-        args.momentum_grid = (PAPER_MOMENTUM_GRID if args.grid_preset == "paper"
-                              else DEFAULT_MOMENTUM_GRID)
+        args.momentum_grid = DEFAULT_MOMENTUM_GRID
     if args.schedules is None:
         args.schedules = ["const", "sqrt"] if args.mode == "horizon" else ["const"]
 
-    lr_grids = dict(PAPER_LR_GRIDS if args.grid_preset == "paper"
-                    else DEFAULT_LR_GRIDS)
+    lr_grids = dict(DEFAULT_LR_GRIDS)
     for override in args.lr_grid:
         key, _, spec = override.partition("=")
         if key not in METHOD_CLASSES:

@@ -1,0 +1,25 @@
+%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%
+%  ARXIV / SELF-CONTAINED BUILD -- main paper with the appendix rejoined
+%  into a single PDF. No xr, so no cross-document reference dance, and
+%  floats are numbered in one continuous sequence.
+%
+%  Shares signmuon_preamble.tex, signmuon_body.tex and
+%  signmuon_appendix.tex with the submission build, so editing the paper
+%  updates this document too.
+%
+%  The AAAI submission is v2_SignMuon_AAAI.tex (main) plus
+%  v2_SignMuon_AAAI_supp.tex (supplementary) instead.
+%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%
+\input{signmuon_preamble}
+
+\begin{document}
+
+\input{signmuon_body}
+
+% \bibliographystyle{unsrtnat}  % aaai2027.sty sets the style automatically
+\bibliography{references}
+
+\onecolumn
+\input{signmuon_appendix}
+
+\end{document}

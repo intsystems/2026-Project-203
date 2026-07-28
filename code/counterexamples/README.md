@@ -60,8 +60,10 @@ python3 -m counterexamples.plot_ef21_momentum   # momentum sweep for Counterexam
 python3 -m counterexamples.verify_ns_oracle     # exact vs Newton–Schulz oracle
 ```
 
-`run_counterexamples.py` writes **three** figures, to both `figures/` (PNG + PDF)
-and `../aaai_article/images/counterexamples/` (PDF, which is what LaTeX includes).
+`run_counterexamples.py` writes **one** three-panel figure,
+`counterexamples_main` — one panel per counterexample, in the paper's shared
+method colours (`common.plotting`) — to both `figures/` (PNG + PDF) and
+`../aaai_article/images/counterexamples/` (PDF, which is what LaTeX includes).
 
 For the linear objectives `f(W) = Tr(Gᵀ W)` the gradient is constant, so
 `f` decreases **iff** the per-step descent inner product `⟨G, dₜ⟩` is positive.
@@ -122,6 +124,8 @@ positive linear filter of the gradients, which we invert). Divergence holds for
 identical across them, and only **EF21-SignMuon** diverges while `Muon`,
 `EF21-MuonUSign`, `SignSGD` and the others descend. It shows the `Θ(σ_min/L)`
 step-size restriction of the conditional convergence theorem cannot be replaced
-by any `(L, μ)`-only rule. Figures: `run_counterexamples.py` (the two-scale
-`ef21_signmuon_counterexample`) and [`plot_ef21_momentum.py`](plot_ef21_momentum.py)
-(the momentum sweep `ef21_signmuon_momentum`).
+by any `(L, μ)`-only rule. Figures: `run_counterexamples.py` (the right-hand panel of
+`counterexamples_main`, framed so the linear ascent is visible above the band
+the seven bounded methods sit in) and
+[`plot_ef21_momentum.py`](plot_ef21_momentum.py) (the momentum sweep
+`ef21_signmuon_momentum`).

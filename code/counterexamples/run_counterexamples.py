@@ -14,10 +14,10 @@ Outputs
 -------
 * a per-problem table of  f[0], f[T-1], the mean per-step descent inner product
   <G, d_t>, and a DIVERGES / descends verdict, and
-* three figures -- ``signmuon_counterexample``, ``muonsign_counterexample`` and
-  ``ef21_signmuon_counterexample`` -- written as PNG + PDF to ``figures/`` and as
-  PDF to ``../aaai_article/images/counterexamples/``, which is what LaTeX
-  includes.
+* one three-panel figure ``counterexamples_main`` -- SignMuon (4x4), MuonUSign
+  and MuonSign (5x5), EF21-SignMuon (2x2) -- written as PNG + PDF to
+  ``figures/`` and as PDF to ``../aaai_article/images/counterexamples/``, which
+  is what LaTeX includes.
 """
 
 from __future__ import annotations
@@ -30,8 +30,10 @@ import matplotlib
 
 matplotlib.use("Agg")            # headless-safe; figures are written to disk
 import matplotlib.pyplot as plt  # noqa: E402
-from matplotlib.ticker import MultipleLocator  # noqa: E402
 
+from common.plotting import (AXIS, FS_ANNOT, FS_LABEL, FS_LEGEND,  # noqa: E402
+                             SURFACE, TEXT_WIDTH, INK_2, color_of, figure_legend,
+                             label_of, marker_of, style_axes, use_paper_style)
 from counterexamples.optimizers import OPTIMIZERS, PAPER_METHODS, REFERENCE_METHODS  # noqa: E402
 from counterexamples.problems import (  # noqa: E402
     make_linear_problem,
@@ -40,33 +42,24 @@ from counterexamples.problems import (  # noqa: E402
     ef21_signmuon_counterexample,
 )
 
-# Per-method plot style (colours/markers consistent with the paper figures).
-# Keys are the *internal* algorithm names used by ``optimizers.py``.
-STYLES = {
-    "SignMuon":        ("#1f77b4", "^", "-"),
-    "EF21-SignMuon":   ("#8c564b", "D", (0, (5.5, 5.6))),
-    "MuonUSign":       ("#2ca02c", "s", "-"),
-    "MuonSign":      ("#e377c2", "v", (0, (3, 1, 1, 1))),
-    "EF21-MuonUSign":  ("#4A3322", "o", (0, (4, 2))),
-    "EF21-MuonSign": ("#10C5D5", "P", (0, (3, 1))),
-    "SignSGD":         ("#9467bd", "*", "-"),
-    "Muon":            ("#999999", None, (0, (1, 2))),
-}
+use_paper_style()
+
+# Colour and marker come from ``common.plotting`` -- the repository's single
+# method-to-style map -- so a method looks the same here as in the CIFAR,
+# synthetic and federated figures.  The dash pattern is local, and it earns its
+# place: this is the only figure in the paper with eight curves on one axis, and
+# on these instances several of the descending ones are exactly coincident
+# (SignSGD and MuonSign in the left panel; Muon and the two EF21 baselines in
+# both linear panels).  Cycling four patterns interleaves the dashes of
+# neighbouring methods so a covered curve still shows through the gaps.
+DASHES = [(0, (4, 2)), (0, (1.6, 1.6)), (0, (5.5, 1.6, 1, 1.6)), (0, (2.6, 1.4))]
 
 # Map the internal algorithm names to the paper's display names.  The code's
 # "sign before *and* after the LMO" method (``MuonSign``) is the paper's
 # ``MuonSign`` (Theorem 3), and its error-feedback counterpart ``EF21-MuonSign``
 # is the paper's bidirectional ``EF21-MuonSign``.  Everything else is unchanged.
-DISPLAY_NAMES = {
-    "SignMuon":        "SignMuon",
-    "EF21-SignMuon":   "EF21-SignMuon",
-    "MuonUSign":       "MuonUSign",
-    "MuonSign":      "MuonSign",
-    "EF21-MuonUSign":  "EF21-MuonUSign",
-    "EF21-MuonSign": "EF21-MuonSign",
-    "SignSGD":         "SignSGD",
-    "Muon":            "Muon",
-}
+DISPLAY_NAMES = {name: label_of(name) for name in
+                 PAPER_METHODS + REFERENCE_METHODS}
 
 # Divergence tests.  For a LINEAR objective f(W)=Tr(G^T W), f decreases iff the
 # per-step descent inner product <G, d_t> is positive, so the exact, eta/T-free
@@ -82,11 +75,8 @@ DISPLAY_NAMES = {
 DIVERGE_TOL = 1e-6
 SLOPE_TOL = 1e-3
 
-# Shared visual style (kept in sync with plot_ef21_momentum.py).
-LABEL_FS, TICK_FS, LEG_FS = 18, 13, 12.5
-# Iterations shown in the magnified panel: past this the bounded methods just
-# repeat their period-2 cycle, so a short window keeps the panel readable.
-MAGNIFIED_WINDOW = 60
+# The figure is authored at its printed width (``TEXT_WIDTH``, a two-column
+# float), so every point size below is a point on the page.
 
 
 def run(opt_cls, grad_fn, loss_fn, shape, T, eta, mu, nesterov):
@@ -148,26 +138,64 @@ def run_problem(title, grad_fn, loss_fn, shape, T, eta, mu, nesterov,
     return results, diverging
 
 
-def _draw_curves(ax, results, diverging, T, markers=True):
-    """Plot every trajectory on ``ax`` with the shared per-method style.
+def _draw_curves(ax, results, diverging, T, order):
+    """Plot every trajectory on ``ax``.
 
-    ``markers=False`` draws lines only, which is much cleaner when several
-    bounded curves are packed into a narrow band (the magnified panel)."""
-    for name, losses in results.items():
-        color, marker, ls = STYLES[name]
+    The diverging method is the point of each panel, so it is solid, heavier and
+    on top. The other seven are not background: they carry the claim that every
+    other method descends, so they are drawn at a weight that survives printing
+    and are separated from one another by dash pattern and by staggered markers
+    (``markevery`` offset) rather than by being faint.
+    """
+    for i, name in enumerate(order):
+        losses = results[name]
         emph = name in diverging
         ax.plot(
-            losses, label=DISPLAY_NAMES[name], color=color, linestyle=ls, alpha=0.95,
-            linewidth=4.4 if emph else 2.6,
-            marker=marker if markers else None, markersize=12 if emph else 9,
-            markerfacecolor=color, markeredgecolor="white", markeredgewidth=1.3,
-            markevery=max(1, T // 12), solid_capstyle="round",
-            zorder=6 if emph else 3,
+            np.arange(len(losses)), losses, label=DISPLAY_NAMES[name],
+            color=color_of(name), linewidth=2.0 if emph else 1.5,
+            linestyle="-" if emph else DASHES[i % len(DASHES)],
+            marker=marker_of(name) or None, markersize=3.8 if emph else 3.2,
+            markeredgecolor=SURFACE, markeredgewidth=0.5,
+            markevery=(2 * i, max(1, T // 6)),
+            zorder=5 if emph else 3, clip_on=True,
         )
-    ax.axhline(0, color="black", linewidth=1.0, alpha=0.5, zorder=1)
-    ax.set_xlabel("Iteration", fontsize=LABEL_FS)
-    ax.tick_params(axis="both", labelsize=TICK_FS, length=6, width=1.3)
-    ax.grid(True, linestyle="--", linewidth=0.9, alpha=0.25, zorder=0)
+    ax.axhline(0, color=AXIS, linewidth=0.8, zorder=1)
+    ax.set_xlabel("iteration", color=INK_2, fontsize=FS_LABEL)
+    ax.set_xlim(-T * 0.02, T * 1.02)
+
+
+def _annotate_diverging(ax, results, diverging, T, top=None):
+    """Name each ascending curve directly above the curve, in its own colour.
+
+    Directly, not with a leader line into a corner: at this panel size an arrow
+    long enough to reach a free corner crosses the very curve it points at. The
+    anchor is taken inside the frame, so in the third panel -- where
+    EF21-SignMuon climbs out of the top -- the label sits on the visible ascent.
+    """
+    for i, name in enumerate(diverging):
+        curve = np.asarray(results[name])[:T]
+        inside = np.where(curve <= top)[0] if top is not None \
+            else np.arange(len(curve))
+        if not inside.size:
+            continue
+        # Staggered along the x-axis: two ascending curves in one panel put
+        # their labels at the same height otherwise, and the shallower one lands
+        # on the steeper one.
+        frac = 0.55 - 0.18 * i
+        k = int(inside[min(len(inside) - 1, int(frac * len(inside)))])
+        # Above the curve by default -- an ascending curve leaves its upper-left
+        # empty -- but below it when a steeper ascent runs overhead, which is the
+        # MuonUSign/MuonSign panel.
+        overhead = any(np.asarray(results[other])[k] > curve[k]
+                       for other in diverging if other != name)
+        ax.annotate(
+            DISPLAY_NAMES[name] + r" $\uparrow$",
+            xy=(k, curve[k]), xytext=(-5, -6 if overhead else 6),
+            textcoords="offset points", color=color_of(name),
+            fontstyle="italic", ha="right",
+            va="top" if overhead else "bottom",
+            fontsize=FS_ANNOT, zorder=6,
+        )
 
 
 def _save(fig, outfiles):
@@ -176,97 +204,41 @@ def _save(fig, outfiles):
     paper's image dir gets the PDF only (LaTeX embeds the vector version)."""
     msgs = []
     for stem, want_png in outfiles:
-        fig.savefig(stem + ".pdf", bbox_inches="tight")
+        fig.savefig(stem + ".pdf", facecolor=SURFACE)
         if want_png:
-            fig.savefig(stem + ".png", bbox_inches="tight", dpi=150)
+            fig.savefig(stem + ".png", dpi=200, facecolor=SURFACE)
         msgs.append(stem + (".{png,pdf}" if want_png else ".pdf"))
     plt.close(fig)
     print(f"  saved -> {', '.join(msgs)}")
 
 
-def plot_problem(results, diverging, outfiles, T,
-                 ylabel=r"$f(W) = \mathrm{Tr}(G^\top W)$"):
-    """Single-panel line plot of every trajectory, emphasising the diverging
-    method(s).  No plot title is drawn (the paper adds LaTeX captions); legends
-    use the paper's display names.  Each diverging method gets a colour-matched
-    arrow.  ``outfiles`` is a list of ``(stem, want_png)`` targets."""
-    fig, ax = plt.subplots(figsize=(10, 6.5))
-    _draw_curves(ax, results, diverging, T)
-    ax.set_ylabel(ylabel, fontsize=LABEL_FS)
-    for i, name in enumerate(diverging):
-        color = STYLES[name][0]
-        k = int(T * (0.42 + 0.14 * i))
-        ax.annotate(
-            DISPLAY_NAMES[name] + " diverges",
-            xy=(k, results[name][k]),
-            xytext=(0.30, 0.94 - 0.075 * i), textcoords="axes fraction",
-            color=color, fontstyle="italic", ha="left", fontsize=14,
-            arrowprops=dict(arrowstyle="->", color=color, lw=1.8),
-        )
-    ax.legend(loc="lower left", fontsize=LEG_FS, frameon=True, framealpha=0.95,
-              edgecolor="0.75", ncol=2)
-    fig.tight_layout()
-    _save(fig, outfiles)
+def plot_panels(panels, outfiles):
+    """One three-panel figure: the three counterexamples side by side.
 
+    ``panels`` is a list of dicts with the keys ``results``, ``diverging``,
+    ``T``, ``ylabel`` and optionally ``ylim``.  No panel titles are drawn --- the
+    paper's subcaptions name them --- and a single legend sits under all three,
+    since the eight methods are the same in every panel.
+    """
+    order = PAPER_METHODS + REFERENCE_METHODS
+    fig, axes = plt.subplots(1, 3, figsize=(TEXT_WIDTH, 2.35), squeeze=False)
 
-def plot_two_scales(results, diverging, outfiles, T, ylabel, mag_top=None):
-    """Two side-by-side panels for a *bounded* objective where one method
-    dominates the axis: (left) full scale, so the diverging method is visible;
-    (right) magnified so the bounded methods' decrease is visible while the
-    diverging curve climbs out of the frame.  ``mag_top`` sets the magnified
-    panel's upper y-limit: raising it above the bounded band (e.g. 1.2) keeps a
-    stretch of the diverging curve's sustained ascent in view; ``None`` fits the
-    bounded methods only.  A single legend sits below both; no panel titles are
-    drawn (the paper's caption names left and right)."""
-    fig, (axL, axR) = plt.subplots(1, 2, figsize=(13, 5.6))
-    _draw_curves(axL, results, diverging, T, markers=True)
-    win = min(MAGNIFIED_WINDOW, T)
-    _draw_curves(axR, results, diverging, win, markers=True)  # short window
-    axL.set_ylabel(ylabel, fontsize=LABEL_FS)
+    for ax, p in zip(axes[0], panels):
+        style_axes(ax)
+        T = p["T"]
+        _draw_curves(ax, p["results"], p["diverging"], T, order)
+        if p.get("ylim"):
+            ax.set_ylim(*p["ylim"])
+        if p["ylabel"]:
+            ax.set_ylabel(p["ylabel"], color=INK_2, fontsize=FS_LABEL)
+        _annotate_diverging(ax, p["results"], p["diverging"], T,
+                            top=p["ylim"][1] if p.get("ylim") else None)
 
-    # left: annotate the diverging method on the full scale
-    for i, name in enumerate(diverging):
-        axL.annotate(
-            DISPLAY_NAMES[name] + " diverges",
-            xy=(int(T * 0.42), results[name][int(T * 0.42)]),
-            xytext=(0.06, 0.88), textcoords="axes fraction",
-            color=STYLES[name][0], fontstyle="italic", ha="left",
-            fontsize=TICK_FS + 1,
-            arrowprops=dict(arrowstyle="->", color=STYLES[name][0], lw=1.8),
-        )
+    handles, labels = axes[0][0].get_legend_handles_labels()
+    figure_legend(fig, handles, labels, ncol=8, fontsize=FS_LEGEND)
 
-    # right: magnify to the bounded methods' band over the first `win` steps
-    # (past this they just repeat the period-2 cycle).  If mag_top is given, the
-    # ceiling is raised above that band so the diverging curve stays visible
-    # climbing until it exits the top -- the sustained ascent, not just an
-    # off-scale arrow.
-    bounded = [v for n, v in results.items() if n not in diverging]
-    lo = min(float(v[:win].min()) for v in bounded)
-    hi = max(float(v[:win].max()) for v in bounded)
-    pad = 0.12 * (hi - lo)
-    top = hi + pad if mag_top is None else mag_top
-    axR.set_xlim(-0.5, win - 0.5)
-    axR.set_ylim(lo - pad, top)
-    # clean round ticks (…, -0.5, 0, 0.5, 1.0) instead of matplotlib's auto 0.25 grid
-    axR.yaxis.set_major_locator(MultipleLocator(0.5))
-    for name in diverging:
-        curve = results[name]
-        # anchor the arrow on the still-visible, climbing part of the curve
-        below = np.where(curve[:win] <= top)[0]
-        k = int(below[-1]) if below.size else 1
-        axR.annotate(
-            DISPLAY_NAMES[name] + r" diverges $\uparrow$",
-            xy=(k, min(float(curve[k]), top)), xytext=(0.30, 0.80),
-            textcoords="axes fraction", color=STYLES[name][0],
-            fontstyle="italic", ha="left", fontsize=TICK_FS + 1,
-            arrowprops=dict(arrowstyle="->", color=STYLES[name][0], lw=1.6),
-        )
-
-    handles, labels = axL.get_legend_handles_labels()
-    fig.legend(handles, labels, loc="lower center", ncol=4, fontsize=LEG_FS,
-               frameon=True, framealpha=0.95, edgecolor="0.75",
-               bbox_to_anchor=(0.5, -0.02))
-    fig.tight_layout(rect=(0, 0.09, 1, 1))
+    fig.subplots_adjust(left=0.095, right=0.995, top=0.97, bottom=0.30,
+                        wspace=0.24)
     _save(fig, outfiles)
 
 
@@ -317,39 +289,39 @@ def main():
     G2, _ = muonsign_counterexample(eps=1.0, M=100.0)
     grad1, loss1 = make_linear_problem(G1)
     grad2, loss2 = make_linear_problem(G2)
-    lin_ylabel = r"$f(W) = \mathrm{Tr}(G^\top W)$"
-    quad_ylabel = (r"$f(\mathbf{W})=-\gamma W_{22}"
-                   r"+A\sum_i\Phi_i+\sum_k b_k$")
+    lin_ylabel = r"$f(\mathbf{W})=\mathrm{Tr}(\mathbf{G}^\top\mathbf{W})$"
     problems = [
         dict(
             title="Counterexample 1 -- SignMuon (Theorem 1)",
             grad_fn=grad1, loss_fn=loss1, shape=G1.shape, eta=1e-3, T=60,
             mu=0.0, verdict_mode="inner", ylabel=lin_ylabel,
-            outfiles=stems("signmuon_counterexample"),
         ),
         dict(
             title="Counterexample 2 -- MuonSign / MuonUSign (Theorems 2--3)",
             grad_fn=grad2, loss_fn=loss2, shape=G2.shape, eta=5e-3, T=60,
-            mu=0.0, verdict_mode="inner", ylabel=lin_ylabel,
-            outfiles=stems("muonsign_counterexample"),
+            # No ylabel: this panel plots the same objective as the one to its
+            # left, and repeating the formula only costs panel width.
+            mu=0.0, verdict_mode="inner", ylabel="",
         ),
         dict(
-            title="Counterexample 3 -- EF21-SignMuon (Appendix theorem)",
+            title="Counterexample 3 -- EF21-SignMuon (Theorem 4)",
             # The universal construction depends on (mu, variant); it is rebuilt
             # per run below.  It diverges for EVERY mu in [0,1) and both variants
             # (the iterate trajectory is identical), so any mu witnesses it.
-            # The objective is bounded below, so the bounded methods stay near
-            # the floor while EF21-SignMuon dominates the axis: use a two-scale
-            # (full + magnified) figure.
-            builder=ef21_signmuon_counterexample, eta=1.0, T=600,
-            mu=0.0, verdict_mode="slope", ylabel=quad_ylabel, twoscale=True,
-            # magnified panel: raise the ceiling to 1.2 so EF21-SignMuon's
-            # sustained climb is visible (not just the bounded band).
-            mag_top=1.2,
-            outfiles=stems("ef21_signmuon_counterexample"),
+            #
+            # This objective is bounded below, so the seven other methods sit in
+            # a narrow band near the floor while EF21-SignMuon climbs away at
+            # 49/480 per step.  ``ylim`` frames that band and then leaves room
+            # above it: enough of the ascent is in view for its slope to read as
+            # a straight line, and the band below is still thick enough to see
+            # the bounded methods separate.
+            builder=ef21_signmuon_counterexample, eta=1.0, T=60,
+            mu=0.0, verdict_mode="slope", ylim=(-1.2, 6.5),
+            ylabel=r"$f(\mathbf{X}_t)$",
         ),
     ]
 
+    panels = []
     for p in problems:
         eta = args.eta if args.eta is not None else p["eta"]
         T = args.T if args.T is not None else p["T"]
@@ -361,11 +333,10 @@ def main():
         results, diverging = run_problem(
             p["title"], grad_fn, loss_fn, shape, T, eta,
             mu, args.nesterov, verdict_mode=p["verdict_mode"])
-        if p.get("twoscale"):
-            plot_two_scales(results, diverging, p["outfiles"], T, p["ylabel"],
-                            mag_top=p.get("mag_top"))
-        else:
-            plot_problem(results, diverging, p["outfiles"], T, ylabel=p["ylabel"])
+        panels.append(dict(results=results, diverging=diverging, T=T,
+                           ylabel=p["ylabel"], ylim=p.get("ylim")))
+
+    plot_panels(panels, stems("counterexamples_main"))
 
 
 if __name__ == "__main__":

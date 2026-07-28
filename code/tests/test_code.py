@@ -1288,16 +1288,19 @@ def test_averaging_polar_factors_shrinks_the_step_but_polar_of_the_average_does_
 
 
 def test_communication_accounting_is_honest_about_the_round_trip():
-    """The "32x reduction" holds for the uplink alone, not for the round trip.
+    """The "32x reduction" holds per channel, not for every method's round trip.
 
-    Four of the six methods broadcast a full-precision model every round, so their
-    round-trip saving is under 2x however good the uplink is. Only the two
-    bidirectional methods compress both ways. That is the argument *for* them, and
-    it is why the number has to be computed rather than quoted.
+    A downlink is one bit exactly when the object the server distributes is already
+    +-1-valued: the majority vote (SignMuon, SignSGD), a signed LMO output
+    (MuonSign), or a primal EF21 residual (EF21-MuonSign). The three methods whose
+    server-side quantity is dense -- polar(.) or a scaled average of signs -- must
+    broadcast a full-precision model, so their round trip stays under 2x however
+    good the uplink is. Reading this off ``spec.downlink`` gets SignMuon wrong,
+    which is why ``compresses_downlink`` exists.
     """
     from federated.algorithms import communication_bits
 
-    n_mat, n_aux = 762_560, 2_146            # CNN2
+    n_mat, n_aux, n_lay = 762_560, 2_146, 3            # CNN2
 
     # Even a strictly +-1 uplink costs MORE than 1 bit per parameter model-wide,
     # because the auxiliary group rides along uncompressed. On CNN2 that group is
@@ -1312,16 +1315,37 @@ def test_communication_accounting_is_honest_about_the_round_trip():
     assert real["uplink_reduction"] < clean["uplink_reduction"]
     assert 20 < real["uplink_reduction"] < 25, real["uplink_reduction"]
 
-    # Uplink-only methods: the round trip is dominated by the 32-bit downlink.
-    for name in ("signmuon", "muonusign", "ef21muonusign", "ef21signmuon"):
+    # Dense server-side quantity: the round trip is dominated by the 32-bit
+    # downlink. polar(.) for the two server-LMO methods, a scaled average of
+    # signs for EF21-SignMuon.
+    for name in ("muonusign", "ef21muonusign", "ef21signmuon"):
         c = communication_bits(name, n_mat, n_aux, 0.10)
         assert c["downlink_reduction"] < 1.01, name
         assert c["round_trip_reduction"] < 2.0, (name, c["round_trip_reduction"])
 
-    # Bidirectional methods actually deliver an order of magnitude.
-    for name in ("muonsign", "ef21muonsign"):
-        c = communication_bits(name, n_mat, n_aux, 0.10)
+    # +-1-valued server-side quantity: an order of magnitude in BOTH directions.
+    # signmuon and signsgd are here because the majority vote is itself the
+    # broadcast -- the server never sends the model.
+    for name in ("signmuon", "signsgd", "muonsign", "ef21muonsign"):
+        c = communication_bits(name, n_mat, n_aux, 0.0)
+        assert c["downlink_reduction"] > 20, (name, c["downlink_reduction"])
         assert c["round_trip_reduction"] > 20, (name, c["round_trip_reduction"])
+
+    # Error feedback pays one full-precision scale per matrix layer, on each EF21
+    # channel: 32*3 bits on the uplink for every EF21 method, and again on the
+    # downlink for the bidirectional one. Small on CNN2, but it must be counted,
+    # and it must NOT be charged to a method that has no EF21 channel.
+    for name in ("ef21signmuon", "ef21muonusign", "ef21muonsign"):
+        bare = communication_bits(name, n_mat, n_aux, 0.0, n_layers=0)
+        with_s = communication_bits(name, n_mat, n_aux, 0.0, n_layers=n_lay)
+        assert with_s["uplink_bits_per_param"] > bare["uplink_bits_per_param"], name
+    down_scaled = communication_bits("ef21muonsign", n_mat, n_aux, 0.0, n_layers=n_lay)
+    down_bare = communication_bits("ef21muonsign", n_mat, n_aux, 0.0, n_layers=0)
+    assert down_scaled["downlink_bits_per_param"] > down_bare["downlink_bits_per_param"]
+    for name in ("signmuon", "muonsign", "signsgd", "muon"):
+        a = communication_bits(name, n_mat, n_aux, 0.0, n_layers=0)
+        b = communication_bits(name, n_mat, n_aux, 0.0, n_layers=n_lay)
+        assert a == b, f"{name} has no error-feedback channel to carry a scale"
 
     # The uncompressed references save nothing, in either direction.
     for name in ("muon", "muonserver", "sgd", "adam"):
@@ -1782,6 +1806,137 @@ def test_capture_direction_records_the_step_actually_taken():
     p.grad = torch.randn(6, 5)
     opt.step()
     assert "last_direction" not in opt.state[p]
+
+
+def test_batched_runner_reproduces_the_sequential_one():
+    """The load-bearing test for ``synthetic.batched``.
+
+    The batched runner advances a whole ``(lr, momentum, schedule)`` grid as one
+    ``[B, m, n]`` trajectory, which is the only reason the sweeps finish in
+    minutes rather than hours -- but it is a second implementation of all ten
+    update rules, so nothing stops it drifting from ``run_one`` except this.
+    ``run_one`` is the reference: it drives the real ``common.optimizers``
+    classes and ``torch.optim``, so agreement here ties the fast path back to
+    the same code the deep-learning experiments use.
+
+    The grid deliberately mixes all three schedules, a shorter per-config budget
+    and a wildly oversized step, and runs with ``stop_at_target`` both off and
+    on, because those are the paths where the two drivers' *control flow*
+    differs rather than their arithmetic: ``run_one`` breaks out of its loop,
+    the batched runner masks the slice and drops it at the next compaction.
+
+    **Why the horizon is short.** A batched matmul reduces in a different order
+    from a single one, so the two runners see gradients differing at the last
+    float32 bit. Measured on this problem that stays at ``1e-7`` for ~20 steps
+    and then amplifies, because ``sign`` is discontinuous: an entry of ``M`` or
+    of ``polar(M)`` within rounding of zero flips and the step changes by
+    ``O(1)``. That is a property of the methods -- the one this paper is about --
+    not of batching, and any change of GPU or BLAS does the same. So this pins
+    the update rules, where the two must agree exactly, and leaves the
+    long-horizon behaviour to the aggregates, which are stable: measured at
+    ``100x100`` over 800 steps the two agree to ``3e-3`` on ``best_f`` and
+    ``1e-5`` on the alignment statistics.
+    """
+    from synthetic.benchmark import Quadratic, run_grid, DEFAULT_METHODS
+
+    prob = Quadratic(9, 7, torch.device("cpu"), seed=1337, spectrum="uniform")
+    configs = [
+        {"lr": 3e-3, "momentum": 0.0, "schedule": "const"},
+        {"lr": 1e-2, "momentum": 0.9, "schedule": "sqrt"},
+        {"lr": 5e-2, "momentum": 0.5, "schedule": "linear"},
+        {"lr": 2e-1, "momentum": 0.0, "schedule": "const", "max_iters": 9},
+        # Wild step and heavy momentum: the only config that trips the
+        # divergence exit (SGD does; a normalized step oscillates at a large
+        # radius rather than blowing up). Its *values* are not compared -- see
+        # UNSTABLE below -- only its control flow, which is the point of it.
+        {"lr": 5e+1, "momentum": 0.95, "schedule": "const", "max_iters": 8},
+    ]
+    # Configs whose trajectory is compared only through its control flow. On an
+    # oversized step F swings over three orders of magnitude between
+    # consecutive iterates, so a float32 last-bit difference between the two
+    # runners becomes O(1) within a few steps -- for EF21-SignMuon by step 2.
+    # Comparing values there would be measuring that amplification, which is a
+    # property of the method (and Theorem 4's subject), not of the runner.
+    UNSTABLE = {4}
+    scalars = ("iters_to_converge", "reached_target", "diverged")
+    # Tolerances are scaled by the largest value on the trajectory, not by the
+    # value being compared. Rounding enters at ``ulp * max|F|`` and stays there;
+    # a step that drops F from 1225 to 0.031 -- which the oversized config does
+    # -- turns three ulp at the top into 1e-4 *relative* at the bottom, and a
+    # pointwise relative tolerance would be measuring that cancellation rather
+    # than any disagreement between the runners.
+    floats = {"best_f": "loss_history", "final_loss": "loss_history",
+              "best_gnorm": "grad_norm_history"}
+
+    for method in DEFAULT_METHODS:
+        for stop_at_target in (False, True):
+            kw = dict(target_loss=1e-2, max_iters=20, init_seed=42,
+                      lmo_dtype="float32", keep_history=True,
+                      capture_alignment=True, stop_at_target=stop_at_target)
+            torch.manual_seed(0)
+            seq = run_grid(method, [prob], configs, "sequential", **kw)[0]
+            torch.manual_seed(0)
+            # A compaction period that divides none of the budgets, so slices
+            # are carried dead for a while and then dropped mid-run.
+            bat = run_grid(method, [prob], configs, "batched",
+                           compact_every=7, **kw)[0]
+
+            for i, (a, b) in enumerate(zip(seq, bat)):
+                where = f"{method}, config {i}, stop={stop_at_target}"
+                for key in scalars:
+                    assert a[key] == b[key], f"{where}: {key} {a[key]} != {b[key]}"
+                assert len(a["loss_history"]) == len(b["loss_history"]), (
+                    f"{where}: recorded {len(a['loss_history'])} steps vs "
+                    f"{len(b['loss_history'])} -- the two drivers disagree "
+                    f"about when a run stops")
+                if i in UNSTABLE:
+                    continue
+                for key, series in floats.items():
+                    if a[key] != a[key]:                      # NaN
+                        assert b[key] != b[key], f"{where}: {key}"
+                        continue
+                    scale = max([abs(v) for v in a[series] if v == v]
+                                + [abs(a[key]), 1e-12])
+                    # 1e-4 of the trajectory's scale is ~800 float32 ulp: loose
+                    # enough that a different BLAS on the GPU box cannot fail
+                    # this, tight enough that any real disagreement -- a wrong
+                    # momentum form, a swapped rule -- is O(1) and caught.
+                    assert abs(a[key] - b[key]) <= 1e-4 * scale, (
+                        f"{where}: {key} {a[key]!r} != {b[key]!r} "
+                        f"(scale {scale:.3e})")
+                assert ("rho" in a) == ("rho" in b), where
+                if "rho" in a:
+                    # rho lives in [-1, 1], so an absolute 1e-3 is strict; the
+                    # oversized config reaches 7e-5 on its own.
+                    for key, va in a["rho"].items():
+                        assert abs(va - b["rho"][key]) < 1e-3, (
+                            f"{where}: rho[{key}] {va!r} != {b['rho'][key]!r}")
+
+
+def test_batched_ef21_reduces_per_slice_not_over_the_batch():
+    """``alpha_t = mean|Delta_t|`` is per configuration, not per batch.
+
+    The failure this guards against is silent: a global ``.mean()`` over the
+    stacked residual broadcasts fine and returns plausible numbers, but it hands
+    every run in the batch the same compressor magnitude, so a grid point's
+    trajectory would depend on which other learning rates happened to be swept
+    alongside it. Two batches containing the same configuration must agree.
+    """
+    from synthetic.batched import ef21_step
+    from common.optimizers import _EF21Mixin
+
+    torch.manual_seed(0)
+    targets = torch.randn(3, 5, 4)
+    targets[1] *= 1000.0                     # a slice that would dominate a global mean
+
+    est = torch.zeros_like(targets)
+    ef21_step(targets, est)
+
+    for i in range(3):
+        state = {}
+        want = _EF21Mixin._ef21_update(targets[i], state, "e")
+        assert torch.allclose(est[i], want, atol=1e-6), (
+            f"slice {i} differs from the shared single-matrix implementation")
 
 
 def test_plateau_detector_separates_settled_from_still_descending():

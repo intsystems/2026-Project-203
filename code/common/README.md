@@ -10,6 +10,28 @@ different algorithms under the same name.
 | [`lr_scaling.py`](lr_scaling.py) | Per-layer learning-rate rules, derived rather than tuned |
 | [`models.py`](models.py) | `CNN2`, `ResNet9`, `ResNet18` |
 | [`utils.py`](utils.py) | Seeding, run directories, the metrics schema, parameter routing, the cosine schedule |
+| [`plotting.py`](plotting.py) | The one figure style: palette, method→colour/marker map, page geometry, rcParams |
+
+## `plotting.py`
+
+Every plotting script — centralized, counterexamples, synthetic, federated,
+nanoGPT — starts with `use_paper_style()` and takes its colours from `color_of`.
+Two things follow from that, and both are the reason the module exists:
+
+* **A method has one colour in the whole paper.** A reader who learns that green
+  is Muon in Figure 2 should not have to relearn it in Figure 3.
+* **A figure matches `aaai2027.sty`.** Times text and STIX math (the template
+  loads `newtxtext`), and `pdf.fonttype = 42` — matplotlib's default emits
+  **Type 3** fonts, which AAAI forbids; the style file raises an error for `bbm`
+  on exactly those grounds.
+
+Sizes are in printed points, so author at `TEXT_WIDTH` (7.0 in, a `figure*`) or
+`COLUMN_WIDTH` (3.3125 in, a `figure`), include at `width=\textwidth` or
+`\columnwidth`, and skip the tight bounding box (`save_figure(..., tight=False)`,
+or `fig.savefig` without `bbox_inches`) — trimming margins makes LaTeX scale the
+figure back up and takes every point size with it. A script that must draw
+oversize (`nanogpt/plot_article.py`, whose insets need the room) passes
+`use_paper_style(scale=k)` with `k` the ratio of canvas to printed width.
 
 ## `optimizers.py`
 

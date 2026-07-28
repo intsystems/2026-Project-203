@@ -231,11 +231,14 @@ def _tex(s: Any) -> str:
 def as_latex_row(experiment: str, info: Dict[str, Any]) -> str:
     gpu = info.get("gpu") or "CPU only"
     mem = info.get("gpu_memory_gb")
-    gpu_s = f"{gpu}, {mem:g}\\,GB" if mem else gpu
+    # The thin space is assembled *after* escaping. ``_tex`` maps a backslash to
+    # a slash -- vendor strings contain Windows paths, not TeX -- so building
+    # "15.6\,GB" first and escaping it afterwards yields "15.6/,GB".
+    gpu_s = _tex(gpu) + (f", {mem:g}\\,GB" if mem else "")
     sw = " / ".join(x for x in (info.get("torch"),
                                 f"CUDA {info['cuda']}" if info.get("cuda") else None)
                     if x)
-    return (f"{_tex(experiment)} & {_tex(gpu_s)} & {_tex(info.get('cpu'))} & "
+    return (f"{_tex(experiment)} & {gpu_s} & {_tex(info.get('cpu'))} & "
             f"{_tex(info.get('ram_gb'))} & {_tex(info.get('os'))} & "
             f"{_tex(info.get('python'))} & {_tex(sw)} \\\\")
 

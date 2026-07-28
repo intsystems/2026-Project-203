@@ -269,35 +269,74 @@ def resolve_method(name: str) -> tuple[str, MethodSpec]:
     return key, METHODS[key]
 
 
+def compresses_downlink(spec: MethodSpec) -> bool:
+    """Whether the server's per-round broadcast is one bit per matrix entry.
+
+    The criterion is not "does the server apply a compressor" but "is the object
+    the server has to distribute already ``+-1``-valued", and three cases satisfy
+    it:
+
+    * ``downlink="sign"`` (MuonSign) -- the server signs the LMO output;
+    * ``downlink="ef21p"`` (EF21-MuonSign) -- a scaled sign of the model shift;
+    * **the majority vote itself** (SignMuon, SignSGD). ``sign(sum_j s_j)`` is
+      ``+-1`` in every coordinate -- exactly, at an odd client count, under the
+      randomized-zero convention -- so the server broadcasts the *vote* rather
+      than the model and each client applies ``X <- X - lr*lam*s_agg`` to its own
+      replica. Replicas start from a common ``X_0`` and receive identical
+      updates, so they never diverge. This is the property that makes the
+      original signSGD-with-majority-vote one bit in both directions
+      (Bernstein et al., 2019), and it is a fact about the vote, not about any
+      compressor the implementation applies.
+
+    It fails exactly when the server-side quantity is dense: ``polar(.)`` of the
+    aggregate (MuonUSign, EF21-MuonUSign) or a scaled average of signs
+    (EF21-SignMuon). Those must broadcast a full-precision model.
+
+    Note this is deliberately NOT ``spec.downlink != "exact"``: ``spec.downlink``
+    says which compressor the training loop *applies*, and SignMuon's server has
+    nothing to apply one to. Reading the accounting off that field is the bug this
+    function exists to prevent -- and flipping the field to make the arithmetic
+    come out would silently change the algorithm.
+    """
+    return spec.downlink in ("sign", "ef21p") or (
+        spec.uplink == "sign_mv" and spec.lmo != "server")
+
+
 def communication_bits(name: str, n_matrix: int, n_aux: int,
-                       uplink_zero_frac: float = 0.0) -> Dict[str, float]:
+                       uplink_zero_frac: float = 0.0,
+                       n_layers: int = 0) -> Dict[str, float]:
     """Bits per parameter per round, and the reduction against full precision.
 
-    The paper's headline is a "32x reduction in transmitted data". Three things
+    The paper's headline is a "32x reduction in transmitted data". Four things
     have to be counted for that number to mean anything, and this function counts
-    all three:
+    all four:
 
     * **The uplink alphabet.** Under the paper's convention exact zeros are
       randomized to +-1 (``sign_pm1``), so a symbol is a genuine 1 bit and the
       uplink reduction is the full 32x. Under the legacy ``--uplink-zeros keep``
       the alphabet is ternary and a symbol costs ``H(p0, (1-p0)/2, (1-p0)/2)``
-      bits -- 1.37 bits at the ~10% zero rate CNN2 shows, i.e. 22x. This
-      function reports whichever regime the run is in.
+      bits -- 1.37 bits at a 10% zero rate, 1.02 at the 0.2% CNN2 actually shows.
+      This function reports whichever regime the run is in.
     * **The auxiliary group is never compressed.** Biases, BatchNorm scales and the
       head go uncompressed in both directions. On CNN2 they are 0.28% of the
       parameters, so this costs little -- but it is what turns "1 bit per
       parameter" into "1 bit per parameter plus epsilon", and on a model with a
       larger head it would not be negligible.
-    * **The downlink is full precision for four of the six methods.** SignMuon,
-      MuonUSign, EF21-SignMuon and EF21-MuonUSign all broadcast an uncompressed
-      model every round, so their *round-trip* saving is under 2x however good the
-      uplink is. Only MuonSign and EF21-MuonSign compress both directions, and
-      they reach ~25x.
+    * **Error feedback carries a scalar per layer.** Both EF21 channels transmit
+      ``(sign(residual), alpha)`` with one full-precision ``alpha`` per matrix
+      layer -- on the uplink for every EF21 method, and again on the downlink for
+      EF21-MuonSign. Pass ``n_layers`` to count it. It is 96 bits per round on
+      CNN2's three matrix layers against 762k parameters, i.e. four decimal places
+      in, but it is the difference between "one bit per parameter" and "one bit
+      per parameter, and here is the constant".
+    * **Which methods actually compress the downlink**, per
+      ``compresses_downlink`` above: SignMuon, SignSGD, MuonSign and
+      EF21-MuonSign do; MuonUSign, EF21-SignMuon and EF21-MuonUSign broadcast an
+      uncompressed model and so are capped below 2x round trip however good their
+      uplink.
 
-    That last point is not a criticism of the paper's methods -- it is the argument
-    *for* the bidirectional ones, and it is why "we measure what the downlink
-    guarantee costs" is the interesting sentence. It is only a criticism of
-    quoting 32x for a uplink-only method.
+    All figures are per client per round: ``up`` is what one client sends, ``down``
+    what the server sends to one client.
     """
     import math
 
@@ -309,11 +348,15 @@ def communication_bits(name: str, n_matrix: int, n_aux: int,
         up_per = 1.0
     else:
         up_per = -(p0 * math.log2(p0) + (1.0 - p0) * math.log2((1.0 - p0) / 2.0))
-    down_per = {"exact": 32.0, "sign": 1.0, "ef21p": 1.0}[spec.downlink]
+    down_per = 1.0 if compresses_downlink(spec) else 32.0
+
+    # One full-precision scale per matrix layer, on each error-feedback channel.
+    up_scalars = 32.0 * n_layers if spec.uplink == "ef21" else 0.0
+    down_scalars = 32.0 * n_layers if spec.downlink == "ef21p" else 0.0
 
     total = n_matrix + n_aux
-    up = up_per * n_matrix + 32.0 * n_aux
-    down = down_per * n_matrix + 32.0 * n_aux
+    up = up_per * n_matrix + 32.0 * n_aux + up_scalars
+    down = down_per * n_matrix + 32.0 * n_aux + down_scalars
     base = 32.0 * total
     return {
         "uplink_bits_per_param": up / total if total else 0.0,
