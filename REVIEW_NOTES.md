@@ -698,6 +698,18 @@ Everything load-bearing. Specifically re-derived and confirmed:
 
 ## B. Errors — things that are stated and are not true
 
+> **Status 2026-07-28.** All of B1–B11 are fixed, as are C1–C5 and C7–C10,
+> C13, C14. Still open and needing a decision rather than an edit: **C6** (the
+> `{±1}` / "1 bit" / "32×" framing — the measured alphabet is ternary at 8–17%
+> zeros, ~1.37 bits/symbol and ~23×, and changing the headline numbers is an
+> author call), **C11** (hoisting `as:1`/`as:2` into the main text),
+> **C12** (notation clashes on `mu` and `alpha`), all of **D** (needs the
+> Mishra et al. paper, which is not in the repo) and the paper-side half of
+> **E**. B1 was fixed by deleting the false clause rather than by raising `M`
+> to 500: raising it would have changed Thm. 3's `-76` and the published
+> `-13.89`, and forced a figure and code regeneration, for no gain given the
+> theorems are stated over the exact oracle.
+
 **B1. The Newton-Schulz verification claim in the proof of Thm. 2 is false.**
 `v2_SignMuon_AAAI.tex:747` says of `<G,D> = -13.89`: *"which we verified for both
 the exact polar factor and the Newton--Schulz approximation used in practice."*
