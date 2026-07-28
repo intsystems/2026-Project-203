@@ -1951,8 +1951,6 @@ def main() -> int:
     return 1 if failed else 0
 
 
-if __name__ == "__main__":
-    sys.exit(main())
 
 
 def test_transmitted_signs_are_strictly_one_bit():
@@ -1971,11 +1969,14 @@ def test_transmitted_signs_are_strictly_one_bit():
     assert torch.equal(s1, s2), "randomized zeros must be seed-reproducible"
     assert torch.equal(s1.abs(), torch.ones_like(s1)), "no zeros may survive"
     assert s1[0, 0] == 1 and s1[1, 2] == -1, "nonzero entries keep their sign"
-    # dense inputs must not consume the RNG stream (reproducibility of old runs)
-    torch.manual_seed(11)
+    # Dense inputs must not consume the RNG stream, so a run with no zeros is
+    # bit-identical to one under the old convention. Build the input *before*
+    # snapshotting the state -- torch.randn advances the stream itself.
+    dense = torch.randn(8, 8) + 10.0
     before = torch.get_rng_state()
-    sign_pm1(torch.randn(8, 8) + 10.0)
-    assert torch.equal(before, torch.get_rng_state())
+    sign_pm1(dense)
+    assert torch.equal(before, torch.get_rng_state()), (
+        "sign_pm1 consumed randomness on a zero-free input")
 
     # End-to-end: a dead output channel (zero gradient row) still yields a
     # strictly +-1-valued step for every sign-terminated method.
@@ -1990,3 +1991,63 @@ def test_transmitted_signs_are_strictly_one_bit():
         opt.step()
         d = opt.state[p]["last_direction"]
         assert torch.equal(d.abs(), torch.ones_like(d)), cls.__name__
+
+
+def test_hardware_record_is_anonymous_and_ascii():
+    """The machine record goes into the paper, so it must leak nothing.
+
+    Hostname, username and absolute paths are deliberately not collected: a
+    double-blind submission is exactly where "Experiments were run on
+    gpu-node-07.lab.university.edu" gets noticed. ASCII-only matters for a
+    different reason -- vendor strings carry trademark signs and non-breaking
+    spaces, which fail a LaTeX run much later than they are introduced.
+    """
+    import anonymize
+    from common.hardware import as_latex_row, as_sentence, describe
+
+    info = describe("cuda:0")
+    rendered = as_sentence(info) + "\n" + as_latex_row("Synthetic quadratic", info)
+
+    assert not anonymize.scan_text("hardware.txt", rendered), (
+        "the hardware record trips the anonymity scan:\n  "
+        + "\n  ".join(str(f) for f in anonymize.scan_text("hardware.txt", rendered)))
+    assert rendered.isascii(), "non-ASCII in the hardware record would break LaTeX"
+    for banned in ("hostname", "/home/", "/Users/", "C:" + chr(92) + "Users"):
+        assert banned.lower() not in rendered.lower(), f"{banned} leaked into the record"
+
+
+def test_hardware_scan_groups_by_experiment_and_machine():
+    """The paper needs one row per (experiment, machine), not one per run.
+
+    Different experiments here run on different GPUs, so the table is built from
+    what each run recorded; this pins the grouping, including that two runs of
+    the same experiment on the same box collapse to a single row with a count.
+    """
+    import json
+    import tempfile
+    from pathlib import Path
+
+    from common.hardware import scan_results
+
+    a = {"gpu": "NVIDIA RTX A4000", "gpu_memory_gb": 16.0, "cpu": "AMD EPYC",
+         "ram_gb": 128.0, "os": "Linux 6.8", "python": "3.12.3", "torch": "2.7.0",
+         "cuda": "12.8"}
+    b = dict(a, gpu="NVIDIA A100", gpu_memory_gb=80.0)
+
+    with tempfile.TemporaryDirectory() as tmp:
+        root = Path(tmp)
+        for rel, hw in (("synthetic/run1/metrics.json", a),
+                        ("synthetic/run2/metrics.json", a),     # same box -> one row
+                        ("federated/run1/metrics.json", b)):    # different box
+            p = root / rel
+            p.parent.mkdir(parents=True, exist_ok=True)
+            p.write_text(json.dumps({"config": {"hardware": hw}}), encoding="utf-8")
+
+        grouped = scan_results(root)
+        fams = {f: [(i.get("gpu"), n) for i, n in e] for f, e in grouped.items()}
+        assert fams["Synthetic quadratic"] == [("NVIDIA RTX A4000", 2)], fams
+        assert fams["Federated CIFAR-10 (CNN2)"] == [("NVIDIA A100", 1)], fams
+
+
+if __name__ == "__main__":
+    sys.exit(main())

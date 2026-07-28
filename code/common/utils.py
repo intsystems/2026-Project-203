@@ -246,6 +246,17 @@ def save_run(
     cfg = asdict(config) if is_dataclass(config) and not isinstance(config, type) else dict(config)
     hist = history.to_dict() if isinstance(history, History) else dict(history)
 
+    # Stamp the machine into the run itself. Different experiments in this
+    # project run on different GPUs, so hardware is a property of the run and
+    # not of the repository -- recovering it later from memory is exactly the
+    # thing that goes wrong. Never fatal: a metrics file without a hardware
+    # block is better than a lost run.
+    try:
+        from common.hardware import describe
+        cfg.setdefault("hardware", describe(str(cfg.get("device")) if cfg.get("device") else None))
+    except Exception:                                       # noqa: BLE001
+        pass
+
     with open(out / "metrics.json", "w", encoding="utf-8") as f:
         json.dump({"config": cfg, "history": hist}, f, indent=2)
 

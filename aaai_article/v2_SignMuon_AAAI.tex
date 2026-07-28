@@ -776,10 +776,22 @@ Taking the norms dual to the Ky Fan $k$-norms, \citet{kravatskiy2026kyfannorms} 
 
 \subsection{Reproducibility Details}\label{app:repro}
 \paragraph{Computing infrastructure.}
-% TODO(authors): fill in the exact hardware/software before the camera-ready.
-% Different experiments may have been run on different machines; list each
-% configuration used, e.g. per experiment (synthetic / centralized / federated).
-The experiments were run on \textbf{[GPU model and memory, e.g.\ NVIDIA A100 80\,GB]}, \textbf{[CPU model]}, with \textbf{[amount of RAM]} of system memory, under \textbf{[operating system, e.g.\ Ubuntu 22.04]}. The software stack was Python~3.9, \textbf{[PyTorch version]}, and \textbf{[CUDA/cuDNN versions]}; exact package versions are pinned in \texttt{code/requirements.txt}. Where experiments were executed on more than one machine, the per-experiment configuration is \textbf{[specify or state ``identical across all experiments'']}.
+The experiments in this paper were not all run on the same machine, so Table~\ref{tab:hardware} reports the hardware per experiment rather than as a single sentence. Each row is generated from the record every run stamps into its own output at the moment it runs (\texttt{python3 -m common.hardware -{}-scan results -{}-latex}), so the table describes the machines the reported numbers actually came from and not the machine that happened to typeset the paper. Exact package versions are pinned in \texttt{code/requirements.txt}.
+
+\begin{table}[!t]
+\centering\footnotesize
+\setlength{\tabcolsep}{3pt}
+\begin{tabular}{@{}lllllll@{}}
+\toprule
+\textbf{Experiment} & \textbf{GPU} & \textbf{CPU} & \textbf{RAM (GB)} &
+\textbf{OS} & \textbf{Python} & \textbf{PyTorch / CUDA} \\
+\midrule
+\pendingrow{7}{one row per (experiment, machine) from \texttt{python3 -m common.hardware -{}-scan results -{}-latex}} \\
+\bottomrule
+\end{tabular}
+\caption{Computing infrastructure, per experiment. Generated from the per-run hardware records rather than written by hand; where one experiment was run on more than one machine, it contributes one row per machine.}
+\label{tab:hardware}
+\end{table}
 
 \paragraph{Randomness and seeds.}
 All experiments use a single fixed random seed (default $0$), set through a \texttt{seed\_everything} routine that seeds the Python \texttt{random} module, NumPy, and PyTorch (including all CUDA devices) and enables deterministic cuDNN kernels (\texttt{cudnn.deterministic\,=\,True}, \texttt{cudnn.benchmark\,=\,False}). Each reported number corresponds to a single such run.

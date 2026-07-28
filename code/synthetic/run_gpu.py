@@ -214,20 +214,11 @@ BY_NAME = {s.name: s for s in STAGES}
 
 def environment(device: str) -> Dict:
     """Everything a reader needs to know the run was what it claims to be."""
-    info: Dict = {"python": sys.version.split()[0], "device_requested": device}
-    try:
-        import torch
-        info["torch"] = torch.__version__
-        info["cuda_available"] = torch.cuda.is_available()
-        info["cuda"] = torch.version.cuda
-        if torch.cuda.is_available():
-            idx = torch.cuda.current_device()
-            props = torch.cuda.get_device_properties(idx)
-            info["gpu"] = props.name
-            info["gpu_memory_gb"] = round(props.total_memory / 1024 ** 3, 1)
-            info["gpu_count"] = torch.cuda.device_count()
-    except Exception as exc:                                # noqa: BLE001
-        info["torch_error"] = f"{type(exc).__name__}: {exc}"
+    # One source of truth for the machine record, so the paper's hardware table
+    # can be built from any results tree (`python3 -m common.hardware --scan`).
+    from common.hardware import describe
+    info: Dict = dict(describe(device))
+    info["hardware"] = dict(info)
 
     for key, cmd in (("git_commit", ["git", "rev-parse", "HEAD"]),
                      ("git_branch", ["git", "rev-parse", "--abbrev-ref", "HEAD"]),
