@@ -29,6 +29,7 @@ x-axis explicitly instead, so curves from different seeds (or different
 from __future__ import annotations
 
 import json
+import os
 import random
 from dataclasses import asdict, is_dataclass
 from pathlib import Path
@@ -203,7 +204,17 @@ def results_root() -> Path:
     ``results/federated``, ``results/synthetic``), so ``aggregate.py`` can sweep
     everything with a single scan and the experiment code does not need to know
     where it lives on disk.
+
+    Set ``SIGNMUON_RESULTS`` to put that tree somewhere else -- another drive, a
+    scratch filesystem, a network share. A multi-day sweep writes a ``model.pt``
+    per job, and running the system disk out of space mid-run loses the night;
+    pointing this at a roomy volume is cheaper than discovering that at 04:00.
+    ``aggregate.py`` and the plotting scripts pick the new location up
+    automatically, since they all resolve through here.
     """
+    override = os.environ.get("SIGNMUON_RESULTS")
+    if override:
+        return Path(override).expanduser()
     return Path(__file__).resolve().parents[1] / "results"
 
 

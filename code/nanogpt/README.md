@@ -30,7 +30,7 @@ hyperparameter tuning**. See "Why record #40" below.
 | `data/cached_fineweb10B.py` | Downloads the pre-tokenized FineWeb-10B GPT-2 tokens (same stream for every record). |
 | `requirements.txt` | Python deps (mirrors upstream; `torch==2.10`). |
 | `train_gpt_rec40_reference.py` | The **verbatim record-#40 source** (from its run log), for provenance / diffing. Not wired to the optimizer knob. |
-| `train_nanogpt_classic.py`, `train_nanogpt.py` | **Superseded** classic-record scaffolding, kept for reference only. |
+| `plot_article.py` | The three nanoGPT figures the paper includes (`fig:nanogpt`, `fig:nanogpt_appendix`, `fig:nanogpt_diag`). Run IDs are pinned to the post-fix logs; see the module docstring for which and why. |
 
 ## Setup
 

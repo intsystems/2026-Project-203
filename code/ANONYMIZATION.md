@@ -45,24 +45,25 @@ reason**, so that silencing something stays a visible decision.
 
 ## What was found and fixed, 2026-07-27
 
-The first run of the scan found five leaks, none of which a checklist would have
+The first run of the scan found four kinds of leak, none of which a checklist would have
 caught:
 
 | where | what |
 | :--- | :--- |
 | `common/models.py` ×2 | A docstring crediting a colleague by first name |
 | `nanogpt/`, one module | A **filename** containing a first name, plus four references to it |
-| `nanogpt/plot_nano.ipynb` | An output cell holding an absolute home-directory path |
+| a nanoGPT notebook | An output cell holding an absolute home-directory path |
 | `centralized/article_export/MANIFEST.md` | A generated manifest quoting an absolute source path |
 
-The module was renamed to `train_nanogpt_classic.py` and its references updated; the
-docstrings were rewritten to describe the models rather than their provenance; the
-notebook output is stripped at bundle time; the generated export directory is
-excluded from the bundle. Russian-language comments in `common/models.py` and
-`nanogpt/train_nanogpt.py` were translated at the same time — not identifying on
+The module was renamed and its references updated; the docstrings were rewritten to
+describe the models rather than their provenance; the notebook output is stripped at
+bundle time; the generated export directory is excluded from the bundle. (Both of
+those nanoGPT files have since been deleted outright as superseded.)
+Russian-language comments in `common/models.py` and the nanoGPT scaffolding were
+translated at the same time — not identifying on
 their own, but they narrow the author pool for no benefit.
 
-Two of those four are worth dwelling on, because they are the ones a manual pass
+Two of them are worth dwelling on, because they are the ones a manual pass
 misses. A name inside a **filename** does not match a `\b…\b` regex, since `\b`
 counts `_` as a word character — the rule now uses letter/digit lookarounds
 instead. And a name inside a **notebook output** is invisible to anyone reading the
@@ -76,7 +77,7 @@ what was left out, so the omissions are visible rather than silent.
 
 **Excluded**: caches (`__pycache__`, `.pytest_cache`, `.ipynb_checkpoints`),
 datasets (`data/`, `data_federated/`, the FineWeb shards), run output (`results/`,
-`article_export/`), model checkpoints (`*.pt`), the `scrap/` scratch directory, and
+`article_export/`), model checkpoints (`*.pt`), stray `*.log` files, and
 `anonymize.py` itself — its identifier list is the one file whose whole content is
 the names that must not ship.
 

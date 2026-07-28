@@ -97,6 +97,11 @@ probability ``0.65`` and transmitting zero with probability ``q``:
 15       0.00           0.7747         5.54           0.7406
 ======  =============  =============  =============  =============
 
+Reproduce with ``python3 -m federated.tune --stage votes``. The table is Monte
+Carlo over 400k coordinates, so the last digit moves between runs; differences
+below ~0.002 are noise, which is itself the point for the ``N = 9`` vs ``N = 10``
+comparison.
+
 At ``q = 0`` the classical parity pathology is visible: ``N = 10`` buys nothing
 over ``N = 9`` because an even vote's extra voter is never decisive, it only
 creates ties. At the zero rate CNN2 actually exhibits that effect is washed out
@@ -498,7 +503,10 @@ def run_federated(
     n_head_tensors: int = 2,
     adam_eps: float = 1e-8,
     lmo_dtype: Optional[torch.dtype] = torch.bfloat16,
-    lr_scaling: str = "legacy",
+    # Matches ``federated.main``'s CLI default. It used to be "legacy" here,
+    # so a library caller silently got the published-paper convention while
+    # the documented default was the derived one.
+    lr_scaling: str = "unit-gain",
     scale_baselines: bool = False,
     eval_name: str = "test",
     decoupled_weight_decay: bool = True,
@@ -506,7 +514,7 @@ def run_federated(
     uplink_zeros: str = "keep",
     verbose: bool = True,
 ) -> History:
-    """Train ``global_model`` with one of the ten federated methods.
+    """Train ``global_model`` with one of the eleven federated methods.
 
     Returns a :class:`utils.History` recording ``<eval_name>_acc`` /
     ``<eval_name>_loss`` at every evaluated round (round 0 = before training).
@@ -585,9 +593,16 @@ def run_federated(
     # Server-side Adam over the matrix parameters (the ``adam`` baseline only).
     # AdamW when the decay convention is decoupled, so the baseline is not
     # additionally handicapped by an Adam-vs-AdamW difference.
+    # One group per tensor, so the per-layer multiplier ``lam[n]`` reaches the
+    # baseline too: the step below ``continue``s past the ``lam`` application for
+    # ``adam``, and torch owns the step. Without this, ``--scale-baselines``
+    # silently did nothing for ``adam`` while the schedule and the report both
+    # claimed it applied. Matches ``centralized/train.py`` ("lr": args.lr * lam).
     server_adam_cls = torch.optim.AdamW if decoupled_weight_decay else torch.optim.Adam
     server_adam = server_adam_cls(
-        [params[n] for n in matrix_names], lr=lr, weight_decay=weight_decay, eps=adam_eps
+        [{"params": [params[n]], "lr": lr * lam[n], "initial_lr": lr * lam[n]}
+         for n in matrix_names],
+        lr=lr, weight_decay=weight_decay, eps=adam_eps
     ) if spec.server == "adam" and matrix_names else None
 
     # EF21 reconstruction G_t on the server (uplink == "ef21").
@@ -650,8 +665,10 @@ def run_federated(
             for g in adamw.param_groups:
                 g["lr"] = current_lr_aux
         if server_adam is not None:
+            # Anneal each group from its OWN base rate, so the per-layer factor
+            # folded in at construction survives the cosine schedule.
             for g in server_adam.param_groups:
-                g["lr"] = current_lr
+                g["lr"] = g["initial_lr"] * eta
 
         # ---------------- clients ----------------------------------------
         # The broadcast model: W (compressed) under ef21p, X otherwise. Both are
@@ -686,6 +703,24 @@ def run_federated(
             payload, scales = {}, {}
             for n in matrix_names:
                 G = grads[n]
+
+                # 0) coupled weight decay: fold wd*X into the gradient *before*
+                #    the oracle sees it, so the geometry is perturbed rather than
+                #    the step length. Matches ``common.optimizers._BaseMethod``.
+                #
+                #    Two ways in. As the appendix ablation, via
+                #    ``--weight-decay-mode coupled``. And ALWAYS for ``sgd``:
+                #    torch's SGD couples, and that is the right convention there
+                #    rather than a quirk -- SGD's step is ``eta*m``, which is NOT
+                #    positively homogeneous of degree zero, so coupling genuinely
+                #    minimizes ``f + (wd/2)||W||^2``. Forcing decoupling on it
+                #    would be the deviation, and it would silently disagree with
+                #    ``centralized/train.py``, which spells this out at its own
+                #    ``name == "sgd"`` branch.
+                if weight_decay != 0 and (not decoupled_weight_decay
+                                          or spec.momentum_form == "heavy_ball"):
+                    ref = server_exact[n] if spec.needs_exact_model else params[n].data
+                    G = G.add(ref, alpha=weight_decay)
 
                 # 1) client momentum
                 if spec.client_momentum:
@@ -791,7 +826,8 @@ def run_federated(
                     continue
 
                 target_tensor = server_exact[n] if spec.needs_exact_model else params[n].data
-                if weight_decay != 0:
+                if (weight_decay != 0 and decoupled_weight_decay
+                        and spec.momentum_form != "heavy_ball"):
                     # Unscaled by the per-layer factor, matching the centralized
                     # convention: decay is a property of the parameter, not of the
                     # step geometry.

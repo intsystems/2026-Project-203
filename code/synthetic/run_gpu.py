@@ -58,10 +58,28 @@ class Stage:
     quick_args: List[str] = field(default_factory=list)
     estimate: str = "?"
 
-    def argv(self, device: str, out: Path, quick: bool) -> List[str]:
+    @property
+    def out_key(self) -> str:
+        """Basename this stage writes, matching ``benchmark.output_slug``.
+
+        Two stages can share a ``mode`` and still be distinct measurements
+        (``grid`` vs ``grid-paper``), so the skip-if-done check and the summary
+        must key on the file, not on the mode.
+        """
+        if "--grid-preset" in self.args:
+            return f"grid-{self.args[self.args.index('--grid-preset') + 1]}"
+        return self.mode
+
+    def argv(self, device: str, out: Path, quick: bool,
+             size: Optional[tuple] = None) -> List[str]:
         base = [sys.executable, "-m", "synthetic.benchmark",
                 "--mode", self.mode, "--device", device, "--out", str(out)]
-        return base + self.args + (self.quick_args if quick else [])
+        argv = base + self.args + (self.quick_args if quick else [])
+        if size is not None:
+            # Appended last so it beats any --m/--n baked into the stage's own
+            # args (argparse keeps the final occurrence).
+            argv += ["--m", str(size[0]), "--n", str(size[1])]
+        return argv
 
 
 # Cheapest first. Every stage below `grid` runs at the module's 100x100 default;
@@ -224,9 +242,9 @@ def environment(device: str) -> Dict:
 
 
 def run_stage(stage: Stage, device: str, out: Path, log_dir: Path,
-              quick: bool) -> Dict:
+              quick: bool, size: Optional[tuple] = None) -> Dict:
     """Run one stage, teeing its output to console and to a log file."""
-    argv = stage.argv(device, out, quick)
+    argv = stage.argv(device, out, quick, size)
     log_path = log_dir / f"{stage.name}.log"
     print(f"\n{'=' * 78}\n[{stage.name}]  {stage.estimate}\n{stage.why}\n"
           f"$ {' '.join(argv[1:])}\n{'=' * 78}", flush=True)
@@ -320,8 +338,12 @@ def summarize(out: Path) -> str:
         lines += rows + [""]
 
     # -- grid / final ---------------------------------------------------
-    for mode, title in (("grid", "Tuned comparison (Tables 1 and 3)"),
-                        ("final", "Re-run at the tuned optima (Figure 4)")):
+    for mode, title in (("grid", "Tuned comparison (`tab:synthetic_results`, "
+                                 "`tab:grid_search`)"),
+                        ("grid-paper", "The same, on Table 3's published grids "
+                                       "(`--grid-preset paper`)"),
+                        ("final", "Re-run at the tuned optima "
+                                  "(`fig:synthetic_results`)")):
         payloads = _load(out, mode)
         if not payloads:
             continue
@@ -530,6 +552,17 @@ def get_args():
     p.add_argument("--quick", action="store_true",
                    help="tiny sizes and coarse grids, ~5 min for the whole "
                         "pipeline; run this first")
+    p.add_argument("--m", type=int, default=None, metavar="M",
+                   help="Override the problem size for EVERY stage. Cost grows "
+                        "steeply -- the LMO is an SVD/Newton-Schulz per step -- so "
+                        "start small (--m 20) to check the pipeline and the "
+                        "figures, then scale up. Unlike --quick this keeps the "
+                        "real grids and iteration counts, so the numbers are "
+                        "meaningful at whatever size you pick, just at a size the "
+                        "paper does not report. Default: 100 for the dynamics "
+                        "stages, 500 for grid/final.")
+    p.add_argument("--n", type=int, default=None, metavar="N",
+                   help="Columns; defaults to --m when only --m is given.")
     p.add_argument("--force", action="store_true",
                    help="re-run stages whose output already exists")
     p.add_argument("--summarize-only", action="store_true",
@@ -540,11 +573,15 @@ def get_args():
 
 def already_done(stage: Stage, out: Path) -> bool:
     from synthetic.benchmark import DEFAULT_METHODS
-    return any((out / m / f"{stage.mode}.json").exists() for m in DEFAULT_METHODS)
+    return any((out / m / f"{stage.out_key}.json").exists() for m in DEFAULT_METHODS)
 
 
 def main() -> int:
     args = get_args()
+    size = None
+    if args.m is not None or args.n is not None:
+        m = args.m if args.m is not None else args.n
+        size = (m, args.n if args.n is not None else m)
     if args.out:
         out = Path(args.out)
     else:
@@ -552,6 +589,12 @@ def main() -> int:
         # smoke-test JSON where the real 500x500 results belong, and the
         # already-done check would then skip the real run entirely.
         out = results_root() / ("synthetic_quick" if args.quick else "synthetic")
+        if size is not None:
+            # A non-default size is a different experiment, not a cheaper run of
+            # the same one, so it gets its own tree. Otherwise a 20x20 pass would
+            # sit where the 500x500 results belong and the already-done check
+            # would then skip the real run.
+            out = out.with_name(f"{out.name}_{size[0]}x{size[1]}")
 
     if args.list:
         for s in STAGES:
@@ -586,7 +629,9 @@ def main() -> int:
         print("NOTE: the working tree has uncommitted changes; MANIFEST.json "
               "records the commit but not those edits.")
     print(f"\nStages: {', '.join(names)}"
-          f"{'   [QUICK]' if args.quick else ''}\nOutput: {out.resolve()}")
+          f"{'   [QUICK]' if args.quick else ''}"
+          f"{f'   [{size[0]}x{size[1]}]' if size else ''}"
+          f"\nOutput: {out.resolve()}")
 
     started = time.strftime("%Y-%m-%d %H:%M:%S")
     records: List[Dict] = []
@@ -597,9 +642,10 @@ def main() -> int:
             records.append({"stage": stage.name, "mode": stage.mode,
                             "exit_code": 0, "seconds": 0.0, "skipped": True})
             continue
-        records.append(run_stage(stage, args.device, out, log_dir, args.quick))
+        records.append(run_stage(stage, args.device, out, log_dir, args.quick, size))
 
         manifest = {"started": started, "quick": args.quick,
+                    "size": list(size) if size else None,
                     "environment": env, "stages": records}
         with open(out / "MANIFEST.json", "w", encoding="utf-8") as f:
             json.dump(manifest, f, indent=2)

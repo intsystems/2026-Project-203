@@ -79,6 +79,35 @@ class TinyNet(nn.Module):
         return self.fc2(torch.relu(self.fc1(x)))
 
 
+class TallNet(nn.Module):
+    """Same shape of test as ``TinyNet``, but with a TALL matrix parameter.
+
+    ``fc1.weight`` is ``(12, 4)``, so ``sqrt(max(1, m/n)) = sqrt(3) != 1``. This
+    matters: on ``TinyNet`` the only matrix is ``(4, 6)``, where the aspect factor
+    is exactly 1 and the whole "the factor lives in ``lambda`` federated and in
+    ``scale_aspect`` centrally, and the two coincide bit for bit" claim is
+    vacuously true. Here it has to actually hold.
+    """
+
+    def __init__(self):
+        super().__init__()
+        self.fc1 = nn.Linear(4, 12)
+        self.fc2 = nn.Linear(12, 3)
+
+    def forward(self, x):
+        return self.fc2(torch.relu(self.fc1(x)))
+
+
+def tall_data(n: int = 8, seed: int = 0):
+    g = torch.Generator().manual_seed(seed)
+    return (torch.randn(n, 4, generator=g),
+            torch.randint(0, 3, (n,), generator=g))
+
+
+def tall_loader(n: int = 8, seed: int = 0):
+    return [tall_data(n, seed)]
+
+
 def tiny_data(n: int = 8, seed: int = 0):
     g = torch.Generator().manual_seed(seed)
     x = torch.randn(n, 6, generator=g)
@@ -320,10 +349,10 @@ def test_exact_and_newton_schulz_oracles_differ_on_the_instances():
 
 
 def _centralized_reference(method, rounds, lr, lr_aux, momentum, seed=0,
-                           weight_decay=0.0):
+                           weight_decay=0.0, net=TinyNet, loader_fn=None):
     """Drive the centralized optimizer by hand, one full-batch step per round."""
     torch.manual_seed(seed)
-    model = TinyNet()
+    model = net()
     matrix_names, aux_names = split_param_names(model, 2)
     named = dict(model.named_parameters())
 
@@ -341,7 +370,7 @@ def _centralized_reference(method, rounds, lr, lr_aux, momentum, seed=0,
     aux = torch.optim.AdamW([named[n] for n in aux_names], lr=lr_aux,
                             weight_decay=0.0)
 
-    loader = tiny_loader()
+    loader = (loader_fn or tiny_loader)()
     criterion = nn.CrossEntropyLoss()
     for _ in range(rounds):
         for x, y in loader:
@@ -355,15 +384,21 @@ def _centralized_reference(method, rounds, lr, lr_aux, momentum, seed=0,
 
 
 def _federated_run(method, rounds, lr, lr_aux, momentum, n_clients=1, seed=0,
-                   weight_decay=0.0):
+                   weight_decay=0.0, net=TinyNet, loader_fn=None):
     torch.manual_seed(seed)
-    model = TinyNet()
-    loaders = [tiny_loader() for _ in range(n_clients)]
+    model = net()
+    make = loader_fn or tiny_loader
+    loaders = [make() for _ in range(n_clients)]
     run_federated(
-        method, model, loaders, [tiny_loader()],
+        method, model, loaders, [make()],
         rounds=rounds, n_steps=1, lr=lr, lr_aux=lr_aux, momentum=momentum,
         weight_decay=weight_decay, eval_freq=10 ** 9, device="cpu",
         cosine_schedule=False, lmo_dtype=torch.float32, verbose=False,
+        # EXPLICIT, not inherited: the centralized reference above is built with
+        # ``scale_aspect=True`` and ``lambda_mult=1``, which IS the legacy
+        # convention. Relying on the driver's default would make this test's
+        # meaning depend on a default that has already changed once.
+        lr_scaling="legacy",
     )
     return model
 
@@ -384,6 +419,56 @@ def test_federated_one_client_equals_centralized():
             if not torch.allclose(a, b, atol=TOL):
                 failures.append(f"{method}/{n}: max|diff| = {(a - b).abs().max():.3e}")
     assert not failures, "federated != centralized:\n  " + "\n  ".join(failures)
+
+
+def test_federated_one_client_equals_centralized_on_a_tall_matrix():
+    """The same equivalence where the aspect factor is not 1.
+
+    ``TinyNet``'s only matrix is ``(4, 6)``, so ``sqrt(max(1, m/n)) == 1`` and the
+    test above cannot distinguish "the factor is applied once, outside the oracle"
+    from "the factor is not applied at all". ``TallNet``'s ``(12, 4)`` gives
+    ``sqrt(3)``, so the centralized ``scale_aspect=True`` convention and the
+    federated ``scale_aspect=False`` + ``lambda`` convention have to genuinely
+    agree -- which is the bit-for-bit claim the READMEs make about ``legacy``.
+    """
+    m, n = 12, 4
+    assert math.sqrt(max(1.0, m / n)) > 1.0, "fixture no longer exercises the factor"
+    failures = []
+    for method in CENTRAL_CLASSES:
+        ref = _centralized_reference(method, rounds=6, lr=0.05, lr_aux=0.01,
+                                     momentum=0.8, net=TallNet, loader_fn=tall_loader)
+        fed = _federated_run(method, rounds=6, lr=0.05, lr_aux=0.01, momentum=0.8,
+                             net=TallNet, loader_fn=tall_loader)
+        for (a_name, a), (b_name, b) in zip(ref.named_parameters(),
+                                            fed.named_parameters()):
+            assert a_name == b_name
+            if not torch.allclose(a, b, atol=TOL):
+                failures.append(
+                    f"{method}/{a_name}: max|diff| = {(a - b).abs().max():.3e}")
+    assert not failures, "federated != centralized on a tall matrix:\n  " + \
+        "\n  ".join(failures)
+
+
+def test_federated_muonserver_equals_centralized_muon_at_one_client():
+    """``muonserver`` is excluded from ``CENTRAL_CLASSES``; pin it separately.
+
+    It has no centralized class of its own because it differs from ``muon`` only
+    in *where* the LMO runs relative to the average -- and with a single client
+    there is nothing to average, so the two must coincide exactly. That makes
+    centralized ``Muon`` the right reference, and leaves no federated matrix
+    method unpinned.
+    """
+    for net, loader_fn in ((TinyNet, tiny_loader), (TallNet, tall_loader)):
+        ref = _centralized_reference("muon", rounds=6, lr=0.05, lr_aux=0.01,
+                                     momentum=0.8, net=net, loader_fn=loader_fn)
+        fed = _federated_run("muonserver", rounds=6, lr=0.05, lr_aux=0.01,
+                             momentum=0.8, net=net, loader_fn=loader_fn)
+        for (a_name, a), (b_name, b) in zip(ref.named_parameters(),
+                                            fed.named_parameters()):
+            assert a_name == b_name
+            assert torch.allclose(a, b, atol=TOL), (
+                f"muonserver != Muon at N=1 on {net.__name__}/{a_name}: "
+                f"max|diff| = {(a - b).abs().max():.3e}")
 
 
 def test_the_two_drivers_agree_on_the_weight_decay_convention():
@@ -412,6 +497,47 @@ def test_the_two_drivers_agree_on_the_weight_decay_convention():
             if not torch.allclose(a, b, atol=TOL):
                 failures.append(f"{method}/{n}: max|diff| = {(a - b).abs().max():.3e}")
     assert not failures, ("the drivers disagree once weight decay is nonzero:\n  "
+                          + "\n  ".join(failures))
+
+
+def test_decoupled_decay_is_not_scaled_by_the_per_layer_multiplier():
+    """``X *= 1 - lr*wd``, with NO ``lambda`` in it. Pinned at lambda != 1.
+
+    Both drivers apply decay unscaled by the per-layer factor, on purpose: decay
+    is a property of the parameter, not of the step geometry. The equality tests
+    above cannot see this -- ``TinyNet``'s only matrix is ``(4, 6)`` at the
+    default ``legacy`` rule, so every multiplier there is exactly 1 and scaling
+    by it is a no-op. Scaling decoupled decay by ``lambda_mult`` passes every
+    other test in this file.
+    """
+    lr, wd, lam = 0.1, 0.5, 0.25
+    for cls in CENTRAL_CLASSES.values():
+        p = nn.Parameter(torch.ones(4, 4))
+        p.grad = torch.zeros(4, 4)          # zero gradient: decay is the whole step
+        opt = cls([{"params": [p], "lambda_mult": lam}], lr=lr, momentum=0.0,
+                  weight_decay=wd, decoupled_weight_decay=True,
+                  lmo_dtype=torch.float32, scale_aspect=False)
+        opt.step()
+        if hasattr(opt, "restore_exact"):
+            opt.restore_exact()
+        got = float(p.detach()[0, 0])
+        assert abs(got - (1.0 - lr * wd)) < 1e-6, (
+            f"{cls.__name__}: decoupled decay gave {got:.6f}, expected "
+            f"{1 - lr * wd:.6f}. Scaled by lambda it would be "
+            f"{1 - lr * wd * lam:.6f}")
+
+
+def test_the_two_drivers_agree_on_weight_decay_at_a_nontrivial_multiplier():
+    """The driver-level decay equivalence, where ``lambda`` is not 1.
+
+    ``TallNet`` under ``unit-gain`` gives the LMO family ``sqrt(3)`` and the sign
+    family ``1/2`` at once, so a mismatch in *where* the multiplier sits relative
+    to the decay cannot cancel. The ``legacy``/``TinyNet`` version of this test
+    runs entirely at ``lambda == 1``.
+    """
+    failures = _compare_drivers_under_rule("unit-gain", TallNet, tall_loader,
+                                           weight_decay=0.02)
+    assert not failures, ("the drivers disagree at lambda != 1 with decay on:\n  "
                           + "\n  ".join(failures))
 
 
@@ -898,33 +1024,38 @@ def test_federated_legacy_rule_is_the_old_convention():
         assert torch.allclose(inside, outside, atol=1e-6), shape
 
 
-def test_federated_per_layer_scaling_matches_centralized():
-    """N=1 federated under a rule == the centralized optimizer under the same rule.
+def _compare_drivers_under_rule(rule_name, net, loader_fn, weight_decay=0.0,
+                                rounds=5, lr=0.05, lr_aux=0.01, momentum=0.8):
+    """N=1 federated vs centralized under ``rule_name``; returns the mismatches.
 
-    The load-bearing equivalence, extended past ``legacy``: with the shape factor
-    switched on, the two drivers must still agree, or the federated and
-    centralized tables would be reporting different algorithms under one name.
+    The centralized side gets one param group per matrix tensor carrying that
+    tensor's ``lambda_mult``, with ``scale_aspect=False`` -- i.e. the convention
+    ``centralized/train.py`` actually uses. That is what makes this a test of the
+    two drivers agreeing rather than of either one alone.
     """
     from common.lr_scaling import layer_multiplier, resolve_rule
     from federated.algorithms import method_family
 
-    rule = resolve_rule("unit-gain")
+    rule = resolve_rule(rule_name)
     failures = []
     for method in CENTRAL_CLASSES:
         torch.manual_seed(0)
-        ref_model = TinyNet()
+        ref_model = net()
         matrix_names, aux_names = split_param_names(ref_model, 2)
         named = dict(ref_model.named_parameters())
         family = method_family(method)
         groups = [{"params": [named[n]],
                    "lambda_mult": layer_multiplier(rule, family, tuple(named[n].shape))}
                   for n in matrix_names]
-        opt = CENTRAL_CLASSES[method](groups, lr=0.05, momentum=0.8,
+        opt = CENTRAL_CLASSES[method](groups, lr=lr, momentum=momentum,
+                                      weight_decay=weight_decay,
+                                      decoupled_weight_decay=True,
                                       lmo_dtype=torch.float32, scale_aspect=False)
-        aux = torch.optim.AdamW([named[n] for n in aux_names], lr=0.01, weight_decay=0.0)
+        aux = torch.optim.AdamW([named[n] for n in aux_names], lr=lr_aux,
+                                weight_decay=0.0)
         criterion = nn.CrossEntropyLoss()
-        for _ in range(5):
-            for x, y in tiny_loader():
+        for _ in range(rounds):
+            for x, y in loader_fn():
                 ref_model.zero_grad(set_to_none=True)
                 criterion(ref_model(x), y).backward()
                 opt.step()
@@ -933,16 +1064,32 @@ def test_federated_per_layer_scaling_matches_centralized():
             opt.restore_exact()
 
         torch.manual_seed(0)
-        fed_model = TinyNet()
-        run_federated(method, fed_model, [tiny_loader()], [tiny_loader()],
-                      rounds=5, n_steps=1, lr=0.05, lr_aux=0.01, momentum=0.8,
+        fed_model = net()
+        run_federated(method, fed_model, [loader_fn()], [loader_fn()],
+                      rounds=rounds, n_steps=1, lr=lr, lr_aux=lr_aux,
+                      momentum=momentum, weight_decay=weight_decay,
                       eval_freq=10 ** 9, device="cpu", cosine_schedule=False,
-                      lmo_dtype=torch.float32, lr_scaling="unit-gain", verbose=False)
+                      lmo_dtype=torch.float32, lr_scaling=rule_name, verbose=False)
         for (n, a), (_, b) in zip(ref_model.named_parameters(),
                                   fed_model.named_parameters()):
             if not torch.allclose(a, b, atol=TOL):
                 failures.append(f"{method}/{n}: max|diff| = {(a - b).abs().max():.3e}")
-    assert not failures, "unit-gain federated != centralized:\n  " + "\n  ".join(failures)
+    return failures
+
+
+def test_federated_per_layer_scaling_matches_centralized():
+    """N=1 federated under a rule == the centralized optimizer under the same rule.
+
+    The load-bearing equivalence, extended past ``legacy``: with the shape factor
+    switched on, the two drivers must still agree, or the federated and
+    centralized tables would be reporting different algorithms under one name.
+    Run on BOTH fixtures -- ``TinyNet``'s only matrix is ``(4, 6)``, where the LMO
+    family's multiplier is exactly 1 and only the sign family is exercised.
+    """
+    for net, loader_fn in ((TinyNet, tiny_loader), (TallNet, tall_loader)):
+        failures = _compare_drivers_under_rule("unit-gain", net, loader_fn)
+        assert not failures, (f"unit-gain federated != centralized on "
+                              f"{net.__name__}:\n  " + "\n  ".join(failures))
 
 
 def test_method_families_are_tagged_consistently():
@@ -1388,7 +1535,7 @@ def test_quadratic_constants_are_exact():
     assert torch.allclose(X.grad, A @ X.detach() @ B, atol=1e-10)
 
     f_val, g = prob.value_and_grad(X.detach().float())
-    assert abs(f_val - float(f)) < 1e-4
+    assert abs(f_val - f.item()) < 1e-4
     assert torch.allclose(g.double(), X.grad, atol=1e-4)
 
 
@@ -1456,6 +1603,150 @@ def test_newton_schulz_step_is_measurably_shorter_than_the_exact_lmo():
     assert 0.75 < min(ratios.values()) < 0.95, ratios
     assert max(ratios.values()) < 0.99, ratios          # never reaches sqrt(r)
     assert ratios[(64, 576)] < ratios[(500, 500)], ratios   # worse when oblong
+
+
+def _reference_trajectory(method: str, grads, lr, mu, m, n):
+    """The paper's algorithm boxes, transcribed literally and independently.
+
+    Deliberately NOT written in terms of ``common.optimizers``: this is the
+    reference the implementation is checked against, so sharing code with it
+    would defeat the point. ``grads`` is a fixed sequence, independent of the
+    iterate, so the recursion is a pure function of the box.
+
+    ``L`` is the LMO with ``scale_aspect=False`` -- the aspect factor is a step
+    *rescaling* that the drivers apply outside the oracle, and it is not part of
+    any box (see Algorithm ``alg:muon_lmo``, which has no such factor).
+    """
+    def L(Y):
+        return muon_lmo(Y, ns_steps=5, dtype=torch.float32, scale_aspect=False)
+
+    X = torch.zeros(m, n)
+    M = torch.zeros(m, n)
+    d_est = torch.zeros(m, n)      # EF21 estimator of the LMO output
+    g_est = torch.zeros(m, n)      # EF21 estimator of the momentum
+    W = torch.zeros(m, n)          # broadcast model, EF21-MuonSign only
+    for G in grads:
+        M = mu * M + (1.0 - mu) * G                       # EMA momentum
+        if method == "muon":
+            d = L(M)
+        elif method == "signsgd":
+            d = torch.sign(M)
+        elif method == "signmuon":                        # sign AFTER the LMO
+            d = torch.sign(L(M))
+        elif method == "muonusign":                       # sign BEFORE the LMO
+            d = L(torch.sign(M))
+        elif method == "muonsign":                        # sign on BOTH sides
+            d = torch.sign(L(torch.sign(M)))
+        elif method == "ef21signmuon":                    # EF21 on the LMO OUTPUT
+            delta = L(M) - d_est
+            d_est = d_est + delta.abs().mean() * torch.sign(delta)
+            d = d_est
+        elif method in ("ef21muonusign", "ef21muonsign"):  # EF21 BEFORE the LMO
+            delta = M - g_est
+            g_est = g_est + delta.abs().mean() * torch.sign(delta)
+            d = L(g_est)
+        else:
+            raise AssertionError(method)
+        X = X - lr * d
+        if method == "ef21muonsign":                      # downlink EF21-P
+            shift = X - W
+            W = W + shift.abs().mean() * torch.sign(shift)
+    return X
+
+
+def test_each_direction_is_the_documented_formula():
+    """Pin every step rule to the paper's box, not just to the other driver.
+
+    The federated<->centralized equality tests pin the two *implementations* to
+    each other, so a bug applied consistently to both is invisible to them:
+    swapping SignMuon with MuonSign, or swapping EF21-before-the-oracle with
+    EF21-after-the-oracle -- which is exactly the distinction Theorem 4 turns on
+    -- leaves all of them passing. This test is the one that would fail.
+    """
+    m, n = 6, 5
+    lr, mu, steps = 0.05, 0.8, 4
+    torch.manual_seed(0)
+    # A FIXED gradient sequence: iterate-independent, so the reference above is a
+    # closed-form recursion rather than a re-implementation of the training loop.
+    grads = [torch.randn(m, n) for _ in range(steps)]
+
+    trajectories = {}
+    for method, cls in CENTRAL_CLASSES.items():
+        p = nn.Parameter(torch.zeros(m, n))
+        opt = cls([p], lr=lr, momentum=mu, weight_decay=0.0,
+                  lmo_dtype=torch.float32, scale_aspect=False)
+        for G in grads:
+            p.grad = G.clone()
+            opt.step()
+        if hasattr(opt, "restore_exact"):
+            opt.restore_exact()            # compare on X, the iterate the theory bounds
+        want = _reference_trajectory(method, grads, lr, mu, m, n)
+        assert torch.allclose(p.detach(), want, atol=1e-5), (
+            f"{method}: implementation departs from its algorithm box, "
+            f"max|diff| = {(p.detach() - want).abs().max():.3e}")
+        trajectories[method] = p.detach().clone()
+
+    # Non-vacuity: the rules must be mutually distinguishable, or a consistent
+    # swap would satisfy the assertions above by accident. The one legitimate
+    # coincidence is EF21-MuonUSign vs EF21-MuonSign, whose exact models agree
+    # when the gradient does not depend on the iterate -- they differ only in the
+    # downlink, which is what `test_ef21muonsign_separates_exact_and_broadcast_models`
+    # covers.
+    allowed = {frozenset({"ef21muonusign", "ef21muonsign"})}
+    names = list(trajectories)
+    for i, a in enumerate(names):
+        for b in names[i + 1:]:
+            if frozenset({a, b}) in allowed:
+                continue
+            assert not torch.allclose(trajectories[a], trajectories[b], atol=1e-5), (
+                f"{a} and {b} produce the same trajectory, so this test cannot "
+                f"tell them apart -- pick a harder gradient sequence")
+
+
+def test_the_exact_svd_lmo_truncates_to_the_rank():
+    """The counterexample oracle must rank-truncate; ``sign(G)`` is often low-rank.
+
+    ``U @ Vt`` from a full SVD appends an arbitrary orthonormal completion of the
+    null space, which is non-unique on rank-deficient input -- and would silently
+    change the answer on exactly the instances the theorems are stated about.
+    """
+    import numpy as np
+    from counterexamples.optimizers import muon_lmo as exact_lmo
+
+    R = np.outer(np.ones(4), np.array([1.0, -1.0, 1.0, -1.0]))   # rank 1
+    D = exact_lmo(R)
+    assert np.linalg.matrix_rank(D) == 1, D
+    # sqrt(r) = 1, not sqrt(min(m, n)) = 2, which is what no truncation would give
+    assert abs(np.linalg.norm(D) - 1.0) < 1e-12, np.linalg.norm(D)
+    # and <Y, D> is the nuclear norm, the defining property of the LMO
+    assert abs(float(np.sum(R * D)) - np.linalg.norm(R, "nuc")) < 1e-10
+    # scale invariance survives the relative rank threshold
+    assert np.allclose(exact_lmo(1e-8 * R), D, atol=1e-12)
+    assert np.allclose(exact_lmo(3.0 * R), D, atol=1e-12)
+
+
+def test_the_counterexample_package_reproduces_the_theorem_constants():
+    """The published Theorem 1-3 numbers come from ``counterexamples/``, not here.
+
+    The torch tests above re-derive the same inner products with their own local
+    oracle. Nothing tied that to the module that actually prints the numbers in
+    the paper, so the two could drift apart silently.
+    """
+    import numpy as np
+    from counterexamples.optimizers import muon_lmo as exact_lmo
+    from counterexamples.problems import (muonsign_counterexample,
+                                          signmuon_counterexample)
+
+    G1, info1 = signmuon_counterexample(sigma1=1000.0)
+    assert np.allclose(exact_lmo(G1), info1["O"], atol=1e-12)     # polar(G) == O
+    assert abs(float(np.sum(G1 * np.sign(exact_lmo(G1)))) + 42468 / 103) < 1e-9
+
+    G2, info2 = muonsign_counterexample(eps=1.0, M=100.0)
+    assert np.array_equal(np.sign(G2), info2["S"])
+    D2 = exact_lmo(info2["S"])
+    assert abs(float(np.sum(G2 * D2)) - (-13.8879)) < 1e-3        # Theorem 2
+    assert abs(float(np.sum(G2 * np.sign(D2))) + 76.0) < 1e-9     # Theorem 3, exact
+    assert float(np.sum(G2 * exact_lmo(G2))) > 0                  # Muon descends
 
 
 def test_capture_direction_records_the_step_actually_taken():

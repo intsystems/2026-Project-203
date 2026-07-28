@@ -17,7 +17,7 @@ What is different from the centralized night
 --------------------------------------------
 * **Selection has somewhere to happen.** ``--split tune`` holds 5k images out of
   the 50k *before* the client partition -- the same 5k the centralized path holds
-  out -- and a tuning child never loads the test set. The learning rates in the
+  out -- and a tuning child never evaluates the test set. The learning rates in the
   published Table 5 came from ``federated/grid.py``, which ranked configurations
   by test accuracy.
 * **Anchors are transported, not guessed.** The published rates were tuned under
@@ -594,7 +594,8 @@ def phase_wd(args, state, budget, sec, tuned: Dict[str, Dict]) -> None:
     picks = ranked[:max(0, args.wd_ablation_top)]
     out = state["phases"].setdefault("wd", {})
     print(f"  decay ablation on {[k for _, k, _ in picks]} at "
-          f"wd={args.wd_ablation:g} (decoupled)")
+          f"wd={args.wd_ablation:g} (decoupled; sgd is coupled by construction, "
+          f"since its step is not scale-invariant)")
     for _, key, lr in picks:
         method = key.replace("+scaled", "")
         seed = args.final_seeds[0]
@@ -640,10 +641,11 @@ def build_report(args, state, budget, sec, tuned, notes: List[str]) -> str:
          f"{args.batch_size}, `{args.partition}` split, measured "
          f"**{sec:.3f} s/round** amortized" if sec else "* timing unavailable"),
         f"* scaling rule **`{args.lr_scaling}`**, lr_aux = {args.lr_aux:g}, "
-        f"momentum {args.momentum:g}, weight decay {args.weight_decay:g} (decoupled)",
+        f"momentum {args.momentum:g}, weight decay {args.weight_decay:g} "
+        f"(decoupled; sgd coupled)",
         f"* tuning: {args.tune_rounds} rounds on the 45k/5k split, selected on "
         f"**val_acc** (tail mean of the last {args.last_k} of {args.eval_points} "
-        f"evaluations); **the test set is never loaded by a tuning run**",
+        f"evaluations); **no test image is ever scored by a tuning run**",
         f"* finals: {args.final_rounds} rounds on the full 50k, seeds "
         f"{args.final_seeds}",
         "",

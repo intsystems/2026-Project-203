@@ -13,9 +13,10 @@ rather than a sweep:
 
 1. **Selection is on validation accuracy only** (``--split tune``: 5k images held
    out of the 50k *before* the client partition, the same 5k the centralized path
-   holds out). The test set is not merely unused -- with ``--split tune`` it is
-   never loaded. This replaces ``federated/grid.py``, which ranked configurations
-   by the test accuracy printed each round.
+   holds out). The test set is not merely unused for ranking -- with
+   ``--split tune`` it is never *evaluated*, so there is no test number in the log
+   to be tempted by. This replaces ``federated/grid.py``, which ranked
+   configurations by the test accuracy printed each round.
 2. **Equal budget** on a multiplicatively anchored 1-2-5 lattice, so a tuned rate
    is quotable as ``0.02`` and two methods anchored at different places snap to
    the same grid.
@@ -49,7 +50,8 @@ import time
 from pathlib import Path
 from typing import Dict, List, Optional, Sequence, Tuple
 
-from common.lr_scaling import RULES, layer_multiplier, resolve_rule
+from common.lr_scaling import (RULES, describe_rule, fan_in_out, layer_multiplier,
+                               resolve_rule)
 from common.utils import results_root, split_param_names
 from federated.algorithms import method_family
 # One lattice for both settings: same helpers, same resolution, same job identity.
@@ -138,6 +140,24 @@ def describe_anchors(rule: str, dataset: str, model: str,
         a = anchor_for(m, rule, shapes)
         lines.append(f"  {m:<16}{fam:>8}{LEGACY_ANCHORS[m]:>12.6g}{a:>12.6g}"
                      f"{lattice_value(lattice_index(a)):>12.6g}")
+
+    # The per-layer multipliers themselves, which is what the anchors are derived
+    # from and what makes the transport auditable. The two families get different
+    # rules, so both are printed; the spread is the number that matters, because
+    # it is what a single global rate would have to paper over.
+    resolved = resolve_rule(rule)
+    for fam in ("lmo", "sign"):
+        lines.append("")
+        lines.append(describe_rule(resolved, fam, shapes))
+
+    # And the comparison the README quotes: at ONE global rate, how much longer is
+    # a sign-family step than the corresponding LMO-family step, layer by layer?
+    lines += ["", "  Step-length ratio at a single global rate "
+                  "(||s||_F sign / ||s||_F lmo), per layer:"]
+    for name, shape in shapes:
+        m_out, n_in = fan_in_out(shape)
+        ratio = math.sqrt(m_out * n_in) / math.sqrt(min(m_out, n_in))
+        lines.append(f"    {name:<34}{ratio:>10.1f}x")
     return "\n".join(lines)
 
 
@@ -175,8 +195,8 @@ def run_one(args, *, lr: float, lr_aux: float, lr_scaling: str, method: str,
     """Launch one federated run; return its metrics, or ``None`` on failure.
 
     Selection uses ``val_acc`` averaged over the last ``--last-k`` evaluations.
-    ``test_acc`` is parsed when present, but a ``split="tune"`` child never loads
-    the test set, so there is nothing to select on by mistake.
+    ``test_acc`` is parsed when present, but a ``split="tune"`` child never
+    evaluates the test set, so there is nothing to select on by mistake.
     """
     tag = canonical_tag(tag, epochs=rounds, split=split, seed=seed)
     freq = eval_freq_for(rounds, args.eval_points)
@@ -431,7 +451,11 @@ def add_common_args(p: argparse.ArgumentParser) -> argparse.ArgumentParser:
 def get_args():
     p = argparse.ArgumentParser(description=__doc__,
                                 formatter_class=argparse.RawDescriptionHelpFormatter)
-    p.add_argument("--stage", required=True, choices=["lr", "aux", "anchors"])
+    p.add_argument("--stage", required=True,
+                   choices=["lr", "aux", "anchors", "votes"],
+                   help="lr/aux: the search stages. anchors: the per-layer "
+                        "multipliers and transported grid anchors. votes: the "
+                        "majority-vote alignment table behind --n_parties 11.")
     p.add_argument("--methods", nargs="*", default=None)
     p.add_argument("--aux-anchors", nargs="*", default=None)
     p.add_argument("--rounds", type=int, default=400,
@@ -444,11 +468,54 @@ def get_args():
     return add_common_args(p).parse_args()
 
 
+def vote_alignment(n_values: Sequence[int] = (9, 10, 11, 15),
+                   q_values: Sequence[float] = (0.0, 0.10),
+                   p_correct: float = 0.65, coords: int = 400_000,
+                   seed: int = 0) -> str:
+    """The majority-vote alignment table that justifies ``--n_parties 11``.
+
+    ``A = E[<truth, s_agg>] / (mn)`` -- the fraction of a full-strength descent
+    step the aggregate actually delivers -- with each client correct with
+    probability ``p_correct`` and silent (``sign(0) = 0``) with probability ``q``.
+
+    This table is quoted in three places and, until now, was produced by nothing:
+    it was prose. Here it is, as a command.
+    """
+    import torch
+
+    g = torch.Generator().manual_seed(seed)
+    lines = [f"Majority-vote alignment, {coords} coordinates, "
+             f"P(client correct) = {p_correct}, truth = +1",
+             f"  {'N':>4}" + "".join(f"{f'tie% (q={q})':>16}{f'A (q={q})':>14}"
+                                     for q in q_values)]
+    for n in n_values:
+        row = f"  {n:>4}"
+        for q in q_values:
+            # Each client sends +1 (correct), -1 (wrong) or 0 (silent).
+            u = torch.rand(coords, n, generator=g)
+            s = torch.where(u < q, torch.zeros(()),
+                            torch.where(u < q + (1 - q) * p_correct,
+                                        torch.ones(()), -torch.ones(())))
+            agg = torch.sign(s.sum(dim=1))
+            ties = float((agg == 0).float().mean())
+            row += f"{100 * ties:>15.2f}%{float(agg.mean()):>14.4f}"
+        lines.append(row)
+    lines += ["",
+              "  A is monotone in N once q > 0; at q = 0 the parity pathology is",
+              "  visible (N=10 buys nothing over N=9). Either way 11 beats 10 --",
+              "  because of more voters, not parity. An odd N does NOT remove ties:",
+              "  a silent client makes a tie possible at any count."]
+    return "\n".join(lines)
+
+
 def main() -> None:
     args = get_args()
     if args.stage == "anchors":
         print(describe_anchors(args.lr_scaling, args.dataset, args.model,
                                args.methods or ALL_METHODS))
+        return
+    if args.stage == "votes":
+        print(vote_alignment())
         return
 
     out = {"lr": stage_lr, "aux": stage_aux}[args.stage](args)

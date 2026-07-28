@@ -15,7 +15,10 @@
 numpy>=1.21
 torch>=1.11           # Tensor.mT, used by the Newton-Schulz iteration
 torchvision>=0.12     # CIFAR-10 / MNIST
-matplotlib>=3.5       # figures and notebooks only
+matplotlib>=3.5       # figures and the plotting scripts
+pytest>=7.0           # optional: tests/README.md documents `pytest tests/test_code.py`
+                      # as an alternative to `python3 -m tests.test_code`, which
+                      # needs no third-party runner
 
 # nanogpt/ (the modded-nanogpt speedrun port) additionally needs a CUDA build of
 # torch and, for train_gpt.py only, FlashAttention-3 via `kernels`. It is not

@@ -351,6 +351,14 @@ def train(args) -> Tuple[nn.Module, History]:
     history = History()          # accuracies in percent, matching the federated driver
 
     def _record(epoch: int, tr: Tuple[float, float], extra: Optional[dict] = None) -> None:
+        # For EF21-MuonSign only, ``tr`` and the evaluated metrics live on
+        # DIFFERENT iterates, and necessarily so: the training pass must
+        # differentiate at the broadcast model W (that is what the algorithm
+        # sends the client), while X is the exact server iterate the convergence
+        # theory bounds and the one worth reporting. Recomputing train metrics at
+        # X would cost a second full pass per epoch. So `train_*` is at W and
+        # `test_*`/`val_*` are at X; do not read the two curves as one trajectory
+        # for that method. Every other method has W == X and the question is moot.
         loss_te, acc_te = evaluate(model, test_dl, device, opt_main)
         values = {"train_loss": tr[0], "train_acc": 100 * tr[1],
                   "test_loss": loss_te, "test_acc": 100 * acc_te}
@@ -422,6 +430,23 @@ def _summarize(history: History, args) -> None:
         # the row: the primary metric is the fixed-budget tail mean anyway.
         print("test_acc @ best-val epoch  : n/a (no validation split; "
               "--split full trains on all 50k)")
+    # Underfitting diagnostic. On ResNet-18/CIFAR-10 every method reaches
+    # ~100%, so this separates nothing there -- which is itself the finding, and
+    # is only visible if the number is printed.
+    train_tail = history.last_k_mean("train_acc", last_k)
+    if train_tail is not None:
+        at_w = getattr(args, "optimizer", "") == "ef21muonsign"
+        note = ("<-- measured at the BROADCAST model W, not the exact model X "
+                "that test/val use") if at_w else "<-- underfitting diagnostic"
+        print(f"train_acc mean of last {last_k:<3}: {train_tail:.2f}%   {note}")
+    # Reported, with the caveat: test cross-entropy rises late in training while
+    # test accuracy keeps improving. That is the standard overconfidence regime
+    # once train accuracy saturates, not a bug and not a reason to early-stop on
+    # test. Accuracy is the primary metric, designated a priori.
+    test_loss = history.last_k_mean("test_loss", last_k)
+    if test_loss is not None:
+        print(f"test_loss mean of last {last_k:<3}: {test_loss:.4f}   "
+              f"(rises late; see REPRODUCE.md 4e)")
     ep = history.steps_to_target("test_acc", target)
     print(f"epochs to {target:g}% test acc  : {ep if ep is not None else 'not reached'}")
     secs = history.values("epoch_seconds")

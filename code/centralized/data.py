@@ -27,6 +27,8 @@ import torch
 from torch.utils.data import DataLoader, Subset
 from torchvision import datasets, transforms
 
+from common.utils import seed_worker
+
 __all__ = ["mnist_loaders", "cifar10_loaders", "build_loaders", "VAL_SIZE",
            "DEFAULT_VAL_SEED"]
 
@@ -124,9 +126,15 @@ def build_loaders(
     else:
         train_view = train_ds
 
+    # ``worker_init_fn`` matters even though the current transforms all draw from
+    # torch (which the loader's ``generator`` already seeds per worker): any
+    # transform or dataset reaching for ``numpy.random`` or ``random`` inside a
+    # worker would silently become irreproducible, and ``common.utils`` already
+    # promises otherwise. Cheap insurance, and it makes the promise true.
     train_loader = DataLoader(
         train_view, batch_size=batch_size, shuffle=True, drop_last=False,
         generator=_generator(seed), num_workers=num_workers, pin_memory=True,
+        worker_init_fn=seed_worker if num_workers > 0 else None,
         persistent_workers=num_workers > 0)
     test_loader = DataLoader(
         test_ds, batch_size=eval_batch_size or batch_size, shuffle=False,

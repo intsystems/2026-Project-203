@@ -31,7 +31,7 @@ your GPU can afford.
 
 Every method is one row of the paper's master table — where the LMO is evaluated,
 and what compresses each channel. Adding a method is one dict entry, which is why
-the ten cannot drift apart in schedule, routing, evaluation or weight decay.
+the eleven cannot drift apart in schedule, routing, evaluation or weight decay.
 
 | Method | LMO | Uplink | Downlink | Family | Uncompressed control |
 | :--- | :--- | :--- | :--- | :--- | :--- |
@@ -197,10 +197,12 @@ train/test mismatch — and it is what the reported federated numbers used.
 
 CNN2 has three matrix parameters, with `fan_in` 75, 1600 and 4608, so the sign
 family's multiplier spans **7.8×**. At one global rate, a SignMuon step is 8.7× the
-corresponding Muon step on `conv1` and 63.7× on `fc1`.
+corresponding Muon step on `conv1` and **67.9×** on `fc1` (`√(mn)/√min(m,n)`, both
+printed by `--stage anchors`).
 
 ```bash
-python3 -m federated.tune --stage anchors    # the multipliers and each method's grid anchor
+python3 -m federated.tune --stage anchors    # per-layer multipliers, spreads, step ratios, grid anchors
+python3 -m federated.tune --stage votes      # the majority-vote alignment table below
 ```
 
 Grid anchors are *transported* rather than re-guessed: the published rates were

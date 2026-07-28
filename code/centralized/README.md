@@ -67,8 +67,10 @@ agreement, and if it fails that is a real finding rather than a protocol note.
 | `mup` | `η₀/fan_in` | `η₀·√max(1,m/n)` | assumes accumulated steps align |
 | `mishra-analysis` | `η₀/√(mn)` | `η₀/√min(m,n)` | the normalization used in their *proof* |
 
-> **ResNet-18 is a weak instrument for the exponent.** Twelve of its twenty conv
-> layers have `fan_in/fan_out = 9` exactly and hold ~63% of the parameters, so `α`
+> **ResNet-18 is a weak instrument for the exponent.** **Thirteen** of its twenty
+> conv weight tensors have `fan_in/fan_out = 9` exactly and hold **84.5%** of all
+> parameters — and one shape alone, `(512, 4608)` appearing three times, is 63% of
+> the model. So `α`
 > is identified only through the transition and 1×1-downsample layers. CNN2 in the
 > federated setting has a 7.8× multiplier spread and no such dominant shape, so it
 > is the better instrument; the `--log-gain` diagnostic measures the exponent

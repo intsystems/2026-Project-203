@@ -7,27 +7,37 @@ directory**, which is the Python package root.
 ```bash
 cd code
 pip install -r requirements.txt
-python3 -m tests.test_code      # sanity check: CPU only, ~30 s, no downloads
+python3 -m tests.test_code      # sanity check: CPU only, ~1 min, no downloads
 ```
+
+Commands are written `python3`. On Windows the interpreter is usually plain
+`python` — substitute it throughout. What matters is that it is the interpreter
+that has `torch` installed.
 
 Add `--download` on the first run of any experiment that needs CIFAR-10 or MNIST.
 
 **Contents**
 
+Artifacts are referred to by **LaTeX label**, never by float number: the numbers
+shift whenever a float is added elsewhere in the paper, and every stale
+"Table 3" in this file was a bug. Find a label in the `.tex` with
+`grep -n 'label{tab:grid_search}' ../aaai_article/v2_SignMuon_AAAI.tex`.
+
 | Paper artifact | Section here |
 | :--- | :--- |
-| Theorems 1–3, Figure 1 | [1. Counterexamples](#1-counterexamples-figure-1-theorems-13) |
-| Theorem 4 (EF21-SignMuon), appendix figures | [2. EF21-SignMuon divergence](#2-ef21-signmuon-divergence-theorem-4) |
+| Theorems 1–3, `fig:divergence_plot` | [1. Counterexamples](#1-counterexamples-figdivergence_plot-theorems-13) |
+| Theorem 4 (EF21-SignMuon), `fig:ef21_divergence`, `fig:ef21_momentum` | [2. EF21-SignMuon divergence](#2-ef21-signmuon-divergence-theorem-4) |
 | `tab:synthetic_alignment`, `tab:synthetic_dynamics`, `tab:synthetic_results`, `tab:grid_search`, `fig:synthetic_*` | [3. Synthetic convex problem](#3-synthetic-convex-problem) |
-| Table 2, Figure 2 | [4. Centralized CIFAR-10](#4-centralized-cifar-10-table-2-figure-2) |
-| Tables 4–5, Figures 5–6 | [5. Federated CIFAR-10](#5-federated-cifar-10-tables-45-figures-56) |
+| `tab:cifar_main`, `tab:cifar_central`, `fig:cifar_results`, `fig:cifar_curves_appendix`, `fig:cifar_lr` | [4. Centralized CIFAR-10](#4-centralized-cifar-10-tabcifar_central-figcifar_results) |
+| `tab:fed_master`, `tab:exp_2`, `tab:exp_3`, `fig:exp_2`, `fig:exp_3` | [5. Federated CIFAR-10](#5-federated-cifar-10-tabexp_2-tabexp_3-figexp_2-figexp_3) |
+| `tab:nanogpt`, `tab:nanogpt_diag`, `fig:nanogpt*` | [nanogpt/README.md](nanogpt/README.md) |
 | — | [6. Multi-seed runs](#6-multi-seed-runs) |
 
 Runtimes below are for a single A100. Everything writes to `results/`.
 
 ---
 
-## 1. Counterexamples (Figure 1, Theorems 1–3)
+## 1. Counterexamples (`fig:divergence_plot`, Theorems 1–3)
 
 CPU, numpy only, **< 10 seconds**. No hyperparameters to tune.
 
@@ -36,22 +46,26 @@ python3 -m counterexamples.problems              # prints the theorem constants
 python3 -m counterexamples.run_counterexamples   # writes the figures
 ```
 
-The first command verifies the exact values quoted in the theorem statements:
+`counterexamples.problems` verifies the exact values quoted in Theorems 1-2 and
+the Theorem 4 rate:
 
 ```
 <G, sign(LMO(G))>   = -412.311   (Theorem 1: -42468/103)
 <G, LMO(sign(G))>   =  -13.888   (Theorem 2: -13.89)
-<G, sign(LMO(sign(G))))> = -76   (Theorem 3: -76)
+rate 49/480 = 0.102083 for every mu in {0, 0.25, 0.5, 0.9, 0.99}, both variants
 ```
 
-The second writes, to **both** `counterexamples/figures/` (PNG + PDF) and
+Theorem 3's `<G, sign(LMO(sign(G)))> = -76` is printed by
+`counterexamples.run_counterexamples`, in its Counterexample-2 table.
+
+`run_counterexamples` also writes, to **both** `counterexamples/figures/` (PNG + PDF) and
 `../aaai_article/images/counterexamples/` (PDF, which is what LaTeX includes):
 
 | File | Paper |
 | :--- | :--- |
-| `signmuon_counterexample.pdf` | Figure 1(a) |
-| `muonsign_counterexample.pdf` | Figure 1(b) |
-| `ef21_signmuon_counterexample.pdf` | appendix, `ef21_signmuon_divergence.tex` |
+| `signmuon_counterexample.pdf` | `fig:divergence_plot` (a) |
+| `muonsign_counterexample.pdf` | `fig:divergence_plot` (b) |
+| `ef21_signmuon_counterexample.pdf` | `fig:ef21_divergence`, in `ef21_signmuon_divergence.tex` |
 
 The LMO here is an **exact rank-truncated SVD**, matching the theorem statements.
 Deep-learning runs use the Newton–Schulz approximation, as practitioners do. To see
@@ -61,8 +75,10 @@ how the two differ on these instances:
 python3 -m counterexamples.verify_ns_oracle --trajectories
 ```
 
-Options: `--mu 0.9`, `--nesterov`, `--eta`, `--T`. Momentum provably cannot change
-these trajectories (Proposition 1), and the runner confirms it for any `--mu`.
+`verify_ns_oracle` takes `--steps`, `--sigmas`, `--Ms`, `--trajectories`,
+`--traj-steps`, `--traj-dtype`, `--eta`, `--T`. It has **no** `--mu`/`--nesterov`
+— those belong to `run_counterexamples`, where momentum provably cannot change
+the trajectory (Proposition 1) and the runner confirms it for any `--mu`.
 
 ## 2. EF21-SignMuon divergence (Theorem 4)
 
@@ -71,32 +87,46 @@ python3 -m counterexamples.plot_ef21_momentum    # ~20 s, CPU
 ```
 
 Writes `ef21_signmuon_momentum.pdf` to the same two directories. Verifies the exact
-rate `49/480` per step for every `μ ∈ {0, 0.25, 0.5, 0.9, 0.99}` and both momentum
-variants (also printed by `python3 -m counterexamples.problems`).
+rate `49/480` per step for every `μ ∈ {0, 0.5, 0.9, 0.95, 0.99}` and both momentum
+variants. `python3 -m counterexamples.problems` prints the same check over a
+slightly different set, `μ ∈ {0, 0.25, 0.5, 0.9, 0.99}`.
+
+Both measure the slope over a whole number of periods. The trajectory is
+period-two, so a window whose endpoints have opposite parity leaks half an
+oscillation into the slope and never shows the exact rate — that was a real bug
+here, fixed 2026-07-28.
 
 ## 3. Synthetic convex problem
 
 `F(X) = ½⟨X, AXB⟩`, `m = n = 500`, target `F ≤ 1e-3`, `T_max = 5000`.
 
-Artifacts are named by LaTeX label, not by number — the numbers shift whenever a
-float is added elsewhere in the paper. `tab:synthetic_alignment` and
-`tab:synthetic_dynamics` plus `fig:synthetic_dynamics` and `fig:synthetic_kappa`
-are the current measurements; `tab:synthetic_results`, `tab:grid_search` and
-`fig:synthetic_results` are the superseded fixed-target comparison retained in
-`app:synthetic_v1`.
+`tab:synthetic_alignment` and `tab:synthetic_dynamics` plus `fig:synthetic_dynamics`
+and `fig:synthetic_kappa` are the current measurements; `tab:synthetic_results`,
+`tab:grid_search` and `fig:synthetic_results` are the superseded fixed-target
+comparison retained in `app:synthetic_v1`.
+
+> **Start small.** `--m` overrides the problem size for every stage, keeping the
+> real grids and iteration counts, and writes to its own tree — so
+> `--m 20` lands in `results/synthetic_20x20/` and cannot be confused with the
+> reported numbers. Cost grows steeply (the LMO is an SVD or a Newton–Schulz
+> iteration per step), so check the pipeline and the figures at `--m 20` before
+> committing to 500×500.
 
 ### Everything in one command
 
 ```bash
 python3 -m synthetic.run_gpu --list      # what the stages are and what they cost
 python3 -m synthetic.run_gpu --quick     # ~5 min at tiny sizes — RUN THIS FIRST
+python3 -m synthetic.run_gpu --m 20      # every stage at 20x20, real grids
 python3 -m synthetic.run_gpu             # the real thing, ~5 h on one A100
 ```
 
-`--quick` writes to `results/synthetic_quick/`, so a smoke test never lands where
-the real results belong. The five new sweeps take ~1h45 together; the remaining
-~3 h is the `grid` stage re-running Table 1 at 500×500. Split them if you would
-rather not hold one job open that long:
+`--quick` writes to `results/synthetic_quick/` and `--m N` to
+`results/synthetic_NxN/`, so neither a smoke test nor a small-size pass can land
+where the real results belong. The five dynamics sweeps take ~2h05 together
+(5 + 20 + 25 + 45 + 30 min); the remaining ~3 h is the `grid` stage re-running
+`tab:synthetic_results` at 500×500. Split them if you would rather not hold one
+job open that long:
 
 ```bash
 python3 -m synthetic.run_gpu --stages stability alignment floor horizon kappa
@@ -121,8 +151,8 @@ already on disk, without re-running anything.
 
 ### Or one stage at a time
 
-**Table 3** (`tab:grid_search`) is the search grid; **Table 1**
-(`tab:synthetic_results`) is its result. Full grid, all ten methods, ~2 h:
+`tab:grid_search` is the search grid; `tab:synthetic_results` is its result.
+Full grid, all ten methods, ~2 h:
 
 ```bash
 python3 -m synthetic.benchmark --mode grid --device cuda:0
@@ -137,35 +167,52 @@ python3 -m synthetic.benchmark --mode grid --device cuda:0 --methods ef21muonusi
 python3 -m synthetic.benchmark --mode grid --device cuda:0 --methods muon signsgd sgd adam
 ```
 
-To re-run only the tuned optima (~2 min) for the Figure 4 curves. This reads
-`results/synthetic/<method>/grid.json` if the grid stage has run, and falls back
-to the paper's printed table otherwise; the run log says which it used:
+To re-run only the tuned optima (~2 min) for the `fig:synthetic_results` curves.
+This reads `results/synthetic/<method>/grid.json` if the grid stage has run, and
+falls back to the paper's printed table otherwise; the run log says which it used:
 
 ```bash
 python3 -m synthetic.benchmark --mode final --device cuda:0 --save-histories
 ```
 
 Results land in `results/synthetic/<method>/{grid,final}.json`; `--save-histories`
-adds the loss and gradient-norm curves that **Figure 4** plots
-(`images/synt/loss.png`, `images/synt/GN.png`) — see
-[notebooks/plot_synthetic.ipynb](notebooks/plot_synthetic.ipynb).
+adds the loss and gradient-norm curves. Draw every synthetic figure with:
+
+```bash
+python3 -m synthetic.plot_synthetic                          # results/synthetic/
+python3 -m synthetic.plot_synthetic --results results/synthetic_20x20
+```
+
+It writes `loss`, `GN` (`fig:synthetic_results`), `floor`, `horizon`
+(`fig:synthetic_dynamics`) and `kappa` (`fig:synthetic_kappa`) as PDF + PNG into
+`<results>/figures/`, and reports which stages have not been run rather than
+failing. The last three of those `\includegraphics` lines are currently
+**commented out in the paper** — the files had never been produced.
+Nothing is copied into `aaai_article/` automatically; do that deliberately.
 
 > **Three caveats.** (i) `--mode final` prefers `results/synthetic/<method>/grid.json`
-> and only falls back to the paper's printed optima, which for Muon (`6.5e-3`) and
-> EF21-MuonUSign (`3.3e-3`) are **not on the grid `tab:grid_search` states**;
-> `PAPER_LR_GRIDS` in `synthetic/benchmark.py` holds that table verbatim and
-> `--grid-preset paper` selects it, so the discrepancy is checkable. (ii) The default
-> `--lmo-dtype bfloat16` matches the reference Muon implementation; pass
-> `--lmo-dtype float32` for a precise LMO. Both are reported in the output JSON.
-> (iii) **The default grids are no longer Table 3's.** Table 3's grids are linear and
-> one decade wide, which left SGD censored at its own boundary — its reported
-> `(η, μ) = (0.1, 0.95)` is the *top* of both grids, and at `m=n=100` the tuned
-> value is roughly `η = 1.6` reaching the target in ~164 iterations against 2691
-> at `η = 0.1`. "SGD: 972" is therefore an upper bound, not a tuned number, and
-> it is what makes Adam look dominant in Table 1. The defaults are now
-> logarithmic and 3–4 decades wide; the tuner prints `[BOUNDARY]` and records
-> `on_grid_boundary` in the JSON whenever an optimum still lands on an edge.
-> **Tables 1 and 3 must both be re-run and re-typeset.**
+> and only falls back to the paper's printed optima, **three** of which are not on
+> the grid `tab:grid_search` states: Muon (`6.5e-3`, grid step `1e-3`),
+> EF21-MuonUSign (`3.3e-3`) and EF21-MuonSign (`2.8e-3`). `PAPER_LR_GRIDS` in
+> `synthetic/benchmark.py` holds that table verbatim and `--grid-preset paper`
+> selects it, so the discrepancy is checkable — it writes `grid-paper.json`, a
+> *different* file from the tuned `grid.json`, so running it cannot overwrite the
+> result it is being compared against. Budget for it: the paper grids are linear
+> and fine, so the preset is ~3850 configurations against the default's ~733.
+> (ii) The default `--lmo-dtype bfloat16` matches the reference Muon
+> implementation; pass `--lmo-dtype float32` for a precise LMO. Both are reported
+> in the output JSON.
+> (iii) **The default grids are no longer `tab:grid_search`'s.** Those grids are
+> linear and one decade wide, which left SGD censored at its own boundary — its
+> reported `(η, μ) = (0.1, 0.95)` is the *top* of both grids, and at `m=n=100` the
+> tuned value is roughly `η = 1.6` reaching the target in ~164 iterations against
+> 2691 at `η = 0.1`. "SGD: 972" is therefore an upper bound, not a tuned number,
+> and it is what makes Adam look dominant in `tab:synthetic_results`. The defaults
+> are now logarithmic and 3–4 decades wide; the tuner prints `[BOUNDARY]` and
+> records `on_grid_boundary` in the JSON whenever an optimum still lands on an
+> edge. **`tab:synthetic_results` and `tab:grid_search` must both be re-run and
+> re-typeset**; the paper currently files them under `app:synthetic_v1`
+> ("superseded results") with the censoring disclosed in the text.
 
 ### 3b. What the iteration count actually measures
 
@@ -174,8 +221,8 @@ fixed length `η√(mn)`, so a constant step size cannot converge and `F` platea
 Measured at `m=n=100`, the plateau is `F∞ ∝ η²` (equivalently `‖∇F‖∞ ∝ η`) to
 three digits, and "iterations to `1e-3`" is exactly `const/η`. The tuner
 therefore returns the largest `η` whose plateau still fits under the target, so
-Table 1 ranks methods by *floor*, not by rate. The two effects pull in opposite
-directions and must be reported separately:
+`tab:synthetic_results` ranks methods by *floor*, not by rate. The two effects
+pull in opposite directions and must be reported separately:
 
 | at `m=n=100`, momentum 0.2 | SignMuon | SignSGD |
 | :--- | ---: | ---: |
@@ -184,6 +231,17 @@ directions and must be reported separately:
 | iterations to `1e-3` at each method's tuned `η` | **~1830** | 2036 |
 
 SignMuon's advantage is a ~2× lower floor; it *loses* ~28% on per-step descent.
+
+> The table above is a **measurement of record** taken at momentum `0.2` and
+> `η = 2e-4`, neither of which is a default: `--mode floor` uses `momenta[0]`,
+> which is `0.0` under the default grid, and `2e-4` is not on the default lr
+> grid. Reproduce it explicitly with
+> ```bash
+> python3 -m synthetic.benchmark --mode floor --momentum-grid 0.2 \
+>     --lr-grid signmuon=1e-4:8e-4:x2 signsgd=1e-4:8e-4:x2 \
+>     --methods signmuon signsgd --problem-seeds 1337
+> ```
+> and re-state the numbers from that run rather than quoting these.
 Four modes measure these directly (all default to `m=n=100`, ~minutes each):
 
 ```bash
@@ -204,28 +262,55 @@ drive negative, against the closed-form references `ρ = 1` (SGD),
 imposing one schedule on all methods, and `--schedules const sqrt` (its default)
 lets each method pick.
 
-## 4. Centralized CIFAR-10 (Table 2, Figure 2)
+## 4. Centralized CIFAR-10 (`tab:cifar_central`, `fig:cifar_results`)
 
 ResNet-18, 75 epochs, batch 128, momentum 0.9, cosine-annealed learning rate.
 
 ### 4a. Reproducing the published table
 
-The hyperparameters below are exactly Table 2 (`tab:cifar_central`), under the
-`legacy` per-layer rule and `--head-adamw auto`, which is what produced them.
+`tab:cifar_central` as it now stands: **ten** methods, three seeds, the derived
+`unit-gain` per-layer rule, `--head-adamw always`, and `η₀` selected on a
+held-out 5k validation split at 15 epochs then retrained on the full 50k. Each
+`η₀` below is the table's own value.
 
 ```bash
 COMMON="--dataset cifar10 --model resnet18 --epochs 75 --batch-size 128 \
-        --momentum 0.9 --lr-scaling legacy --head-adamw auto \
-        --data ./data --device cuda:0 --seed 0"
+        --momentum 0.9 --lr-scaling unit-gain --head-adamw always \
+        --lr-aux 0.001 --data ./data --device cuda:0"
 
-python3 -m centralized.main $COMMON --optimizer signmuon      --lr 0.001 --lr-aux 0.0001
-python3 -m centralized.main $COMMON --optimizer muon          --lr 0.015 --lr-aux 0.001
-python3 -m centralized.main $COMMON --optimizer sgd           --lr 0.015 --lr-aux 0.001
-python3 -m centralized.main $COMMON --optimizer signsgd       --lr 0.001 --lr-aux 0.0001
-python3 -m centralized.main $COMMON --optimizer adam          --lr 0.001 --lr-aux 0.0001
-python3 -m centralized.main $COMMON --optimizer ef21muonusign --lr 0.008 --lr-aux 0.001
-python3 -m centralized.main $COMMON --optimizer ef21muonsign  --lr 0.007 --lr-aux 0.001
+for s in 0 1 2; do
+  python3 -m centralized.main $COMMON --seed $s --optimizer ef21signmuon  --lr 0.01
+  python3 -m centralized.main $COMMON --seed $s --optimizer signmuon      --lr 0.02
+  python3 -m centralized.main $COMMON --seed $s --optimizer muon          --lr 0.05
+  python3 -m centralized.main $COMMON --seed $s --optimizer ef21muonsign  --lr 0.01
+  python3 -m centralized.main $COMMON --seed $s --optimizer ef21muonusign --lr 0.2
+  python3 -m centralized.main $COMMON --seed $s --optimizer muonusign     --lr 0.02
+  python3 -m centralized.main $COMMON --seed $s --optimizer muonsign      --lr 0.005
+  python3 -m centralized.main $COMMON --seed $s --optimizer adam          --lr 0.0005
+  python3 -m centralized.main $COMMON --seed $s --optimizer signsgd       --lr 0.002
+  python3 -m centralized.main $COMMON --seed $s --optimizer sgd           --lr 0.02
+done
+python3 -m aggregate --root results/centralized --metric test_acc --csv cifar_central.csv
 ```
+
+`lr_aux = 0.001` throughout; it is absent from the table because `--stage aux`
+found the optimum method-independent, which is the check that lets it be held
+fixed. **All ten are in the table**, EF21-SignMuon included — it is the *top*
+row, which is worth stating plainly: Theorem 4 shows the method can be made to
+diverge, and on CIFAR-10 it is nonetheless the most accurate. The theorem is a
+statement about worst cases, not about ResNet-18.
+
+Figures come from a separate script, which reads the aggregator's output rather
+than the run directories:
+
+```bash
+python3 -m aggregate --root results/centralized --csv centralized/table2_full.csv \
+                     --curves centralized/curves.json
+python3 -m centralized.plot_analysis        # -> results/analysis/
+```
+
+That produces `fig:cifar_results` (main text), `fig:cifar_curves_appendix` and
+`fig:cifar_lr`.
 
 ### 4b. One command for the whole protocol
 
@@ -284,7 +369,7 @@ Four properties, enforced by the code rather than by discipline:
    lands on a grid endpoint** instead of reporting it.
 3. **Per-layer learning rates are derived, not tuned.** `--lr-scaling` sets
    `η_layer = η₀ · λ(family, shape)` analytically; only `η₀` is searched, and it is
-   a shape-free quantity. See §4c.
+   a shape-free quantity. See §4d.
 4. **`--head-adamw always`** so the only difference between two rows is the matrix
    rule.
 
@@ -320,9 +405,9 @@ initialization and data order everywhere and the comparison is *paired* — far 
 powerful than unpaired at n=3. Adopt the decision rule up front: **claim a gap only
 when it exceeds the paired std**, otherwise write "indistinguishable".
 
-`muonusign`, `muonsign` and `ef21signmuon` are **not in Table 2** — MuonUSign is the
-`-` row, and the other two were not run. `ef21signmuon` is the method Theorem 4 says
-diverges, so it belongs in the table as a predicted-failure baseline.
+All ten of these are now in `tab:cifar_central`, `ef21signmuon` included — the
+method Theorem 4 says can be made to diverge, present as a predicted-failure
+baseline that in fact tops the table.
 
 ### 4d. Which `--lr-scaling`?
 
@@ -350,8 +435,10 @@ python3 -m centralized.main ... --log-gain # accumulated: sqrt(t) growth -> unit
                                            #              linear t     -> mup
 ```
 
-> **Caveat to report.** ResNet-18 is a weak instrument for the exponent: 12 of its 20
-> conv layers have `fan_in/fan_out = 9` exactly and hold ~63% of the parameters, so
+> **Caveat to report.** ResNet-18 is a weak instrument for the exponent: **13 of its
+> 20** conv weight tensors have `fan_in/fan_out = 9` exactly and hold **84.5%** of all
+> parameters (84.6% of conv parameters) — and a *single* shape, `(512, 4608)`,
+> appearing three times, is 63% of the model on its own. So
 > `α` is identified only through the transition and 1×1-downsample layers. Confirm on
 > a second architecture, or rely on `--log-gain`, before treating a small val gap as
 > decisive.
@@ -365,13 +452,16 @@ self-consistent rather than an arbitrary cut — and report, per run:
 | :--- | :--- |
 | test accuracy, mean of the last `--last-k` epochs | **primary** |
 | test accuracy at the best-`val_acc` epoch | early stopping, done properly |
-| train accuracy | underfitting diagnostic (SignSGD reaches only ~93% train) |
+| train accuracy | underfitting diagnostic — though on ResNet-18/CIFAR-10 it separates nothing: every method in `tab:cifar_central` reaches 99.95–100.00% |
 | test loss | report with the explanation below |
 | epochs to `--target-acc` | separates *speed* from final quality |
-| median epoch time, uncompressed-parameter fraction | cost of the method |
+| median epoch time | cost of the method |
+| uncompressed-parameter fraction | the "+ ε" in "1 bit per parameter" |
 
-All of these are printed in a `--- summary ---` block at the end of every run, so a
-log alone fills a table row.
+Everything except the last is printed in a `--- summary ---` block at the end of
+every run, so a log alone fills a table row. The uncompressed-parameter fraction
+is a property of the model rather than of the run, so it is printed once at
+startup, on the `Parameters: … matrix (compressed) + … auxiliary` line.
 
 **On the test-loss/accuracy divergence:** test cross-entropy rises after epoch ≈40
 while test accuracy keeps improving. That is the standard overconfidence regime once
@@ -380,10 +470,10 @@ decision boundary still improves. It is not a bug and not a reason to early-stop
 test. Designate test accuracy the primary metric *a priori*, say so in one sentence,
 and report the loss anyway.
 
-## 5. Federated CIFAR-10 (Tables 4–5, Figures 5–6)
+## 5. Federated CIFAR-10 (`tab:exp_2`, `tab:exp_3`, `fig:exp_2`, `fig:exp_3`)
 
 CNN2, **11 clients**, 3 local steps, 2000 rounds, batch 64, momentum 0.9,
-homogeneous split — one federation scale, all ten methods.
+homogeneous split — one federation scale, all eleven methods.
 
 The federated path now follows the **same protocol as §4**: a held-out validation
 split, per-layer learning rates derived from the shape, an equal-budget lattice
@@ -478,7 +568,15 @@ initialization, partition and data order everywhere and the comparison is
 *paired*. Claim a gap only when it exceeds the paired std.
 
 Results: `results/federated/fed_cifar10_<algorithm>_homo_cnn2_r2000_c<N>_s<steps>_unit-gain/seed<s>/`.
-**Figures 5–6** come from [notebooks/plot_federated.ipynb](notebooks/plot_federated.ipynb).
+`fig:exp_2` and `fig:exp_3` come from:
+
+```bash
+python3 -m federated.plot_federated                 # -> results/federated/figures/
+python3 -m federated.plot_federated --n-parties 11 --metrics test_acc test_loss
+```
+
+One curve per method with a ±1 sample-std band over seeds, grouped by
+configuration-minus-seed. Nothing is copied into `aaai_article/` automatically.
 
 ### 5c. Reproducing the *published* Table 5 instead
 
@@ -547,7 +645,9 @@ consequences:
   "is equal to +1 or −1 in each component" is wrong as implemented.
 
 Both are now measured, not assumed: every run records `uplink_zero_frac` and
-`mv_tie_frac` and prints them in the summary. Alignment
+`mv_tie_frac` and prints them in the summary. The alignment table below is
+reproduced by `python3 -m federated.tune --stage votes` (Monte Carlo over 400k
+coordinates, so the last digit moves between runs). Alignment
 `A = E[⟨truth, ŝ⟩]/(mn)` over 400k coordinates, each client correct with
 probability 0.65 and silent with probability `q`:
 
@@ -644,20 +744,38 @@ python3 -m aggregate --metric test_acc --csv summary.csv --curves curves.json
 std; `curves.json` holds the pointwise mean/std curves for error-band plots. It
 scans all of `results/` by default (`--root results/federated` for one family).
 
-The paper currently reports single-seed numbers. Several of its conclusions rest on
-gaps smaller than a plausible seed spread — e.g. SignMuon `84.57%` vs
-EF21-MuonUSign `84.59%` in Table 5 — so ≥3 seeds is worth the compute for the
-headline comparisons.
+The **centralized** arm is now three seeds and reports mean ± std
+(`tab:cifar_main`, `tab:cifar_central`). The **federated** tables are still
+single-seed, and several of their conclusions rest on gaps smaller than a
+plausible seed spread — e.g. SignMuon `84.57%` vs EF21-MuonUSign `84.59%` in
+`tab:exp_3` — so ≥3 seeds is worth the compute there before any of those gaps is
+claimed.
 
 ---
 
 ## Notes
 
-* **Notebooks are the plotting step**, and they still read the pre-reorganization
-  `saves/`, `saves_federated/` and `saves_synthetic*/` paths. Repoint them at
-  `results/` before use.
-* **`nanogpt/`** (the modded-nanogpt speedrun adaptation) is not part of the paper's
-  tables and has its own [README](nanogpt/README.md).
+* **Plotting is scripts, not notebooks.** The four notebooks under `notebooks/`
+  read the pre-reorganization `saves/`, `saves_federated/` and `saves_synthetic*/`
+  paths and were removed on 2026-07-28. Each has a replacement that reads
+  `results/`:
+
+  | figure | script |
+  | :--- | :--- |
+  | `fig:divergence_plot`, `fig:ef21_divergence` | `counterexamples.run_counterexamples` |
+  | `fig:ef21_momentum` | `counterexamples.plot_ef21_momentum` |
+  | `fig:synthetic_*` | `synthetic.plot_synthetic` |
+  | `fig:cifar_*` | `centralized.plot_analysis` |
+  | `fig:exp_2`, `fig:exp_3` | `federated.plot_federated` |
+  | `fig:nanogpt*` | `nanogpt/plot_article.py` |
+
+  Only the two counterexample scripts write into `aaai_article/`; the rest write
+  to `results/` and you copy over deliberately.
+* **`nanogpt/`** (the modded-nanogpt speedrun adaptation) has its own
+  [README](nanogpt/README.md). It *is* in the paper — `tab:nanogpt` and
+  `fig:nanogpt` are main text, `tab:nanogpt_diag`, `fig:nanogpt_appendix` and
+  `fig:nanogpt_diag` are appendix — but it needs 8×H100 and is not reproducible
+  from this file.
 * **Hardware/software.** The paper's reproducibility checklist has placeholders for
   the GPU, CPU, RAM, OS and PyTorch/CUDA versions; fill them from the machine that
   produced the final numbers.

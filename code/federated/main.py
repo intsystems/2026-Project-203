@@ -1,6 +1,6 @@
 """Entry point for the federated experiments.
 
-    # tune: held-out validation split, the test set is never loaded
+    # tune: held-out validation split; no test image is ever scored
     python3 -m federated.main --model cnn2 --dataset cifar10 \
         --algorithm signmuon --lr-scaling unit-gain --split tune \
         --rounds 400 --n_parties 10 --n_steps 3 --batch_size 64 \
@@ -78,6 +78,7 @@ class FederatedConfig:
     run_name: str
     eval_freq: int
     weight_decay: float
+    weight_decay_mode: str
     eps: float
     cosine_schedule: bool
     freeze_bn_stats: bool
@@ -159,7 +160,7 @@ def get_params() -> argparse.ArgumentParser:
     p.add_argument("--split", type=str, default="full", choices=["full", "tune"],
                    help=f"tune: hold out {VAL_SIZE} training images as validation, "
                         f"partition the remaining 45k across the clients, and report "
-                        f"val accuracy -- the test set is never loaded; full: partition "
+                        f"val accuracy -- no test image is ever scored; full: partition "
                         f"all 50k and report test accuracy (final runs)")
     p.add_argument("--val-seed", type=int, default=DEFAULT_VAL_SEED,
                    help="Seed of the train/val partition; the same default as the "
@@ -188,11 +189,27 @@ def get_params() -> argparse.ArgumentParser:
                         "the centralized primary table: that is the setting the "
                         "theorems analyse. The overnight driver re-runs the best "
                         "methods at 5e-4 as an ablation")
+    p.add_argument("--weight-decay-mode", type=str, default="decoupled",
+                   choices=["decoupled", "coupled"],
+                   help="decoupled (default): X *= 1 - lr*wd on the server, so the "
+                        "LMO sees the true gradient. coupled: wd*X is folded into "
+                        "the client gradient before the oracle. Every step direction "
+                        "here is positively homogeneous of degree zero, so coupling "
+                        "cannot change the step LENGTH -- it only rotates the "
+                        "direction. Same flag and same meaning as centralized.main.")
     p.add_argument("--eps", type=float, default=1e-8, help="Epsilon for Adam/AdamW")
     p.add_argument("--live-bn-stats", action="store_true",
-                   help="Let BatchNorm running statistics update during local "
-                        "gradient accumulation (they are frozen by default, which "
-                        "is what the reported numbers used)")
+                   help="Normalize with BATCH statistics during local gradient "
+                        "accumulation, instead of the frozen (0,1) initialization "
+                        "that is the default and what the reported numbers used. "
+                        "Note what this does NOT do: the local model is rebuilt "
+                        "from the global one every round and never written back, "
+                        "so the running statistics it accumulates are discarded "
+                        "and evaluation still uses (0,1). The flag therefore "
+                        "*introduces* a train/eval mismatch rather than removing "
+                        "one. Making the statistics genuinely live would need them "
+                        "aggregated across clients and broadcast, which is a "
+                        "different algorithm and extra communication")
     p.add_argument("--nondeterministic", action="store_true",
                    help="Allow cuDNN autotuning: faster, but not bitwise reproducible")
     return p
@@ -313,6 +330,7 @@ def main() -> None:
         run_name=args.run_name,
         eval_freq=args.eval_freq,
         weight_decay=args.weight_decay,
+        weight_decay_mode=args.weight_decay_mode,
         eps=args.eps,
         cosine_schedule=not args.no_cosine,
         freeze_bn_stats=not args.live_bn_stats,
@@ -345,6 +363,7 @@ def main() -> None:
         momentum=args.momentum,
         nesterov=args.nesterov,
         weight_decay=args.weight_decay,
+        decoupled_weight_decay=(args.weight_decay_mode == "decoupled"),
         ns_steps=args.ns_steps,
         eval_freq=args.eval_freq,
         device=device,

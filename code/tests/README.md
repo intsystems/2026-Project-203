@@ -6,7 +6,7 @@ python3 -m tests.test_code      # ~1 min, no GPU, no downloads
 pytest tests/test_code.py       # or under pytest
 ```
 
-43 checks in one file, [`test_code.py`](test_code.py). No GPU, no dataset, no
+66 checks in one file, [`test_code.py`](test_code.py). No GPU, no dataset, no
 network. Both `overnight.py` drivers run it as their first preflight step and refuse
 to start a night if it fails.
 

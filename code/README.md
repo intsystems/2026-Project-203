@@ -24,7 +24,7 @@ python3 -m tests.test_code          # CPU only, no downloads, ~1 min
 | see the convex-benchmark modes | [`synthetic/`](synthetic/README.md) |
 | run the language-modelling arm | [`nanogpt/`](nanogpt/README.md) |
 | know what the tests actually pin | [`tests/`](tests/README.md) |
-| redraw a figure | [`notebooks/`](notebooks/README.md) |
+| redraw a figure | `counterexamples.run_counterexamples`, `synthetic.plot_synthetic`, `centralized.plot_analysis`, `federated.plot_federated` — see [REPRODUCE.md](REPRODUCE.md) |
 | package this for double-blind review | [ANONYMIZATION.md](ANONYMIZATION.md) |
 
 ```
@@ -33,14 +33,13 @@ code/
 ├── ANONYMIZATION.md      preparing the anonymous supplement
 ├── aggregate.py          multi-seed mean ± std
 ├── anonymize.py          the anonymity scan and bundler
-├── common/               optimizers, per-layer LR rules, models, utilities
+├── common/               optimizers, per-layer LR rules, models, plotting style, utilities
 ├── centralized/          ResNet-18 / CIFAR-10        (main, train, tune, overnight, data)
-├── federated/            all ten methods, one driver (algorithms, main, tune, overnight, data)
-├── synthetic/            F(X) = ½⟨X, AXB⟩, seven modes
+├── federated/            all eleven methods, one driver (algorithms, main, tune, overnight, plot_federated, data)
+├── synthetic/            F(X) = ½⟨X, AXB⟩, seven modes (benchmark, run_gpu, plot_synthetic)
 ├── counterexamples/      Theorems 1–4, exact LMO
 ├── nanogpt/              modded-nanogpt speedrun port
 ├── tests/test_code.py    the CPU test suite
-├── notebooks/            plotting only
 └── results/              all output (created on first run)
 ```
 
@@ -69,11 +68,17 @@ cleanly and writes it. `--dry-run` prints the schedule and exits.
 | `muonserver` | `polar(mean M)` (server LMO) | 32 bit | exact |
 | `signsgd`, `sgd`, `adam` | references | | |
 
-Older spellings (`signmuon_cl`, `signmuon_ef_21`, `signmuon_ef_ud`, `ef_usignmuon`,
-`ef_udsignmuon`) still resolve. **`MuonSign` changed meaning**: it used to name the
-sign-*before* method, which the paper now calls `MuonUSign`. There is deliberately
-no alias for the old spelling, because resolving it silently would swap the
-algorithm rather than the label.
+Older spellings still resolve, but the two drivers accept different sets — the
+centralized one never used the `signmuon_*` names:
+
+| driver | accepted aliases |
+| :--- | :--- |
+| `centralized.main --optimizer` | `ef_usignmuon`, `ef_udsignmuon` |
+| `federated.main --algorithm` | `signmuon_cl`, `signmuon_ef_21`, `signmuon_ef_ud`, `muon_server` |
+
+**`MuonSign` changed meaning**: it used to name the sign-*before* method, which the
+paper now calls `MuonUSign`. There is deliberately no alias for the old spelling,
+because resolving it silently would swap the algorithm rather than the label.
 
 The LMO is an **exact rank-truncated SVD** in `counterexamples/` (matching the
 theorem statements) and a **Newton–Schulz approximation** everywhere a network is
@@ -99,7 +104,8 @@ Enforced in one place, so that two runs differ *only* in the matrix-parameter ru
   `wd·X` into the gradient cannot change the step length at all — it only rotates
   the direction, by an amount set by the drifting, method-dependent ratio
   `wd‖X‖_F/‖G‖_F`. `--weight-decay-mode coupled` reproduces that convention for the
-  appendix ablation.
+  appendix ablation, in **both** drivers (it was centralized-only until 2026-07-28;
+  the federated flag existed as a function argument no CLI ever set).
 * **Momentum** is the EMA form `M = μM + (1−μ)G` of the algorithm boxes,
   trajectory-identical to the heavy-ball form of the main text. `sgd` keeps
   heavy-ball, since its step *is* the buffer.
@@ -123,8 +129,10 @@ lists the alternatives (`mup`, `mishra-analysis`, `power:α,β`) and what each a
 
 On CNN2 the sign family's multiplier spans **7.8×** (`fan_in` 75 → 4608), a wider
 spread than ResNet-18 offers, so the federated setting is the more sensitive test of
-the rule. `python3 -m federated.tune --stage anchors` prints the multipliers and the
-grid anchor each method inherits.
+the rule. `python3 -m federated.tune --stage anchors` prints the per-layer
+multipliers for both families, their spread, the grid anchor each method inherits,
+and the per-layer step-length ratio a single global rate would have to absorb
+(8.7× on `conv1`, 67.9× on `fc1`).
 
 ## Three caveats worth knowing
 
@@ -151,6 +159,21 @@ A run writes to `results/{centralized,federated}/<run_name>/seed<seed>/`:
 
 * `metrics.json` — `{"config": {...}, "history": {"steps": [...], "test_acc": [...], ...}}`
 * `model.pt` — final weights plus the config
+
+> **Put this somewhere roomy before a long sweep.** `SIGNMUON_RESULTS` relocates
+> the whole tree; `aggregate.py` and every plotting script follow it
+> automatically. One `model.pt` per job adds up — **2.9 MB** for CNN2, **42.7 MB**
+> for ResNet-18 — so the 95-job federated night is ~280 MB and a 36-job
+> centralized sweep is ~1.5 GB, before the dataset. Running the system disk dry at
+> 04:00 costs the night.
+>
+> ```bash
+> export SIGNMUON_RESULTS=/mnt/scratch/signmuon-results   # or D:\...\results
+> python3 -m federated.overnight --device cuda:0 --data /mnt/scratch/data_federated
+> ```
+>
+> `--data` is separate and also worth pointing off the system disk: CIFAR-10 is
+> ~180 MB per copy and the two settings use different directories by default.
 
 `history` records the **x-axis explicitly** and stores only evaluated points, so
 curves from different seeds (or different `--eval_freq`) align pointwise. Nothing is

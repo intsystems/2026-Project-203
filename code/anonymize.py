@@ -65,31 +65,49 @@ class Rule:
     flags: int = re.IGNORECASE
 
 
-#: Names, handles and institutions belonging to *this* project. Add to this list
-#: rather than to the generic rules below -- a specific string is cheap to check
-#: and never fires on an upstream citation.
+#: Names, handles and institutions belonging to *this* project. Add to one of these
+#: two lists rather than to the generic rules below -- a specific string is cheap to
+#: check and never fires on an upstream citation.
+#:
+#: Distinctive enough to match ANYWHERE, with no boundary conditions at all.
+#: None of these is a substring of an ordinary English word, so gluing cannot
+#: create a false positive -- but it can very easily hide a real leak
+#: (``AlexKravatsky``, ``kravatsky2026``, ``by_legeartis``), which is why these
+#: are matched bare.
 PROJECT_IDENTIFIERS: Sequence[str] = (
-    "smirnova", "kravatsk", "kravatsky", "kravatskii",
-    "alexey", "alesha", "lesha", "legeartis", "stsix",
+    "smirnova", "kravatsk", "legeartis", "stsix",
     "miriai", "intsystems", "2026-Project-203",
 )
 
+#: Short or ambiguous enough that they need a non-letter boundary, or they would
+#: fire on ordinary words (``alex`` inside ``Alexandria``, ``lesha`` inside a
+#: transliteration). Bare given names live here.
+WORD_IDENTIFIERS: Sequence[str] = (
+    "alex", "alexey", "alesha", "lesha",
+)
+
 PATTERNS: Sequence[Rule] = (
+    Rule("project-identifier",
+         "(" + "|".join(PROJECT_IDENTIFIERS) + ")",
+         "an author name, handle, institution or repository belonging to this project"),
     # NOT \b...\b. `\b` counts `_` as a word character, so a name inside a
     # *filename* (`<name>_nanogpt.py`) never matches -- which is exactly the shape a
     # leaked name takes. The lookarounds exclude letters only, so underscores,
     # digits, dots and hyphens cannot shield a name either (`<name>1`, `<name>.tex`).
     Rule("project-identifier",
-         r"(?<![A-Za-z])(" + "|".join(PROJECT_IDENTIFIERS) + r")(?![A-Za-z])",
-         "an author name, handle, institution or repository belonging to this project"),
+         r"(?<![A-Za-z])(" + "|".join(WORD_IDENTIFIERS) + r")(?![A-Za-z])",
+         "an author name belonging to this project"),
     Rule("email",
          r"[A-Za-z0-9._%+-]+@[A-Za-z0-9.-]+\.[A-Za-z]{2,}",
          "an email address"),
     Rule("home-path",
          r"(/home/[A-Za-z0-9._-]+|/Users/[A-Za-z0-9._-]+|[A-Za-z]:\\\\?Users\\\\?[A-Za-z0-9._-]+)",
          "an absolute path containing a username"),
+    # Any owner, not just the lab account: a personal fork
+    # (``github.com/<handle>/SignMuon``) de-anonymizes just as effectively.
     Rule("project-repo",
-         r"github\.com/(intsystems|[A-Za-z0-9-]*signmuon)",
+         r"github\.com/(intsystems[A-Za-z0-9._/-]*"
+         r"|[A-Za-z0-9._-]+/[A-Za-z0-9._-]*(signmuon|2026-project-203))",
          "a link to this project's own repository"),
     Rule("orcid",
          r"\b\d{4}-\d{4}-\d{4}-\d{3}[\dX]\b",
@@ -136,7 +154,6 @@ EXCLUDE = (
 #: training script and the optimizer definitions verbatim, and the scan covers
 #: them, so they are as anonymous as the source they quote.
 EXCLUDE_FROM_BUNDLE = (
-    "scrap/**",               # exploratory plotting, superseded by counterexamples/
     "*.log",
 )
 
@@ -191,14 +208,38 @@ def _iter_files(root: Path, extra_exclude: Sequence[str] = ()) -> Iterable[Path]
 PRAGMA = "anonymize: allow"
 
 
+def _allowed_spans(line: str) -> List[tuple]:
+    """Character ranges of the ``ALLOW`` substrings occurring in ``line``."""
+    spans = []
+    for a in ALLOW:
+        start = 0
+        while True:
+            k = line.find(a, start)
+            if k < 0:
+                break
+            spans.append((k, k + len(a)))
+            start = k + 1
+    return spans
+
+
 def scan_text(rel: str, text: str) -> List[Finding]:
+    """Findings in ``text``, one per (line, rule).
+
+    ``ALLOW`` is applied **per match**, not per line: a hit is silenced only when
+    it falls *inside* an allowed substring. Silencing the whole line would exempt
+    everything else on it -- and "ported from KellerJordan's repo by <author>
+    <email>" is exactly the shape a real leak takes here, so a line-level allow
+    hides precisely the case the scan exists to catch.
+    """
     out: List[Finding] = []
     for i, line in enumerate(text.splitlines(), 1):
-        if PRAGMA in line or any(a in line for a in ALLOW):
+        if PRAGMA in line:
             continue
+        allowed = _allowed_spans(line)
         for rule in PATTERNS:
-            m = re.search(rule.pattern, line, rule.flags)
-            if m:
+            for m in re.finditer(rule.pattern, line, rule.flags):
+                if any(lo <= m.start() and m.end() <= hi for lo, hi in allowed):
+                    continue
                 out.append(Finding(rel, i, rule.name, rule.why, line))
                 break
     return out
@@ -302,9 +343,10 @@ def _manifest(included: Sequence[str], stripped: Sequence[str]) -> str:
         f"* **{len(included)} files** included.",
         "* **Excluded**: caches (`__pycache__`, `.pytest_cache`), datasets",
         "  (`data/`, `data_federated/`, FineWeb shards), run output (`results/`,",
-        "  `article_export/`), model checkpoints (`*.pt`), raw nanoGPT run logs, and",
-        "  the `scrap/` scratch directory. None of these is needed to run anything;",
-        "  every one is regenerated by the commands in `REPRODUCE.md`.",
+        "  `article_export/`), model checkpoints (`*.pt`) and stray `*.log` files.",
+        "  None of these is needed to run anything; every one is regenerated by the",
+        "  commands in `REPRODUCE.md`. `nanogpt/logs/` IS included -- those logs are",
+        "  the evidence behind the language-modelling figures.",
         f"* **Notebook outputs stripped**: {len(stripped)} notebook(s)"
         + (" — " + ", ".join(f"`{s}`" for s in stripped) if stripped else "") + ".",
         "  Source cells are untouched. Outputs are removed because they carry",

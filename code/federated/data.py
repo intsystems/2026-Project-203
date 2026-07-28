@@ -62,9 +62,6 @@ __all__ = [
     "GpuShard",
     "GpuEvalSet",
     # backwards-compatible helpers
-    "load_full_datasets",
-    "partition_data",
-    "get_federated_loaders",
     "get_cifar10_transforms",
     "get_mnist_transform",
 ]
@@ -346,9 +343,12 @@ def build_federated_data(
     across the clients, and returns the validation set as the evaluation target.
     ``split="full"`` partitions everything and evaluates on the test set.
 
-    Only one evaluation set is returned, deliberately: during tuning the test set
-    is never loaded, let alone scored, so it cannot leak into a decision even by
-    accident -- and evaluation is the dominant cost of a 2000-round run.
+    Only one evaluation set is returned, deliberately: under ``split="tune"`` the
+    test set is never returned and never scored, so it cannot leak into a decision
+    even by accident -- and evaluation is the dominant cost of a 2000-round run.
+    (``load_raw`` still reads both splits off disk, since torchvision hands them
+    over together; "not loaded" would be the wrong word. What is guaranteed is
+    that no test image is ever evaluated or ranked on.)
     """
     if split not in ("full", "tune"):
         raise ValueError(f"split must be 'full' or 'tune', got {split!r}")
@@ -487,41 +487,3 @@ def get_cifar10_transforms(train: bool = True):
             norm,
         ])
     return transforms.Compose([transforms.ToTensor(), norm])
-
-
-def load_full_datasets(dataset, datadir, download=False):
-    """``(train_ds, test_ds, y_train, y_test)`` -- the pre-rewrite entry point."""
-    train_tf, eval_tf = _transforms(dataset)
-    ctor = datasets.CIFAR10 if dataset == "cifar10" else datasets.MNIST
-    if dataset not in ("cifar10", "mnist"):
-        raise ValueError(f"Unsupported dataset: {dataset}")
-    train_ds = ctor(datadir, train=True, download=download, transform=train_tf)
-    test_ds = ctor(datadir, train=False, download=download, transform=eval_tf)
-    y_train = np.asarray(train_ds.targets)
-    y_test = np.asarray(test_ds.targets)
-    return train_ds, test_ds, y_train, y_test
-
-
-def partition_data(y_train, y_test, partition, n_parties, beta=0.4, seed=0):
-    """Pre-rewrite signature, now on an explicit generator."""
-    return partition_indices(np.asarray(y_train), np.asarray(y_test), partition,
-                             n_parties, beta=beta,
-                             rng=np.random.default_rng(seed))
-
-
-def get_federated_loaders(train_ds, test_ds, train_map, test_map, n_parties, batch_size,
-                          seed=None, num_workers=0):
-    """Pre-rewrite signature: one train/test ``DataLoader`` per client."""
-    train_loaders, test_loaders = [], []
-    for i in range(n_parties):
-        g = None
-        if seed is not None:
-            g = torch.Generator()
-            g.manual_seed(int(seed) + i)
-        train_loaders.append(DataLoader(
-            Subset(train_ds, train_map[i]), batch_size=batch_size, shuffle=True,
-            generator=g, num_workers=num_workers))
-        test_loaders.append(DataLoader(
-            Subset(test_ds, test_map[i]), batch_size=batch_size, shuffle=False,
-            num_workers=num_workers))
-    return train_loaders, test_loaders

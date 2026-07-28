@@ -665,6 +665,21 @@ def tuned_hyperparameters(out_root: Path, method: str
     return (best[0], best[1], "const", "paper table") if best else None
 
 
+def output_slug(args) -> str:
+    """Basename of the JSON a run writes, inside ``results/synthetic/<method>/``.
+
+    The grid preset is part of it. ``--grid-preset paper`` re-runs the *grid*
+    mode on Table 3's published ranges purely to document how the old table was
+    produced; writing that into ``grid.json`` would overwrite the current tuned
+    optimum with the superseded one -- and ``--mode final`` reads ``grid.json``,
+    so the two would silently swap. They are different measurements and get
+    different files.
+    """
+    if args.mode == "grid" and getattr(args, "grid_preset", "default") != "default":
+        return f"grid-{args.grid_preset}"
+    return args.mode
+
+
 def mode_grid(args, problems, lr_grids, momenta, out_root) -> List[Dict]:
     """The paper's protocol: fewest iterations to the target loss."""
     summary = []
@@ -693,7 +708,7 @@ def mode_grid(args, problems, lr_grids, momenta, out_root) -> List[Dict]:
             keep_history=args.save_histories and args.mode == "final",
             stop_at_target=True,
         )
-        _write(out_root, method, args.mode, args, problems, best_metrics)
+        _write(out_root, method, output_slug(args), args, problems, best_metrics)
         summary.append(best_metrics)
 
     print(f"\n{'method':<16}{'iters':>10}{'best F':>14}{'||g||':>12}   hyperparameters")
