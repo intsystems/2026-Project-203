@@ -6,7 +6,7 @@ python3 -m tests.test_code      # ~1 min, no GPU, no downloads
 pytest tests/test_code.py       # or under pytest
 ```
 
-66 checks in one file, [`test_code.py`](test_code.py). No GPU, no dataset, no
+68 checks in one file, [`test_code.py`](test_code.py). No GPU, no dataset, no
 network. Both `overnight.py` drivers run it as their first preflight step and refuse
 to start a night if it fails.
 
@@ -24,6 +24,7 @@ so that a change to the code cannot silently invalidate a sentence in the paper.
 | Weight decay | Coupled decay cannot shorten a scale-invariant step; it only rotates it |
 | Per-layer scaling | `unit-gain` re-derives the shipped Muon aspect factor, and equalizes the per-step gain exactly |
 | Federated ↔ centralized | **The load-bearing one**, below |
+| Batched ↔ sequential | The synthetic sweeps' fast path reproduces `run_one` on all ten methods — the same kind of two-implementations problem, below |
 | Federated protocol | The validation split is held out before partitioning; the GPU augmentation matches torchvision; the uplink alphabet is ternary |
 | Plumbing | The metrics schema, multi-seed aggregation, the anonymity scan |
 
@@ -38,6 +39,16 @@ eight matrix rules, under both the `legacy` and `unit-gain` conventions.
 same eight algorithms. Nothing but this test stops them drifting apart — and they
 had drifted apart before it existed, in the learning-rate schedule, in the routing
 of biases and BatchNorm, and in the weight-decay convention.
+
+`test_batched_runner_reproduces_the_sequential_one` is the same situation a third
+time. `synthetic/batched.py` runs a whole hyperparameter grid as one `[B, m, n]`
+trajectory, which is what makes the synthetic sweeps finish in minutes instead of
+hours, but it is a second implementation of all ten update rules — so it is checked
+against `benchmark.run_one`, which drives the real optimizer classes, over a grid
+containing a diverging run, a per-config budget and all three schedules, with
+`stop_at_target` both off and on. Run it in float32: in bfloat16 a batched matmul
+can pick a different cuBLAS kernel than a single one, and the methods that sign the
+LMO output are sensitive to the last bit.
 
 A related trap, worth knowing if you edit these: a test whose *reference* is
 hand-rolled inside the test file can pin the wrong convention. This one did — its

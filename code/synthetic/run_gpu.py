@@ -1,34 +1,43 @@
 """One command to produce every synthetic-benchmark number, on a GPU box.
 
-    python3 -m synthetic.run_gpu --quick             # ~5 min, verify the pipeline
-    python3 -m synthetic.run_gpu                     # the real thing, ~5 h
+Run both of these from ``code/``::
+
+    python3 -m synthetic.run_gpu              # everything, ~1 h
+    python3 -m synthetic.run_gpu --archive    # rebuild SUMMARY.md + the .zip
+
+The first runs the CPU test suite as a preflight, then all seven stages, and
+writes the archive itself; the second only rebuilds it, from whatever is
+already on disk. Useful variants::
+
+    python3 -m synthetic.run_gpu --quick             # ~2 min smoke test
     python3 -m synthetic.run_gpu --stages floor horizon
-    python3 -m synthetic.run_gpu --summarize-only    # rebuild SUMMARY.md, no runs
+    python3 -m synthetic.run_gpu --list              # what the stages measure
 
-Everything before the ``grid`` stage takes about 1h45 all told and is the new
-material; ``grid`` is the ~3 h Table 1 re-run. ``--stages`` splits them if you
-would rather not hold one job open for five hours.
+Everything lands under ``results/synthetic/``::
 
-Run from the ``code/`` directory. **Do the ``--quick`` pass first** -- it runs
-every stage at 64x64 with a coarse grid, so a mistake costs five minutes instead
-of five hours.
+    SUMMARY.md              <- every table in one file; this is the one to read
+    MANIFEST.json           <- commit, GPU, CPU, torch/CUDA, argv, wall time per stage
+    logs/<stage>.log        <- full console output, including the preflight
+    <method>/<mode>.json    <- machine-readable results
 
-Each stage is a separate ``synthetic.benchmark`` subprocess, so one failure does
-not take the others down, and every stage is skipped if its output already
-exists (``--force`` to redo). Everything lands under ``results/synthetic/``:
+and ``results/synthetic_results.zip`` holds all of it -- the one file to bring
+back from a remote box, since ``results/`` is gitignored.
 
-    results/synthetic/
-        SUMMARY.md              <- every table in one file; this is the one to read
-        MANIFEST.json           <- commit, GPU, torch version, argv and timing per stage
-        logs/<stage>.log        <- full console output of that stage
-        <method>/<mode>.json    <- the machine-readable results
+Each stage is a separate subprocess, so one failure does not take the others
+down, and a stage whose output already exists is skipped (``--force`` to redo).
+Stage order is cheapest-first.
 
-To hand the results back for analysis, open ``SUMMARY.md`` (and any
-``logs/*.log`` that looks wrong). ``results/`` is not tracked by git, so the
-files stay local until you share them.
-
-Stage order is cheapest-first, so the interesting measurements arrive long
-before the expensive table re-run finishes.
+What a stage costs
+------------------
+An A4000 runs ~1450 optimizer steps per second and that figure barely moves
+between ``--m 20`` and ``--m 100``: at these sizes a step is ~50 tiny CUDA
+kernels and the arithmetic is microseconds, so cost is set by the *number* of
+steps, not their size. The batched runner advances a whole
+``(eta, momentum, schedule)`` grid as one ``[B, m, n]`` trajectory for about
+what a single trajectory costs, which leaves the iteration counts -- not the
+grids -- as what a stage is paying for. Trim a grid because it tells you
+nothing, not because it is expensive. The estimates below are derived that way
+rather than measured; treat the first full run as the measurement.
 """
 
 from __future__ import annotations
@@ -58,20 +67,8 @@ class Stage:
     quick_args: List[str] = field(default_factory=list)
     estimate: str = "?"
 
-    @property
-    def out_key(self) -> str:
-        """Basename this stage writes, matching ``benchmark.output_slug``.
-
-        Two stages can share a ``mode`` and still be distinct measurements
-        (``grid`` vs ``grid-paper``), so the skip-if-done check and the summary
-        must key on the file, not on the mode.
-        """
-        if "--grid-preset" in self.args:
-            return f"grid-{self.args[self.args.index('--grid-preset') + 1]}"
-        return self.mode
-
     def argv(self, device: str, out: Path, quick: bool,
-             size: Optional[tuple] = None) -> List[str]:
+             size: Optional[tuple] = None, runner: Optional[str] = None) -> List[str]:
         base = [sys.executable, "-m", "synthetic.benchmark",
                 "--mode", self.mode, "--device", device, "--out", str(out)]
         argv = base + self.args + (self.quick_args if quick else [])
@@ -79,28 +76,32 @@ class Stage:
             # Appended last so it beats any --m/--n baked into the stage's own
             # args (argparse keeps the final occurrence).
             argv += ["--m", str(size[0]), "--n", str(size[1])]
+        if runner is not None:
+            argv += ["--runner", runner]
         return argv
 
 
-# Cheapest first. Every stage below `grid` runs at the module's 100x100 default;
-# `grid` and `final` keep the paper's 500x500.
+# Cheapest first, so the interesting measurements land before the long ones
+# finish. Every stage runs at the module's 100x100 default over three problem
+# draws and the same (eta, momentum) grids; where a stage sets its own, the
+# comment says what the measurement needs that the default does not give.
 STAGES: List[Stage] = [
     Stage(
         "stability", "stability",
-        "Largest stable eta per method. SGD is the built-in control: its "
-        "eta_max must land on the textbook 2/L, and if it does not, nothing "
-        "else in this run is trustworthy.",
+        "Largest stable eta per method, and the step length eta_max*||S||_F it "
+        "corresponds to. SGD is the built-in control: its eta_max must land on "
+        "the textbook 2/L, and if it does not, nothing else here is trustworthy.",
         estimate="~5 min",
         quick_args=["--m", "64", "--n", "64", "--stability-iters", "150",
                     "--problem-seeds", "1337"],
     ),
     Stage(
         "alignment", "alignment",
-        "Distribution of rho_t = <grad F, d_t>/(||grad F|| ||d_t||) along the "
-        "tuned trajectory -- the quantity the descent lemma needs positive and "
-        "the divergence theorems drive negative. The one measurement here that "
-        "is about the methods rather than the tuning protocol.",
-        estimate="~20 min",
+        "Distribution of rho_t = <grad F, D_t>/(||grad F||_F ||D_t||_F) along "
+        "the tuned trajectory -- the quantity the descent lemma needs positive "
+        "and the divergence theorems drive negative. The one measurement here "
+        "that is about the methods rather than the tuning protocol.",
+        estimate="~5 min",
         quick_args=["--m", "64", "--n", "64", "--align-iters", "300",
                     "--problem-seeds", "1337", "--momentum-grid", "0.0,0.9",
                     "--lr-grid", "signmuon=1e-4:1e-2:x2", "muonsign=1e-4:1e-2:x2",
@@ -111,13 +112,15 @@ STAGES: List[Stage] = [
     ),
     Stage(
         "floor", "floor",
-        "The plateau F_inf(eta), ||grad F||_inf(eta) and their exponents. This "
-        "is what Table 1's iteration count is actually ranking; the descent "
-        "lemma predicts a gradient floor linear in eta.",
-        # 1.5 decades is plenty to fit a slope, and the budget scales as 1/eta,
-        # so widening the grid costs superlinearly for no extra information.
-        args=["--problem-seeds", "1337", "--floor-iters", "3000",
-              "--floor-max-iters", "60000",
+        "The plateau F_inf(eta), ||grad F||_inf(eta) of a constant step and "
+        "their exponents in eta. The descent lemma predicts a gradient floor "
+        "linear in eta with coefficient L||S||_F/2rho; SignMuon and SignSGD "
+        "share ||S||_F exactly, so any gap between their floors is rho alone.",
+        # Its own eta grid, one and a half decades wide: time to plateau scales
+        # like 1/eta, so the budget does too, and widening the grid costs
+        # superlinearly for no extra slope. The longest budget sets the wall
+        # clock of this stage, which is why it is the slowest of the seven.
+        args=["--floor-iters", "3000", "--floor-max-iters", "60000",
               "--lr-grid", "signmuon=6e-5:2e-3:x4", "muonsign=6e-5:2e-3:x4",
               "signsgd=6e-5:2e-3:x4", "ef21signmuon=6e-5:2e-3:x4",
               "muon=6e-4:2e-2:x4", "muonusign=6e-4:2e-2:x4",
@@ -133,15 +136,11 @@ STAGES: List[Stage] = [
     Stage(
         "horizon", "horizon",
         "Tunes (eta, momentum, schedule) separately at each budget T and fits "
-        "err ~ T^-p, eta* ~ T^-q. Says which regime the problem is in: p = 1/2 "
-        "is the nonconvex bound the theorems prove, p = 1 is strongly convex. "
-        "Also lets each method pick its own schedule rather than imposing one.",
-        # The lr grid stays dense (6 per decade) because q is fitted from
-        # eta*(T), and a coarse grid quantizes it into noise. The budget list and
-        # the instance count are what get trimmed instead.
-        args=["--problem-seeds", "1337", "--momentum-grid", "0.0,0.9",
-              "--budgets", "125", "250", "500", "1000", "2000"],
-        estimate="~45 min",
+        "err ~ T^-p, eta* ~ T^-q, with err = min_t ||grad F||_*^2 in the norm "
+        "dual to each method's LMO ball. p = q = 1/2 is the nonconvex regime "
+        "the theorems prove, p = q = 1 the strongly convex one.",
+        args=["--budgets", "125", "250", "500", "1000", "2000"],
+        estimate="~10 min",
         quick_args=["--m", "64", "--n", "64", "--budgets", "125", "250", "500",
                     "--problem-seeds", "1337", "--momentum-grid", "0.0,0.9",
                     "--methods", "signmuon", "signsgd", "muon", "sgd",
@@ -151,11 +150,10 @@ STAGES: List[Stage] = [
     Stage(
         "kappa", "kappa",
         "The tuned comparison at a controlled condition number, swept over "
-        "decades. Conditioning is the only knob that governs quadratic "
-        "dynamics and the paper currently reports one uncontrolled draw.",
-        args=["--problem-seeds", "1337", "--momentum-grid", "0.0,0.9",
-              "--max-iters", "3000"],
-        estimate="~30 min",
+        "decades at L = 1. Conditioning is the only knob that governs the "
+        "dynamics of a quadratic, and the uniform draw leaves it to chance.",
+        args=["--max-iters", "3000"],
+        estimate="~15 min",
         quick_args=["--m", "40", "--n", "40", "--max-iters", "1500",
                     "--kappas", "1e2", "1e3", "1e4", "--problem-seeds", "1337",
                     "--methods", "signmuon", "signsgd", "muon",
@@ -165,14 +163,12 @@ STAGES: List[Stage] = [
     ),
     Stage(
         "grid", "grid",
-        "THE TABLE 1 / TABLE 3 RE-RUN, at the paper's 500x500. Log-spaced "
-        "grids 3-4 decades wide, because Table 3's one-decade linear grids left "
-        "SGD censored at its own boundary. Any row still flagged [BOUNDARY] "
-        "needs its grid widened again before it can be published. Roughly half "
-        "the configurations never reach the target and so run the full 5000 "
-        "iterations, which is what dominates the cost; split by --methods if "
-        "you would rather not hold a single job open that long.",
-        estimate="~3 h",
+        "The fixed-target criterion: fewest iterations to F <= 1e-3 within "
+        "5000, eta and momentum tuned per method. Grids are logarithmic and "
+        "three to four decades wide, since the optimal eta spans that much "
+        "across these methods; any optimum landing on an edge is flagged "
+        "[BOUNDARY] and is an upper bound rather than a tuned value.",
+        estimate="~5 min",
         quick_args=["--m", "64", "--n", "64", "--max-iters", "1500",
                     "--methods", "signmuon", "signsgd", "muon", "sgd",
                     "--momentum-grid", "0.0,0.9",
@@ -181,28 +177,14 @@ STAGES: List[Stage] = [
     ),
     Stage(
         "final", "final",
-        "Re-runs the tuned optima with --save-histories, for the Figure 4 loss "
-        "and gradient-norm curves. Reads the optima from the grid stage above, "
-        "not from the paper's printed table.",
+        "Re-runs the optima the grid stage found, with --save-histories, for "
+        "the loss and gradient-norm curves.",
         args=["--save-histories"],
-        estimate="~5 min",
+        estimate="~2 min",
         quick_args=["--m", "64", "--n", "64", "--max-iters", "1500",
                     "--methods", "signmuon", "signsgd", "muon", "sgd"],
     ),
-    Stage(
-        "grid-paper", "grid",
-        "OPTIONAL. Table 3's grids verbatim, to confirm the published numbers "
-        "and show which rows were boundary-limited. Only worth the time if a "
-        "reviewer asks how the old table was produced; --stages grid-paper.",
-        args=["--grid-preset", "paper"],
-        estimate="~2 h",
-        quick_args=["--m", "64", "--n", "64", "--max-iters", "1500",
-                    "--methods", "signmuon", "signsgd", "sgd"],
-    ),
 ]
-
-#: Not in the default run: it re-does work only to document a known defect.
-OPTIONAL = {"grid-paper"}
 
 BY_NAME = {s.name: s for s in STAGES}
 
@@ -232,10 +214,41 @@ def environment(device: str) -> Dict:
     return info
 
 
+def selftest(log_dir: Path) -> bool:
+    """Run the CPU test suite before committing the box to a sweep.
+
+    The batched runner is a second implementation of all ten update rules, so
+    the check that it still agrees with the reference loop is worth a minute
+    before an hour of GPU time. Same preflight the two ``overnight.py`` drivers
+    do.
+    """
+    log_path = log_dir / "selftest.log"
+    print(f"\n{'=' * 78}\n[selftest]  ~1 min -- tests/test_code.py\n{'=' * 78}",
+          flush=True)
+    out = subprocess.run([sys.executable, "-m", "tests.test_code"],
+                         cwd=CODE_ROOT, capture_output=True, text=True,
+                         encoding="utf-8", errors="replace")
+    text = out.stdout + out.stderr
+    log_path.write_text(text, encoding="utf-8")
+    lines = text.strip().splitlines()
+    bad = [ln for ln in lines if ln.startswith(("FAIL", "ERROR"))]
+    print("\n".join(bad + lines[-1:]), flush=True)
+    if out.returncode != 0:
+        print(f"\nSELFTEST FAILED -- nothing was run. Full output in {log_path}.\n"
+              f"If the failures above are all in parts this sweep does not use "
+              f"(federated,\ndata loading, a missing optional dependency), "
+              f"--no-selftest skips it. A failure in\nthe synthetic or optimizer "
+              f"tests is not worth overriding.")
+        return False
+    print("[selftest] ok", flush=True)
+    return True
+
+
 def run_stage(stage: Stage, device: str, out: Path, log_dir: Path,
-              quick: bool, size: Optional[tuple] = None) -> Dict:
+              quick: bool, size: Optional[tuple] = None,
+              runner: Optional[str] = None) -> Dict:
     """Run one stage, teeing its output to console and to a log file."""
-    argv = stage.argv(device, out, quick, size)
+    argv = stage.argv(device, out, quick, size, runner)
     log_path = log_dir / f"{stage.name}.log"
     print(f"\n{'=' * 78}\n[{stage.name}]  {stage.estimate}\n{stage.why}\n"
           f"$ {' '.join(argv[1:])}\n{'=' * 78}", flush=True)
@@ -294,7 +307,8 @@ def _problem_line(payloads: Sequence[Dict]) -> str:
     return (f"`{p['m']}x{p['n']}`, spectrum `{p['spectrum']}`, basis "
             f"`{p['basis']}`, L = {p['L']:.4g}, sigma = {p['sigma']:.4g}, "
             f"condition number = {p['condition_number']:.4g}, "
-            f"lmo_dtype `{p['lmo_dtype']}`, seeds {p['problem_seeds']}\n")
+            f"lmo_dtype `{p['lmo_dtype']}`, seeds {p['problem_seeds']}, "
+            f"X0 seed {p['init_seed']}, runner `{p.get('runner', '?')}`\n")
 
 
 def _fmt(value, spec: str = ".4g") -> str:
@@ -331,8 +345,6 @@ def summarize(out: Path) -> str:
     # -- grid / final ---------------------------------------------------
     for mode, title in (("grid", "Tuned comparison (`tab:synthetic_results`, "
                                  "`tab:grid_search`)"),
-                        ("grid-paper", "The same, on Table 3's published grids "
-                                       "(`--grid-preset paper`)"),
                         ("final", "Re-run at the tuned optima "
                                   "(`fig:synthetic_results`)")):
         payloads = _load(out, mode)
@@ -422,32 +434,38 @@ def summarize(out: Path) -> str:
     payloads = _load(out, "horizon")
     if payloads:
         lines += ["## Budget scaling", "",
-                  "Tuned separately at each budget `T`, then fitted. "
-                  "`p = q = 1/2` is the nonconvex L-smooth bound the paper's "
-                  "theorems prove; `p = q = 1` is what a strongly convex problem "
-                  "gives, because the rate term contracts geometrically and the "
-                  "error is floor-limited at `eta ~ 1/T`. SGD has no floor, so no "
-                  "power law fits it.", "", _problem_line(payloads),
-                  "| method | p (‖∇F‖) | R² | p (F) | R² | q (η*) | R² |",
-                  "| :--- | ---: | ---: | ---: | ---: | ---: | ---: |"]
+                  "Tuned separately at each budget `T`, then fitted. `p` is "
+                  "fitted on `min_t ‖∇F(X_t)‖_*²`, the squared dual norm the "
+                  "theorems bound — ℓ1 for the sign family, nuclear for the LMO "
+                  "family; the Frobenius column is the same trajectory in a "
+                  "family-independent norm. `p = q = 1/2` is the nonconvex "
+                  "L-smooth regime the theorems prove, `p = q = 1` the strongly "
+                  "convex one. SGD has no floor, so no power law fits it.", "",
+                  _problem_line(payloads),
+                  "| method | dual | p (‖∇F‖_*²) | R² | p (‖∇F‖_F) | R² | p (F) | R² | q (η*) | R² |",
+                  "| :--- | :--- | ---: | ---: | ---: | ---: | ---: | ---: | ---: | ---: |"]
         for p in payloads:
             r = p["result"]
             lines.append(
-                f"| {p['_method']} | {_fmt(r['exponent_gnorm'], '.3f')} | "
+                f"| {p['_method']} | {r.get('dual_norm', '—')} | "
+                f"{_fmt(r.get('exponent_dual_sq'), '.3f')} | "
+                f"{_fmt(r.get('r2_dual'), '.3f')} | "
+                f"{_fmt(r['exponent_gnorm'], '.3f')} | "
                 f"{_fmt(r['r2_gnorm'], '.3f')} | {_fmt(r['exponent_f'], '.3f')} | "
                 f"{_fmt(r['r2_f'], '.3f')} | {_fmt(r['exponent_lr'], '.3f')} | "
                 f"{_fmt(r['r2_lr'], '.3f')} |")
         lines += ["", "<details><summary>Per-budget optima</summary>", ""]
         for p in payloads:
             lines += [f"**{p['_method']}**", "",
-                      "| T | η* | momentum | schedule | best F | min ‖∇F‖ |",
-                      "| ---: | ---: | ---: | :--- | ---: | ---: |"]
+                      "| T | η* | momentum | schedule | best F | min ‖∇F‖_F | min ‖∇F‖_* |",
+                      "| ---: | ---: | ---: | :--- | ---: | ---: | ---: |"]
             for row in p["result"].get("rows", []):
                 lines.append(
                     f"| {row['T']} | {_fmt(row['lr'])} | "
                     f"{_fmt(row.get('momentum'))} | {row.get('schedule', '?')} | "
                     f"{_fmt(row['best_f'], '.4e')} | "
-                    f"{_fmt(row['best_gnorm'], '.4e')} |")
+                    f"{_fmt(row['best_gnorm'], '.4e')} | "
+                    f"{_fmt(row.get('best_dual'), '.4e')} |")
             lines.append("")
         lines += ["</details>", ""]
 
@@ -485,7 +503,7 @@ def summarize(out: Path) -> str:
     # -- kappa ----------------------------------------------------------
     payloads = _load(out, "kappa")
     if payloads:
-        kappas = payloads[0]["result"].get("kappas", [])
+        kappas = payloads[0]["result"].get("kappas", []) or []
         header = " | ".join(f"κ={k:g}" for k in kappas)
         lines += ["## Condition-number sweep", "",
                   "Best `‖∇F‖` reached within the budget, tuned at each κ. "
@@ -543,32 +561,40 @@ def get_args():
     p.add_argument("--stages", nargs="+", default=None, metavar="NAME",
                    help="space- or comma-separated. Choices: "
                         + ", ".join(s.name for s in STAGES)
-                        + f". Default: everything except {sorted(OPTIONAL)}")
+                        + ". Default: all of them")
     p.add_argument("--quick", action="store_true",
-                   help="tiny sizes and coarse grids, ~5 min for the whole "
+                   help="tiny sizes and coarse grids, ~2 min for the whole "
                         "pipeline; run this first")
     p.add_argument("--m", type=int, default=None, metavar="M",
-                   help="Override the problem size for EVERY stage. Cost grows "
-                        "steeply -- the LMO is an SVD/Newton-Schulz per step -- so "
-                        "start small (--m 20) to check the pipeline and the "
-                        "figures, then scale up. Unlike --quick this keeps the "
-                        "real grids and iteration counts, so the numbers are "
-                        "meaningful at whatever size you pick, just at a size the "
-                        "paper does not report. Default: 100 for the dynamics "
-                        "stages, 500 for grid/final.")
+                   help="Override the problem size for EVERY stage, keeping the "
+                        "real grids and iteration counts, and write to a "
+                        "separate tree. Not a cost knob: below ~200x200 a step "
+                        "is dominated by kernel-launch latency rather than "
+                        "arithmetic, so --m 20 and --m 100 take about the same "
+                        "time. Default: 100.")
     p.add_argument("--n", type=int, default=None, metavar="N",
                    help="Columns; defaults to --m when only --m is given.")
+    p.add_argument("--runner", choices=["batched", "sequential"], default=None,
+                   help="passed to every stage. The default (batched) advances "
+                        "a whole grid as one trajectory; 'sequential' is the "
+                        "reference one-run-at-a-time loop and is hours slower")
     p.add_argument("--force", action="store_true",
                    help="re-run stages whose output already exists")
-    p.add_argument("--summarize-only", action="store_true",
-                   help="rebuild SUMMARY.md from the JSON on disk and exit")
+    p.add_argument("--no-selftest", action="store_true",
+                   help="skip the tests/test_code.py preflight (not advised: it "
+                        "is what checks the batched runner against the "
+                        "reference loop)")
+    p.add_argument("--archive", "--summarize-only", dest="archive",
+                   action="store_true",
+                   help="rebuild SUMMARY.md and the .zip from the JSON already "
+                        "on disk, then exit; runs nothing")
     p.add_argument("--list", action="store_true", help="describe the stages and exit")
     return p.parse_args()
 
 
 def already_done(stage: Stage, out: Path) -> bool:
     from synthetic.benchmark import DEFAULT_METHODS
-    return any((out / m / f"{stage.out_key}.json").exists() for m in DEFAULT_METHODS)
+    return any((out / m / f"{stage.mode}.json").exists() for m in DEFAULT_METHODS)
 
 
 def main() -> int:
@@ -580,32 +606,31 @@ def main() -> int:
     if args.out:
         out = Path(args.out)
     else:
-        # A quick pass writes to its own tree. Sharing one would leave 64x64
-        # smoke-test JSON where the real 500x500 results belong, and the
-        # already-done check would then skip the real run entirely.
+        # A quick pass and a non-default size each get their own tree. Sharing
+        # one would leave smoke-test JSON where the reported results belong, and
+        # the already-done check would then skip the real run.
         out = results_root() / ("synthetic_quick" if args.quick else "synthetic")
         if size is not None:
-            # A non-default size is a different experiment, not a cheaper run of
-            # the same one, so it gets its own tree. Otherwise a 20x20 pass would
-            # sit where the 500x500 results belong and the already-done check
-            # would then skip the real run.
             out = out.with_name(f"{out.name}_{size[0]}x{size[1]}")
 
     if args.list:
         for s in STAGES:
-            tag = "  (optional)" if s.name in OPTIONAL else ""
-            print(f"\n{s.name}  [{s.estimate}]{tag}\n  {s.why}")
+            print(f"\n{s.name}  [{s.estimate}]\n  {s.why}")
         return 0
 
     out.mkdir(parents=True, exist_ok=True)
-    if args.summarize_only:
+    if args.archive:
         path = out / "SUMMARY.md"
         path.write_text(summarize(out), encoding="utf-8")
-        print(f"Wrote {path.resolve()}")
         archive = bundle(out)
-        if archive:
-            print(f"Wrote {archive.resolve()} "
-                  f"({archive.stat().st_size / 1024:.0f} KB)")
+        if archive is None:
+            print(f"Nothing to archive: {out.resolve()} holds no results yet.")
+            return 1
+        print(f"Wrote {path.resolve()}\n"
+              f"Wrote {archive.resolve()} "
+              f"({archive.stat().st_size / 1024:.0f} KB)\n\n"
+              f"Download that .zip -- in VS Code, right-click it in the "
+              f"Explorer\nunder code/results/ and choose Download.")
         return 0
 
     try:
@@ -613,18 +638,26 @@ def main() -> int:
     except ValueError as exc:
         print(f"error: {exc}")
         return 2
-    names = requested or [s.name for s in STAGES if s.name not in OPTIONAL]
+    names = requested or [s.name for s in STAGES]
     selected = [BY_NAME[n] for n in names]
     log_dir = out / "logs"
     log_dir.mkdir(parents=True, exist_ok=True)
 
+    # The machine record, printed verbatim because this sentence is what the
+    # reproducibility appendix quotes, and stamped into MANIFEST.json so
+    # `python3 -m common.hardware --scan results --latex` can build the table
+    # from the results tree rather than from whichever box compiles the LaTeX.
     env = environment(args.device)
+    from common.hardware import as_sentence
+    print(as_sentence(env))
     if not env.get("cuda_available"):
-        print(f"WARNING: CUDA is not available; this will run on CPU and the "
-              f"estimates below are far too optimistic.\n         {env}\n")
-    else:
-        print(f"{env.get('gpu')} ({env.get('gpu_memory_gb')} GB), "
-              f"torch {env.get('torch')}, CUDA {env.get('cuda')}")
+        print("WARNING: CUDA is not available; this will run on CPU and the "
+              "estimates below are far too optimistic.")
+    elif not env.get("gpu_homogeneous", True):
+        # Mixed-card boxes are how a run silently lands on the wrong GPU.
+        print(f"NOTE: this box has {env.get('gpu_count')} GPUs of differing "
+              f"models; --device {args.device} selected index "
+              f"{env.get('gpu_index')} ({env.get('gpu')}).")
     if env.get("git_dirty"):
         print("NOTE: the working tree has uncommitted changes; MANIFEST.json "
               "records the commit but not those edits.")
@@ -633,16 +666,20 @@ def main() -> int:
           f"{f'   [{size[0]}x{size[1]}]' if size else ''}"
           f"\nOutput: {out.resolve()}")
 
+    t0 = time.time()
+    if not args.no_selftest and not selftest(log_dir):
+        return 2
+
     started = time.strftime("%Y-%m-%d %H:%M:%S")
     records: List[Dict] = []
-    t0 = time.time()
     for stage in selected:
         if not args.force and not args.quick and already_done(stage, out):
             print(f"\n[{stage.name}] already has output; skipping (--force to redo)")
             records.append({"stage": stage.name, "mode": stage.mode,
                             "exit_code": 0, "seconds": 0.0, "skipped": True})
             continue
-        records.append(run_stage(stage, args.device, out, log_dir, args.quick, size))
+        records.append(run_stage(stage, args.device, out, log_dir, args.quick,
+                                 size, args.runner))
 
         manifest = {"started": started, "quick": args.quick,
                     "size": list(size) if size else None,
@@ -663,8 +700,10 @@ def main() -> int:
     if archive:
         print(f"Bundle  {archive.resolve()} "
               f"({archive.stat().st_size / 1024:.0f} KB)")
-        print("\nOn a remote box, copy the bundle back and unzip it into "
-              "code/results/;\notherwise just open SUMMARY.md.")
+        print("\nThat .zip is the one artifact to bring back: in VS Code, "
+              "right-click it\nin the Explorer under code/results/ and choose "
+              "Download. --archive rebuilds\nit at any time without re-running "
+              "anything.")
     return 1 if failed else 0
 
 

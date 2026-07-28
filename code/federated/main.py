@@ -119,12 +119,14 @@ def get_params() -> argparse.ArgumentParser:
     p.add_argument("--no-cosine", action="store_true",
                    help="Disable the cosine learning-rate schedule (on by default, "
                         "uniformly for every method)")
-    p.add_argument("--mv-ties", type=str, default="zero", choices=["zero", "random"],
-                   help="What the SERVER does with a tied majority vote: zero "
-                        "(default) lets the coordinate abstain; random breaks the "
-                        "tie with a fair coin, restoring ||s||_F = sqrt(mn). "
+    p.add_argument("--mv-ties", type=str, default="random", choices=["random", "zero"],
+                   help="What the SERVER does with a tied majority vote: random "
+                        "(default) breaks the tie with a fair coin, restoring "
+                        "||s||_F = sqrt(mn), which the unit-gain rule assumes; "
+                        "zero lets the coordinate abstain. "
                         "Measured to be equivalent in expected descent -- a tie "
-                        "carries no information either way")
+                        "carries no information either way, and at an odd client "
+                        "count under the default uplink no tie can occur")
     p.add_argument("--uplink-zeros", type=str, default="random",
                    choices=["random", "positive", "keep"],
                    help="What a CLIENT does with sign(0) on the majority-vote "
@@ -230,7 +232,7 @@ def build_model(dataset: str, model_name: str) -> torch.nn.Module:
 
 
 def summarize(history: History, args, eval_name: str, method: str,
-              n_matrix: int, n_aux: int) -> None:
+              n_matrix: int, n_aux: int, n_layers: int = 0) -> None:
     """Print the reported metrics, so a log alone is enough to fill a table row.
 
     The line formats are the ones ``federated.tune`` parses; keep them in step.
@@ -263,7 +265,7 @@ def summarize(history: History, args, eval_name: str, method: str,
     if zeros:
         print(f"uplink zero fraction        : {mean_z:.4f} mean, {zeros[-1]:.4f} final")
 
-    comm = communication_bits(method, n_matrix, n_aux, mean_z)
+    comm = communication_bits(method, n_matrix, n_aux, mean_z, n_layers=n_layers)
     print(f"communication               : {comm['uplink_bits_per_param']:.2f} bits/param up, "
           f"{comm['downlink_bits_per_param']:.2f} down")
     print(f"  vs full precision         : {comm['uplink_reduction']:.1f}x uplink, "
@@ -385,7 +387,8 @@ def main() -> None:
     named = dict(global_model.named_parameters())
     n_matrix = sum(named[n].numel() for n in matrix_names)
     n_aux = sum(p.numel() for p in global_model.parameters()) - n_matrix
-    summarize(history, args, data.eval_name, method, n_matrix, n_aux)
+    summarize(history, args, data.eval_name, method, n_matrix, n_aux,
+              n_layers=len(matrix_names))
 
     out = run_dir(results_root() / "federated", args.run_name, args.seed)
     save_run(out, config, history, model=global_model.to("cpu"))

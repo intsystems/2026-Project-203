@@ -13,8 +13,8 @@ line of slope 49/480: the divergence rate is the same for every mu and both
 variants, as the reduction lemma predicts.  Output:
 ``figures/ef21_signmuon_momentum.{pdf,png}``.
 
-Shares the visual style (fonts, grid, bottom legend) of the optimizer-comparison
-figure in ``run_counterexamples.py``.
+Style comes from ``common.plotting``, like every other figure in the paper, and
+the figure is authored at its printed width (a two-column float).
 """
 
 import os
@@ -24,11 +24,13 @@ import matplotlib
 matplotlib.use("Agg")
 import matplotlib.pyplot as plt
 
+from common.plotting import (AXIS, FS_LABEL, FS_LEGEND, INK_2, SURFACE,   # noqa: E402
+                             TEXT_WIDTH, figure_legend, style_axes,
+                             use_paper_style)
 from counterexamples.optimizers import EF21SignMuon                       # noqa: E402
 from counterexamples.problems import ef21_signmuon_counterexample         # noqa: E402
 
-# --- shared style (kept in sync with run_counterexamples.py) --------------
-LABEL_FS, TICK_FS, LEG_FS = 18, 13, 12.5
+use_paper_style()
 
 T = 1000
 MUS = [0.0, 0.5, 0.9, 0.95, 0.99]
@@ -53,32 +55,34 @@ def trajectory(mu, nesterov):
 
 
 def main():
-    fig, axes = plt.subplots(1, 2, figsize=(13, 5.6), sharey=True)
+    fig, axes = plt.subplots(1, 2, figsize=(TEXT_WIDTH, 2.5), sharey=True)
     tt = np.arange(T)
     for ax, nesterov in zip(axes, (False, True)):
-        ax.plot(tt, RATE * tt, color="0.2", ls=(0, (1, 1.6)), lw=2.0, zorder=10,
+        style_axes(ax)
+        ax.plot(tt, RATE * tt, color=INK_2, ls=(0, (1, 1.6)), lw=1.2, zorder=10,
                 label=r"slope $\frac{49}{480}$")
         for i, (mu, c, mk) in enumerate(zip(MUS, COLORS, MARKERS)):
-            ax.plot(tt, trajectory(mu, nesterov), color=c, lw=2.2,
-                    marker=mk, markersize=6.5,
+            ax.plot(tt, trajectory(mu, nesterov), color=c, lw=1.5,
+                    marker=mk, markersize=3.2,
                     markevery=(int(i * 170 / len(MUS)), 170),
-                    markerfacecolor=c, markeredgecolor="white", markeredgewidth=0.9,
+                    markerfacecolor=c, markeredgecolor=SURFACE,
+                    markeredgewidth=0.5,
                     label=rf"$\mu={mu:g}$", zorder=5 + i, solid_capstyle="round")
-        ax.axhline(0, color="black", lw=0.8, alpha=0.4, zorder=1)
-        ax.set_xlabel("Iteration", fontsize=LABEL_FS)
-        ax.tick_params(axis="both", labelsize=TICK_FS, length=6, width=1.2)
-        ax.grid(True, linestyle="--", linewidth=0.8, alpha=0.25, zorder=0)
+        ax.axhline(0, color=AXIS, lw=0.8, zorder=1)
+        ax.set_xlabel("iteration", color=INK_2, fontsize=FS_LABEL)
         ax.margins(x=0.01)
-    axes[0].set_ylabel(r"$f(\mathbf{X}_t)-f(\mathbf{X}_0)$", fontsize=LABEL_FS)
+    axes[0].set_ylabel(r"$f(\mathbf{X}_t)-f(\mathbf{X}_0)$", color=INK_2,
+                       fontsize=FS_LABEL)
 
     handles, labels = axes[0].get_legend_handles_labels()
     # put the mu curves first, the reference line last
     order = list(range(1, len(labels))) + [0]
-    fig.legend([handles[i] for i in order], [labels[i] for i in order],
-               loc="lower center", ncol=6, fontsize=LEG_FS,
-               frameon=True, framealpha=0.95, edgecolor="0.75",
-               bbox_to_anchor=(0.5, -0.02))
-    fig.tight_layout(rect=(0, 0.09, 1, 1))
+    figure_legend(fig, [handles[i] for i in order], [labels[i] for i in order],
+                  ncol=6, fontsize=FS_LEGEND)
+    # right < 1: the last tick label ("1000") would otherwise be cut in half by
+    # the figure edge.
+    fig.subplots_adjust(left=0.085, right=0.978, top=0.97, bottom=0.30,
+                        wspace=0.06)
 
     here = os.path.dirname(os.path.abspath(__file__))
     figdir = os.path.join(here, "figures")
@@ -94,9 +98,11 @@ def main():
         targets.append((os.path.join(images_dir, "ef21_signmuon_momentum"), False))
     msgs = []
     for stem, want_png in targets:
-        fig.savefig(stem + ".pdf", bbox_inches="tight")
+        # No tight bbox: the figure is authored at its printed width, and
+        # trimming the margins would make LaTeX scale it back up.
+        fig.savefig(stem + ".pdf", facecolor=SURFACE)
         if want_png:
-            fig.savefig(stem + ".png", dpi=160, bbox_inches="tight")
+            fig.savefig(stem + ".png", dpi=200, facecolor=SURFACE)
         msgs.append(os.path.abspath(stem) + (".{pdf,png}" if want_png else ".pdf"))
     plt.close(fig)
     print("saved", ", ".join(msgs))

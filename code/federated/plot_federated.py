@@ -30,9 +30,15 @@ from pathlib import Path
 from typing import Dict, List, Optional, Sequence
 
 from aggregate import aggregate_group, group_key, load_runs
-from common.plotting import (INK_2, MUTED, color_of, label_of, legend,
-                             order_methods, save_figure, style_axes)
+from common.plotting import (FS_ANNOT, FS_LABEL, INK_2, MUTED, TEXT_WIDTH,
+                             color_of, label_of, legend, order_methods,
+                             save_figure, style_axes, use_paper_style)
 from common.utils import results_root
+
+use_paper_style()
+
+#: The paper places these as ``0.48\textwidth`` subfigures.
+PANEL_WIDTH = 0.48 * TEXT_WIDTH
 
 #: Axis labels, and whether lower is better (which fixes the legend corner).
 METRICS = {
@@ -84,7 +90,10 @@ def collect(root: Path, filters: Dict[str, object]) -> Dict[str, List[dict]]:
 
 def fig_metric(plt, data: Dict[str, List[dict]], metric: str, xlabel: str):
     label, lower_is_better = METRICS.get(metric, (metric, False))
-    fig, ax = plt.subplots(figsize=(5.0, 3.2))
+    # Authored at the width a 0.48\textwidth subfigure prints at, which is how
+    # the paper places these; the legend sits in the gutter, so the saved
+    # bounding box is wider than the axes and LaTeX still scales a little.
+    fig, ax = plt.subplots(figsize=(PANEL_WIDTH, 2.4))
     style_axes(ax, logy=lower_is_better and metric.endswith("loss"))
     drawn = 0
     for alg, runs in data.items():
@@ -105,10 +114,10 @@ def fig_metric(plt, data: Dict[str, List[dict]], metric: str, xlabel: str):
     if not drawn:
         plt.close(fig)
         return None
-    ax.set_xlabel(xlabel, color=INK_2, fontsize=8.5)
-    ax.set_ylabel(label, color=INK_2, fontsize=8.5)
-    ax.set_title("band is +-1 sample std over seeds", color=MUTED, fontsize=7.5,
-                 loc="left", pad=8)
+    ax.set_xlabel(xlabel, color=INK_2, fontsize=FS_LABEL)
+    ax.set_ylabel(label, color=INK_2, fontsize=FS_LABEL)
+    ax.set_title("band is +-1 sample std over seeds", color=MUTED,
+                 fontsize=FS_ANNOT - 1.5, loc="left", pad=6)
     legend(ax, outside=True)
     fig.tight_layout()
     return fig

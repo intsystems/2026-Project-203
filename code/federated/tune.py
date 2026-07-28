@@ -438,12 +438,15 @@ def add_common_args(p: argparse.ArgumentParser) -> argparse.ArgumentParser:
     p.add_argument("--data", type=str, default="./data_federated")
     p.add_argument("--download", action="store_true")
     p.add_argument("--loader", type=str, default="auto", choices=["auto", "gpu", "torch"])
-    p.add_argument("--mv-ties", type=str, default="zero", choices=["zero", "random"],
-                   help="What the server does with a tied majority vote")
-    p.add_argument("--uplink-zeros", type=str, default="keep",
-                   choices=["keep", "random", "positive"],
-                   help="What a client does with sign(0); 'keep' is ternary and is "
-                        "the published behaviour")
+    p.add_argument("--mv-ties", type=str, default="random", choices=["random", "zero"],
+                   help="What the server does with a tied majority vote; unreachable "
+                        "at an odd client count under the default uplink")
+    p.add_argument("--uplink-zeros", type=str, default="random",
+                   choices=["random", "positive", "keep"],
+                   help="What a client does with sign(0) on the majority-vote "
+                        "uplink; 'random' (default) is the paper's convention and "
+                        "makes the channel a genuine 1 bit, 'keep' is the legacy "
+                        "ternary behaviour, retained for the alphabet diagnostic")
     p.add_argument("--nondeterministic", action="store_true")
     return p
 
