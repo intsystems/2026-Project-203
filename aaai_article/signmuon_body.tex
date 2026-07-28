@@ -61,17 +61,10 @@ for $g = f$ (constant $L_i$) and $g = f_j$ (constant $L_{i,j}$). A weaker layer-
 
 A Linear Minimization Oracle (LMO) minimizes a linear form over the unit ball of a norm, returning the steepest-descent direction in that norm (Appendix~\ref{app:prelim}). Muon takes that norm to be spectral on each matrix layer, which turns the oracle into an orthogonalization: writing $\mathbf{M}=\mathbf{U}\boldsymbol{\Sigma}\mathbf{V}^\top$ for the rank-$r$ singular value decomposition of $\mathbf{M}\in\mathbb{R}^{m\times n}$, the LMO direction is
 \begin{equation}
-A(\mathbf{M})=-\mathbf{U}\mathbf{V}^\top \in \mathbb{R}^{m\times n}.
+A(\mathbf{M})=-\mathbf{U}\mathbf{V}^\top \in \mathbb{R}^{m\times n},
+\qquad \operatorname{polar}(\mathbf{M}):=-A(\mathbf{M}).
 \end{equation}
-In practice Muon applies the oracle to a smoothed gradient estimate with momentum:
-\begin{equation}
-    \begin{aligned}
-        \mathbf{M}_t &= \mu \mathbf{M}_{t-1} + \mathbf{G}_t, \\
-        \mathbf{M}_t &= \mathbf{U}_t \boldsymbol{\Sigma}_t \mathbf{V}_t^\top, \\
-        \mathbf{D}_t &= -A(\mathbf{M}_t) = \mathbf{U}_t\mathbf{V}_t^\top\\
-        \mathbf{X}_{t+1} &= \mathbf{X}_t - \eta_t \mathbf{D}_t.
-    \end{aligned}
-\end{equation}
+In practice the oracle is applied to a momentum estimate rather than to $\mathbf{G}_t$ itself; \eqref{eq:signa_general} below gives the full iteration.
 
 Muon requires transmitting the full update matrix $\mathbf{D}_t$, which is expensive in federated settings. Our objective is to combine its matrix-aware geometry with extreme (1-bit) communication compression. SignMuon, MuonUSign, and MuonSign achieve it empirically, but lack global convergence guarantees (Theorems~\ref{th:1}--\ref{th:3}). The Error-Feedback variants restore convergence: in Appendix~\ref{app:hyp} we show that EF21-MuonUSign and EF21-MuonSign are \emph{exact instances} of the EF21-Muon framework of \citet{gruntkowska2025error}, and so inherit the standard $\mathcal{O}(T^{-1/2})$ rate for smooth non-convex optimization (Theorem~\ref{thm:conv}):
 \begin{equation}
@@ -98,19 +91,25 @@ Consider the \textbf{SignA} family, where A is any optimizer built on LMO direct
 \mathbf{X}_{t+1} &= \mathbf{X}_t - \eta_t \mathbf{s}_t & \text{(Parameter update)},
 \end{aligned}\)}
 \end{equation}
-where $\mathbf{X}_t \in \mathbb{R}^{m \times n}$ is the parameter matrix, $\mathbf{G}_t$ its stochastic gradient, $\mu \in [0, 1)$ the momentum coefficient and $\eta_t$ the learning rate; $A(\cdot)$ is a Linear Minimization Oracle (LMO) in a specified non-Euclidean norm, and $\operatorname{sign}(\cdot)$ acts element-wise on the structured direction $\mathbf{D}_t$, with $\operatorname{sign}(0)$ resolved to an independent random $\pm1$ so that the transmitted alphabet stays binary; randomized sign operators are standard here \citep{chen2020median,safaryan2021ssdm,jin2024stosign}.
+where $\mathbf{X}_t \in \mathbb{R}^{m \times n}$ is the parameter matrix, $\mathbf{G}_t$ its stochastic gradient, $\mu \in [0, 1)$ the momentum coefficient and $\eta_t$ the learning rate; $A(\cdot)$ is the LMO, and $\operatorname{sign}(\cdot)$ acts element-wise on the structured direction $\mathbf{D}_t$, with $\operatorname{sign}(0)$ resolved to an independent random $\pm1$ so that the transmitted alphabet stays binary.
 
-SignMuon is a particular instance: it combines the orthogonalized LMO directions of Muon with the sign compression of SignSGD. MuonUSign is its mirror image, applying the sign \emph{before} the LMO. It compresses the effective direction to $\operatorname{sign}(\tilde{\mathbf{M}}_t)$ and steps along the Muon LMO of that sign matrix (Algorithm~\ref{alg:muon_usign}):
+Our three methods are the three placements of the sign around this oracle. They share the update $\mathbf{X}_{t+1}=\mathbf{X}_t-\eta_t\,\mathbf{s}_t$ and differ only in where the sign acts on $\tilde{\mathbf{M}}_t$:
 \begin{equation}
-\mathbf{D}_t = -A\bigl(\operatorname{sign}(\tilde{\mathbf{M}}_t)\bigr), \qquad \mathbf{X}_{t+1} = \mathbf{X}_t - \eta_t\,\mathbf{D}_t.
+\label{eq:three_placements}
+\mathbf{s}_t=
+\begin{cases}
+\operatorname{sign}\!\bigl(\operatorname{polar}(\tilde{\mathbf{M}}_t)\bigr) & \text{(SignMuon: after)},\\[2pt]
+\operatorname{polar}\!\bigl(\operatorname{sign}(\tilde{\mathbf{M}}_t)\bigr) & \text{(MuonUSign: before)},\\[2pt]
+\operatorname{sign}\!\bigl(\operatorname{polar}(\operatorname{sign}(\tilde{\mathbf{M}}_t))\bigr) & \text{(MuonSign: both)}.
+\end{cases}
 \end{equation}
-MuonSign (Algorithm~\ref{alg:muon_sign}) signs both sides, additionally compressing the LMO output to $\operatorname{sign}(\mathbf{D}_t)$, so that both the uplink and the downlink cost one bit per parameter.
+SignMuon (Algorithm~\ref{central_alg}) thus combines Muon's orthogonalized direction with the sign compression of SignSGD, MuonUSign (Algorithm~\ref{alg:muon_usign}) signs before the oracle instead, and MuonSign (Algorithm~\ref{alg:muon_sign}) signs both sides. All three transmit one bit per parameter on the uplink. On the downlink SignMuon and MuonSign distribute a $\pm1$-valued object and so cost one bit in each direction, while MuonUSign's server-side $\operatorname{polar}(\cdot)$ is dense and costs full precision.
 
 \subsection{Centralized Learning}
 % In the centralized setting, SignMuon is applied to the matrix-valued parameters of a neural network. The practical implementation takes into account the tensor structure of model parameters. The optimization process is divided into two separate streams: matrix parameters (weights of convolutional and fully connected layers, $n_{dim} \ge 2$) are updated using the SignMuon LMO-based procedure, whereas vector parameters (bias, Batch Normalization layer, $n_{dim} = 1$) as well as the final classification layer are optimized using the standard AdamW optimizer. This design was originally introduced in the empirical description of Muon by \citet{jordan2024muon}. The first theoretical convergence result was derived by Li and Hong, who analyzed the smooth non-convex setting \cite{li2025note} and subsequently formalized within the Gluon framework \cite{riabinin2025gluon}.
 In the centralized setting, SignMuon is applied to the matrix-valued parameters (weights of convolutional and fully connected layers, $n_{dim}\ge 2$), while vector parameters (biases, BatchNorm, $n_{dim} = 1$) and the final classification layer are optimized with AdamW, the design introduced by \citet{jordan2024muon} and formalized in \cite{li2025note, riabinin2025gluon}.
 
-For matrix parameters the key component is the orthonormal LMO direction $\mathbf{D}_t \approx \mathbf{U}_t \mathbf{V}_t^\top$, which we approximate by a 5th-order Newton--Schulz iteration rather than a full SVD at every step (Algorithm~\ref{alg:muon_lmo}). SignMuon signs that direction, so it transmits one bit per component while keeping the geometry of orthonormal updates (Algorithm~\ref{central_alg} in Appendix~\ref{app:alg}); MuonSign is built from the same idea (Algorithm~\ref{alg:muon_sign}). One further implementation choice is not without consequence, and we state it here because every experiment depends on it.
+We approximate $\operatorname{polar}(\cdot)$ by a 5th-order Newton--Schulz iteration rather than a full SVD at every step (Algorithm~\ref{alg:muon_lmo}). One further implementation choice is not without consequence, and we state it here because every experiment depends on it.
 
 \paragraph{Per-layer step sizes: the unit-gain heuristic.} The methods of this paper produce step matrices from two families with \emph{exactly} known Frobenius norms: $\|\mathbf{U}\mathbf{V}^\top\|_F=\sqrt{r}$ for the \textsc{lmo}-terminated methods ($r=\min(m,n)$), and $\|\mathbf{s}\|_F=\sqrt{mn}$ for the \textsc{sign}-terminated ones. These scale differently with layer shape, so no single global $\eta$ is right for both families, or across layers within one. We fix the shape dependence a priori and tune only a shape-free base rate $\eta_0$, setting $\eta_\ell=\eta_0\lambda_\ell$ with
 \begin{equation}
@@ -137,17 +136,7 @@ The criterion is that every layer's update have the same root-mean-square input-
 \subsection{Theoretical limitations}
 A natural hope is that the Muon LMO direction --- the steepest-descent direction in the spectral norm --- survives sign compression, whether the sign is applied before or after the oracle. It does not: in each of the three placements the compressed step can become an \emph{ascent} direction on a smooth objective.
 
-Write $\operatorname{polar}(\mathbf{Y}):=-A(\mathbf{Y})=\mathbf{U}\mathbf{V}^\top$ for the Muon LMO direction, read off the rank-truncated SVD $\mathbf{Y}=\mathbf{U}\boldsymbol{\Sigma}\mathbf{V}^\top$. At rank-deficient $\mathbf{Y}$ the spectral-ball LMO is not unique, and this selection, the one our implementation makes, is part of what the counterexamples assert. The three methods share the update $\mathbf{X}_{t+1}=\mathbf{X}_t-\eta_t\,\mathbf{s}_t$ and differ only in where the sign acts on the effective direction $\tilde{\mathbf{M}}_t$:
-\begin{equation}
-\label{eq:three_placements}
-\mathbf{s}_t=
-\begin{cases}
-\operatorname{sign}\!\bigl(\operatorname{polar}(\tilde{\mathbf{M}}_t)\bigr) & \text{(SignMuon: after)},\\[2pt]
-\operatorname{polar}\!\bigl(\operatorname{sign}(\tilde{\mathbf{M}}_t)\bigr) & \text{(MuonUSign: before)},\\[2pt]
-\operatorname{sign}\!\bigl(\operatorname{polar}(\operatorname{sign}(\tilde{\mathbf{M}}_t))\bigr) & \text{(MuonSign: both)}.
-\end{cases}
-\end{equation}
-All three transmit one bit per parameter on the uplink. On the downlink SignMuon and MuonSign distribute a $\pm1$-valued object and so cost one bit in each direction, while MuonUSign's server-side $\operatorname{polar}(\cdot)$ is dense and costs full precision.
+We read $\operatorname{polar}(\cdot)$ off the rank-truncated SVD. At a rank-deficient argument the spectral-ball LMO is not unique, and this selection, the one our implementation makes, is part of what the counterexamples assert.
 
 We refute the descent property on \emph{linear} objectives (the simplest smooth functions, on which any sound method must make unbounded progress):
 \begin{equation}
@@ -244,9 +233,9 @@ Appendix~\ref{app:images_task} reports a controlled study on a deterministic smo
     \label{fig:cifar_results}
 \end{figure*}
 
-We compare all six matrix-aware 1-bit methods against Muon, SignSGD, SGD and Adam at a fixed epoch budget, on CIFAR-10 \cite{krizhevsky2009cifar}. The base model is a ResNet-18 adapted to low-resolution images: an initial $3\times3$ convolution without max-pooling, $4$ residual blocks with BatchNorm, dropout, and a linear classifier. Training runs for $T_{\max}=75$ epochs with $\eta_0$ annealed to zero by a cosine schedule, the convention of the domain rather than the constant rate our rates are proved for (Appendix~\ref{app:repro}).
+We compare all six matrix-aware 1-bit methods against Muon, SignSGD, SGD and Adam at a fixed epoch budget, on CIFAR-10 \cite{krizhevsky2009cifar}. The base model is a ResNet-18 adapted to low-resolution images: an initial $3\times3$ convolution without max-pooling, $4$ residual blocks with BatchNorm, dropout, and a linear classifier. Training runs for $T_{\max}=75$ epochs with $\eta_0$ annealed to zero by a cosine schedule.
 
-\paragraph{Protocol.} The only tuned hyperparameter is $\eta_0$, selected per method on a held-out $5$k validation split; \textbf{the test set is never consulted during tuning}. Every method with a norm-fixed step is tuned and reported under one per-layer rule, the unit-gain rule~\eqref{eq:unit_gain_main}, so that $\eta_0$ means the same thing across them, namely the per-step RMS gain (Appendix~\ref{app:lrscale}); SGD and Adam have no such step and keep one global rate. Centralized numbers are means over three seeds and federated numbers over five, and differences smaller than the seed spread are not claimed as results. Alongside final accuracy we report epochs to a fixed test accuracy, which separates the methods by factors rather than by tenths of a point. The grid, the endpoint rule and the schedules are in Appendix~\ref{app:repro}.
+\paragraph{Protocol.} The only tuned hyperparameter is $\eta_0$, selected per method on a held-out $5$k validation split. Every method with a norm-fixed step is tuned and reported under one per-layer rule, the unit-gain rule~\eqref{eq:unit_gain_main}, so that $\eta_0$ means the same thing across them, namely the per-step RMS gain (Appendix~\ref{app:lrscale}); SGD and Adam have no such step and keep one global rate. Centralized numbers are means over three seeds and federated numbers over five, and differences smaller than the seed spread are not claimed as results. Alongside final accuracy we report epochs to a fixed test accuracy, which separates the methods by factors rather than by tenths of a point. The grid, the endpoint rule and the schedules are in Appendix~\ref{app:repro}.
 
 \begin{table}[!t]
 \centering
@@ -310,11 +299,11 @@ In federated learning the bottleneck is transmitting full $32$-bit gradient matr
 
 \paragraph{Setting.} Sign-based methods separate most clearly as network scale and local computation grow, so we run at $N=11$ clients at batch $192$ each, the scale at which they separate. Clients take no local parameter steps: one round is one server step, so no client-drift term enters either the experiment or the analysis. The count is odd by design: client messages are $\pm1$ valued under the convention of Section~\ref{sec:theory}, so an odd $N$ makes the majority vote decisive in every coordinate and removes the tie-breaking rule from the comparison entirely. Every rate is tuned per method on a validation split held out before the client partition, so that no placement is handicapped by its step size and no test image is scored during selection (Appendix~\ref{app:repro}); every number is a five-seed mean (Table~\ref{tab:exp_3}, Figure~\ref{fig:exp_3}).
 
-SignMuon reaches the quality of Muon: $85.81 \pm 0.25\%$ against $85.99 \pm 0.26\%$, a gap of $0.18$ points against a seed spread of $0.25$, at $1.09$ bits per parameter in \emph{both} directions. That is the cleanest statement the experiment supports: at a fixed one-bit round trip, replacing the gradient sign with the sign of the \textsc{lmo} direction yields $3.98$ points over SignSGD (against $1.26$ centrally) and closes the gap to uncompressed Muon to within the seed spread. The seeds also make visible that the three placements are \emph{not} interchangeable: sign-after leads (SignMuon, $85.81\%$), sign-before trails it by $1.19$ points (MuonUSign, $84.62\%$), and signing both sides costs a further $3.94$ (MuonSign, $80.68\%$). Sign-after stays ahead under error feedback (EF21-SignMuon, $85.16\%$), though below it the other two swap (EF21-MuonSign $83.99\%$, EF21-MuonUSign $83.75\%$).
+SignMuon reaches the quality of Muon at $1.09$ bits per parameter in \emph{both} directions, a gap of $0.18$ points against a seed spread of $0.25$. At that fixed one-bit round trip, replacing the gradient sign with the sign of the \textsc{lmo} direction is worth $3.98$ points over SignSGD, against $1.26$ centrally. The seeds also separate the three placements, which single-seed evidence had shown as coincident: sign-after leads, sign-before trails it by $1.19$ points, and signing both sides costs a further $3.94$. Sign-after stays ahead under error feedback, though below it the other two swap.
 
-This is the paper's uncomfortable finding: the placement that works best in practice is the one the theory condemns. Sign-after is what Theorem~\ref{th:1} makes diverge, and error feedback does not repair it for any $(L,\eta,\mu)$ (Theorem~\ref{th:ef_div}); yet the sign-after methods are the strongest compressed ones here, in the centralized table, and on nanoGPT (Section~\ref{sec:exp_nanogpt}). Conversely the two variants that do carry an unconditional $\mathcal{O}(T^{-1/2})$ guarantee, EF21-MuonUSign and EF21-MuonSign, lie about $2$ points below SignMuon: seven to eight seed spreads, so the gap is measured rather than inferred. We therefore state the guarantee as costing accuracy at this scale rather than as incurring no cost, and read the counterexamples as what they are: statements about worst-case instances, not predictions about CIFAR-10.
+This is the paper's uncomfortable finding: the placement that works best in practice is the one the theory condemns. Sign-after is what Theorem~\ref{th:1} makes diverge, and error feedback does not repair it for any $(L,\eta,\mu)$ (Theorem~\ref{th:ef_div}); yet the sign-after methods are the strongest compressed ones here, in the centralized table, and on nanoGPT (Section~\ref{sec:exp_nanogpt}). Conversely the two variants carrying an unconditional $\mathcal{O}(T^{-1/2})$ guarantee lie about $2$ points below SignMuon, seven to eight seed spreads, so the gap is measured rather than inferred. We therefore state the guarantee as costing accuracy at this scale, and read the counterexamples as what they are: statements about worst-case instances, not predictions about CIFAR-10.
 
-EF21-MuonSign is $0.24$ points \emph{ahead} of the uplink-only EF21-MuonUSign, within a seed spread, so at CNN2's scale the one-bit downlink loop incurs no measurable cost: what separates the EF21 family from SignMuon is the sign placement, not the second compression. All methods here are evaluated on the exact server model $\mathbf{X}_t$, the iterate Corollary~\ref{cor:smooth} bounds, which for EF21-MuonSign is not the model the clients hold \eqref{eq:two_models}; that the two agree at CNN2's scale means the models still track each other. On much wider matrices they separate (Remark~\ref{rem:dimension}), and the next section reports both.
+EF21-MuonSign is $0.24$ points \emph{ahead} of the uplink-only EF21-MuonUSign, within a seed spread, so at CNN2's scale the one-bit downlink loop incurs no measurable cost: what separates the EF21 family from SignMuon is the sign placement, not the second compression. All methods are evaluated at the exact server model $\mathbf{X}_t$, the iterate Corollary~\ref{cor:smooth} bounds, which for EF21-MuonSign is not the model the clients hold \eqref{eq:two_models}; that the two agree here means the models still track each other. On much wider matrices they separate (Remark~\ref{rem:dimension}), and the next section reports both.
 
 \subsection{Language Modelling}\label{sec:exp_nanogpt}
 

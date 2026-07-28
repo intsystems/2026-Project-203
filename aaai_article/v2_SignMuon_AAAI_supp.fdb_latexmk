@@ -1,20 +1,18 @@
 # Fdb version 4
-["bibtex v2_SignMuon_AAAI_supp"] 1785280226.41991 "v2_SignMuon_AAAI_supp.aux" "v2_SignMuon_AAAI_supp.bbl" "v2_SignMuon_AAAI_supp" 1785280230.40109 0
+["bibtex v2_SignMuon_AAAI_supp"] 1785281251.90487 "v2_SignMuon_AAAI_supp.aux" "v2_SignMuon_AAAI_supp.bbl" "v2_SignMuon_AAAI_supp" 1785281256.05406 0
   "./aaai2027.bst" 1784372872.09358 31700 78a7412522b7a75ae1844843e9fe6300 ""
   "./references.bib" 1785274800.82658 23094 f9411755c8cd33563482c2fe5ca6158f ""
-  "v2_SignMuon_AAAI_supp.aux" 1785280229.06499 16844 ae311b21bd8976606a56e6628998cab0 "pdflatex"
+  "v2_SignMuon_AAAI_supp.aux" 1785281254.66316 16844 a898425604e9208ec93ea83999d7c6b7 "pdflatex"
   (generated)
   "v2_SignMuon_AAAI_supp.bbl"
   "v2_SignMuon_AAAI_supp.blg"
   (rewritten before read)
-["pdflatex"] 1785280226.77288 "v2_SignMuon_AAAI_supp.tex" "v2_SignMuon_AAAI_supp.pdf" "v2_SignMuon_AAAI_supp" 1785280230.40246 0
+["pdflatex"] 1785281252.28435 "v2_SignMuon_AAAI_supp.tex" "v2_SignMuon_AAAI_supp.pdf" "v2_SignMuon_AAAI_supp" 1785281256.05527 0
   "C:/Users/Alex/AppData/Local/MiKTeX/fonts/map/pdftex/pdftex.map" 1785258241.15146 277445 6f46880da4bfcdb9db4b56d0acd70e14 ""
   "C:/Users/Alex/AppData/Local/MiKTeX/miktex/data/le/pdftex/pdflatex.fmt" 1741112456.67984 12015339 4b6bf11704e52ef6abfe6d06cad4bac2 ""
   "C:/Users/Alex/AppData/Local/Programs/MiKTeX/fonts/enc/dvips/base/8r.enc" 1458473887 4993 1194fb36dfcb11d9ae9802f2b00b60a3 ""
   "C:/Users/Alex/AppData/Local/Programs/MiKTeX/fonts/enc/dvips/newtx/ntx-ec-tlf-pc.enc" 1736607166 3136 bbe665bd0bb471a2da1e8fd326cff9fa ""
   "C:/Users/Alex/AppData/Local/Programs/MiKTeX/fonts/enc/dvips/newtx/ntx-ec-tlf.enc" 1736607166 2914 fdbc4a54b9bc76f4551b5303f2737d33 ""
-  "C:/Users/Alex/AppData/Local/Programs/MiKTeX/fonts/tfm/adobe/courier/pcrb8r.tfm" 1136765053 1292 3059476c50a24578715759f22652f3d0 ""
-  "C:/Users/Alex/AppData/Local/Programs/MiKTeX/fonts/tfm/adobe/courier/pcrb8t.tfm" 1136765053 1384 87406e4336af44af883a035f17f319d9 ""
   "C:/Users/Alex/AppData/Local/Programs/MiKTeX/fonts/tfm/adobe/courier/pcrr8r.tfm" 1136765053 1292 bd42be2f344128bff6d35d98474adfe3 ""
   "C:/Users/Alex/AppData/Local/Programs/MiKTeX/fonts/tfm/adobe/courier/pcrr8t.tfm" 1136765053 1384 4632f5e54900a7dadbb83f555bc61e56 ""
   "C:/Users/Alex/AppData/Local/Programs/MiKTeX/fonts/tfm/adobe/courier/pcrro8r.tfm" 1136765053 1544 4fb84cf2931ec523c2c6a08d939088ba ""
@@ -89,10 +87,8 @@
   "C:/Users/Alex/AppData/Local/Programs/MiKTeX/fonts/type1/public/newtx/ztmb.pfb" 1736607166 255251 958c6ad4e5518904a53cf1118c612893 ""
   "C:/Users/Alex/AppData/Local/Programs/MiKTeX/fonts/type1/public/newtx/ztmr.pfb" 1736607166 286816 82db2bfe6920054b1a43661c07078412 ""
   "C:/Users/Alex/AppData/Local/Programs/MiKTeX/fonts/type1/public/newtx/ztmri.pfb" 1736607166 248316 6c047e35119cde1bffb3263909816feb ""
-  "C:/Users/Alex/AppData/Local/Programs/MiKTeX/fonts/type1/urw/courier/ucrb8a.pfb" 1136846148 50493 4ed1f7e9eba8f1f3e1ec25195460190d ""
   "C:/Users/Alex/AppData/Local/Programs/MiKTeX/fonts/type1/urw/courier/ucrr8a.pfb" 1136846148 45758 19968a0990191524e34e1994d4a31cb6 ""
   "C:/Users/Alex/AppData/Local/Programs/MiKTeX/fonts/type1/urw/courier/ucrro8a.pfb" 1136846148 44404 ea3d9c0311883914133975dd62a9185c ""
-  "C:/Users/Alex/AppData/Local/Programs/MiKTeX/fonts/vf/adobe/courier/pcrb8t.vf" 1136765053 2184 5d20c8b00cd914e50251116c274e2d0b ""
   "C:/Users/Alex/AppData/Local/Programs/MiKTeX/fonts/vf/adobe/courier/pcrr8t.vf" 1136765053 2184 8475af1b9cfa983db5f46f5ed4b8f9f7 ""
   "C:/Users/Alex/AppData/Local/Programs/MiKTeX/fonts/vf/adobe/courier/pcrro8t.vf" 1136765053 2280 d7cd083c724c9449e1d12731253966f7 ""
   "C:/Users/Alex/AppData/Local/Programs/MiKTeX/tex/context/base/mkii/supp-pdf.mkii" 1580390158 71627 94eb9990bed73c364d7f53f960cc8c5b ""
@@ -174,13 +170,13 @@
   "images/nanogpt/fig_nanogpt_diag.pdf" 1785274800.81358 43185 3c1ebe8b9be4a43cc1ec9ac4912fde69 ""
   "images/synt/GN.png" 1784372872.1816 331838 17eedd3f7fcdb8aee98f57fbb2a7b16a ""
   "images/synt/loss.png" 1784372872.1876 299987 d55eb3167e9da2a36717b86f27ff29dd ""
-  "signmuon_appendix.tex" 1785280206.56594 114810 49066cbcb60302f0b7602a6b9d7297b2 ""
+  "signmuon_appendix.tex" 1785281244.54214 115669 6bcf415ef272e58e8a39bfc3c0848ad6 ""
   "signmuon_mishra_comparison.tex" 1785258206.0102 5180 588278d8e131cfd2e18aba7851a20967 ""
   "signmuon_preamble.tex" 1785274800.83259 8420 ef2f29d59024157fd7d36f294be29495 ""
-  "v2_SignMuon_AAAI.aux" 1785280219.48038 6650 c7888f74adab22bf8f5891d056af62f8 ""
+  "v2_SignMuon_AAAI.aux" 1785281244.57829 6584 767aa15cfed19605d6c4353309b7726d ""
   "v2_SignMuon_AAAI.tex" 1785274800.85259 1007 9495da00f008a4320abb685cc4f70121 ""
-  "v2_SignMuon_AAAI_supp.aux" 1785280229.06499 16844 ae311b21bd8976606a56e6628998cab0 "pdflatex"
-  "v2_SignMuon_AAAI_supp.bbl" 1785280226.68638 5939 624b898cd390b761f6830fbd313552c1 "bibtex v2_SignMuon_AAAI_supp"
+  "v2_SignMuon_AAAI_supp.aux" 1785281254.66316 16844 a898425604e9208ec93ea83999d7c6b7 "pdflatex"
+  "v2_SignMuon_AAAI_supp.bbl" 1785281252.18649 5939 624b898cd390b761f6830fbd313552c1 "bibtex v2_SignMuon_AAAI_supp"
   "v2_SignMuon_AAAI_supp.tex" 1785274800.9146 1314 40ef68682369a82abdd5a6b0d8342c36 ""
   (generated)
   "v2_SignMuon_AAAI_supp.aux"

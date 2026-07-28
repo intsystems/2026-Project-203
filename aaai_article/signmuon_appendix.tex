@@ -209,9 +209,9 @@ Three implementation conventions can move reported numbers and are recorded here
 
 \subsection{The smooth convex problem}\label{app:images_task}
 
-% Moved here from the main text (Experiments) to save main-part space; the
-% [fill] slots below await results/synthetic/SUMMARY.md.
-Before the network experiments we measure, on a deterministic $L$-smooth convex quadratic, the scalar every guarantee in this paper rests on: the alignment $\rho_t = \langle \nabla F(\mathbf{X}_t), \mathbf{D}_t\rangle / (\|\nabla F(\mathbf{X}_t)\|_F\|\mathbf{D}_t\|_F)$ between the gradient and the step taken. Theorems~\ref{th:1}--\ref{th:3} construct instances that drive it negative; on random instances it stays positive throughout \textbf{[fill]}, so the failure they exhibit is not one random data produces. The same experiment shows what sign compression of an \textsc{lmo} step actually yields: a lower accuracy floor rather than a faster rate \textbf{[fill]}. At a matched step size SignSGD descends faster, but its floor is the higher of the two, and it is the floor that a fixed-target iteration count ranks. Section~\ref{app:synthetic_v1} retains the earlier fixed-target comparison.
+% Moved here from the main text (Experiments) to save main-part space. Every
+% number below is read off results/synthetic/SUMMARY.md, run 2026-07-29.
+Before the network experiments we measure, on a deterministic $L$-smooth convex quadratic, the scalar every guarantee in this paper rests on: the alignment $\rho_t = \langle \nabla F(\mathbf{X}_t), \mathbf{D}_t\rangle / (\|\nabla F(\mathbf{X}_t)\|_F\|\mathbf{D}_t\|_F)$ between the gradient and the step taken. Theorems~\ref{th:1}--\ref{th:3} construct instances that drive it negative; on random instances all three methods they cover keep $\rho_t \ge 0.146$ for every step of a tuned trajectory, so the failure they exhibit is not one random data produces. The one method that does go negative here is EF21-MuonSign, on $0.93\%$ of its steps and only to $-0.028$ --- and that is a method we prove \emph{converges} (Appendix~\ref{app:hyp}), by a route that does not pass through per-step descent. The same experiment shows what sign compression of an \textsc{lmo} step actually yields: a lower accuracy floor rather than a faster rate. SignMuon's gradient floor sits a factor $1.74$--$1.80$ below SignSGD's at every step size the two were run at, while SignSGD reaches the smaller error at the two shortest budgets and loses from $T = 500$ on; the two share $\|\mathbf{S}\|_F$ exactly, so it is the floor, not the step length, that separates them, and it is the floor that a fixed-target iteration count ranks. Section~\ref{app:synthetic_v1} retains the earlier fixed-target comparison.
 
 \paragraph{Construction.}
 To isolate the effect of matrix structure from stochastic noise and from the complexity of DNN architectures, we use a deterministic $L$-smooth convex quadratic:
@@ -225,7 +225,7 @@ with $\mathbf{A} \in \mathbb{S}_{++}^m$, $\mathbf{B} \in \mathbb{S}_{++}^n$ symm
 Two facts about this instance are exact rather than estimated, and both are used below. The Hessian of $F$ is the Kronecker product $\mathbf{B} \otimes \mathbf{A}$, so its eigenvalues are the products $\lambda_i(\mathbf{A})\lambda_j(\mathbf{B})$: the Frobenius smoothness constant is $L = \max_{ij}\lambda_i(\mathbf{A})\lambda_j(\mathbf{B}) \le 1$ and the strong-convexity constant is $\sigma = \min_{ij}\lambda_i(\mathbf{A})\lambda_j(\mathbf{B}) > 0$. The uniform draw leaves the resulting condition number $L/\sigma$ uncontrolled (it is near $2.5 \times 10^{5}$ at $m = n = 500$), so where conditioning is the variable we instead use log-spaced spectra with $L = 1$ and $L/\sigma$ set exactly. And since $\nabla F(\mathbf{X}) = \mathbf{A}\mathbf{X}\mathbf{B}$ in closed form, the gradient can be evaluated at any point without an autograd graph, which is what lets the bidirectional method be scored on its exact model $\mathbf{X}$ while its gradient is taken at the broadcast model $\mathbf{W}$, as its algorithm requires.
 
 \paragraph{What ``iterations to a target'' measures.}
-The natural criterion --- fewest iterations to $F(\mathbf{X}) \le 10^{-3}$ within $T_{\max} = 5000$, learning rate and momentum tuned per method --- turns out not to measure a convergence rate, and reporting it as one is misleading. Every method here except SGD takes a \emph{normalized} step: $\|\operatorname{sign}(\cdot)\|_F = \sqrt{mn}$ and $\|\mathrm{polar}(\cdot)\|_F = \sqrt{r}$ whatever the gradient does. A constant $\eta$ therefore cannot converge; the iterate settles into a ball of radius $\eta\|\mathbf{S}\|_F$ and $F$ plateaus. Measured directly, the plateau obeys $\|\nabla F\|_\infty \propto \eta$ and $F_\infty \propto \eta^2$, and the iteration count is $\text{const}/\eta$. The tuner thus returns the largest $\eta$ whose plateau still fits under the target, and the ranking it produces is a ranking of \emph{accuracy floors}. The two effects can disagree: at matched $\eta$, SignSGD descends faster per step than SignMuon, while SignMuon's floor is the lower of the two \textbf{[fill both from \texttt{results/synthetic/SUMMARY.md}, floor section]}. We therefore report the floor and the rate separately, and read the descent lemma
+The natural criterion --- fewest iterations to $F(\mathbf{X}) \le 10^{-3}$ within $T_{\max} = 5000$, learning rate and momentum tuned per method --- turns out not to measure a convergence rate, and reporting it as one is misleading. Every method here except SGD takes a \emph{normalized} step: $\|\operatorname{sign}(\cdot)\|_F = \sqrt{mn}$ and $\|\mathrm{polar}(\cdot)\|_F = \sqrt{r}$ whatever the gradient does. A constant $\eta$ therefore cannot converge; the iterate settles into a ball of radius $\eta\|\mathbf{S}\|_F$ and $F$ plateaus. Measured directly, the plateau obeys $\|\nabla F\|_\infty \propto \eta$ and $F_\infty \propto \eta^2$, and the iteration count is $\text{const}/\eta$. The tuner thus returns the largest $\eta$ whose plateau still fits under the target, and the ranking it produces is a ranking of \emph{accuracy floors}. The two effects do disagree here. Swept over the seven step sizes both methods were run at, SignMuon's plateau $\|\nabla F\|_\infty$ is $1.74$ to $1.80$ times below SignSGD's --- a ratio flat in $\eta$, as two floors with the same exponent must be --- and its plateau in $F$ between $6.7$ and $71$ times below. Tuned per budget, the ranking inverts at short horizons: SignSGD reaches the smaller $\min_t\|\nabla F\|_F$ at $T = 125$ and $T = 250$ ($6.55$ and $2.25 \times 10^{-2}$, against $7.44$ and $2.33 \times 10^{-2}$) and the larger one at every budget from $500$ on. We therefore report the floor and the rate separately, and read the descent lemma
 \begin{equation}
 F(\mathbf{X}_{t+1}) \le F(\mathbf{X}_t) - \eta \langle \nabla F(\mathbf{X}_t), \mathbf{D}_t\rangle + \tfrac{\eta^2 L}{2}\|\mathbf{D}_t\|_F^2
 \label{eq:descent_lemma}
@@ -247,13 +247,18 @@ Theorems~\ref{th:1}--\ref{th:3} are constructions that drive $\rho_t$ negative. 
 \toprule
 \textbf{Algorithm} & \textbf{$\min_t \rho_t$} & \textbf{median $\rho_t$} & \textbf{mean $\rho_t$} & \textbf{\% of steps with $\rho_t<0$} & \textbf{closed form} & \textbf{tuned $(\eta,\mu)$} \\
 \midrule
-% One row per method, in this order, once the numbers exist:
-%   SignMuon, MuonUSign, MuonSign, EF21-SignMuon, EF21-MuonUSign, EF21-MuonSign,
-%   Muon, SignSGD, SGD. The first six have no closed form (---); SGD's is 1.
-\pendingrow{7}{nine rows from the alignment section of \texttt{results/synthetic/SUMMARY.md}} \\
+SignMuon        & $0.214$  & $0.381$ & $0.399$ & $0.00\%$ & ---      & $(2.2\cdot10^{-4},\, 0)$ \\
+MuonUSign       & $0.161$  & $0.357$ & $0.378$ & $0.00\%$ & ---      & $(3.2\cdot10^{-3},\, 0)$ \\
+MuonSign        & $0.146$  & $0.362$ & $0.366$ & $0.00\%$ & ---      & $(2.2\cdot10^{-4},\, 0)$ \\
+EF21-SignMuon   & $0.330$  & $0.659$ & $0.573$ & $0.00\%$ & ---      & $(1.5\cdot10^{-3},\, 0)$ \\
+EF21-MuonUSign  & $0.345$  & $0.558$ & $0.553$ & $0.00\%$ & ---      & $(1.5\cdot10^{-3},\, 0)$ \\
+EF21-MuonSign   & $-0.028$ & $0.491$ & $0.419$ & $0.93\%$ & ---      & $(1.5\cdot10^{-3},\, 0)$ \\
+Muon            & $0.454$  & $0.666$ & $0.633$ & $0.00\%$ & $0.695$  & $(1.5\cdot10^{-3},\, 0)$ \\
+SignSGD         & $0.174$  & $0.503$ & $0.499$ & $0.00\%$ & $0.794$  & $(2.2\cdot10^{-4},\, 0.5)$ \\
+SGD             & ---      & ---     & ---     & ---      & $1$      & $(3.2,\, 0.95^{\dagger})$ \\
 \bottomrule
 \end{tabular}
-\caption{Gradient/step alignment $\rho_t$ of Equation~\eqref{eq:alignment} along the tuned trajectory, one row per method. The closed-form column is evaluated at $\mathbf{X}_0$ without momentum, so it is comparable only to rows whose tuned $\mu$ is $0$; with momentum the step is built from $\mathbf{M}_t$ rather than the current gradient and $\rho_t$ falls accordingly. The three sign-around-the-\textsc{lmo} methods admit no closed form; SGD's is $1$.}
+\caption{Gradient/step alignment $\rho_t$ of Equation~\eqref{eq:alignment} along the tuned trajectory, one row per method, over three problem draws at $m = n = 100$. The closed-form column is evaluated at $\mathbf{X}_0$ without momentum, so it is comparable only to rows whose tuned $\mu$ is $0$; with momentum the step is built from $\mathbf{M}_t$ rather than the current gradient and $\rho_t$ falls accordingly. The three sign-around-the-\textsc{lmo} methods admit no closed form; SGD's is $1$, and its step is not one the harness can instrument, so its distribution is left empty rather than filled with the constant. Adam is omitted for the same reason, its step being outside the descent lemma. Every method Theorems~\ref{th:1}--\ref{th:3} cover stays well clear of zero; the single negative excursion belongs to EF21-MuonSign, which Appendix~\ref{app:hyp} proves convergent through the EF21 estimator rather than through per-step descent, so a $\rho_t$ dipping to $-0.028$ contradicts nothing. $^\dagger$~SGD's momentum is the top of its grid.}
 \label{tab:synthetic_alignment}
 \end{table*}
 
@@ -269,15 +274,21 @@ Three further measurements, each testing a quantity the theory predicts in close
 \cmidrule(lr){2-3}\cmidrule(lr){4-7}\cmidrule(lr){8-8}
 \textbf{Algorithm} & $\mathrm{d}\log\|\nabla F\|_\infty / \mathrm{d}\log\eta$ & $R^2$ & $p$ & $R^2$ & $q$ & $R^2$ & $\eta_{\max}\|\mathbf{S}\|_F$ \\
 \midrule
-% One row per method, in this order, once the numbers exist:
-%   SignMuon, MuonUSign, MuonSign, EF21-SignMuon, EF21-MuonUSign, EF21-MuonSign,
-%   Muon, SignSGD, SGD, Adam. SGD's floor columns stay empty by construction.
-\pendingrow{8}{ten rows from the floor, budget-scaling and stability sections of \texttt{results/synthetic/SUMMARY.md}} \\
+SignMuon        & $1.000$ & $1.000$ & $2.26$ & $0.980$ & $-0.17^{\dagger}$ & $0.08$ & $13.4$ \\
+MuonUSign       & $1.000$ & $1.000$ & $3.85$ & $0.928$ & $0.44^{\dagger}$  & $0.80$ & $14.9$ \\
+MuonSign        & $1.000$ & $1.000$ & $1.97$ & $0.963$ & $-0.28^{\dagger}$ & $0.23$ & $11.8$ \\
+EF21-SignMuon   & $1.000$ & $1.000$ & $3.02$ & $0.877$ & $0.72^{\dagger}$  & $0.94$ & $18.9$ \\
+EF21-MuonUSign  & $1.000$ & $1.000$ & $2.39$ & $0.976$ & $0.00$            & $0.00$ & $14.9$ \\
+EF21-MuonSign   & $1.000$ & $1.000$ & $2.52$ & $0.991$ & $0.00$            & $0.00$ & $14.9$ \\
+Muon            & $1.000$ & $1.000$ & $2.17$ & $0.991$ & $0.44^{\dagger}$  & $0.94$ & $17.6$ \\
+SignSGD         & $0.989$ & $1.000$ & $1.66$ & $0.992$ & $0.28^{\dagger}$  & $0.89$ & $11.1$ \\
+SGD             & \multicolumn{2}{c}{\emph{no floor}} & $8.97$ & $0.985$ & $-0.11$ & $0.50$ & $2.06^{\ddagger}$ \\
+Adam            & $1.000$ & $1.000$ & $2.65$ & $0.915$ & $-0.66$           & $0.62$ & $> 100^{\S}$ \\
 \midrule
 \emph{predicted} & $1$ & & $1/2$ or $1$ & & $1/2$ or $1$ & & $2/L$ \\
 \bottomrule
 \end{tabular}
-\caption{Floor exponent, budget exponents and stability edge, one row per method, against the values the theory predicts. SGD has no floor (its step vanishes with the gradient), so its floor columns are empty by construction, and its $\eta_{\max}$ is the control that must reproduce $2/L$.}
+\caption{Floor exponent, budget exponents and stability edge, one row per method, against the values the theory predicts, at $m = n = 100$ over three problem draws. The floor exponent is the one number here that lands on its prediction exactly, and does so for all nine methods that have a floor. The budget exponents do not: every $p$ exceeds the $1/2$ the nonconvex bound proves and most exceed the $1$ of the strongly convex regime, which is what a quadratic being easier than the worst case of its smoothness class looks like. SGD has no floor (its step vanishes with the gradient), so its floor columns are empty by construction, and its $\eta_{\max}$ is the control that must reproduce $2/L = 2.019$. $^\dagger$~The $q$ column is not yet a measurement: the tuned $\eta^\star$ hit the top of its grid at one or both of the two shortest budgets for six of the ten methods, and it is the short budgets that want the large step, so $q$ is fitted through censored points. The two rows without a dagger are worse rather than better --- their $\eta^\star$ is non-monotone in $T$, and the fit through it is flat with $R^2 = 0$. $^\ddagger$~SGD has no $\|\mathbf{S}\|_F$; the entry is $\eta_{\max}$ itself, $1.02$ times $2/L$. $^\S$~Adam's search hit its ceiling without finding an edge, since its step is bounded by roughly $\eta$ whatever the gradient does, so it oscillates rather than diverges.}
 \label{tab:synthetic_dynamics}
 \end{table*}
 
@@ -285,31 +296,28 @@ Three further measurements, each testing a quantity the theory predicts in close
     \centering
     \begin{subfigure}[b]{0.48\columnwidth}
         \centering
-        % \includegraphics[width=\textwidth]{images/synt/floor.pdf}
-        \pendingbox{3cm}{the accuracy floor of a constant step}
+        \includegraphics[width=\textwidth]{images/synt/floor.pdf}
         \caption{Floor $\|\nabla F\|_\infty$ vs.\ $\eta$}
         \label{fig:synthetic_floor}
     \end{subfigure}
     \hfill
     \begin{subfigure}[b]{0.48\columnwidth}
         \centering
-        % \includegraphics[width=\textwidth]{images/synt/horizon.pdf}
-        \pendingbox{3cm}{best error at each tuned budget}
+        \includegraphics[width=\textwidth]{images/synt/horizon.pdf}
         \caption{Error vs.\ budget $T$}
         \label{fig:synthetic_horizon}
     \end{subfigure}
-    \caption{Log--log fits behind Table~\ref{tab:synthetic_dynamics}. Left: the accuracy floor of a constant step. Right: best error at each tuned budget.}
+    \caption{Log--log fits behind Table~\ref{tab:synthetic_dynamics}. Left: the accuracy floor of a constant step; the lines are parallel because every exponent is $1$, and the two clusters are the two step lengths, $\|\mathbf{S}\|_F = \sqrt{mn}$ on the left and $\sqrt{r}$ on the right. Right: best error at each tuned budget, in the norm dual to each method's own \textsc{lmo} ball, so the curves are comparable within a family and not across one.}
     \label{fig:synthetic_dynamics}
 \end{figure}
 
 \paragraph{Conditioning.}
-Conditioning is the only knob that governs the dynamics of a quadratic, and the construction above leaves it to chance. Figure~\ref{fig:synthetic_kappa} sweeps it over decades at fixed $L = 1$.
+Conditioning is the only knob that governs the dynamics of a quadratic, and the construction above leaves it to chance. Figure~\ref{fig:synthetic_kappa} sweeps it over five decades at fixed $L = 1$. The eight norm-fixed methods are all but insensitive to it, with $\mathrm{d}\log\|\nabla F\|/\mathrm{d}\log\kappa$ between $-0.10$ (Muon) and $-0.17$ (EF21-SignMuon, MuonSign) --- mildly \emph{negative}, because at fixed $L$ a larger $\kappa$ means a smaller $\sigma$ and a flatter landscape to sit in, not a harder one to descend. Their floors are set by $\eta\|\mathbf{S}\|_F$, which does not know the spectrum. SGD and Adam do know it, and pay: SGD spans sixteen orders of magnitude across the sweep. Its fitted slope of $3.8$ should not be read as an exponent, since its first three points are at or below $10^{-20}$, which on this problem is exact convergence rather than a measurement.
 
 \begin{figure}[!t]
     \centering
-    % \includegraphics[width=0.9\columnwidth]{images/synt/kappa.pdf}
-    \pendingbox{4cm}{best $\|\nabla F\|$ against the condition number, tuned at each point}
-    \caption{Best $\|\nabla F\|$ within the budget against the condition number $L/\sigma$, tuned at each point.}
+    \includegraphics[width=0.9\columnwidth]{images/synt/kappa.pdf}
+    \caption{Best $\|\nabla F\|$ within the budget against the condition number $L/\sigma$, tuned at each point. The eight norm-fixed methods lie in a band an order of magnitude wide and essentially flat; SGD and Adam are the two that resolve the sweep at all.}
     \label{fig:synthetic_kappa}
 \end{figure}
 
