@@ -26,7 +26,7 @@ Each layer carries the spectral norm $\|\cdot\|_{2\to 2}$, dual to the nuclear n
 \begin{equation}
 \|\nabla_i g(\mathbf{X}) - \nabla_i g(\mathbf{Y})\|_{*} \le L_i^{g}\,\|\mathbf{X}_i - \mathbf{Y}_i\|_{2\to 2},
 \end{equation}
-for $g = f$ (constant $L_i$) and $g = f_j$ (constant $L_{i,j}$); set $\tilde{L}_i^2 := \frac{1}{N}\sum_j L_{i,j}^2$ and $L := \max_i L_i$. Layer-wise $(L^0,L^1)$-smoothness \citep{riabinin2025gluon,pethick2025generalized} replaces $L_i^{g}$ by $L^0 + L^1\|\nabla_i g(\mathbf{X})\|_{*}$ and reduces to the above when $L^1 = 0$.
+for $g = f$ (constant $L_i$) and $g = f_j$ (constant $L_{i,j}$); set $\tilde{L}_i^2 := \frac{1}{N}\sum_j L_{i,j}^2$ and $L := \max_i L_i$. Layer-wise $(L^0,L^1)$-smoothness \citep{riabinin2025gluon,pethick2025generalized} replaces $L_i^{g}$ by $L^{0,g}_i + L^{1,g}_i\|\nabla_i g(\mathbf{X})\|_{*}$, again with one pair of constants per layer for $g=f$ and per layer and client for $g=f_j$ (we write $L^1_{i,\max} := \max_j L^1_{i,j}$), and reduces to the above when $L^1 \equiv 0$.
 \end{assumption}
 
 \begin{assumption}[\textbf{Stochastic gradient}]\label{as:3}
@@ -43,6 +43,7 @@ Run the federated Algorithm~\ref{alg:fed_serverlmo} with the EF21 uplink and EMA
 \item[\emph{(i)}] \emph{(smooth; both methods)} under Assumptions~\ref{as:1}--\ref{as:3}, with the sharp learning rate $\eta_{t,i} = \gamma_i\|\mathbf{G}_{t,i}\|_{*}$ and tuned $(\gamma_i,\mu)$, both reach $\tfrac{1}{T}\sum_{t<T}\mathbb{E}\|\nabla f(\mathbf{X}_t)\|_*^2 = \mathcal{O}(T^{-1/2})$ (Corollary~\ref{cor:smooth});
 \item[\emph{(ii)}] \emph{(generalized smooth; uplink only)} under $(L^0,L^1)$-smoothness, EF21-MuonUSign with a plain \emph{constant} learning rate reaches $\min_{t\le T}\sum_i\mathbb{E}\|\nabla_i f(\mathbf{X}_t)\|_* = \mathcal{O}(T^{-1/4})$ (Corollary~\ref{cor:l0l1}).
 \end{itemize}
+Both statements are written for a per-layer constant common to all layers ($\gamma_i \equiv \gamma$, $\eta_i \equiv \eta$); for unequal constants the left-hand sides carry the step-size weights of Corollaries~\ref{cor:smooth}--\ref{cor:l0l1}.
 The majority-vote placements (Theorems~\ref{th:1}--\ref{th:3}) and EF21-SignMuon (Theorem~\ref{th:ef_div}) admit no such guarantee.
 \end{theorem}
 
@@ -102,16 +103,16 @@ momentum & $\mu$ & $1 - \beta$ \\
 learning rate & $\eta_{t,i}$ & radius $t_i^{t}$ \\
 norm equivalence & $1,\ \sqrt{r_i}$ & $\underline{\rho}_i,\ \bar{\rho}_i$ \\
 uplink compr. & scaled sign & $\mathbb{B}_2(\alpha_D)$ \\
-downlink compr. & exact / sign & $\mathcal{I}$ / $\mathbb{B}_2(\alpha_P)$ \\
+downlink compr. & exact / sign & $\mathcal{I}$ / $\mathbb{B}_2(\alpha_P)^{\dagger}$ \\
 compression $\alpha$ & $1/d_{\max}$ & $\alpha_D$ \\
 \bottomrule
 \end{tabular}
-\caption{Change of variables from our notation to that of \citet{gruntkowska2025error}. Layer norms $\|\cdot\|_{(i)},\|\cdot\|_{(i)\star}$ are read as $\|\cdot\|_{2\to2},\|\cdot\|_{*}$ and smoothness constants $L_i^0,\tilde{L}_i^0$ as $L_i,\tilde{L}_i$; the index shift is Proposition~\ref{prop:instance}.}
+\caption{Change of variables from our notation to that of \citet{gruntkowska2025error}. Layer norms $\|\cdot\|_{(i)},\|\cdot\|_{(i)\star}$ are read as $\|\cdot\|_{2\to2},\|\cdot\|_{*}$ and smoothness constants $L_i^0,\tilde{L}_i^0$ as $L_i,\tilde{L}_i$; the index shift is Proposition~\ref{prop:instance}. $^{\dagger}$Their Theorem~19 as printed asks for a server compressor in $\mathbb{B}(\alpha_P)$, contractive in the \emph{layer} norm; the Euclidean class $\mathbb{B}_2(\alpha_P)$ that the scaled sign belongs to is licensed only by their Remark~23, at the $\bar\rho_i^2$ price charged in Corollary~\ref{cor:smooth} and Remark~\ref{rem:normmismatch}.}
 \label{tab:dict}
 \end{table}
 
 \begin{corollary}[\textbf{Smooth case; both methods}]\label{cor:smooth}
-Let Assumptions~\ref{as:1}--\ref{as:3} hold. Run Algorithm~\ref{alg:fed_serverlmo} with the EF21 uplink, EMA momentum, and $\eta_{t,i} = \gamma_i\|\mathbf{G}_{t,i}\|_{*}$ with any $\gamma_i$ below the per-layer threshold of \citet[Thm.~19]{gruntkowska2025error} under Table~\ref{tab:dict}. Then, tuning $\mu$ as in \citet[Cor.~2]{gruntkowska2025error},
+Let Assumptions~\ref{as:1}--\ref{as:3} hold. Run Algorithm~\ref{alg:fed_serverlmo} with the EF21 uplink, EMA momentum, and $\eta_{t,i} = \gamma_i\|\mathbf{G}_{t,i}\|_{*}$ with any $\gamma_i$ below the per-layer threshold of \citet[Thm.~19]{gruntkowska2025error} under Table~\ref{tab:dict}. Then, applying the momentum tuning of \citet[Cor.~2]{gruntkowska2025error} per layer (their Corollaries~1--2 state it for the layer-wise initialization and for $p=1$ respectively; the combination is routine),
 \begin{equation*}
 \tfrac{1}{T}\textstyle\sum_{t<T}\sum_{i=1}^p w_i\,\mathbb{E}\|\nabla_i f(\mathbf{X}_t)\|_*^2 = \mathcal{O}(T^{-1/2}),
 \end{equation*}
@@ -146,7 +147,7 @@ and since $\mathbb{E}\langle \nabla_i f - \mathbf{M}_t,\mathbf{n}_t\rangle = -\b
 The first term is exactly the deviation \citet[Thm.~19]{gruntkowska2025error} already tracks, contracted rather than enlarged; the second is dominated by the $\beta\sigma_i^2$ term already in its bound. Nesterov should therefore cost constants, not the rate --- but we state this as an expectation, not as a corollary, since the tracking recursion for $\|\tilde{\mathbf{M}}_{t+1}-\tilde{\mathbf{M}}_t\|$ would have to be redone as well.
 
 \begin{remark}[\textbf{The price of one bit}]\label{rem:dimension}
-The uplink $\alpha = 1/d_{\max}$ is what makes the threshold of Corollary~\ref{cor:smooth} shrink with the dimension -- the worst-case cost of one-bit messages, as for Top-$1$ compressors in Euclidean EF21 \citep{richtarik2021ef21}. \emph{On the uplink} it is worst-case only: it needs an all-but-one-coordinate-negligible residual, whereas the momentum residual is dense with $\alpha(\boldsymbol{\Delta}) = \Theta(1)$ (Lemma~\ref{lem:signcontr}), and the framework admits iteration-dependent $\alpha$ \citep[Rem.~12]{gruntkowska2025error}.
+The uplink $\alpha = 1/d_{\max}$ is what makes the threshold of Corollary~\ref{cor:smooth} shrink with the dimension -- the worst-case cost of one-bit messages, as for Top-$1$ compressors in Euclidean EF21 \citep{richtarik2021ef21}. \emph{On the uplink} it is worst-case only: it needs an all-but-one-coordinate-negligible residual, whereas the momentum residual is dense with $\alpha(\boldsymbol{\Delta}) = \Theta(1)$ (Lemma~\ref{lem:signcontr}), and the framework is stated to extend straightforwardly to iteration-dependent $\alpha$ \citep[Rem.~12]{gruntkowska2025error}.
 
 \emph{The downlink of EF21-MuonSign does not inherit this.} Its residual is not a gradient difference refreshed by fresh stochasticity, but the output of the compressor's own recursion
 \begin{equation*}

@@ -28,9 +28,9 @@ is the only method whose objective increases, rising at the exact rate
 $\tfrac{49}{480}$ per step. \emph{Right:} the same runs magnified to the band of
 the seven remaining methods (EF21-SignMuon leaves the frame): SignMuon,
 MuonUSign, MuonSign, EF21-MuonUSign, EF21-MuonSign, SignSGD and Muon all
-decrease and stay bounded. By Lemma~\ref{lem:efsm_reduction} the EF21-SignMuon
-trajectory is the same for every $\mu\in[0,1)$ and both momentum variants, so
-the single run shown is representative of all of them.}
+decrease and stay bounded. By Lemma~\ref{lem:efsm_realize} each $\mu$ and variant has its own $\tilde f$
+generating the same target sequence \eqref{eq:target_seq}, so the EF21-SignMuon
+trajectory shown is representative of all of them.}
 \label{fig:ef21_divergence}
 \end{figure*}
 
@@ -53,7 +53,9 @@ Second, the divergence lives entirely in the estimator's response to a fixed
 target sequence; momentum affects only \emph{how the gradients are sourced},
 not the targets. A single explicit trajectory thus settles all
 $(L,\eta,\mu,\text{variant})$ at once. The mechanism is not degeneracy: the
-matrices driving it have condition number $\tfrac{16}{9}$ throughout.
+matrices driving the divergent tail have condition number $\tfrac{16}{9}$
+throughout (the two-step preamble, which only sets the phase, is not claimed to
+be well conditioned).
 
 Accordingly the proof has three parts. Part~1 rescales the problem to remove
 $L$ and $\eta$. Part~2 isolates the dynamical core: for one fixed sequence of
