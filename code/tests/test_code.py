@@ -2075,5 +2075,32 @@ def test_list_arguments_accept_commas_and_spaces():
         raise AssertionError("an unknown stage name must raise, naming the valid set")
 
 
+def test_momentum_zero_is_not_a_censored_grid_edge():
+    """An optimum at momentum 0 is a result, not a grid too narrow.
+
+    The tuner flags an optimum sitting on a grid endpoint, because such a value
+    is an upper bound rather than a measurement. Momentum is bounded below by 0
+    -- the optimizers reject anything else -- so mom = 0 is a natural bound and
+    flagging it sends the reader to widen a grid that cannot be widened. Under
+    the paper's own protocol, where a boundary hit disqualifies the row, that
+    would have discarded five of ten rows in the first real sweep.
+    """
+    def flagged(momenta, best_mom):
+        boundary = tuple(m for m in (momenta[0], momenta[-1]) if m > 0.0)
+        return bool(boundary and best_mom in boundary and len(momenta) > 1)
+
+    assert not flagged([0.0, 0.5, 0.9], 0.0), "mom=0 is a natural bound"
+    assert flagged([0.0, 0.5, 0.9], 0.9), "the upper end is genuinely censored"
+    assert flagged([0.5, 0.9], 0.5), "a nonzero lower end can still be widened"
+
+    # and the shipped implementation must agree with that rule
+    import inspect
+
+    from synthetic import benchmark
+    src = inspect.getsource(benchmark)
+    assert "if m > 0.0" in src, (
+        "the momentum-boundary rule no longer excludes the natural bound at 0")
+
+
 if __name__ == "__main__":
     sys.exit(main())

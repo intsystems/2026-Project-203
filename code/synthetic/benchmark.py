@@ -509,7 +509,13 @@ def tune(
     """
     best: Optional[Dict] = None
     boundary_lr = (lrs[0], lrs[-1])
-    boundary_mom = (momenta[0], momenta[-1])
+    # Only the *upper* momentum end is a censored edge. Momentum is bounded
+    # below by 0 -- the optimizers reject anything else -- so an optimum at
+    # mom = 0 is the true optimum sitting on a natural bound, not a grid too
+    # narrow to contain it. Flagging it sends the reader to widen a grid that
+    # cannot be widened, and, under the protocol that treats a boundary hit as
+    # a failed measurement, would discard a perfectly good row.
+    boundary_mom = tuple(m for m in (momenta[0], momenta[-1]) if m > 0.0)
 
     for lr in lrs:
         for mom in (momenta if method != "adam" else [0.0]):
@@ -532,7 +538,8 @@ def tune(
     edges = []
     if best["kwargs"]["lr"] in boundary_lr and len(lrs) > 1:
         edges.append("lr")
-    if best["kwargs"].get("momentum") in boundary_mom and len(momenta) > 1:
+    if (boundary_mom and best["kwargs"].get("momentum") in boundary_mom
+            and len(momenta) > 1):
         edges.append("momentum")
     best["on_grid_boundary"] = edges
     if edges and verbose:
