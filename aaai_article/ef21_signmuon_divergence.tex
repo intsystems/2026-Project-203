@@ -20,10 +20,10 @@ once; this coupling is what the counterexample exploits. We now prove
 Theorem~\ref{th:ef_div}.
 
 \subsubsection*{Proof idea}
-Picture the target $\mathbf D_t$ as a $2\times2$ matrix whose off-diagonal is
+Consider the target $\mathbf D_t$ as a $2\times2$ matrix whose off-diagonal is
 large and \emph{flips sign every step}, while its diagonal is a small constant.
 The estimator \eqref{eq:efsm_est} rescales all four signs by the same
-$\alpha_t$, so the flipping off-diagonal pins $\alpha_t$ at $\Theta(1)$, which
+$\alpha_t$, so the flipping off-diagonal holds $\alpha_t$ at $\Theta(1)$, which
 exceeds the small diagonal target. The diagonal of $\mathbf d_t^{\mathrm{est}}$
 therefore never settles: it oscillates with $\Theta(1)$ amplitude, and its
 time-average has the sign \emph{opposite} to the target. Being an average over
@@ -34,7 +34,7 @@ monotonically to infinity (Figure~\ref{fig:divergence_plot}, right).
 Two observations make the result independent of the parameters. First, the step
 size and smoothness only rescale the orbit, so we may fix $\eta=1$ and one value
 of $L$.
-Second, the divergence lives entirely in the estimator's response to a fixed
+Second, the divergence is due entirely to the estimator's response to a fixed
 target sequence; momentum affects only \emph{how the gradients are sourced},
 not the targets. A single explicit trajectory thus settles all
 $(L,\eta,\mu,\text{variant})$ at once. The mechanism is not degeneracy: the
@@ -283,7 +283,7 @@ prevent divergence. $\blacksquare$
 
 \begin{remark}[Boundedness below]\label{rem:efsm_bdd}
 Only the linear term $-\gamma W_{22}$ makes $\tilde f$ unbounded below, and only
-as $W_{22}\to+\infty$ --- a region the iterates never enter, since
+as $W_{22}\to+\infty$, a region the iterates never enter, since
 $(\tilde{\mathbf X}_t)_{22}\le\tfrac7{10}$ throughout (it decreases after the
 transient). Replacing $-\gamma W_{22}$ by any $C^\infty$ function that agrees
 with it on $\{W_{22}\le1\}$ and is constant on $\{W_{22}\ge2\}$ therefore leaves
@@ -295,7 +295,7 @@ this modification in force.
 \begin{figure*}[t]
 \centering
 \includegraphics[width=\textwidth]{images/counterexamples/ef21_signmuon_momentum.pdf}
-\caption{Momentum does not rescue EF21-SignMuon. For each momentum coefficient
+\caption{Momentum does not prevent the divergence of EF21-SignMuon. For each momentum coefficient
 $\mu$ and variant, EF21-SignMuon is run on the corresponding instance of
 Theorem~\ref{th:ef_div} and $f(\mathbf X_t)-f(\mathbf X_0)$ is plotted;
 \emph{left:} standard momentum, \emph{right:} Nesterov. Every setting diverges
