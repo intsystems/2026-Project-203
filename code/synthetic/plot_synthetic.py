@@ -34,6 +34,7 @@ from __future__ import annotations
 
 import argparse
 import json
+import math
 from pathlib import Path
 from typing import Dict, Sequence
 
@@ -153,20 +154,52 @@ def fig_trajectories(plt, data: Dict[str, dict]):
         if not _draw_trajectory(ax, data, key, ylabel):
             plt.close(fig)
             return None
-    axes[0][0].set_title(_problem_caption(list(data.values())), color=MUTED,
-                         fontsize=FS_ANNOT - 1.5, loc="left", pad=6)
     handles, labels = axes[0][0].get_legend_handles_labels()
     rows = 1 + (len(labels) - 1) // MAX_LEGEND_COLS
     ncol = -(-len(labels) // rows)          # balance the rows, don't fill-then-spill
     figure_legend(fig, handles, labels, ncol=ncol)
     fig.subplots_adjust(left=0.08, right=0.99, top=0.90,
-                        bottom=0.30 + 0.08 * (rows - 1), wspace=0.22)
+                        bottom=0.30 + 0.08 * (rows - 1), wspace=0.20)
     return fig
 
 
 # --------------------------------------------------------------------------
 # fig:synthetic_dynamics (left) -- the accuracy floor of a constant step
 # --------------------------------------------------------------------------
+
+
+#: The two methods whose step is not norm-fixed. They are references here, not
+#: subjects: on a quadratic with an exactly known Hessian a scaled gradient step
+#: converges to machine precision, so they run fifteen decades below the eight
+#: methods the panels are about. Left to set the y-range, they compress those
+#: eight into the top inch of the axes and force tick labels (``10^-19``) wide
+#: enough to collide with the neighbouring panel.
+UNNORMALIZED = ("sgd", "adam")
+
+
+def _focus_ylim(ax, series: Dict[str, list], pad: float = 0.6) -> None:
+    """Scale the y-axis to the norm-fixed methods, letting the references clip.
+
+    A curve that leaves the frame is named at the edge it left by, in the muted
+    annotation style. Silently clipping it would put a method in the shared
+    legend that appears in no panel, which reads as a missing run rather than a
+    deliberate choice of range.
+    """
+    focus = [y for method, ys in series.items() if method not in UNNORMALIZED
+             for y in ys if y is not None and y > 0]
+    if len(focus) < 2:
+        return
+    lo, hi = min(focus), max(focus)
+    decades = math.log10(hi / lo)
+    lo, hi = lo * 10 ** (-pad), hi * 10 ** (pad if decades > 0.5 else 1.0)
+    ax.set_ylim(lo, hi)
+
+    gone = [label_of(m) for m in UNNORMALIZED
+            if series.get(m) and all(y < lo for y in series[m] if y and y > 0)]
+    if gone:
+        ax.annotate(f"{', '.join(gone)} below", xy=(0.5, 0.012),
+                    xycoords="axes fraction", ha="center", va="bottom",
+                    color=MUTED, fontsize=FS_ANNOT - 1.0)
 
 
 def _curve(ax, method: str, xs, ys) -> None:
@@ -209,7 +242,7 @@ def _panel_horizon(ax, data: Dict[str, dict]) -> int:
     the ``p`` in the table. Retuning per budget is the point: imposing one
     schedule on every budget measures the schedule, not the method.
     """
-    drawn = 0
+    drawn, series = 0, {}
     for method, payload in data.items():
         rec = payload["result"]
         rows = rec.get("rows") or []
@@ -221,26 +254,29 @@ def _panel_horizon(ax, data: Dict[str, dict]) -> int:
         ys = ([r["best_dual"] ** 2 for r in rows] if dual
               else [r["best_gnorm"] for r in rows])
         _curve(ax, method, [r["T"] for r in rows], ys)
+        series[method] = ys
         drawn += 1
+    _focus_ylim(ax, series)
     ax.set_xlabel("budget $T$ (iterations)", color=INK_2, fontsize=FS_LABEL)
-    ax.set_ylabel(r"$\min_{t\leq T}\|\nabla F(\mathbf{X}_t)\|_*^2$",
+    ax.set_ylabel(r"$\min_{t\leq T}\|\nabla F\|_*^2$",
                   color=INK_2, fontsize=FS_LABEL)
     return drawn
 
 
 def _panel_kappa(ax, data: Dict[str, dict]) -> int:
     """Best gradient norm within the budget against ``L/sigma``, tuned at each."""
-    drawn = 0
+    drawn, series = 0, {}
     for method, payload in data.items():
         rows = payload["result"].get("rows") or []
         if len(rows) < 2:
             continue
-        _curve(ax, method, [r["kappa"] for r in rows],
-               [r["best_gnorm"] for r in rows])
+        ys = [r["best_gnorm"] for r in rows]
+        _curve(ax, method, [r["kappa"] for r in rows], ys)
+        series[method] = ys
         drawn += 1
+    _focus_ylim(ax, series)
     ax.set_xlabel(r"condition number $L/\sigma$", color=INK_2, fontsize=FS_LABEL)
-    ax.set_ylabel(r"best $\|\nabla F\|$ within budget", color=INK_2,
-                  fontsize=FS_LABEL)
+    ax.set_ylabel(r"best $\|\nabla F\|$", color=INK_2, fontsize=FS_LABEL)
     return drawn
 
 
@@ -282,8 +318,10 @@ def fig_diagnostics(plt, staged: Dict[str, Dict[str, dict]]):
     rows = 1 + (len(labels) - 1) // MAX_LEGEND_COLS
     figure_legend(fig, [handles[lab] for lab in labels], labels,
                   ncol=-(-len(labels) // rows), fontsize=FS_LEGEND)
+    # A wide gutter because each panel carries its own y tick labels and its
+    # own y label; at the default they land on the neighbour's axes.
     fig.subplots_adjust(left=0.075, right=0.995, top=0.97,
-                        bottom=0.30 + 0.07 * (rows - 1), wspace=0.30)
+                        bottom=0.32 + 0.07 * (rows - 1), wspace=0.42)
     return fig
 
 
