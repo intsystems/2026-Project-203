@@ -2158,22 +2158,45 @@ def test_every_code_section_has_a_readme():
 # --------------------------------------------------------------------------
 
 
+#: Third-party modules that only some tests need and no experiment does. A GPU
+#: box provisioned for sweeps has torch but often not these, and counting their
+#: absence as a failure takes the whole suite down with it -- which matters
+#: because ``synthetic.run_gpu`` and both ``overnight.py`` drivers run this
+#: suite as a preflight and refuse to start when it exits non-zero. Skipping
+#: them keeps the preflight meaningful instead of forcing --no-selftest, which
+#: would skip the optimizer and synthetic checks too. Anything not listed here
+#: -- torch above all -- still fails, because its absence means the run itself
+#: cannot be trusted.
+OPTIONAL_MODULES = frozenset({"matplotlib", "pandas", "scipy", "seaborn"})
+
+
 def main() -> int:
     tests = [(name, obj) for name, obj in sorted(globals().items())
              if name.startswith("test_") and callable(obj)]
-    failed = []
+    failed, skipped = [], []
     for name, fn in tests:
         try:
             fn()
         except AssertionError as exc:
             failed.append((name, str(exc)))
             print(f"FAIL  {name}\n      {exc}")
+        except ModuleNotFoundError as exc:
+            root = (exc.name or "").split(".")[0]
+            if root not in OPTIONAL_MODULES:
+                failed.append((name, f"ModuleNotFoundError: {exc}"))
+                print(f"ERROR {name}\n      ModuleNotFoundError: {exc}")
+                continue
+            skipped.append((name, root))
+            print(f"skip  {name}\n      needs {root}, which is not installed")
         except Exception as exc:                       # noqa: BLE001
             failed.append((name, f"{type(exc).__name__}: {exc}"))
             print(f"ERROR {name}\n      {type(exc).__name__}: {exc}")
         else:
             print(f"ok    {name}")
-    print(f"\n{len(tests) - len(failed)}/{len(tests)} passed")
+    tail = f", {len(skipped)} skipped" if skipped else ""
+    print(f"\n{len(tests) - len(failed) - len(skipped)}/{len(tests)} passed{tail}")
+    if skipped:
+        print("skipped: " + ", ".join(f"{n} ({m})" for n, m in skipped))
     return 1 if failed else 0
 
 

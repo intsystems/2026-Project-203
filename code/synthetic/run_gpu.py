@@ -247,6 +247,9 @@ def selftest(log_dir: Path) -> bool:
             shown.append(ln)
             shown += [x for x in lines[i + 1:i + 2] if x.startswith("      ")]
     shown += [ln for ln in lines if "passed" in ln][-1:]
+    # A skipped test is a check that did not run, so name it rather than let the
+    # count in the summary line stand in for it.
+    shown += [ln for ln in lines if ln.startswith("skipped: ")][-1:]
     print("\n".join(shown), flush=True)
     if out.returncode != 0:
         print(f"\nSELFTEST FAILED -- nothing was run. Full output in {log_path}.\n"
