@@ -59,10 +59,11 @@
 \usepackage{subcaption}
 \usepackage{cleveref}
 
-% An informal restatement of a result proved elsewhere. amsthm's \newtheorem*
-% is not available under this class, so the unnumbered environment is spelled
-% out; the argument is the heading, e.g. "Theorems 1--3 (informal)".
-\newenvironment{informalthm}[1]{%
+% A summary of results stated and proved in the appendix. amsthm's
+% \newtheorem* is not available under this class, so the unnumbered
+% environment is spelled out; the argument is the heading, e.g.
+% "Theorems 1--3 (summary)".
+\newenvironment{summarythm}[1]{%
   \par\addvspace{5pt}\noindent\textbf{#1.}\itshape\ }{\par\addvspace{5pt}}
 
 % Pseudocode measure. The appendix sets in one column, where the full 7-inch
