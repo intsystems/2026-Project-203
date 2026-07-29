@@ -58,6 +58,22 @@ PANEL_WIDTH = 0.48 * TEXT_WIDTH
 #: of white space and the cost of being wrong is a silently clipped label.
 MAX_LEGEND_COLS = 5
 
+#: Height of the strip under the axes, in inches: x label and tick labels, plus
+#: one term per legend row. Absolute rather than a fraction of the figure,
+#: because it holds type at a fixed point size -- expressed as a fraction, the
+#: legend grows with the panels and eats the height it was given them for.
+XAXIS_STRIP_IN, LEGEND_ROW_IN = 0.59, 0.17
+
+#: Figure heights. Both were authored at 2.4/2.35 inches, where a panel is
+#: wider than it is tall and every curve is squeezed into a strip; these
+#: leave the axes about an inch taller, which is what the log decades need
+#: to be readable on screen at one-to-one.
+TRAJECTORY_HEIGHT, DIAGNOSTIC_HEIGHT = 3.2, 3.0
+
+
+def _bottom_fraction(fig_height: float, legend_rows: int) -> float:
+    return (XAXIS_STRIP_IN + LEGEND_ROW_IN * legend_rows) / fig_height
+
 #: ``stage -> the figures that need it``. Used to report what a partial run is
 #: missing, instead of failing on the first absent file.
 FIGURES = {
@@ -146,7 +162,8 @@ def fig_trajectories(plt, data: Dict[str, dict]):
     off the page, which in the first version of this figure cost SignMuon its
     name and Adam its entry.
     """
-    fig, axes = plt.subplots(1, 2, figsize=(TEXT_WIDTH, 2.4), squeeze=False)
+    fig, axes = plt.subplots(1, 2, figsize=(TEXT_WIDTH, TRAJECTORY_HEIGHT),
+                             squeeze=False)
     specs = [("loss_history", "$F(X_t)$"),
              ("grad_norm_history", r"$\|\nabla F(X_t)\|_F$")]
     for ax, (key, ylabel) in zip(axes[0], specs):
@@ -158,8 +175,8 @@ def fig_trajectories(plt, data: Dict[str, dict]):
     rows = 1 + (len(labels) - 1) // MAX_LEGEND_COLS
     ncol = -(-len(labels) // rows)          # balance the rows, don't fill-then-spill
     figure_legend(fig, handles, labels, ncol=ncol)
-    fig.subplots_adjust(left=0.08, right=0.99, top=0.90,
-                        bottom=0.30 + 0.08 * (rows - 1), wspace=0.20)
+    fig.subplots_adjust(left=0.08, right=0.99, top=0.965, wspace=0.20,
+                        bottom=_bottom_fraction(TRAJECTORY_HEIGHT, rows))
     return fig
 
 
@@ -300,7 +317,8 @@ def fig_diagnostics(plt, staged: Dict[str, Dict[str, dict]]):
                if staged.get(stage)]
     if not present:
         return None
-    fig, axes = plt.subplots(1, len(present), figsize=(TEXT_WIDTH, 2.35),
+    fig, axes = plt.subplots(1, len(present),
+                             figsize=(TEXT_WIDTH, DIAGNOSTIC_HEIGHT),
                              squeeze=False)
     for ax, (stage, draw) in zip(axes[0], present):
         style_axes(ax, logx=True, logy=True)
@@ -320,8 +338,8 @@ def fig_diagnostics(plt, staged: Dict[str, Dict[str, dict]]):
                   ncol=-(-len(labels) // rows), fontsize=FS_LEGEND)
     # A wide gutter because each panel carries its own y tick labels and its
     # own y label; at the default they land on the neighbour's axes.
-    fig.subplots_adjust(left=0.075, right=0.995, top=0.97,
-                        bottom=0.32 + 0.07 * (rows - 1), wspace=0.42)
+    fig.subplots_adjust(left=0.075, right=0.995, top=0.975, wspace=0.42,
+                        bottom=_bottom_fraction(DIAGNOSTIC_HEIGHT, rows))
     return fig
 
 

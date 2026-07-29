@@ -202,11 +202,15 @@ The same experiment separates the two effects a fixed-target iteration count con
 
 \paragraph{Construction.}
 To isolate the effect of matrix structure from stochastic noise and from the complexity of DNN architectures, we use a deterministic $L$-smooth convex quadratic:
-\begin{multline}
-F(\mathbf{X}) = \frac{1}{2} \|\mathbf{A}^{1/2} \mathbf{X} \mathbf{B}^{1/2}\|_F^2 \\
-= \frac{1}{2} \langle \mathbf{X}, \mathbf{A} \mathbf{X} \mathbf{B} \rangle \to \min_{\mathbf{X} \in \mathbb{R}^{m \times n}},
+% One line, not a multline: this appendix is only ever set \onecolumn (both
+% v2_SignMuon_AAAI_supp and _full switch before \input-ing it), so the break
+% the two-column measure needed only opened a gap across the page.
+\begin{equation}
+F(\mathbf{X}) = \frac{1}{2} \|\mathbf{A}^{1/2} \mathbf{X} \mathbf{B}^{1/2}\|_F^2
+= \frac{1}{2} \langle \mathbf{X}, \mathbf{A} \mathbf{X} \mathbf{B} \rangle
+\to \min_{\mathbf{X} \in \mathbb{R}^{m \times n}},
 \label{eq:synthetic_problem}
-\end{multline}
+\end{equation}
 with $\mathbf{A} \in \mathbb{S}_{++}^m$, $\mathbf{B} \in \mathbb{S}_{++}^n$ symmetric and $\mathbf{X}_0$ drawn entrywise from $\mathcal{N}(0, 0.01)$. Eigenvalues are sampled uniformly from $(0,1)$ in a Haar-random eigenbasis, so the matrices are almost surely positive \emph{definite} and the minimizer is $\mathbf{X}^\star = \mathbf{0}$ with $F^\star = 0$.
 
 Two facts about this instance are exact rather than estimated, and both are used below. The Hessian of $F$ is the Kronecker product $\mathbf{B} \otimes \mathbf{A}$, so its eigenvalues are the products $\lambda_i(\mathbf{A})\lambda_j(\mathbf{B})$: the Frobenius smoothness constant is $L = \max_{ij}\lambda_i(\mathbf{A})\lambda_j(\mathbf{B}) \le 1$ and the strong-convexity constant is $\sigma = \min_{ij}\lambda_i(\mathbf{A})\lambda_j(\mathbf{B}) > 0$. The uniform draw leaves the resulting condition number $L/\sigma$ uncontrolled (it is near $3.7 \times 10^{4}$ at the $m = n = 100$ every measurement in this subsection uses, and near $2.5 \times 10^{5}$ at the $m = n = 500$ of Section~\ref{app:synthetic_v1}), so where conditioning is the variable we instead use log-spaced spectra with $L = 1$ and $L/\sigma$ set exactly. And since $\nabla F(\mathbf{X}) = \mathbf{A}\mathbf{X}\mathbf{B}$ in closed form, the gradient can be evaluated at any point without an autograd graph, which is what lets the bidirectional method be scored on its exact model $\mathbf{X}$ while its gradient is taken at the broadcast model $\mathbf{W}$, as its algorithm requires.
@@ -219,7 +223,7 @@ F(\mathbf{X}_{t+1}) \le F(\mathbf{X}_t) - \eta \langle \nabla F(\mathbf{X}_t), \
 \end{equation}
 as the statement that separates them: the second term is the floor, the first is the rate.
 
-Table~\ref{tab:synthetic_tuned} reports the criterion under the current protocol, since Table~\ref{tab:synthetic_results} of the superseded section reports it and the two are otherwise not comparable. Read as a ranking of floors, it orders the six placements identically within both families: sign after the \textsc{lmo} is cheapest, sign on both channels dearest. Error feedback costs $10\%$ on SignMuon and $17\%$ on MuonSign; its apparent $6\%$ saving on MuonUSign is measured against a censored row and is not yet a result. Muon beats all six placements, and SGD ($66$) and Adam ($85$) beat every normalized step by factors of three to ten, a quadratic with an exactly known Hessian being the case a scaled gradient step is built for.
+Table~\ref{tab:synthetic_tuned} reports the criterion under the current protocol, since Table~\ref{tab:synthetic_results} of the superseded section reports it and the two are otherwise not comparable. Read as a ranking of floors, it orders the six placements identically within both families: sign after the \textsc{lmo} is cheapest, sign on both channels dearest. Error feedback costs $10\%$ on SignMuon and $17\%$ on MuonSign, and saves $6\%$ on MuonUSign, the one placement whose \textsc{lmo} already sees a compressed argument. Muon beats all six placements, and SGD ($66$) and Adam ($85$) beat every normalized step by factors of three to ten, a quadratic with an exactly known Hessian being the case a scaled gradient step is built for.
 
 \begin{table}[!t]
 \centering\small
