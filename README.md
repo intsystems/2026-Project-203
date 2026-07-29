@@ -125,12 +125,19 @@ python3 -m counterexamples.run_counterexamples  # Figure 1
 ```
 
 Run the full centralized or federated protocol as one resumable, budget-aware
-command — it self-checks, times your GPU, prints a schedule, and writes a report
-you can read mid-run:
+command — it self-checks, times your GPU, prints a schedule, writes a report you can
+read mid-run, and finishes by packing the results into one small archive:
 
 ```bash
 python3 -m centralized.overnight --device cuda:0 --budget-hours 12 --download
-python3 -m federated.overnight   --device cuda:0 --budget-hours 12 --download
+python3 -m federated.overnight   --device cuda:0 --budget-hours 24 --download
+```
+
+Download that archive and redraw the figures anywhere:
+
+```bash
+python3 -m centralized.plot_analysis --bundle article_export
+python3 -m federated.plot_article --bundle results/federated_export_results.zip
 ```
 
 Or a single run:

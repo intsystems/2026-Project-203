@@ -9,28 +9,27 @@ ResNet-18 on CIFAR-10, 75 epochs, cosine-annealed. This is the paper's
 | [`train.py`](train.py) | The training loop and optimizer construction |
 | [`data.py`](data.py) | Loaders, including the fixed 45k/5k tuning split |
 | [`tune.py`](tune.py) | Equal-budget, validation-only learning-rate search |
-| [`overnight.py`](overnight.py) | **Command 1**: the whole protocol, resumable |
-| [`export_article.py`](export_article.py) | **Command 2**: pack the results into one archive |
-| [`plot_analysis.py`](plot_analysis.py) | Redraw every figure from that archive |
+| [`overnight.py`](overnight.py) | **Step 1**: the whole protocol, resumable |
+| [`export_article.py`](export_article.py) | **Step 2**: pack the results into one archive |
+| [`plot_analysis.py`](plot_analysis.py) | **Step 3**: redraw every figure from that archive |
 
-## Two commands
-
-On the GPU box:
+## Three commands
 
 ```bash
+# 1. on the GPU box: ~1.5 days, resumable, bundles itself at the end
 cd code
-python3 -m centralized.overnight --device cuda:0 --download   # ~1.5 days, resumable
-python3 -m centralized.export_article                         # -> results/article_export.tar.gz
-```
+python3 -m centralized.overnight --device cuda:0 --download
 
-Download that one `.tar.gz` (~1 MB), unpack it here, and:
+# 2. download the file it prints: results/article_export.tar.gz  (~1 MB)
 
-```bash
+# 3. unpack it here, then
 python3 -m centralized.plot_analysis --bundle article_export  # -> results/analysis/
 ```
 
-The run tree itself never has to move: it is ~1.5 GB of `model.pt` per sweep, and
-the archive holds every number the paper quotes.
+The driver calls `export_article` when it finishes, so the archive is written for
+you; `python3 -m centralized.export_article` rebuilds it at any time from what is on
+disk. The run tree itself never has to move: it is ~1.5 GB of `model.pt` per sweep,
+and the archive holds every number the paper quotes.
 
 Until that re-run lands, the **submitted** figures are redrawn from the committed
 outputs of the 2026-07-27 run:

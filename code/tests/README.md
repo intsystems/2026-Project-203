@@ -27,6 +27,7 @@ so that a change to the code cannot silently invalidate a sentence in the paper.
 | Federated ↔ centralized | **The load-bearing one**, below |
 | Batched ↔ sequential | The synthetic sweeps' fast path reproduces `run_one` on all ten methods — the same kind of two-implementations problem, below |
 | Federated protocol | The validation split is held out before partitioning; the GPU augmentation matches torchvision; the uplink alphabet is strictly +-1 by default, ternary only under `--uplink-zeros keep` |
+| Communication | The bit accounting follows the run's *own* alphabet — a raw zero rate costs nothing under the default — and a downlink counts as one bit exactly when the object the server distributes is already +-1, which is the paper's `tab:commacct` |
 | Centralized export | The paper's table aggregates per-seed tail means, in that order; every driver phase lands in the right bucket; the figures are a function of the export bundle alone |
 | Plumbing | The metrics schema, multi-seed aggregation, the anonymity scan |
 

@@ -10,6 +10,12 @@ that way:
 Nothing below needs a code change. The convention change (`sign_pm1`) is already
 in and the test suite passes.
 
+Updated 2026-07-30 after the federated proofread: `communication_bits` now takes
+the run's alphabet (§4), `--final-seeds` defaults to five, and §2b is restated as
+the one outstanding federated claim rather than a table that no longer exists.
+The N = 11 five-seed federated table itself is **done** — §2 is a re-run
+recipe, not outstanding work.
+
 ---
 
 ## 0. Before starting (10 min)
@@ -116,6 +122,7 @@ Phase order is already the right one for this goal: `lr` → `verify` → `final
 | `--lr-scaling` | `unit-gain` | the rule the paper states |
 | `--split tune` | during `lr` | the test set is never ranked on |
 | weight decay | 0 primary | matches the theorems; `wd` phase is the ablation |
+| `--final-seeds` | `0 1 2 3 4` | five is what `tab:exp_3` reports; rebalancing trims from the end under budget pressure and says so |
 
 **Eleven methods, and EF21-SignMuon belongs in the table.** It is the method
 Theorem 4 predicts can diverge, and showing it training fine on CIFAR while
@@ -123,10 +130,16 @@ diverging on the constructed instance is evidence *for* the paper's framing, not
 against it. `muonserver` is the uncompressed control for the server-LMO family —
 do not compare the server-LMO methods against worker-LMO `muon` alone.
 
-### 2b. The per-layer rule ablation (fills `tab:lr_ablation`)
+### 2b. The per-layer rule ablation — the one outstanding federated claim
 
-Three tuning passes, sign family only, then a couple of final runs at each
-selected rate:
+This is the highest-value remaining run. The appendix's "Sensitivity: what the
+rule can and cannot affect" paragraph in `app:lrscale` now states outright that
+the sign family has **not** been re-tuned under the competing conventions, and
+bounds the exposure instead. This closes that gap. (There is no
+`tab:lr_ablation` any more — the table was cut with the N = 3 experiment and
+survives only under `old/`; a new one would go in `app:lrscale`.)
+
+Three tuning passes, sign family only, then a final run at each selected rate:
 
 ```bash
 for rule in none unit-gain mup; do
@@ -135,11 +148,24 @@ for rule in none unit-gain mup; do
 done
 ```
 
-Then re-run the selected rate of each (method, rule) pair at the final horizon,
-seed 0, and write `results/federated/scaling_compare.csv`. The claim being
-defended is narrow and should be stated narrowly: **the ordering of the methods
-does not change with the rule.** The selected η₀ *does* change, by roughly the
-prescribed multiplier — that is the rule working, not a problem.
+~45 tuning jobs at 400 rounds plus 9 finals at 2000 ≈ 5–6 h on an A100. Then
+re-run the selected rate of each (method, rule) pair at the final horizon, seed 0,
+and write `results/federated/scaling_compare.csv`. The claim being defended is
+narrow and should be stated narrowly: **the ordering of the methods does not
+change with the rule.** The selected η₀ *does* change, by roughly the prescribed
+multiplier — that is the rule working, not a problem.
+
+### 2c. Two cheap checks on the published table
+
+* **Was SGD's η₀ = 0.1 a censored endpoint?** Every other selected rate in
+  `tab:exp_3` is interior to its method's five-point grid; SGD's transported
+  anchor is 0.02, so 0.1 is the *top* of the initial window and only survives as a
+  tuned value if the boundary extension fired and 0.1 still won. Read the `lr`
+  phase's boundary column in `REPORT.md` — no rerun needed unless it was censored.
+* **`lr_aux = 0.001` is held fixed, not verified, in the federated arm.**
+  `python3 -m federated.tune --stage aux --rounds 400` (~30 configs, ~2 h) would
+  let the appendix say "verified method-independent", which is what the
+  centralized arm can already claim from its own `aux` phase.
 
 ---
 
@@ -172,8 +198,12 @@ code; do not carry them over:
   censored; two rows were off their stated grid.
 * The `8–17%` uplink-zero range — still worth recording as a diagnostic, but it
   no longer feeds any bit-accounting claim, since zeros are randomized.
-* The round-trip communication table (now `~2×` vs `~29×`) — recompute with
-  `communication_bits` under the current alphabet (now a genuine 1 bit).
+* The round-trip communication table (now `~1.9×` vs `29.4×`) — `communication_bits`
+  now takes the run's alphabet as an argument and no longer charges the ternary
+  entropy to a channel that transmits `±1`, so `tab:commacct` and a fresh run log
+  agree. **Any `round_trip_reduction` already in `state.json` or `REPORT.md` from a
+  pre-2026-07-30 run is the old, inflated figure** — regenerate the report from a
+  new run rather than quoting it. The paper's table was always the correct one.
 
 ---
 

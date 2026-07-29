@@ -24,7 +24,7 @@ python3 -m tests.test_code          # CPU only, no downloads, ~1 min
 | see the convex-benchmark modes | [`synthetic/`](synthetic/README.md) |
 | run the language-modelling arm | [`nanogpt/`](nanogpt/README.md) |
 | know what the tests actually pin | [`tests/`](tests/README.md) |
-| redraw a figure | `counterexamples.run_counterexamples`, `synthetic.plot_synthetic`, `centralized.plot_analysis`, `federated.plot_federated` — see [REPRODUCE.md](REPRODUCE.md) |
+| redraw a figure | `counterexamples.run_counterexamples`, `synthetic.plot_synthetic`, `centralized.plot_analysis`, `federated.plot_article` — see [REPRODUCE.md](REPRODUCE.md) |
 | package this for double-blind review | [ANONYMIZATION.md](ANONYMIZATION.md) |
 
 ```
@@ -56,13 +56,21 @@ every phase so you can read it mid-run. Ctrl-C stops cleanly and writes it.
 `--dry-run` prints the schedule and exits. The centralized driver has no deadline
 by default; the federated one takes `--budget-hours 0` for the same.
 
-When a centralized run finishes, one more command packs everything the paper needs
-into a single ~1 MB archive to download, leaving the ~1.5 GB of checkpoints behind:
+Each driver ends by packing everything the paper needs into a single ~1 MB archive,
+leaving the checkpoints behind. Download that one file, then redraw the figures
+anywhere:
 
 ```bash
-python3 -m centralized.export_article                         # -> results/article_export.tar.gz
-python3 -m centralized.plot_analysis --bundle article_export  # unpack it here, redraw the figures
+# centralized  -> results/article_export.tar.gz
+python3 -m centralized.plot_analysis --bundle article_export
+
+# federated    -> results/federated_export_results.zip
+python3 -m federated.plot_article --bundle results/federated_export_results.zip
 ```
+
+`centralized.export_article` and `federated.export_article` rebuild their archive at
+any time from what is on disk, without retraining. The federated plotters unpack the
+`.zip` themselves.
 
 ## Method names
 
@@ -150,11 +158,13 @@ and the per-layer step-length ratio a single global rate would have to absorb
   `sign(0) = 0` would make the alphabet ternary, and that is not a corner case:
   `polar(M)` has an exactly-zero column wherever `M` does, which after ReLU and
   MaxPool is common (a feature zero across the whole local batch gives an
-  exactly-zero gradient column) — **8–17% of raw sign entries on CNN2**. The
-  paper's convention maps each zero to an independent random `±1`
-  (`common.optimizers.sign_pm1`), on every sign channel. Runs still record
-  `uplink_zero_frac` (the raw rate, before mapping); `--uplink-zeros keep`
-  restores the ternary channel for diagnostics.
+  exactly-zero gradient column) — **8–17% of raw sign entries** on SignMuon's
+  majority-vote uplink on CNN2. The paper's convention maps each zero to an
+  independent random `±1` (`common.optimizers.sign_pm1`), on every sign channel, so
+  the channel is one bit whatever that rate is. Runs still record
+  `uplink_zero_frac` (the raw rate, before mapping) as a diagnostic;
+  `--uplink-zeros keep` restores the ternary channel, and is the only setting under
+  which a zero rate costs bits.
   See [`federated/README.md`](federated/README.md) for why the client count is 11.
 * **BatchNorm in the federated setting.** Local models are discarded each round and
   BatchNorm runs in inference mode during gradient accumulation, so the running
@@ -176,7 +186,7 @@ A run writes to `results/{centralized,federated}/<run_name>/seed<seed>/`:
 > **Put this somewhere roomy before a long sweep.** `SIGNMUON_RESULTS` relocates
 > the whole tree; `aggregate.py` and every plotting script follow it
 > automatically. One `model.pt` per job adds up — **2.9 MB** for CNN2, **42.7 MB**
-> for ResNet-18 — so the 95-job federated night is ~280 MB and a 36-job
+> for ResNet-18 — so the ~127-job federated night is ~370 MB and a 36-job
 > centralized sweep is ~1.5 GB, before the dataset. Running the system disk dry at
 > 04:00 costs the night.
 >
