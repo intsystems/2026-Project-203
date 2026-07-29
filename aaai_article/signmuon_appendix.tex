@@ -31,16 +31,16 @@ f(\mathbf{X}_{t+1})-f(\mathbf{X}_t)=-\eta_t\,\bigl\langle \mathbf{G},\ \mathbf{s
 In particular, if $\langle \mathbf{G},\mathbf{s}(\mathbf{G})\rangle<0$ then $f$ strictly increases at every iteration for any $\eta_t>0$, and $f(\mathbf{X}_t)\to+\infty$ whenever $\sum_t\eta_t=\infty$ (e.g.\ for any constant step size).
 \end{proposition}
 
-\paragraph{Proof of Proposition~\ref{prop:reduction}.} On the linear objective \eqref{eq:lin_obj} the gradient is globally constant, $\mathbf{G}_t=\mathbf{G}$, so the momentum buffer of \eqref{eq:signa_general} is $\mathbf{M}_t=\sum_{i=0}^{t-1}\mu^i\,\mathbf{G}=\tfrac{1-\mu^t}{1-\mu}\,\mathbf{G}$. Both momentum rules then return a positive multiple of $\mathbf{G}$,
+\paragraph{Proof of Proposition~\ref{prop:reduction}.} On the linear objective \eqref{eq:lin_obj} the gradient is globally constant, $\mathbf{G}_t=\mathbf{G}$, so the momentum buffer of \eqref{eq:signa_general} is $\mathbf{M}_t=(1-\mu)\sum_{i=0}^{t-1}\mu^i\,\mathbf{G}=(1-\mu^t)\,\mathbf{G}$. Both momentum rules then return a positive multiple of $\mathbf{G}$,
 \begin{equation}
 \tilde{\mathbf{M}}_t=\gamma_t\,\mathbf{G},\qquad
 \gamma_t=
 \begin{cases}
-\tfrac{1-\mu^t}{1-\mu}, & \text{(Standard)},\\[2pt]
-1+\mu\,\tfrac{1-\mu^t}{1-\mu}, & \text{(Nesterov)},
+1-\mu^{t}, & \text{(Standard)},\\[2pt]
+1-\mu^{t+1}, & \text{(Nesterov)},
 \end{cases}
 \end{equation}
-because $\mu\in[0,1)$. The elementwise $\operatorname{sign}(\cdot)$ and the Muon LMO $\operatorname{polar}(\cdot)$ are each invariant under multiplication by a positive scalar, so evaluating \eqref{eq:three_placements} at $\tilde{\mathbf{M}}_t=\gamma_t\mathbf{G}$ returns the same matrix as evaluating it at $\mathbf{G}$; that is, $\mathbf{s}_t=\mathbf{s}(\mathbf{G})$ for every $t$, independently of $\mu$ and of the momentum variant. Hence $f(\mathbf{X}_{t+1})-f(\mathbf{X}_t)=\langle\mathbf{G},\mathbf{X}_{t+1}-\mathbf{X}_t\rangle=-\eta_t\langle\mathbf{G},\mathbf{s}(\mathbf{G})\rangle$, which is \eqref{eq:lin_increment}. If $\langle\mathbf{G},\mathbf{s}(\mathbf{G})\rangle<0$, then $f(\mathbf{X}_t)=f(\mathbf{X}_0)-\langle\mathbf{G},\mathbf{s}(\mathbf{G})\rangle\sum_{i=0}^{t-1}\eta_i$ increases strictly at every step and diverges to $+\infty$ whenever $\sum_t\eta_t=\infty$. $\blacksquare$
+both positive for $t\ge1$ because $\mu\in[0,1)$; the Nesterov case is $(1-\mu)\mathbf{G}+\mu(1-\mu^{t})\mathbf{G}$. (Under the heavy-ball convention every $\gamma_t$ is multiplied by $1/(1-\mu)$, which changes nothing below.) The elementwise $\operatorname{sign}(\cdot)$ and the Muon LMO $\operatorname{polar}(\cdot)$ are each invariant under multiplication by a positive scalar, so evaluating \eqref{eq:three_placements} at $\tilde{\mathbf{M}}_t=\gamma_t\mathbf{G}$ returns the same matrix as evaluating it at $\mathbf{G}$; that is, $\mathbf{s}_t=\mathbf{s}(\mathbf{G})$ for every $t$, independently of $\mu$ and of the momentum variant. Hence $f(\mathbf{X}_{t+1})-f(\mathbf{X}_t)=\langle\mathbf{G},\mathbf{X}_{t+1}-\mathbf{X}_t\rangle=-\eta_t\langle\mathbf{G},\mathbf{s}(\mathbf{G})\rangle$, which is \eqref{eq:lin_increment}. If $\langle\mathbf{G},\mathbf{s}(\mathbf{G})\rangle<0$, then $f(\mathbf{X}_t)=f(\mathbf{X}_0)-\langle\mathbf{G},\mathbf{s}(\mathbf{G})\rangle\sum_{i=0}^{t-1}\eta_i$ increases strictly at every step and diverges to $+\infty$ whenever $\sum_t\eta_t=\infty$. $\blacksquare$
 
 By Proposition~\ref{prop:reduction}, each divergence theorem reduces to exhibiting a single gradient $\mathbf{G}$ with $\langle\mathbf{G},\mathbf{s}(\mathbf{G})\rangle<0$; the three proofs below do exactly this, and momentum needs no further comment.
 
@@ -118,7 +118,7 @@ The size is again not arbitrary, and here the question reduces to \emph{sign pat
 \begin{equation}\label{eq:musign_pattern}
 \bigl\langle\mathbf{G},\operatorname{polar}(\operatorname{sign}(\mathbf{G}))\bigr\rangle=\textstyle\sum_{i,j}|G_{ij}|\,S_{ij}D_{ij},
 \end{equation}
-and likewise $\langle\mathbf{G},\operatorname{sign}(\mathbf{D})\rangle=\sum_{i,j}|G_{ij}|\,S_{ij}\operatorname{sign}(D_{ij})$ for the MuonSign step of Theorem~\ref{th:3}. So an ascent instance exists at a given shape precisely when some sign pattern $\mathbf{S}$ there has a \emph{mismatched} entry, $S_{ij}D_{ij}<0$. Under our convention $\mathbf{S}\in\{\pm1\}^{m\times n}$ always, and mismatch existence is invariant under row and column sign flips ($\operatorname{polar}(\mathbf{P}_1\mathbf{S}\mathbf{P}_2)=\mathbf{P}_1\operatorname{polar}(\mathbf{S})\mathbf{P}_2$ for $\pm1$ diagonal $\mathbf{P}_1,\mathbf{P}_2$), so enumerating one representative per class settles the question outright (\texttt{code/counterexamples/enumerate\_minimality.py}). It returns: \emph{no} pattern at $4\times4$, at $3\times n$ ($n\le9$) or at $2\times n$ ($n\le12$) has a mismatch. Neither MuonUSign nor MuonSign can therefore ascend on any linear objective at those sizes at all. The first instances appear at $4\times5$ ($720$ of the $2^{12}$ classes) and, among square shapes, at $5\times5$, where the $\mathbf{S}$ below attains the deepest mismatch any $5\times5$ sign matrix admits, $|D_{4,2}|=1/\sqrt{17}$. (Had we kept $\operatorname{sign}(0)=0$, gradients with exact zeros would admit instances from $3\times4$ on; the convention removes them, along with their dependence on an entry being exactly zero.)
+and likewise $\langle\mathbf{G},\operatorname{sign}(\mathbf{D})\rangle=\sum_{i,j}|G_{ij}|\,S_{ij}\operatorname{sign}(D_{ij})$ for the MuonSign step of Theorem~\ref{th:3}. So an ascent instance exists at a given shape precisely when some sign pattern $\mathbf{S}$ there has a \emph{mismatched} entry, $S_{ij}D_{ij}<0$. Under our convention $\mathbf{S}\in\{\pm1\}^{m\times n}$ always, and mismatch existence is invariant under row and column sign flips ($\operatorname{polar}(\mathbf{P}_1\mathbf{S}\mathbf{P}_2)=\mathbf{P}_1\operatorname{polar}(\mathbf{S})\mathbf{P}_2$ for $\pm1$ diagonal $\mathbf{P}_1,\mathbf{P}_2$), so enumerating one representative per class settles the question outright. The enumeration returns: \emph{no} pattern at $4\times4$, at $3\times n$ ($n\le9$) or at $2\times n$ ($n\le12$) has a mismatch. Neither MuonUSign nor MuonSign can therefore ascend on any linear objective at those sizes at all. The first instances appear at $4\times5$ ($720$ of the $2^{12}$ classes) and, among square shapes, at $5\times5$, where the $\mathbf{S}$ below attains the deepest mismatch any $5\times5$ sign matrix admits, $|D_{4,2}|=1/\sqrt{17}$. (Had we kept $\operatorname{sign}(0)=0$, gradients with exact zeros would admit instances from $3\times4$ on; the convention removes them, along with their dependence on an entry being exactly zero.)
 
 Fix the full-rank sign matrix $\mathbf{S}\in\{-1,1\}^{5\times 5}$,
 \begin{equation}\label{eq:muonsign_S}
@@ -170,23 +170,7 @@ Taking the norms dual to the Ky Fan $k$-norms, \citet{kravatskiy2025kyfannorms} 
 
 \subsection{Reproducibility Details}\label{app:repro}
 \paragraph{Computing infrastructure.}
-The experiments in this paper were not all run on the same machine, so Table~\ref{tab:hardware} reports the hardware per experiment rather than as a single sentence. Each row is generated from the record every run stamps into its own output at the moment it runs (\texttt{python3 -m common.hardware -{}-scan results -{}-latex}), so the table describes the machines the reported numbers actually came from and not the machine that happened to typeset the paper. Exact package versions are pinned in \texttt{code/requirements.txt}.
-
-\begin{table}[!t]
-\centering\footnotesize
-\setlength{\tabcolsep}{3pt}
-\begin{tabular}{@{}lllllll@{}}
-\toprule
-\textbf{Experiment} & \textbf{GPU} & \textbf{CPU} & \textbf{RAM (GB)} &
-\textbf{OS} & \textbf{Python} & \textbf{PyTorch / CUDA} \\
-\midrule
-Synthetic quadratic & NVIDIA RTX A4000, 15.6\,GB & AMD EPYC 7543 32-Core & 472.2 & Linux 6.12.26 & 3.12.13 & 2.7.0+cu128 / 12.8 \\
-\pendingrow{7}{the centralized, federated and nanoGPT rows, from \texttt{python3 -m common.hardware -{}-scan results -{}-latex}} \\
-\bottomrule
-\end{tabular}
-\caption{Computing infrastructure, per experiment. Generated from the per-run hardware records rather than written by hand; where one experiment was run on more than one machine, it contributes one row per machine.}
-\label{tab:hardware}
-\end{table}
+The experiments were not all run on the same machine. The synthetic study ran on one NVIDIA RTX A4000 (Linux, PyTorch 2.7, CUDA 12.8); the network experiments ran on single-GPU workstations, and the language-modelling runs on a node of $8\times$H100. Every run stamps its own hardware, commit and wall time into its output directory, so the released results identify the machine each number came from; the repository documents how to regenerate the table.
 
 \paragraph{Randomness and seeds.}
 Seeding goes through a \texttt{seed\_everything} routine that seeds the Python \texttt{random} module, NumPy, and PyTorch (including all CUDA devices) and enables deterministic cuDNN kernels (\texttt{cudnn.deterministic\,=\,True}, \texttt{cudnn.benchmark\,=\,False}). The federated experiment of Table~\ref{tab:exp_3} reports five seeds ($0$--$4$) per method and the centralized experiment of Table~\ref{tab:cifar_main} three ($0$--$2$), each quoted as mean $\pm$ one sample standard deviation across seeds; the nanoGPT runs of Table~\ref{tab:nanogpt} and the weight-decay ablations use a single fixed seed (default $0$), and Table~\ref{tab:nanogpt} states the seed noise of the upstream reference so that the resolvable differences there are explicit. The synthetic study of Appendix~\ref{app:images_task} averages over three draws of the problem itself (seeds $1337$--$1339$) at a fixed $\mathbf{X}_0$ (seed $42$), since every claim it makes is about a \emph{random} instance and one draw cannot support one --- the alignment distribution least of all. The distinction matters for reading the tables: a difference smaller than the seed spread is not a result, and only the centralized and federated tables measure that spread. Learning-rate selection is performed once, at seed $0$, on a validation split disjoint from the test set, and the selected rate is then reused unchanged for every seed.
@@ -212,9 +196,9 @@ Three implementation conventions can move reported numbers and are recorded here
 
 % Moved here from the main text (Experiments) to save main-part space. Every
 % number below is read off results/synthetic/SUMMARY.md, run 2026-07-29.
-On a deterministic $L$-smooth convex quadratic we measure the scalar the guarantees rest on: the alignment $\rho_t = \langle \nabla F(\mathbf{X}_t), \mathbf{D}_t\rangle / (\|\nabla F(\mathbf{X}_t)\|_F\|\mathbf{D}_t\|_F)$ between the gradient and the step. Theorems~\ref{th:1}--\ref{th:3} construct instances driving it negative; on random instances the three methods they cover keep $\rho_t \ge 0.146$ throughout a tuned trajectory, so the construction is not one random data reproduces. Only EF21-MuonSign goes negative, on $0.93\%$ of steps and to $-0.028$; it is also the one method here with a convergence guarantee (Appendix~\ref{app:hyp}), obtained without per-step descent.
+On a deterministic $L$-smooth convex quadratic we measure the scalar the guarantees rest on: the alignment $\rho_t = \langle \nabla F(\mathbf{X}_t), \mathbf{D}_t\rangle / (\|\nabla F(\mathbf{X}_t)\|_F\|\mathbf{D}_t\|_F)$ between the gradient and the step. Theorems~\ref{th:1}--\ref{th:3} construct instances driving it negative; on random instances the three methods they cover keep $\rho_t \ge 0.142$ throughout a tuned trajectory, so the construction is not one random data reproduces. Only EF21-MuonSign goes negative, on $0.95\%$ of steps and to $-0.026$; it is also the one method here with a convergence guarantee (Appendix~\ref{app:hyp}), obtained without per-step descent.
 
-The same experiment separates the two effects a fixed-target iteration count confounds. Sign compression of an \textsc{lmo} step buys a lower accuracy floor, not a faster rate: SignMuon's floor lies a factor $1.74$--$1.80$ below SignSGD's at every step size, while SignSGD reaches the smaller error at the two shortest budgets and the larger one from $T = 500$. Since the two share $\|\mathbf{S}\|_F$ exactly, the separation is in the floor rather than the step length. Section~\ref{app:synthetic_v1} retains the earlier comparison.
+The same experiment separates the two effects a fixed-target iteration count confounds. Sign compression of an \textsc{lmo} step buys a lower accuracy floor, not a faster rate: SignMuon's floor lies a factor $1.74$--$1.80$ below SignSGD's at every step size, and the two share $\|\mathbf{S}\|_F$ exactly, so the separation is in the floor rather than the step length. Section~\ref{app:synthetic_v1} retains the earlier comparison.
 
 \paragraph{Construction.}
 To isolate the effect of matrix structure from stochastic noise and from the complexity of DNN architectures, we use a deterministic $L$-smooth convex quadratic:
@@ -228,7 +212,7 @@ with $\mathbf{A} \in \mathbb{S}_{++}^m$, $\mathbf{B} \in \mathbb{S}_{++}^n$ symm
 Two facts about this instance are exact rather than estimated, and both are used below. The Hessian of $F$ is the Kronecker product $\mathbf{B} \otimes \mathbf{A}$, so its eigenvalues are the products $\lambda_i(\mathbf{A})\lambda_j(\mathbf{B})$: the Frobenius smoothness constant is $L = \max_{ij}\lambda_i(\mathbf{A})\lambda_j(\mathbf{B}) \le 1$ and the strong-convexity constant is $\sigma = \min_{ij}\lambda_i(\mathbf{A})\lambda_j(\mathbf{B}) > 0$. The uniform draw leaves the resulting condition number $L/\sigma$ uncontrolled (it is near $3.7 \times 10^{4}$ at the $m = n = 100$ every measurement in this subsection uses, and near $2.5 \times 10^{5}$ at the $m = n = 500$ of Section~\ref{app:synthetic_v1}), so where conditioning is the variable we instead use log-spaced spectra with $L = 1$ and $L/\sigma$ set exactly. And since $\nabla F(\mathbf{X}) = \mathbf{A}\mathbf{X}\mathbf{B}$ in closed form, the gradient can be evaluated at any point without an autograd graph, which is what lets the bidirectional method be scored on its exact model $\mathbf{X}$ while its gradient is taken at the broadcast model $\mathbf{W}$, as its algorithm requires.
 
 \paragraph{What ``iterations to a target'' measures.}
-The natural criterion --- fewest iterations to $F(\mathbf{X}) \le 10^{-3}$ within $T_{\max} = 5000$, learning rate and momentum tuned per method --- turns out not to measure a convergence rate, and reporting it as one is misleading. Every method here except SGD takes a \emph{normalized} step: $\|\operatorname{sign}(\cdot)\|_F = \sqrt{mn}$ and $\|\mathrm{polar}(\cdot)\|_F = \sqrt{r}$ whatever the gradient does. A constant $\eta$ therefore cannot converge; the iterate settles into a ball of radius $\eta\|\mathbf{S}\|_F$ and $F$ plateaus. Measured directly, the plateau obeys $\|\nabla F\|_\infty \propto \eta$ and $F_\infty \propto \eta^2$, and the iteration count is $\text{const}/\eta$. The tuner thus returns the largest $\eta$ whose plateau fits under the target, and the resulting ranking is one of \emph{accuracy floors}. The two effects disagree here. Over the seven step sizes both methods were run at, SignMuon's plateau $\|\nabla F\|_\infty$ is $1.74$ to $1.80$ times below SignSGD's, a ratio flat in $\eta$ as two floors of equal exponent must be, and its plateau in $F$ between $6.7$ and $71$ times below. Tuned per budget, the ranking inverts at short horizons: SignSGD attains the smaller $\min_t\|\nabla F\|_F$ at $T = 125$ and $250$ ($6.55$ and $2.25 \times 10^{-2}$ against $7.44$ and $2.33 \times 10^{-2}$), the larger at every budget from $500$. We therefore report floor and rate separately, reading the descent lemma
+The natural criterion --- fewest iterations to $F(\mathbf{X}) \le 10^{-3}$ within $T_{\max} = 5000$, learning rate and momentum tuned per method --- turns out not to measure a convergence rate, and reporting it as one is misleading. Every method here except SGD takes a \emph{normalized} step: $\|\operatorname{sign}(\cdot)\|_F = \sqrt{mn}$ and $\|\mathrm{polar}(\cdot)\|_F = \sqrt{r}$ whatever the gradient does. A constant $\eta$ therefore cannot converge; the iterate settles into a ball of radius $\eta\|\mathbf{S}\|_F$ and $F$ plateaus. Measured directly, the plateau obeys $\|\nabla F\|_\infty \propto \eta$ and $F_\infty \propto \eta^2$, and the iteration count is $\text{const}/\eta$. The tuner thus returns the largest $\eta$ whose plateau fits under the target, and the resulting ranking is one of \emph{accuracy floors}. The two effects disagree here. Over the seven step sizes both methods were run at, SignMuon's plateau $\|\nabla F\|_\infty$ is $1.74$ to $1.80$ times below SignSGD's, a ratio flat in $\eta$ as two floors of equal exponent must be, and its plateau in $F$ between $6.7$ and $71$ times below. Tuned per budget, SignMuon holds the smaller $\min_t\|\nabla F\|_F$ at every horizon but $T = 250$, where SignSGD takes it by $2\%$ ($2.25$ against $2.30 \times 10^{-2}$), a margin below what three draws resolve. We therefore report floor and rate separately, reading the descent lemma
 \begin{equation}
 F(\mathbf{X}_{t+1}) \le F(\mathbf{X}_t) - \eta \langle \nabla F(\mathbf{X}_t), \mathbf{D}_t\rangle + \tfrac{\eta^2 L}{2}\|\mathbf{D}_t\|_F^2
 \label{eq:descent_lemma}
@@ -245,7 +229,7 @@ Table~\ref{tab:synthetic_tuned} reports the criterion under the current protocol
 \textbf{Algorithm} & \textbf{iters} & \textbf{best $F$} & \textbf{$\min\|\nabla F\|_F$} & \textbf{tuned $(\eta,\mu)$} \\
 \midrule
 SignMuon       & $364$ & $6.9\cdot10^{-4}$ & $2.4\cdot10^{-2}$ & $(1.0\cdot10^{-3},\, 0)$ \\
-MuonUSign$^{\dagger}$ & $556$ & $7.1\cdot10^{-4}$ & $2.3\cdot10^{-2}$ & $(1.0\cdot10^{-2},\, 0.5)$ \\
+MuonUSign      & $556$ & $7.1\cdot10^{-4}$ & $2.3\cdot10^{-2}$ & $(1.0\cdot10^{-2},\, 0.5)$ \\
 MuonSign       & $595$ & $4.8\cdot10^{-4}$ & $1.9\cdot10^{-2}$ & $(6.8\cdot10^{-4},\, 0.5)$ \\
 EF21-SignMuon  & $401$ & $5.4\cdot10^{-4}$ & $2.1\cdot10^{-2}$ & $(6.8\cdot10^{-3},\, 0)$ \\
 EF21-MuonUSign & $521$ & $5.3\cdot10^{-4}$ & $1.8\cdot10^{-2}$ & $(6.8\cdot10^{-3},\, 0)$ \\
@@ -256,7 +240,7 @@ SGD            & $66$  & $1.9\cdot10^{-8}$ & $1.6\cdot10^{-6}$ & $(2.15,\, 0.5)$
 Adam           & $85$  & $9.2\cdot10^{-6}$ & $6.5\cdot10^{-4}$ & $(6.8\cdot10^{-2},\, \text{---})$ \\
 \bottomrule
 \end{tabular}
-\caption{Fixed-target criterion under the current protocol: fewest iterations to $F \le 10^{-3}$ within $T_{\max} = 5000$ at $m = n = 100$, over three problem draws, $(\eta,\mu,\text{schedule})$ tuned on five-decade logarithmic grids. A constant schedule wins for every method. Best $F$ and $\min\|\nabla F\|_F$ are minima over all $5000$ iterations rather than values at the crossing, so they report the floor the method settles into. Section~\ref{app:synthetic_v1} applies the same criterion at $m = n = 500$ on one draw; the iteration counts are not comparable across the two. $^\dagger$~At the top of its grid, hence an upper bound.}
+\caption{Fixed-target criterion under the current protocol: fewest iterations to $F \le 10^{-3}$ within $T_{\max} = 5000$ at $m = n = 100$, over three problem draws, $(\eta,\mu,\text{schedule})$ tuned on five-decade logarithmic grids. A constant schedule wins for every method. Best $F$ and $\min\|\nabla F\|_F$ are minima over all $5000$ iterations rather than values at the crossing, so they report the floor the method settles into. Section~\ref{app:synthetic_v1} applies the same criterion at $m = n = 500$ on one draw; the iteration counts are not comparable across the two.}
 \label{tab:synthetic_tuned}
 \end{table}
 
@@ -282,15 +266,15 @@ Theorems~\ref{th:1}--\ref{th:3} are constructions that drive $\rho_t$ negative. 
 \toprule
 \textbf{Algorithm} & \textbf{$\min_t \rho_t$} & \textbf{median $\rho_t$} & \textbf{mean $\rho_t$} & \textbf{\% of steps with $\rho_t<0$} & \textbf{closed form} & \textbf{tuned $(\eta,\mu)$} \\
 \midrule
-SignMuon        & $0.214$  & $0.381$ & $0.399$ & $0.00\%$ & ---      & $(2.2\cdot10^{-4},\, 0)$ \\
+SignMuon        & $0.208$  & $0.381$ & $0.399$ & $0.00\%$ & ---      & $(2.2\cdot10^{-4},\, 0)$ \\
 MuonUSign       & $0.161$  & $0.357$ & $0.378$ & $0.00\%$ & ---      & $(3.2\cdot10^{-3},\, 0)$ \\
-MuonSign        & $0.146$  & $0.362$ & $0.366$ & $0.00\%$ & ---      & $(2.2\cdot10^{-4},\, 0)$ \\
-EF21-SignMuon   & $0.330$  & $0.659$ & $0.573$ & $0.00\%$ & ---      & $(1.5\cdot10^{-3},\, 0)$ \\
-EF21-MuonUSign  & $0.345$  & $0.558$ & $0.553$ & $0.00\%$ & ---      & $(1.5\cdot10^{-3},\, 0)$ \\
-EF21-MuonSign   & $-0.028$ & $0.491$ & $0.419$ & $0.93\%$ & ---      & $(1.5\cdot10^{-3},\, 0)$ \\
+MuonSign        & $0.142$  & $0.360$ & $0.364$ & $0.00\%$ & ---      & $(2.2\cdot10^{-4},\, 0)$ \\
+EF21-SignMuon   & $0.333$  & $0.659$ & $0.573$ & $0.00\%$ & ---      & $(1.5\cdot10^{-3},\, 0)$ \\
+EF21-MuonUSign  & $0.346$  & $0.558$ & $0.553$ & $0.00\%$ & ---      & $(1.5\cdot10^{-3},\, 0)$ \\
+EF21-MuonSign   & $-0.026$ & $0.489$ & $0.419$ & $0.95\%$ & ---      & $(1.5\cdot10^{-3},\, 0)$ \\
 Muon            & $0.454$  & $0.666$ & $0.633$ & $0.00\%$ & $0.695$  & $(1.5\cdot10^{-3},\, 0)$ \\
 SignSGD         & $0.174$  & $0.503$ & $0.499$ & $0.00\%$ & $0.794$  & $(2.2\cdot10^{-4},\, 0.5)$ \\
-SGD             & ---      & ---     & ---     & ---      & $1$      & $(3.2,\, 0.95^{\dagger})$ \\
+SGD             & ---      & ---     & ---     & ---      & $1$      & $(3.2,\, 0.95)$ \\
 \bottomrule
 \end{tabular}
 \caption{Alignment $\rho_t$ of Equation~\eqref{eq:alignment} along the tuned trajectory, over three problem draws at $m = n = 100$. The closed form is evaluated at $\mathbf{X}_0$ without momentum and is comparable only to rows whose tuned $\mu$ is $0$; with momentum the step is built from $\mathbf{M}_t$ and $\rho_t$ falls accordingly. The six sign-around-the-\textsc{lmo} methods admit no closed form. SGD's is $1$, but its step is not instrumented, so the distribution is left empty rather than filled with the constant; Adam is omitted, its step lying outside the descent lemma. Every method of Theorems~\ref{th:1}--\ref{th:3} stays clear of zero. The single negative excursion is EF21-MuonSign's, which Appendix~\ref{app:hyp} proves convergent through the EF21 estimator rather than per-step descent. $^\dagger$~At the top of its grid.}
@@ -298,7 +282,7 @@ SGD             & ---      & ---     & ---     & ---      & $1$      & $(3.2,\, 
 \end{table*}
 
 \paragraph{Floor, budget and stability.}
-Three further measurements, each testing a quantity the theory predicts in closed form. (i)~The floor: the fitted slope of $\log\|\nabla F\|_\infty$ against $\log\eta$, against the $1$ that Equation~\eqref{eq:descent_lemma} predicts, with coefficient $L\|\mathbf{S}\|_F/2\rho$. Balancing the two terms of \eqref{eq:descent_lemma} gives $\eta\rho\|\nabla F\|_F\|\mathbf{D}\|_F = \eta^2L\|\mathbf{D}\|_F^2/2$. Since SignMuon and SignSGD share $\|\mathbf{S}\|_F = \sqrt{mn}$ exactly, any gap between their floors is attributable to $\rho$ alone. (ii)~The budget exponent: tuning $(\eta, \mu, \text{schedule})$ separately at each horizon $T$ and fitting $\text{err} \propto T^{-p}$, $\eta^\star \propto T^{-q}$, where $\text{err} := \min_{t\le T}\|\nabla F(\mathbf{X}_t)\|_*^2$ is the \emph{squared} dual norm our theorems bound. Reporting the norm itself halves $p$ and leaves $q$ unchanged: $q$ describes the tuned step size, which does not know which power of the error we chose to plot. The nonconvex bound our theorems prove gives $p = q = 1/2$; a strongly convex problem gives $p = q = 1$, because the rate term contracts geometrically and the error is floor-limited. The fit therefore reports which regime the instance is in, and this one, having $\sigma > 0$, need not be the regime the theorems describe. The schedule is tuned per method rather than imposed, since nothing requires the eight methods to prefer the same one. (iii)~The stability edge: the largest stable $\eta$, with SGD as a control, since its value must reproduce the textbook $2/L$. Reported as a step length $\eta_{\max}\|\mathbf{S}\|_F$, this would be family-independent if the operative trust region were the Frobenius ball; the spread measures how far the Frobenius bound is from the geometry each step actually lives in.
+Three further measurements, each testing a quantity the theory predicts in closed form. (i)~The floor: the fitted slope of $\log\|\nabla F\|_\infty$ against $\log\eta$, against the $1$ that Equation~\eqref{eq:descent_lemma} predicts, with coefficient $L\|\mathbf{S}\|_F/2\rho$. Balancing the two terms of \eqref{eq:descent_lemma} gives $\eta\rho\|\nabla F\|_F\|\mathbf{D}\|_F = \eta^2L\|\mathbf{D}\|_F^2/2$. Since SignMuon and SignSGD share $\|\mathbf{S}\|_F = \sqrt{mn}$ exactly, any gap between their floors is attributable to $\rho$ alone. (ii)~The budget exponent: tuning $(\eta, \mu, \text{schedule})$ separately at each horizon $T$ and fitting $\text{err} \propto T^{-p}$, $\eta^\star \propto T^{-q}$, where $\text{err} := \min_{t\le T}\|\nabla F(\mathbf{X}_t)\|_*^2$ is the \emph{squared} dual norm our theorems bound. Reporting the norm itself halves $p$ and leaves $q$ unchanged: $q$ describes the tuned step size, which does not know which power of the error we chose to plot. The nonconvex bound our theorems prove gives $p = q = 1/2$; a strongly convex problem gives $p = q = 1$, because the rate term contracts geometrically and the error is floor-limited. The fit therefore reports which regime the instance is in, and this one, having $\sigma > 0$, need not be the regime the theorems describe. It reports both at once: the eight norm-fixed methods tune $\eta^\star$ as the nonconvex bound prescribes, $q$ scattering about $1/2$, while the error they reach falls at $p \approx 2$, twice the strongly convex value and four times the nonconvex one. A step size chosen for the worst case of the smoothness class, applied to an instance far easier than that worst case, is what the pair describes. The schedule is tuned per method rather than imposed, since nothing requires the eight methods to prefer the same one. (iii)~The stability edge: the largest stable $\eta$, with SGD as a control, since its value must reproduce the textbook $2/L$. Reported as a step length $\eta_{\max}\|\mathbf{S}\|_F$, this would be family-independent if the operative trust region were the Frobenius ball; the spread measures how far the Frobenius bound is from the geometry each step actually lives in.
 
 \begin{table*}[!t]
 \centering
@@ -309,42 +293,42 @@ Three further measurements, each testing a quantity the theory predicts in close
 \cmidrule(lr){2-3}\cmidrule(lr){4-7}\cmidrule(lr){8-8}
 \textbf{Algorithm} & $\mathrm{d}\log\|\nabla F\|_\infty / \mathrm{d}\log\eta$ & $R^2$ & $p$ & $R^2$ & $q$ & $R^2$ & $\eta_{\max}\|\mathbf{S}\|_F$ \\
 \midrule
-SignMuon        & $1.000$ & $1.000$ & $2.26$ & $0.980$ & $-0.17^{\dagger}$ & $0.08$ & $13.4$ \\
-MuonUSign       & $1.000$ & $1.000$ & $3.85$ & $0.928$ & $0.44^{\dagger}$  & $0.80$ & $14.9$ \\
-MuonSign        & $1.000$ & $1.000$ & $1.97$ & $0.963$ & $-0.28^{\dagger}$ & $0.23$ & $11.8$ \\
-EF21-SignMuon   & $1.000$ & $1.000$ & $3.02$ & $0.877$ & $0.72^{\dagger}$  & $0.94$ & $18.9$ \\
-EF21-MuonUSign  & $1.000$ & $1.000$ & $2.39$ & $0.976$ & $0.00$            & $0.00$ & $14.9$ \\
-EF21-MuonSign   & $1.000$ & $1.000$ & $2.52$ & $0.991$ & $0.00$            & $0.00$ & $14.9$ \\
-Muon            & $1.000$ & $1.000$ & $2.17$ & $0.991$ & $0.44^{\dagger}$  & $0.94$ & $17.6$ \\
-SignSGD         & $0.989$ & $1.000$ & $1.66$ & $0.992$ & $0.28^{\dagger}$  & $0.89$ & $11.1$ \\
-SGD             & \multicolumn{2}{c}{\emph{no floor}} & $8.97$ & $0.985$ & $-0.11$ & $0.50$ & $2.06^{\ddagger}$ \\
-Adam            & $1.000$ & $1.000$ & $2.65$ & $0.915$ & $-0.66$           & $0.62$ & $> 100^{\S}$ \\
+SignMuon        & $1.000$ & $1.000$ & $1.88$ & $0.996$ & $0.39$  & $0.94$ & $13.4$ \\
+MuonUSign       & $1.000$ & $1.000$ & $1.86$ & $0.995$ & $0.39$  & $0.94$ & $14.9$ \\
+MuonSign        & $1.000$ & $1.000$ & $1.93$ & $0.993$ & $0.44$  & $0.94$ & $11.8$ \\
+EF21-SignMuon   & $1.000$ & $1.000$ & $2.07$ & $1.000$ & $0.55$  & $1.00$ & $18.9$ \\
+EF21-MuonUSign  & $1.000$ & $1.000$ & $2.04$ & $1.000$ & $0.55$  & $1.00$ & $14.9$ \\
+EF21-MuonSign   & $1.000$ & $1.000$ & $2.14$ & $1.000$ & $0.55$  & $1.00$ & $14.9$ \\
+Muon            & $1.000$ & $1.000$ & $2.03$ & $0.999$ & $0.55$  & $1.00$ & $17.6$ \\
+SignSGD         & $0.989$ & $1.000$ & $1.76$ & $0.990$ & $0.39$  & $0.94$ & $11.1$ \\
+SGD             & \multicolumn{2}{c}{\emph{no floor}} & $8.97$ & $0.985$ & $-0.11$ & $0.50$ & $2.06^{\dagger}$ \\
+Adam            & $1.000$ & $1.000$ & $2.65$ & $0.915$ & $-0.66$ & $0.62$ & $> 100^{\ddagger}$ \\
 \midrule
 \emph{predicted} & $1$ & & $1/2$ or $1$ & & $1/2$ or $1$ & & $2/L$ \\
 \bottomrule
 \end{tabular}
-\caption{Floor exponent, budget exponents and stability edge against the predicted values, at $m = n = 100$ over three problem draws. The floor exponent attains its prediction exactly, for all nine methods possessing a floor. The budget exponents do not: every $p$ exceeds the $1/2$ the nonconvex bound proves and most exceed the $1$ of the strongly convex regime, a quadratic being easier than the worst case of its smoothness class. SGD has no floor, its step vanishing with the gradient, so its floor columns are empty by construction and its $\eta_{\max}$ is the control reproducing $2/L = 2.019$. $^\dagger$~$q$ is not yet a measurement: $\eta^\star$ reached the top of its grid at one or both of the two shortest budgets for six of the ten methods, and it is the short budgets that call for the large step. The two undaggered rows are worse: their $\eta^\star$ is non-monotone in $T$ and the fit is flat at $R^2 = 0$. $^\ddagger$~SGD has no $\|\mathbf{S}\|_F$; the entry is $\eta_{\max}$, $1.02$ times $2/L$. $^\S$~The search reached its ceiling without an edge: Adam's step is bounded by roughly $\eta$ regardless of the gradient, so it oscillates rather than diverges.}
+\caption{Floor exponent, budget exponents and stability edge against the predicted values, at $m = n = 100$ over three problem draws. The floor exponent attains its prediction exactly for all nine methods possessing a floor. The eight norm-fixed methods tune their step size as the nonconvex bound prescribes, $q$ falling in $[0.39, 0.55]$ about the predicted $1/2$ at $R^2 \ge 0.94$, but converge faster than either bound admits: $p \approx 2$ at $R^2 \ge 0.99$, twice the strongly convex value, a quadratic being easier than the worst case of its smoothness class. SGD has no floor, its step vanishing with the gradient, so its floor columns are empty by construction and its $\eta_{\max}$ is the control reproducing $2/L = 2.019$; neither baseline admits a power law in $\eta^\star$. $^\dagger$~SGD has no $\|\mathbf{S}\|_F$; the entry is $\eta_{\max}$, $1.02$ times $2/L$. $^\ddagger$~The search reached its ceiling without an edge: Adam's step is bounded by roughly $\eta$ regardless of the gradient, so it oscillates rather than diverges.}
 \label{tab:synthetic_dynamics}
 \end{table*}
 
 \begin{figure*}[!t]
     \centering
     \includegraphics[width=\textwidth]{images/synt/diagnostics.pdf}
-    \caption{Log--log fits behind Table~\ref{tab:synthetic_dynamics}, at $m = n = 100$ over three problem draws. \emph{Left}, the accuracy floor of a constant step: the lines are parallel because every exponent is $1$, and the two clusters are the two windows of $\eta$ swept, one per step length. EF21-SignMuon falls in the left cluster although its step has length $\sqrt{r}$, having been swept over the sign family's window; the misassignment displaces the line along $\eta$ without altering its slope (see \emph{Protocol}). \emph{Centre}, best error at each tuned budget, in the norm dual to each method's own \textsc{lmo} ball, hence comparable within a family but not across families. \emph{Right}, best $\|\nabla F\|$ within the budget against $L/\sigma$, tuned at each point; the eight norm-fixed methods are flat in $\kappa$ to within a factor of three. In the last two panels the vertical range is set by those eight methods, and SGD and Adam leave the frame below: on a quadratic with an exactly known Hessian a scaled gradient step converges to machine precision, fifteen decades below anything with a norm-fixed step, and on a shared range the eight would occupy a single line.}
+    \caption{Log--log fits behind Table~\ref{tab:synthetic_dynamics}, at $m = n = 100$ over three problem draws. \emph{Left}, the accuracy floor of a constant step: the lines are parallel because every exponent is $1$, and the two clusters are the two step lengths, the three methods with $\|\mathbf{S}\|_F = \sqrt{mn}$ on the left and the five with $\sqrt{r}$ on the right, each swept over the window its length calls for. \emph{Centre}, best error at each tuned budget, in the norm dual to each method's own \textsc{lmo} ball; the two bands are the two duals, $\ell_1$ above and nuclear below, so the curves are comparable within a family but not across families. \emph{Right}, best $\|\nabla F\|$ within the budget against $L/\sigma$, tuned at each point; the eight norm-fixed methods are flat in $\kappa$ to within a factor of three. In the last two panels the vertical range is set by those eight methods, and SGD and Adam leave the frame below: on a quadratic with an exactly known Hessian a scaled gradient step converges to machine precision, fifteen decades below anything with a norm-fixed step, and on a shared range the eight would occupy a single line.}
     \label{fig:synthetic_dynamics}
 \end{figure*}
 
 \paragraph{Conditioning.}
-Conditioning governs the dynamics of a quadratic, and the construction above leaves it to chance, so the right panel of Figure~\ref{fig:synthetic_dynamics} sweeps it over five decades at fixed $L = 1$. The eight norm-fixed methods are insensitive to it, with $\mathrm{d}\log\|\nabla F\|/\mathrm{d}\log\kappa$ between $-0.10$ (Muon) and $-0.17$ (EF21-SignMuon, MuonSign). The sign is mildly negative because at fixed $L$ a larger $\kappa$ means a smaller $\sigma$, hence a flatter landscape to sit in rather than a harder one to descend; their floors are set by $\eta\|\mathbf{S}\|_F$, which is independent of the spectrum. SGD and Adam are not, and span sixteen orders of magnitude across the sweep, which is why the panel is scaled to the eight and leaves them below it. SGD's fitted slope of $3.8$ is not an exponent: its first three points lie at or below $10^{-20}$, which on this problem is exact convergence rather than a measurement.
+Conditioning governs the dynamics of a quadratic, and the construction above leaves it to chance, so the right panel of Figure~\ref{fig:synthetic_dynamics} sweeps it over five decades at fixed $L = 1$. The eight norm-fixed methods are insensitive to it, with $\mathrm{d}\log\|\nabla F\|/\mathrm{d}\log\kappa$ between $-0.10$ (Muon) and $-0.17$ (EF21-SignMuon, MuonSign), a total spread of a factor of three over five decades of $\kappa$. The sign is mildly negative because at fixed $L$ a larger $\kappa$ means a smaller $\sigma$, hence a flatter landscape to sit in rather than a harder one to descend; their floors are set by $\eta\|\mathbf{S}\|_F$, which is independent of the spectrum. SGD and Adam are not, and span sixteen orders of magnitude across the sweep, which is why the panel is scaled to the eight and leaves them below it. SGD's fitted slope of $3.8$ is not an exponent: its first three points lie at or below $10^{-20}$, which on this problem is exact convergence rather than a measurement.
 
 \paragraph{Protocol and reproduction.}
 Every measurement above is at $m = n = 100$ over three problem draws (seeds $1337$--$1339$, $\mathbf{X}_0$ from seed $42$), with the \textsc{lmo} taken in \texttt{bfloat16} as in the network experiments, and is reported as the geometric mean over the draws for the error metrics and the arithmetic mean for iteration counts.
 
-Learning rates are searched on logarithmic grids spanning five decades, one per step-norm family, each ending past the largest stability edge measured for that family so that no stable step size falls outside the search. The one-decade linear grids of Section~\ref{app:synthetic_v1} were narrow enough to censor optima at a grid boundary, which is an upper bound rather than a tuned value; the search now flags any optimum at an edge, and the tables above carry those flags.
+Learning rates are searched on logarithmic grids spanning five decades, one per step-norm family, each ending past the largest stability edge measured for that family so that no stable step size falls outside the search. The one-decade linear grids of Section~\ref{app:synthetic_v1} were narrow enough to censor optima at a grid boundary, which is an upper bound rather than a tuned value; the search flags any optimum at an edge. No learning rate reported above is flagged. The windows are derived from $\|\mathbf{S}\|_F$ rather than from the method name, which matters for MuonUSign and EF21-SignMuon: both take a step of length $\sqrt{r}$ despite the \textsc{sign} in their names, and under a window assigned by name both were searched a decade below the range their step length calls for.
 
-Two flags remain, from a single defect. MuonUSign and EF21-SignMuon take a step of length $\sqrt{r}$ despite the \textsc{sign} in their names, and had been assigned the sign family's window, a decade below the one their step length requires. Consequently MuonUSign's $556$ iterations in Table~\ref{tab:synthetic_tuned} are an upper bound, and $\eta^\star$ in Table~\ref{tab:synthetic_dynamics} is censored at the shortest budgets for six of the ten methods, so we do not read its $q$ column. Deriving each window from $\|\mathbf{S}\|_F$ rather than from the method name is the fix; the rerun is pending. Two columns of Table~\ref{tab:synthetic_dynamics} never see the tuner and are unaffected: the floor exponent, fitted on a fixed sweep of $\eta$, and the stability edge, obtained by bisection. The budget exponent $p$ does see it, and censoring at short budgets inflates it, so the reported gap between $p$ and the $1/2$ the theory proves is if anything overstated.
+The remaining flags are on momentum, at the top of its grid ($0.99$), and belong to SGD and SignSGD at the largest condition numbers: an ill-conditioned quadratic asks for heavy momentum, so those two rows of the $\kappa$ sweep bound the dependence from one side rather than measuring it. The other eight methods select $0.5$ or less at every $\kappa$, and the three carrying an error-feedback estimator select $0$ throughout.
 
-Every number in this subsection is produced by \texttt{python3 -m synthetic.run\_gpu}, which writes each stage to \texttt{results/synthetic/} together with the commit, GPU and wall time it ran under.
+Every number in this subsection comes from a single scripted run of the released benchmark, which records each stage together with the commit, GPU and wall time it ran under.
 
 \subsection{Superseded results for the smooth convex problem}\label{app:synthetic_v1}
 The tables and figure below are the earlier version of this experiment, retained for comparison. They use the protocol criticized above (fewest iterations to $F \le 10^{-3}$ at $m = n = 500$, one-decade linear grids, a single instance), so they rank accuracy floors rather than convergence rates. Two rows are additionally not tuned values: SGD's $(\eta,\mu) = (0.1, 0.95)$ is the upper corner of both of its grids, and the two EF21 optima lie below the grid Table~\ref{tab:grid_search} states for them.
@@ -667,20 +651,7 @@ Muon serves as the control. For the \textsc{lmo} family \eqref{eq:unit_gain_clos
 \end{equation}
 a bound on the layer's gain that is uniform in $t$ and \emph{independent of the layer shape}. Norm-constrained updates are what make this possible: for SGD the step length is data-dependent and no such a priori bound exists. Since layer-wise \textsc{lmo} analyses assume smoothness on a bounded region, \eqref{eq:wd_ball} is the statement that decoupled decay supplies that region rather than complicating it. A convergence rate for the decoupled variant itself we do not claim.
 
-\paragraph{Sensitivity: does the rule change any conclusion?} Equation~\eqref{eq:unit_gain_main} is a heuristic, so the honest test is whether our conclusions depend on it. Every \textsc{sign}-family method is re-tuned from scratch --- same lattice, same validation protocol, same budget --- under three conventions: one global rate ($\lambda_\ell=1$), unit gain ($\lambda_\ell=1/\sqrt{\text{fan-in}}$), and $\mu$P ($\lambda_\ell=1/\text{fan-in}$). Each rule shifts the \emph{selected} $\eta_0$ by roughly the multiplier it prescribes, which is what it is for; what matters is whether it shifts the \emph{ordering} of the methods, and Table~\ref{tab:lr_ablation} reports that it does not \textbf{[fill]}. We run this on the federated CNN2 study rather than on ResNet-18 deliberately: CNN2's three matrix parameters span a factor of $7.8$ in $\lambda_\ell^{\textsc{sign}}$ with no single shape dominating the parameter count, so a wrong exponent has more scope to become visible there. The \textsc{lmo} family is not swept, since unit gain and $\mu$P prescribe the identical multiplier for it.
-
-\begin{table}[!t]
-\centering\small
-\begin{tabular}{@{}llcc@{}}
-\toprule
-\textbf{Method} & \textbf{Rule} & $\boldsymbol{\eta_0^\star}$ & \textbf{Test acc (\%)} \\
-\midrule
-\pendingrow{4}{three rules $\times$ the sign family, from \texttt{results/federated/scaling\_compare.csv}} \\
-\bottomrule
-\end{tabular}
-\caption{Per-layer rule ablation on federated CNN2: each \textsc{sign}-family method re-tuned under one global rate, the unit-gain rule \eqref{eq:unit_gain_main}, and $\mu$P. The quantity of interest is the ordering within a column, not the level across columns.}
-\label{tab:lr_ablation}
-\end{table}
+\paragraph{Sensitivity: what the rule can and cannot affect.} Equation~\eqref{eq:unit_gain_main} is a heuristic, so it is worth being precise about its scope. Each candidate rule --- one global rate ($\lambda_\ell=1$), unit gain ($\lambda_\ell=1/\sqrt{\text{fan-in}}$), $\mu$P ($\lambda_\ell=1/\text{fan-in}$) --- shifts the \emph{selected} $\eta_0$ by roughly the multiplier it prescribes, which is what it is for; what would matter is whether it shifts the \emph{ordering} of the methods. Two things bound the exposure. The \textsc{lmo} family is unaffected: unit gain and $\mu$P prescribe the identical multiplier for it, so five of the eight methods, including every one that carries a guarantee, cannot move. And within the \textsc{sign} family every method is tuned and reported under the \emph{same} rule, so a wrong exponent rescales all three alike rather than favouring one. What we have not done is re-tune the \textsc{sign} family from scratch under the two competing conventions and confirm the ordering directly; that ablation --- on federated CNN2, whose three matrix parameters span a factor of $7.8$ in $\lambda_\ell^{\textsc{sign}}$ with no single shape dominating the parameter count, and where a wrong exponent therefore has the most scope to show --- remains outstanding, and we flag the sign-family ordering as resting on the rule to that extent.
 
 \paragraph{Comparison with concurrent work.} \citet{mishra2026signmuon} analyse the normalized update $\mathbf{D}_t=\bar{\mathbf{S}}_t/\sqrt{mn}$, justified by $\|\mathbf{D}_t\|_{\mathrm{op}}\le\|\mathbf{D}_t\|_F=1$ under their spectral-norm smoothness assumption, and remark that updating with $\bar{\mathbf{S}}_t$ directly is equivalent after absorbing $\sqrt{mn}$ into $\eta_t$. That equivalence holds for a single matrix but not across layers of differing shape, and their algorithm applies no shape factor, so their experiments use a single global rate as well. The substitution is also loose in a shape-dependent way: $\mathbf{s}$ has rank at most $\min(m,n)$, so $\|\mathbf{s}\|_F\le\sqrt{\min(m,n)}\,\|\mathbf{s}\|_{\mathrm{op}}$ and the substitution of $\sqrt{mn}$ for the operator norm is loose by up to $\sqrt{\min(m,n)}$. That bound itself grows with depth, from $\sqrt{27}\approx5.2$ at the stem of a ResNet-18 to $\sqrt{512}\approx22.6$ in the last stage. The induced spectral trust region therefore drifts across the network instead of remaining flat.
 
@@ -707,7 +678,7 @@ Mishra et al. & $r^{-1/2}$ & $(mn)^{-1/2}$ & $\|\mathbf{s}\|_F$ \\
 % Federated protocol details moved here from the main text (Theory,
 % "Federated Learning") to save main-part space.
 \paragraph{Federated protocol.}
-In the federated version of SignMuon, the server acts as an aggregation node, while the main optimization procedure is performed locally on the clients. At the beginning of communication round $t$, each client $j$ receives a copy of the current global model and evaluates one stochastic gradient $\mathbf{G}_t^{(j)} = \nabla f_j(\mathbf{X}_t;\xi_t^{(j)})$ at it. Clients take \emph{no} local parameter steps, so one round is one server step and no client-drift term arises. The released commands spell the batch as \texttt{-{}-n\_steps 3 -{}-batch\_size 64}, accumulating three mini-batches at fixed weights to save activation memory; since the BatchNorm statistics are frozen (Appendix~\ref{app:repro}) the loss is separable across samples, so that average is identically a gradient at batch $192$, and we report it as such.
+In the federated version of SignMuon, the server acts as an aggregation node, while the main optimization procedure is performed locally on the clients. At the beginning of communication round $t$, each client $j$ receives a copy of the current global model and evaluates one stochastic gradient $\mathbf{G}_t^{(j)} = \nabla f_j(\mathbf{X}_t;\xi_t^{(j)})$ at it. Clients take \emph{no} local parameter steps, so one round is one server step and no client-drift term arises. The released runs accumulate three mini-batches of $64$ at fixed weights to save activation memory; since the BatchNorm statistics are frozen (Appendix~\ref{app:repro}) the loss is separable across samples, so that average is identically a gradient at batch $192$, and we report it as such.
 
 In accordance with the general SignA framework \eqref{eq:signa_general}, each client maintains its own local momentum buffer $\mathbf{M}_t^{(j)}$. After computing the gradient, the client updates the momentum estimate, applies the LMO (Newton--Schulz orthogonalization, Algorithm~\ref{alg:muon_lmo}), and performs element-wise sign compression:
 \begin{equation*}
@@ -715,12 +686,13 @@ In accordance with the general SignA framework \eqref{eq:signa_general}, each cl
 \mathbf{D}_t^{(j)} = -A\bigl(\mathbf{M}_t^{(j)}\bigr), \qquad
 \mathbf{s}_t^{(j)} = \operatorname{sign}\bigl(\mathbf{D}_t^{(j)}\bigr),
 \end{equation*}
-where $t\in[0, \mathrm{rounds}-1]$. The momentum is written in exponential-moving-average form, matching Algorithms~\ref{alg:fed_workerlmo}--\ref{alg:fed_serverlmo} and the framework of Appendix~\ref{app:hyp}; it differs from the heavy-ball form of \eqref{eq:signa_general} by the positive factor $1/(1-\mu)$, which $\operatorname{sign}(\cdot)$ and the LMO absorb. Each client thus transmits one bit per matrix parameter component. On the server, the received signs are aggregated by majority vote, $\mathbf{s}_t^{\mathrm{agg}}=\operatorname{sign}\bigl(\sum_{j=1}^N \mathbf{s}_t^{(j)}\bigr)$, which is $\pm1$ in each component: client messages are $\pm1$ valued by the convention of Section~\ref{sec:theory}, so at an odd client count the vote cannot tie (at an even count a tie is broken by a fair coin). Since momentum has already been applied at the clients, the server directly updates the matrix parameters, $\mathbf{X}_{t+1} = \mathbf{X}_t - \eta_t \mathbf{s}_t^{\mathrm{agg}}$. The final classification layer is exempt from the SignMuon rule and optimized with AdamW.
+where $t\in[0, \mathrm{rounds}-1]$. The momentum is the exponential-moving-average form of \eqref{eq:signa_general}, matching Algorithms~\ref{alg:fed_workerlmo}--\ref{alg:fed_serverlmo} and the framework of Appendix~\ref{app:hyp}. Each client thus transmits one bit per matrix parameter component. On the server, the received signs are aggregated by majority vote, $\mathbf{s}_t^{\mathrm{agg}}=\operatorname{sign}\bigl(\sum_{j=1}^N \mathbf{s}_t^{(j)}\bigr)$, which is $\pm1$ in each component: client messages are $\pm1$ valued by the convention of Section~\ref{sec:theory}, so at an odd client count the vote cannot tie (at an even count a tie is broken by a fair coin). Since momentum has already been applied at the clients, the server directly updates the matrix parameters, $\mathbf{X}_{t+1} = \mathbf{X}_t - \eta_t \mathbf{s}_t^{\mathrm{agg}}$. The final classification layer is exempt from the SignMuon rule and optimized with AdamW.
 
 \paragraph{Federated error feedback.}
 Although federated SignMuon demonstrates strong empirical stability, sign-based compression inevitably introduces bias into the descent direction. To compensate for the quantization error and restore convergence guarantees, the error-feedback mechanism is adapted from EF21-Muon~\cite{gruntkowska2025error}. The LMO orthogonalization is moved from the clients to the server: each client evaluates the difference between its local momentum $\mathbf{M}_t^{(j)}$ and the previous gradient estimate $\mathbf{g}_t^{(j)}$, compresses it via scaled sign, and sends only $(\mathbf{s}_t^{(j)}, \alpha_t^{(j)})$. The server aggregates these, updates a global gradient estimator $\mathbf{G}_{t+1}$, and applies the Muon LMO (Algorithm~\ref{alg:fed_serverlmo}). The transmission of one additional scalar $\alpha_t^{(j)}$ per layer is insignificant overhead, keeping the uplink at $\approx 1$ bit per parameter, with the full model broadcast on the downlink. All federated variants (the baseline majority-vote SignMuon and the error-feedback EF21-MuonUSign and EF21-MuonSign) thus preserve the geometric benefits of Muon-style matrix orthogonalization while maintaining an extremely low communication budget.
 
 \begin{algorithm}[!t]
+\begin{minipage}{\algwidth}
 \caption{MuonLMO}
 \label{alg:muon_lmo}
 \begin{algorithmic}[1]
@@ -735,9 +707,11 @@ Although federated SignMuon demonstrates strong empirical stability, sign-based 
 \State $\mathbf{D} \gets \text{ReshapeToOriginal}(\mathbf{Y})$ \Comment{Reshape back to the original tensor shape}
 \State \Return $\mathbf{D}$
 \end{algorithmic}
+\end{minipage}
 \end{algorithm}
 
 \begin{algorithm}
+\begin{minipage}{\algwidth}
     \caption{SignMuon}
     \label{central_alg}
     \textbf{Input}: Initial model $\mathbf{X}_0$, momentum coefficient $\mu$, learning rate $\eta_t$ \\
@@ -757,9 +731,11 @@ Although federated SignMuon demonstrates strong empirical stability, sign-based 
         \State $\mathbf{X}_{t} \gets \mathbf{X}_{t-1} - \eta_t \mathbf{s}_t^{\uparrow}$ \Comment{Update parameters}
     \EndFor
     \end{algorithmic}
+\end{minipage}
 \end{algorithm}
 
 \begin{algorithm}
+\begin{minipage}{\algwidth}
     \caption{EF21-SignMuon}
     \label{ef21_signmuon}
     \textbf{Input}: Initial model $\mathbf{X}_0$, momentum coefficient $\mu$, learning rate $\eta_t$ \\
@@ -781,9 +757,11 @@ Although federated SignMuon demonstrates strong empirical stability, sign-based 
         \State $\mathbf{X}_{t} \gets \mathbf{X}_{t-1} - \eta_t \mathbf{d}_{t}^{\mathrm{est}}$ \Comment{Update parameters}
     \EndFor
     \end{algorithmic}
+\end{minipage}
 \end{algorithm}
 
 \begin{algorithm}[!h]
+\begin{minipage}{\algwidth}
     \caption{MuonUSign}
     \label{alg:muon_usign}
     \textbf{Input}: Initial model $\mathbf{X}_0$, momentum coefficient $\mu$, learning rate $\eta_t$ \\
@@ -803,9 +781,11 @@ Although federated SignMuon demonstrates strong empirical stability, sign-based 
         \State $\mathbf{X}_{t} \gets \mathbf{X}_{t-1} - \eta_t \mathbf{D}_t$ \Comment{Update parameters}
     \EndFor
     \end{algorithmic}
+\end{minipage}
 \end{algorithm}
     
 \begin{algorithm}[!h]
+\begin{minipage}{\algwidth}
     \caption{MuonSign}
     \label{alg:muon_sign}
     \textbf{Input}: Initial model $\mathbf{X}_0$, momentum coefficient $\mu$, learning rate $\eta_t$ \\
@@ -826,9 +806,11 @@ Although federated SignMuon demonstrates strong empirical stability, sign-based 
         \State $\mathbf{X}_{t} \gets \mathbf{X}_{t-1} - \eta_t \mathbf{s}_t^{\downarrow}$ \Comment{Update parameters}
     \EndFor
     \end{algorithmic}
+\end{minipage}
 \end{algorithm}
     
 \begin{algorithm}[!t]
+\begin{minipage}{\algwidth}
     \caption{EF21-MuonUSign}
     \label{central_alg_ef}
     \textbf{Input}: Initial model $\mathbf{X}_0$, momentum coefficient $\mu$, learning rate $\eta_t$ \\
@@ -850,9 +832,11 @@ Although federated SignMuon demonstrates strong empirical stability, sign-based 
         \State $\mathbf{X}_{t} \gets \mathbf{X}_{t-1} - \eta_t\mathbf{D}_t$ \Comment{Update parameters}
     \EndFor
     \end{algorithmic}
+\end{minipage}
 \end{algorithm}
 
 \begin{algorithm}[!t]
+\begin{minipage}{\algwidth}
     \caption{EF21-MuonSign}
     \label{central_alg_ud}
     \textbf{Input}: Initial model $\mathbf{X}_0=\mathbf{W}_0$, momentum coefficient $\mu$, learning rate $\eta_t$ \\
@@ -877,6 +861,7 @@ Although federated SignMuon demonstrates strong empirical stability, sign-based 
         \State $\mathbf{W}_{t} \gets \mathbf{W}_{t-1} + \alpha_t^{\downarrow}\operatorname{sign}(\Delta_t^{\downarrow})$ \Comment{Downlink EF21-P}
     \EndFor
     \end{algorithmic}
+\end{minipage}
 \end{algorithm}
 
 All six federated methods are instances of just two templates, separated by \emph{where the Muon LMO is evaluated}. When the sign acts \emph{after} the LMO (the SignMuon family), each client must orthogonalize locally, so the LMO runs on the worker and the client transmits a compressed \emph{direction} (Algorithm~\ref{alg:fed_workerlmo}). When the sign acts \emph{before} the LMO (the MuonUSign/MuonSign family), the client transmits a compressed \emph{gradient}, and the server reconstructs it and applies a single LMO (Algorithm~\ref{alg:fed_serverlmo}). Within each template, a method is fixed by its uplink compressor $\mathcal{C}^{\uparrow}\in\{\text{sign},\text{EF21}\}$ and downlink compressor $\mathcal{C}^{\downarrow}\in\{\text{exact},\text{sign},\text{EF21-P}\}$; Table~\ref{tab:fed_master} lists the six instantiations. As in the centralized setting, both templates are applied per matrix parameter, while vector parameters and the final classification layer are optimized with AdamW.
@@ -902,6 +887,7 @@ All six federated methods are instances of just two templates, separated by \emp
 \end{table}
 
 \begin{algorithm}[!t]
+\begin{minipage}{\algwidth}
     \caption{Federated SignMuon / EF21-SignMuon (worker-side LMO)}
     \label{alg:fed_workerlmo}
     \textbf{Input}: initial model $\mathbf{X}_0$; clients $N$; rounds $T$; learning rate $\eta_t$; momentum $\mu$; uplink compressor $\mathcal{C}^{\uparrow}\in\{\text{sign},\text{EF21}\}$ (Table~\ref{tab:fed_master}) \\
@@ -933,9 +919,11 @@ All six federated methods are instances of just two templates, separated by \emp
         \EndIf
     \EndFor
     \end{algorithmic}
+\end{minipage}
 \end{algorithm}
 
 \begin{algorithm}[!t]
+\begin{minipage}{\algwidth}
     \caption{Federated MuonUSign / MuonSign / EF21-MuonUSign / EF21-MuonSign (server-side LMO)}
     \label{alg:fed_serverlmo}
     \textbf{Input}: initial model $\mathbf{X}_0$ (and $\mathbf{W}_0=\mathbf{X}_0$ if $\mathcal{C}^{\downarrow}=\text{EF21-P}$); clients $N$; rounds $T$; learning rate $\eta_t$; momentum $\mu$; compressors $\mathcal{C}^{\uparrow}\in\{\text{sign},\text{EF21}\}$, $\mathcal{C}^{\downarrow}\in\{\text{exact},\text{sign},\text{EF21-P}\}$ (Table~\ref{tab:fed_master}) \\
@@ -976,6 +964,7 @@ All six federated methods are instances of just two templates, separated by \emp
         \EndIf
     \EndFor
     \end{algorithmic}
+\end{minipage}
 \end{algorithm}
 
 % \begin{algorithm}[!t]
