@@ -2489,6 +2489,102 @@ def test_figures_are_a_function_of_the_export_bundle_alone(tmp_path=None):
         assert curve["std"][-1] > 0, "two seeds differ; the band must be nonzero"
 
 
+def test_every_cross_module_import_resolves():
+    """Every ``from <our package> import name`` must name something that exists.
+
+    Pure AST, no imports executed, so it covers modules this suite never loads --
+    including the ones behind a CUDA-only path. That is the gap it exists for:
+    deleting a helper leaves the importing module broken until something happens
+    to import it, and if the only importer is a driver, "something" is the
+    overnight run's preflight, twelve hours after you wanted to know.
+
+    That is not hypothetical. ``refine_grid`` was retired from
+    ``centralized.tune``; ``federated.tune`` still imported it, unused, and the
+    first thing to notice was a preflight on the GPU box.
+    """
+    import ast
+    from pathlib import Path
+
+    root = Path(__file__).resolve().parent.parent
+    packages = {p.name for p in root.iterdir()
+                if p.is_dir() and (p / "__init__.py").exists()}
+
+    def bound(target) -> set:
+        """Names an assignment target binds, including tuple unpacking.
+
+        ``GRID, AXIS, SURFACE = ...`` in `common/plotting.py` is the case that
+        matters: reading only ``ast.Name`` targets would report three real
+        constants as missing, and a check that cries wolf gets switched off.
+        """
+        if isinstance(target, ast.Name):
+            return {target.id}
+        if isinstance(target, (ast.Tuple, ast.List)):
+            return {n for t in target.elts for n in bound(t)}
+        return set()
+
+    def resolve(module: str):
+        """``a.b`` -> ``a/b.py`` or ``a/b/__init__.py``; ``None`` if neither."""
+        base = root.joinpath(*module.split("."))
+        for cand in (base.with_suffix(".py"), base / "__init__.py"):
+            if cand.exists():
+                return cand
+        return None
+
+    def exported(path: Path):
+        """Top-level names a module binds, or ``None`` if it cannot be known.
+
+        A module with a star-import re-exports names this cannot see, so it is
+        excused rather than guessed at -- a false alarm here costs more than the
+        miss, since the whole value of the check is that it is trusted.
+        """
+        tree = ast.parse(path.read_text(encoding="utf-8"))
+        names = set()
+        for node in tree.body:
+            if isinstance(node, (ast.FunctionDef, ast.AsyncFunctionDef, ast.ClassDef)):
+                names.add(node.name)
+            elif isinstance(node, ast.Assign):
+                names.update(n for t in node.targets for n in bound(t))
+            elif isinstance(node, ast.AnnAssign):
+                names |= bound(node.target)
+            elif isinstance(node, ast.Import):
+                names.update(a.asname or a.name.split(".")[0] for a in node.names)
+            elif isinstance(node, ast.ImportFrom):
+                if any(a.name == "*" for a in node.names):
+                    return None
+                names.update(a.asname or a.name for a in node.names)
+        return names
+
+    cache, broken = {}, []
+    for path in sorted(root.rglob("*.py")):
+        if any(part in {"__pycache__", "results", "data"} for part in path.parts):
+            continue
+        for node in ast.walk(ast.parse(path.read_text(encoding="utf-8"))):
+            if not isinstance(node, ast.ImportFrom) or node.level or not node.module:
+                continue
+            if node.module.split(".")[0] not in packages:
+                continue
+            target = resolve(node.module)
+            if target is None:
+                broken.append(f"{path.relative_to(root)}:{node.lineno} -> no module "
+                              f"{node.module}")
+                continue
+            if target not in cache:
+                cache[target] = exported(target)
+            if cache[target] is None:               # star-import; cannot be known
+                continue
+            for alias in node.names:
+                if alias.name == "*" or alias.name in cache[target]:
+                    continue
+                # `from synthetic import benchmark` names a submodule, not
+                # something `synthetic/__init__.py` binds. Legal, and common here.
+                if resolve(f"{node.module}.{alias.name}") is not None:
+                    continue
+                broken.append(f"{path.relative_to(root)}:{node.lineno} imports "
+                              f"{alias.name!r} from {node.module}, which does "
+                              f"not define it")
+    assert not broken, "dangling imports:\n  " + "\n  ".join(broken)
+
+
 def test_the_submitted_figures_can_still_be_redrawn():
     """The pre-2026-07-29 plotting inputs must keep working.
 

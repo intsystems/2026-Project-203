@@ -56,7 +56,7 @@ from common.utils import results_root, split_param_names
 from federated.algorithms import method_family
 # One lattice for both settings: same helpers, same resolution, same job identity.
 from centralized.tune import (best_of, boundary_warning, canonical_tag, extend_grid,
-                              lattice_index, lattice_value, refine_grid, round_grid)
+                              lattice_index, lattice_value, round_grid)
 
 HERE = Path(__file__).resolve().parent
 ROOT = HERE.parent                      # code/, the package root
