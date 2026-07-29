@@ -20,6 +20,8 @@ pytest>=7.0           # optional: tests/README.md documents `pytest tests/test_c
                       # as an alternative to `python3 -m tests.test_code`, which
                       # needs no third-party runner
 
-# nanogpt/ (the modded-nanogpt speedrun port) additionally needs a CUDA build of
-# torch and, for train_gpt.py only, FlashAttention-3 via `kernels`. It is not
-# part of any paper table; see nanogpt/README.md.
+# nanogpt/ (the modded-nanogpt speedrun port) produces Table 3 and Figure 3 of
+# the main text. It additionally needs a CUDA build of torch and, for
+# train_gpt.py only, FlashAttention-3 via `kernels`; nothing here installs
+# either, since both depend on the GPU and driver. It also needs the FineWeb10B
+# shards, which its own script downloads. See nanogpt/README.md.

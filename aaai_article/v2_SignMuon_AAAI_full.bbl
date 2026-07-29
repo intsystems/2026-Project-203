@@ -1,4 +1,4 @@
-\begin{thebibliography}{44}
+\begin{thebibliography}{45}
 \providecommand{\natexlab}[1]{#1}
 
 \bibitem[{Ahn et~al.(2025)Ahn, Xu, Abreu, Fan, Magakyan, Sharma, Zhan, and
@@ -199,6 +199,15 @@ Mishra, N.; Trivedi, K.; and Kumar, P. 2026.
 Parshakova, T.; Khaled, A.; Crawshaw, M.; Garrigos, G.; and Gower, R.~M. 2026.
 \newblock Muon Does Not Converge on Convex {L}ipschitz Functions.
 \newblock arXiv:2605.08980.
+
+\bibitem[{Penedo et~al.(2024)Penedo, Kydl{\'i}{\v{c}}ek, Allal, Lozhkov,
+  Mitchell, Raffel, Werra, and Wolf}]{penedo2024fineweb}
+Penedo, G.; Kydl{\'i}{\v{c}}ek, H.; Allal, L.~B.; Lozhkov, A.; Mitchell, M.;
+  Raffel, C.; Werra, L.~V.; and Wolf, T. 2024.
+\newblock The {FineWeb} Datasets: Decanting the Web for the Finest Text Data at
+  Scale.
+\newblock In \emph{Advances in Neural Information Processing Systems (NeurIPS),
+  Datasets and Benchmarks Track}.
 
 \bibitem[{Pethick et~al.(2025{\natexlab{a}})Pethick, Xie, Antonakopoulos, Zhu,
   Silveti-Falls, and Cevher}]{pethick2025training}

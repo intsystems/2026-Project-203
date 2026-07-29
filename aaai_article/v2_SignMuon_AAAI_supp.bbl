@@ -1,4 +1,4 @@
-\begin{thebibliography}{21}
+\begin{thebibliography}{26}
 \providecommand{\natexlab}[1]{#1}
 
 \bibitem[{Amsel et~al.(2025)Amsel, Persson, Musco, and Gower}]{amsel2025polar}
@@ -18,6 +18,22 @@ Bernstein, J. 2025.
 Bernstein, J.; and Newhouse, L. 2024.
 \newblock Old Optimizer, New Norm: An Anthology.
 \newblock arXiv:2409.20325.
+
+\bibitem[{Bernstein et~al.(2018)Bernstein, Wang, Azizzadenesheli, and
+  Anandkumar}]{bernstein2018signsgd}
+Bernstein, J.; Wang, Y.-X.; Azizzadenesheli, K.; and Anandkumar, A. 2018.
+\newblock sign{SGD}: Compressed Optimisation for Non-Convex Problems.
+\newblock In \emph{Proceedings of the 35th International Conference on Machine
+  Learning}, volume~80 of \emph{Proceedings of Machine Learning Research},
+  560--569. PMLR.
+
+\bibitem[{Bernstein et~al.(2019)Bernstein, Zhao, Azizzadenesheli, and
+  Anandkumar}]{bernstein2019signsgdmajority}
+Bernstein, J.; Zhao, J.; Azizzadenesheli, K.; and Anandkumar, A. 2019.
+\newblock sign{SGD} with Majority Vote is Communication Efficient and Fault
+  Tolerant.
+\newblock In \emph{International Conference on Learning Representations
+  (ICLR)}.
 
 \bibitem[{Cesista(2025)}]{cesista2025schattenp}
 Cesista, F.~L. 2025.
@@ -41,6 +57,15 @@ Jordan, K.; Jin, Y.; Boza, V.; You, J.; Cesista, F.; Newhouse, L.; and
   Bernstein, J. 2024.
 \newblock Muon: An optimizer for hidden layers in neural networks.
 
+\bibitem[{Karimireddy et~al.(2019)Karimireddy, Rebjock, Stich, and
+  Jaggi}]{karimireddy2019efsign}
+Karimireddy, S.~P.; Rebjock, Q.; Stich, S.; and Jaggi, M. 2019.
+\newblock Error Feedback Fixes {S}ign{SGD} and other Gradient Compression
+  Schemes.
+\newblock In Chaudhuri, K.; and Salakhutdinov, R., eds., \emph{Proceedings of
+  the 36th International Conference on Machine Learning}, volume~97 of
+  \emph{Proceedings of Machine Learning Research}, 3252--3261. PMLR.
+
 \bibitem[{Kovalev(2025)}]{kovalev2025understanding}
 Kovalev, D. 2025.
 \newblock Understanding Gradient Orthogonalization for Deep Learning via
@@ -54,6 +79,10 @@ Kravatskiy, A.; Kozyrev, I.; Kozlov, N.; Vinogradov, A.; Merkulov, D.; and
 \newblock {K}y {F}an Norms and Beyond: Dual Norms and Combinations for Matrix
   Optimization.
 \newblock arXiv:2512.09678.
+
+\bibitem[{Krizhevsky and Hinton(2009)}]{krizhevsky2009cifar}
+Krizhevsky, A.; and Hinton, G. 2009.
+\newblock Learning multiple layers of features from tiny images.
 
 \bibitem[{Large et~al.(2024)Large, Liu, Huh, Bahng, Isola, and
   Bernstein}]{large2024modular}
@@ -82,6 +111,15 @@ Liu, J.; Su, J.; Yao, X.; Jiang, Z.; Lai, G.; Du, Y.; Qin, Y.; Xu, W.; Lu, E.;
 Mishra, N.; Trivedi, K.; and Kumar, P. 2026.
 \newblock Sign{M}uon: Communication-Efficient Distributed {M}uon Optimization.
 \newblock arXiv:2605.16311.
+
+\bibitem[{Penedo et~al.(2024)Penedo, Kydl{\'i}{\v{c}}ek, Allal, Lozhkov,
+  Mitchell, Raffel, Werra, and Wolf}]{penedo2024fineweb}
+Penedo, G.; Kydl{\'i}{\v{c}}ek, H.; Allal, L.~B.; Lozhkov, A.; Mitchell, M.;
+  Raffel, C.; Werra, L.~V.; and Wolf, T. 2024.
+\newblock The {FineWeb} Datasets: Decanting the Web for the Finest Text Data at
+  Scale.
+\newblock In \emph{Advances in Neural Information Processing Systems (NeurIPS),
+  Datasets and Benchmarks Track}.
 
 \bibitem[{Pethick et~al.(2025{\natexlab{a}})Pethick, Xie, Antonakopoulos, Zhu,
   Silveti-Falls, and Cevher}]{pethick2025training}
