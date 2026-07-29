@@ -13,7 +13,7 @@ metrics are scored at the exact model `X`, and with a closed-form gradient eithe
 point is one matmul away.
 
 ```bash
-python3 -m synthetic.run_gpu --force      # every stage, ~1.5 h on one GPU
+python3 -m synthetic.run_gpu --force      # every stage, ~1.6 h on one GPU
 python3 -m synthetic.run_gpu --archive    # rebuild SUMMARY.md + the .zip
 ```
 
@@ -114,12 +114,16 @@ references it is read against are `ρ = 1` (SGD), `ρ = ‖G‖₁/(‖G‖_F√
 
 ## Two conventions that move numbers
 
-* **Grids are logarithmic, four decades wide, and set per step-norm family.**
+* **Grids are logarithmic, five decades wide, and set per step-norm family.**
   A sign step has length `η√(mn)` and an LMO step `η√r`, so at `100×100` their
-  optimal `η` are a decade apart and they need different windows; each window
-  runs up to the stability edge that `--mode stability` measures for its family
-  (`η_max ≈ 0.11` for a sign step, `≈ 1.5` for an LMO one), so it spans the whole
-  usable range. Override a whole family at once with `--lr-grid sign=lo:hi:xN`
+  optimal `η` are a decade apart and they need different windows, `1e-5:1e0` and
+  `1e-4:1e1`. Each ends past the largest stability edge `--mode stability`
+  measures for its family (`η_max` reaches `0.134` for a sign step and `1.89`
+  for an LMO one), so no stable `η` falls outside the search — a stable step
+  size the grid cannot reach is a censored optimum waiting to happen. The points
+  above the edge are nearly free: they diverge within a few steps and the runner
+  retires a diverged trajectory rather than running it out.
+  Override a whole family at once with `--lr-grid sign=lo:hi:xN`
   or `--lr-grid lmo=...`; a method name still overrides one method. Enumerating
   the ten grids by hand instead is what put `muonusign` and `ef21signmuon` — both
   of which take an LMO-length step — on the sign window, so keep them derived

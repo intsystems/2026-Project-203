@@ -170,7 +170,7 @@ DUAL_NORM: Dict[str, str] = {
 # Grid syntax: ``"lo:hi:step"`` is linear, ``"lo:hi:xN"`` logarithmic with N
 # points per decade; both endpoints inclusive.
 #
-# The grids below are logarithmic and four decades wide, because the optimal eta
+# The grids below are logarithmic and five decades wide, because the optimal eta
 # differs by three orders of magnitude across these methods -- a sign step has
 # fixed length eta*sqrt(mn), an LMO step eta*sqrt(r), and SGD's scales with the
 # gradient. A grid narrow enough to miss that lands its optimum on an edge,
@@ -185,11 +185,16 @@ DUAL_NORM: Dict[str, str] = {
 # left ``ef21signmuon``'s smallest floor point still unsettled after 60k
 # iterations. Deriving the grid from the family is what stops that recurring.
 #
-# The upper end of each normalized family's grid sits at the stability edge
-# measured by ``--mode stability`` (eta_max ~ 0.11-0.13 for a sign step, ~1.5-1.9
-# for an LMO step at 100x100), so the grid spans the whole usable range: an
-# optimum still landing on the top point is at the edge of *stability*, which is
-# a fact about the method, not a grid too narrow to contain it.
+# Each normalized family's window ends past the largest stability edge that
+# ``--mode stability`` measures for it at 100x100 -- eta_max in 0.111-0.134 for
+# a sign step, 1.49-1.89 for an LMO one -- so that no stable step size falls
+# outside the search. That is the point: a stable eta the grid cannot reach is a
+# censored optimum waiting to happen, which is what a window stopping at 0.01
+# did to MuonUSign. An optimum on the top point now means the edge of
+# *stability*, a fact about the method, not a grid too narrow to hold it.
+#
+# The points above each edge cost almost nothing: they diverge on the first few
+# steps and the runner retires a diverged trajectory instead of running it out.
 def family_lr_grids(sign: str, lmo: str, sgd: str, adam: str) -> Dict[str, str]:
     """One grid spec per method, expanded from one spec per step-norm family."""
     grids = {m: sign for m in SIGN_FAMILY}
@@ -204,7 +209,7 @@ LR_GRID_FAMILIES: Dict[str, Sequence[str]] = {
 }
 
 DEFAULT_LR_GRIDS: Dict[str, str] = family_lr_grids(
-    sign="1e-5:1e-1:x6", lmo="1e-4:1e+0:x6",
+    sign="1e-5:1e+0:x6", lmo="1e-4:1e+1:x6",
     sgd="1e-3:1e+1:x6", adam="1e-3:1e+1:x6",
 )
 

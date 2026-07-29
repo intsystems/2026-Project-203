@@ -2,7 +2,7 @@
 
 Run both of these from ``code/``::
 
-    python3 -m synthetic.run_gpu --force      # everything, ~1.5 h
+    python3 -m synthetic.run_gpu --force      # everything, ~1.6 h
     python3 -m synthetic.run_gpu --archive    # rebuild SUMMARY.md + the .zip
 
 The first runs the CPU test suite as a preflight, then all seven stages, and
@@ -38,9 +38,16 @@ steps, not their size. The batched runner advances a whole
 ``(eta, momentum, schedule)`` grid as one ``[B, m, n]`` trajectory for about
 what a single trajectory costs, which leaves the iteration counts -- not the
 grids -- as what a stage is paying for. Trim a grid because it tells you
-nothing, not because it is expensive. The estimates below are the 2026-07-29
-A4000 run (68 min for all seven), scaled by the 1.65x the widened learning-rate
-and momentum grids added to the four tuning stages.
+nothing, not because it is expensive. The estimates below start from the
+2026-07-29 A4000 run (68 min for all seven, the only measurement there is) and
+scale the four tuning stages by the 2.04x more configurations the widened
+learning-rate and momentum grids carry. That scaling is the pessimistic reading
+and contradicts the paragraph above: if the runner is still launch-bound at a
+batch of ~310 the stages barely move, and if it has become arithmetic-bound
+they roughly double. Which one holds has not been measured. The estimates take
+the expensive branch, since an estimate that runs short is worse than one that
+runs long for anyone planning an overnight run, and the next full run settles
+it.
 """
 
 from __future__ import annotations
@@ -140,7 +147,7 @@ STAGES: List[Stage] = [
         "dual to each method's LMO ball. p = q = 1/2 is the nonconvex regime "
         "the theorems prove, p = q = 1 the strongly convex one.",
         args=["--budgets", "125", "250", "500", "1000", "2000"],
-        estimate="~15 min",
+        estimate="~18 min",
         quick_args=["--m", "64", "--n", "64", "--budgets", "125", "250", "500",
                     "--problem-seeds", "1337", "--momentum-grid", "0.0,0.9",
                     "--methods", "signmuon", "signsgd", "muon", "sgd",
@@ -153,7 +160,7 @@ STAGES: List[Stage] = [
         "decades at L = 1. Conditioning is the only knob that governs the "
         "dynamics of a quadratic, and the uniform draw leaves it to chance.",
         args=["--max-iters", "3000"],
-        estimate="~18 min",
+        estimate="~22 min",
         quick_args=["--m", "40", "--n", "40", "--max-iters", "1500",
                     "--kappas", "1e2", "1e3", "1e4", "--problem-seeds", "1337",
                     "--methods", "signmuon", "signsgd", "muon",
@@ -168,7 +175,7 @@ STAGES: List[Stage] = [
         "methods, and each normalized family's grid runs up to its measured "
         "stability edge; any optimum landing on an edge is flagged [BOUNDARY] "
         "and is an upper bound rather than a tuned value.",
-        estimate="~10 min",
+        estimate="~12 min",
         quick_args=["--m", "64", "--n", "64", "--max-iters", "1500",
                     "--methods", "signmuon", "signsgd", "muon", "sgd",
                     "--momentum-grid", "0.0,0.9",
