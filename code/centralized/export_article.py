@@ -85,9 +85,13 @@ def phase_of(run_name: str) -> str:
         if stem.startswith(prefix):
             stem = stem[len(prefix):]
             break
+    # ``verify`` and ``alpha`` are retired phases, kept here so that an export of a
+    # tree written before they were removed still labels its runs rather than
+    # dropping them into ``other``. The 2026-07-27 tree is exactly that, and it is
+    # the provenance of the submitted table.
     for marker, phase in (("wd_", "wd"), ("gain_", "gain"), ("aux_", "aux"),
                           ("alpha", "alpha"), ("lr_", "lr"),
-                          ("preflight", "preflight")):
+                          ("verify_", "verify"), ("preflight", "preflight")):
         if stem.startswith(marker):
             return phase
     return "final" if run_name.startswith("final_") else "other"

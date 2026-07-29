@@ -2383,6 +2383,10 @@ def test_export_attributes_every_phase_the_driver_emits():
         (canonical_tag("wd_signmuon_unit-gain", epochs=75, split="full", seed=0),
          "final_", "wd"),
         (canonical_tag("preflight_timing", epochs=2), "tune_", "preflight"),
+        # A retired phase: the 2026-07-27 tree still holds these, and an export of
+        # it should label them rather than drop them into `other`.
+        (canonical_tag("verify_signmuon_unit-gain_0.2", epochs=75), "tune_",
+         "verify"),
     ]
     for tag, prefix, want in cases:
         got = phase_of(prefix + tag)
