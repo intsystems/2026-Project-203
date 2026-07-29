@@ -1,13 +1,13 @@
 # Fdb version 4
-["bibtex v2_SignMuon_AAAI"] 1785282354.1936 "v2_SignMuon_AAAI.aux" "v2_SignMuon_AAAI.bbl" "v2_SignMuon_AAAI" 1785282356.45099 0
+["bibtex v2_SignMuon_AAAI"] 1785312194.98028 "v2_SignMuon_AAAI.aux" "v2_SignMuon_AAAI.bbl" "v2_SignMuon_AAAI" 1785312285.64777 0
   "./aaai2027.bst" 1784372872.09358 31700 78a7412522b7a75ae1844843e9fe6300 ""
-  "./references.bib" 1785274800.82658 23094 f9411755c8cd33563482c2fe5ca6158f ""
-  "v2_SignMuon_AAAI.aux" 1785282355.29779 6240 1534f84fe5a7be6063c78e317cdead0f "pdflatex"
+  "./references.bib" 1785306049.13297 25238 722211eea975ff788d25504e8e22c89e ""
+  "v2_SignMuon_AAAI.aux" 1785312284.60534 8859 b55085eab0592dc650355073c223a443 "pdflatex"
   (generated)
   "v2_SignMuon_AAAI.bbl"
   "v2_SignMuon_AAAI.blg"
   (rewritten before read)
-["pdflatex"] 1785282354.49668 "v2_SignMuon_AAAI.tex" "v2_SignMuon_AAAI.pdf" "v2_SignMuon_AAAI" 1785282356.45208 0
+["pdflatex"] 1785312283.78286 "v2_SignMuon_AAAI.tex" "v2_SignMuon_AAAI.pdf" "v2_SignMuon_AAAI" 1785312285.64906 0
   "C:/Users/Alex/AppData/Local/MiKTeX/fonts/map/pdftex/pdftex.map" 1785258241.15146 277445 6f46880da4bfcdb9db4b56d0acd70e14 ""
   "C:/Users/Alex/AppData/Local/MiKTeX/miktex/data/le/pdftex/pdflatex.fmt" 1741112456.67984 12015339 4b6bf11704e52ef6abfe6d06cad4bac2 ""
   "C:/Users/Alex/AppData/Local/Programs/MiKTeX/fonts/enc/dvips/newtx/ntx-ec-tlf-pc.enc" 1736607166 3136 bbe665bd0bb471a2da1e8fd326cff9fa ""
@@ -141,13 +141,13 @@
   "aaai2027.sty" 1784372872.09458 17345 deb6e992ae24fc750226a0fd63df1fa4 ""
   "images/centralized_images/cifar_main.pdf" 1785274800.79658 45894 d819fe816da2e6daa5119813ffa606b6 ""
   "images/counterexamples/counterexamples_main.pdf" 1785274800.80358 63566 205d77b38c1bdb0d399e04141eb504a4 ""
-  "images/nanogpt/fig_nanogpt_main.pdf" 1785274800.82158 37205 18634f89d033a4c1e4dc84ba81a30387 ""
-  "signmuon_body.tex" 1785282342.18939 48914 0739e88a128859fe196f2c8479c61492 ""
-  "signmuon_preamble.tex" 1785274800.83259 8420 ef2f29d59024157fd7d36f294be29495 ""
-  "v2_SignMuon_AAAI.aux" 1785282355.29779 6240 1534f84fe5a7be6063c78e317cdead0f "pdflatex"
-  "v2_SignMuon_AAAI.bbl" 1785282354.42037 6178 0565dfcb1fe1ce2e9ae5d600ce1a2e06 "bibtex v2_SignMuon_AAAI"
+  "images/nanogpt/fig_nanogpt_main.pdf" 1785306049.13197 37212 eb15f923987da9cfbe978d2627a378fb ""
+  "signmuon_body.tex" 1785312261.73849 48994 013ec344442039c82c795a2c930fa5e4 ""
+  "signmuon_preamble.tex" 1785309804.83661 8900 eb781d7653d62ad990e939806622da0d ""
+  "v2_SignMuon_AAAI.aux" 1785312284.60534 8859 b55085eab0592dc650355073c223a443 "pdflatex"
+  "v2_SignMuon_AAAI.bbl" 1785312195.31465 12630 e1600049e4699f8263cc4ad86b361e5f "bibtex v2_SignMuon_AAAI"
   "v2_SignMuon_AAAI.tex" 1785274800.85259 1007 9495da00f008a4320abb685cc4f70121 ""
-  "v2_SignMuon_AAAI_supp.aux" 1785281668.03292 17106 472787e0b5ad464fcc299113ca20d89d ""
+  "v2_SignMuon_AAAI_supp.aux" 1785312199.07308 15315 edb40376e4bac6cfa6f1a5642e614e5a ""
   "v2_SignMuon_AAAI_supp.tex" 1785274800.9146 1314 40ef68682369a82abdd5a6b0d8342c36 ""
   (generated)
   "v2_SignMuon_AAAI.aux"

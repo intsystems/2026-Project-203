@@ -1,5 +1,20 @@
-\begin{thebibliography}{21}
+\begin{thebibliography}{37}
 \providecommand{\natexlab}[1]{#1}
+
+\bibitem[{Ahn et~al.(2025)Ahn, Xu, Abreu, Fan, Magakyan, Sharma, Zhan, and
+  Langford}]{ahn2025dion}
+Ahn, K.; Xu, B.; Abreu, N.; Fan, Y.; Magakyan, G.; Sharma, P.; Zhan, Z.; and
+  Langford, J. 2025.
+\newblock Dion: Distributed Orthonormalized Updates.
+\newblock arXiv:2504.05295.
+
+\bibitem[{Alistarh et~al.(2017)Alistarh, Grubic, Li, Tomioka, and
+  Vojnovic}]{alistarh2017qsgd}
+Alistarh, D.; Grubic, D.; Li, J.; Tomioka, R.; and Vojnovic, M. 2017.
+\newblock {QSGD}: Communication-Efficient {SGD} via Gradient Quantization and
+  Encoding.
+\newblock In \emph{Advances in Neural Information Processing Systems
+  (NeurIPS)}, 1709--1720.
 
 \bibitem[{Bernstein and Newhouse(2024)}]{bernstein2024old}
 Bernstein, J.; and Newhouse, L. 2024.
@@ -10,20 +25,23 @@ Bernstein, J.; and Newhouse, L. 2024.
   Anandkumar}]{bernstein2018signsgd}
 Bernstein, J.; Wang, Y.-X.; Azizzadenesheli, K.; and Anandkumar, A. 2018.
 \newblock sign{SGD}: Compressed Optimisation for Non-Convex Problems.
-\newblock arXiv:1802.04434.
+\newblock In \emph{Proceedings of the 35th International Conference on Machine
+  Learning}, volume~80 of \emph{Proceedings of Machine Learning Research},
+  560--569. PMLR.
 
 \bibitem[{Bernstein et~al.(2019)Bernstein, Zhao, Azizzadenesheli, and
   Anandkumar}]{bernstein2019signsgdmajority}
 Bernstein, J.; Zhao, J.; Azizzadenesheli, K.; and Anandkumar, A. 2019.
-\newblock sign{SGD} with Majority Vote is Communication Efficient And Fault
+\newblock sign{SGD} with Majority Vote is Communication Efficient and Fault
   Tolerant.
-\newblock arXiv:1810.05291.
+\newblock In \emph{International Conference on Learning Representations
+  (ICLR)}.
 
-\bibitem[{Beznosikov et~al.(2024)Beznosikov, Horváth, Richtárik, and
+\bibitem[{Beznosikov et~al.(2023)Beznosikov, Horv{\'a}th, Richt{\'a}rik, and
   Safaryan}]{beznosikov2020biased}
-Beznosikov, A.; Horváth, S.; Richtárik, P.; and Safaryan, M. 2024.
+Beznosikov, A.; Horv{\'a}th, S.; Richt{\'a}rik, P.; and Safaryan, M. 2023.
 \newblock On Biased Compression for Distributed Learning.
-\newblock arXiv:2002.12410.
+\newblock \emph{Journal of Machine Learning Research}, 24(276): 1--50.
 
 \bibitem[{Bolatov et~al.(2026)Bolatov, Riabinin, Kornilov, Veprikov,
   Horv\'{a}th, Tak\'{a}\v{c}, and Beznosikov}]{bolatov2026lionmuon}
@@ -42,16 +60,48 @@ Chen, X.; Chen, T.; Sun, H.; Wu, Z.~S.; and Hong, M. 2020.
   Associates Inc.
 \newblock ISBN 9781713829546.
 
-\bibitem[{{Essential AI}(2025)}]{shah2025practical}
-{Essential AI}. 2025.
-\newblock Practical Efficiency of {M}uon for Pretraining.
-\newblock arXiv:2505.02222.
+\bibitem[{Crawshaw et~al.(2025)Crawshaw, Modi, Liu, and
+  Gower}]{crawshaw2025exploration}
+Crawshaw, M.; Modi, C.; Liu, M.; and Gower, R.~M. 2025.
+\newblock An Exploration of Non-{E}uclidean Gradient Descent: {M}uon and its
+  Many Variants.
+\newblock arXiv:2510.09827.
+
+\bibitem[{Cutkosky and Mehta(2020)}]{cutkosky2020momentum}
+Cutkosky, A.; and Mehta, H. 2020.
+\newblock Momentum Improves Normalized {SGD}.
+\newblock In \emph{Proceedings of the 37th International Conference on Machine
+  Learning}, volume 119 of \emph{Proceedings of Machine Learning Research},
+  2260--2268. PMLR.
 
 \bibitem[{Gruntkowska et~al.(2025)Gruntkowska, Gaponov, Tovmasyan, and
   Richtárik}]{gruntkowska2025error}
 Gruntkowska, K.; Gaponov, A.; Tovmasyan, Z.; and Richtárik, P. 2025.
 \newblock Error Feedback for {M}uon and Friends.
 \newblock arXiv:2510.00643.
+
+\bibitem[{Gruntkowska, Tyurin, and Richt{\'a}rik(2023)}]{gruntkowska2023ef21}
+Gruntkowska, K.; Tyurin, A.; and Richt{\'a}rik, P. 2023.
+\newblock {EF21-P} and Friends: Improved Theoretical Communication Complexity
+  for Distributed Optimization with Bidirectional Compression.
+\newblock In \emph{Proceedings of the 40th International Conference on Machine
+  Learning}, volume 202 of \emph{Proceedings of Machine Learning Research},
+  11761--11807. PMLR.
+
+\bibitem[{Gupta et~al.(2025)Gupta, Celente, Shivanna, Braithwaite, Dexter,
+  Tang, Udagawa, Silva, Ramanath, and Keerthi}]{gupta2025effective}
+Gupta, A.; Celente, R.; Shivanna, A.; Braithwaite, D.~T.; Dexter, G.; Tang, S.;
+  Udagawa, H.; Silva, D.; Ramanath, R.; and Keerthi, S.~S. 2025.
+\newblock Effective Quantization of {M}uon Optimizer States.
+\newblock arXiv:2509.23106.
+
+\bibitem[{Horv{\'a}th et~al.(2023)Horv{\'a}th, Kovalev, Mishchenko,
+  Richt{\'a}rik, and Stich}]{horvath2023stochastic}
+Horv{\'a}th, S.; Kovalev, D.; Mishchenko, K.; Richt{\'a}rik, P.; and Stich, S.
+  2023.
+\newblock Stochastic distributed learning with gradient quantization and
+  double-variance reduction.
+\newblock \emph{Optimization Methods and Software}, 38(1): 91--106.
 
 \bibitem[{Jin et~al.(2025)Jin, Liu, Huang, He, Wu, and Dai}]{jin2024stosign}
 Jin, R.; Liu, Y.; Huang, Y.; He, X.; Wu, T.; and Dai, H. 2025.
@@ -60,10 +110,17 @@ Jin, R.; Liu, Y.; Huang, Y.; He, X.; Wu, T.; and Dai, H. 2025.
 \newblock \emph{IEEE Transactions on Neural Networks and Learning Systems},
   36(2): 3834--3846.
 
-\bibitem[{Jordan et~al.(2024)Jordan, Jin, Boza, You, Cesista, Newhouse, and
-  Bernstein}]{jordan2024muon}
+\bibitem[{Jordan et~al.(2024{\natexlab{a}})Jordan, Bernstein, Rappazzo,
+  {@fernbear.bsky.social}, Boza, You, Cesista, Koszarsky, and
+  {@Grad62304977}}]{jordan2024moddednanogpt}
+Jordan, K.; Bernstein, J.; Rappazzo, B.; {@fernbear.bsky.social}; Boza, V.;
+  You, J.; Cesista, F.; Koszarsky, B.; and {@Grad62304977}. 2024{\natexlab{a}}.
+\newblock modded-nanogpt: Speedrunning the {NanoGPT} baseline.
+
+\bibitem[{Jordan et~al.(2024{\natexlab{b}})Jordan, Jin, Boza, You, Cesista,
+  Newhouse, and Bernstein}]{jordan2024muon}
 Jordan, K.; Jin, Y.; Boza, V.; You, J.; Cesista, F.; Newhouse, L.; and
-  Bernstein, J. 2024.
+  Bernstein, J. 2024{\natexlab{b}}.
 \newblock Muon: An optimizer for hidden layers in neural networks.
 
 \bibitem[{Karimireddy et~al.(2019)Karimireddy, Rebjock, Stich, and
@@ -74,6 +131,12 @@ Karimireddy, S.~P.; Rebjock, Q.; Stich, S.; and Jaggi, M. 2019.
 \newblock In Chaudhuri, K.; and Salakhutdinov, R., eds., \emph{Proceedings of
   the 36th International Conference on Machine Learning}, volume~97 of
   \emph{Proceedings of Machine Learning Research}, 3252--3261. PMLR.
+
+\bibitem[{Kovalev(2025)}]{kovalev2025understanding}
+Kovalev, D. 2025.
+\newblock Understanding Gradient Orthogonalization for Deep Learning via
+  Non-{E}uclidean Trust-Region Optimization.
+\newblock arXiv:2503.12645.
 
 \bibitem[{Kravatskiy et~al.(2025)Kravatskiy, Kozyrev, Kozlov, Vinogradov,
   Merkulov, and Oseledets}]{kravatskiy2025kyfannorms}
@@ -91,7 +154,9 @@ Krizhevsky, A.; Hinton, G.; et~al. 2009.
   Bernstein}]{large2024modular}
 Large, T.; Liu, Y.; Huh, M.; Bahng, H.; Isola, P.; and Bernstein, J. 2024.
 \newblock Scalable Optimization in the Modular Norm.
-\newblock arXiv:2405.14813.
+\newblock In \emph{Advances in Neural Information Processing Systems
+  (NeurIPS)}.
+\newblock ArXiv:2405.14813.
 
 \bibitem[{Li and Hong(2025)}]{li2025note}
 Li, J.; and Hong, M. 2025.
@@ -102,6 +167,21 @@ Li, J.; and Hong, M. 2025.
 Mishra, N.; Trivedi, K.; and Kumar, P. 2026.
 \newblock Sign{M}uon: Communication-Efficient Distributed {M}uon Optimization.
 \newblock arXiv:2605.16311.
+
+\bibitem[{Parshakova et~al.(2026)Parshakova, Khaled, Crawshaw, Garrigos, and
+  Gower}]{parshakova2026muondoesconvergeconvex}
+Parshakova, T.; Khaled, A.; Crawshaw, M.; Garrigos, G.; and Gower, R.~M. 2026.
+\newblock Muon Does Not Converge on Convex {L}ipschitz Functions.
+\newblock arXiv:2605.08980.
+
+\bibitem[{Pethick et~al.(2025)Pethick, Xie, Antonakopoulos, Zhu, Silveti-Falls,
+  and Cevher}]{pethick2025training}
+Pethick, T.; Xie, W.; Antonakopoulos, K.; Zhu, Z.; Silveti-Falls, A.; and
+  Cevher, V. 2025.
+\newblock Training Deep Learning Models with Norm-Constrained {LMO}s.
+\newblock In \emph{Proceedings of the 42nd International Conference on Machine
+  Learning}, volume 267 of \emph{Proceedings of Machine Learning Research},
+  49069--49104. PMLR.
 
 \bibitem[{Qian et~al.(2026)Qian, Gaponov, Malinovsky, and
   Richtárik}]{qian2026communicationefficientgluon}
@@ -130,9 +210,55 @@ Safaryan, M.; and Richtarik, P. 2021.
   International Conference on Machine Learning}, volume 139 of
   \emph{Proceedings of Machine Learning Research}, 9224--9234. PMLR.
 
+\bibitem[{Shah et~al.(2025)Shah, Polloreno, Stratos, Monk, Chaluvaraju, Hojel,
+  Ma, Thomas, Tanwer, Shah, Nguyen, Smith, Callahan, Pust, Parmar, Rushton,
+  Mazarakis, Kapila, Srivastava, Singla, Romanski, Vanjani, and
+  Vaswani}]{shah2025practical}
+Shah, I.; Polloreno, A.~M.; Stratos, K.; Monk, P.; Chaluvaraju, A.; Hojel, A.;
+  Ma, A.; Thomas, A.; Tanwer, A.; Shah, D.~J.; Nguyen, K.; Smith, K.; Callahan,
+  M.; Pust, M.; Parmar, M.; Rushton, P.; Mazarakis, P.; Kapila, R.; Srivastava,
+  S.; Singla, S.; Romanski, T.; Vanjani, Y.; and Vaswani, A. 2025.
+\newblock Practical Efficiency of {M}uon for Pretraining.
+\newblock arXiv:2505.02222.
+
+\bibitem[{Shulgin et~al.(2026)Shulgin, AlRashed, Orabona, and
+  Richt{\'a}rik}]{shulgin2025inexactmuon}
+Shulgin, E.; AlRashed, S.; Orabona, F.; and Richt{\'a}rik, P. 2026.
+\newblock Beyond the Ideal: Analyzing the Inexact {M}uon Update.
+\newblock In \emph{Proceedings of the 29th International Conference on
+  Artificial Intelligence and Statistics (AISTATS)}.
+\newblock ArXiv:2510.19933.
+
+\bibitem[{Sun et~al.(2023)Sun, Wang, Li, and Wang}]{sun2023signmomentum}
+Sun, T.; Wang, Q.; Li, D.; and Wang, B. 2023.
+\newblock Momentum Ensures Convergence of {SIGNSGD} under Weaker Assumptions.
+\newblock In Krause, A.; Brunskill, E.; Cho, K.; Engelhardt, B.; Sabato, S.;
+  and Scarlett, J., eds., \emph{Proceedings of the 40th International
+  Conference on Machine Learning}, volume 202 of \emph{Proceedings of Machine
+  Learning Research}, 33077--33099. PMLR.
+
+\bibitem[{Takezawa et~al.(2026)Takezawa, Koloskova, Jiang, and
+  Stich}]{takezawa2025fedmuonfederatedlearningbiascorrected}
+Takezawa, Y.; Koloskova, A.; Jiang, X.; and Stich, S.~U. 2026.
+\newblock Fed{M}uon: Federated Learning with Bias-corrected {LMO}-based
+  Optimization.
+\newblock In \emph{International Conference on Learning Representations
+  (ICLR)}.
+
+\bibitem[{Th\'{e}rien et~al.(2025)Th\'{e}rien, Huang, Defazio, Rish, and
+  Belilovsky}]{therien2025muloco}
+Th\'{e}rien, B.; Huang, X.; Defazio, A.; Rish, I.; and Belilovsky, E. 2025.
+\newblock {M}u{L}o{C}o: {M}uon is a practical inner optimizer for {D}i{L}o{C}o.
+\newblock arXiv:2505.23725.
+
 \bibitem[{Yang, Simon, and Bernstein(2023)}]{yang2023spectral}
 Yang, G.; Simon, J.~B.; and Bernstein, J. 2023.
 \newblock A Spectral Condition for Feature Learning.
 \newblock arXiv:2310.17813.
+
+\bibitem[{Zhang and Gao(2025)}]{zhang2025fedmuon}
+Zhang, X.; and Gao, H. 2025.
+\newblock On Provable Benefits of {M}uon in Federated Learning.
+\newblock arXiv:2510.03866.
 
 \end{thebibliography}
