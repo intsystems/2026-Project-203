@@ -8,43 +8,43 @@ Database file #1: references.bib
 Warning--empty journal in krizhevsky2009cifar
 You've used 44 entries,
             2840 wiz_defined-function locations,
-            801 strings with 14307 characters,
-and the built_in function-call counts, 33203 in all, are:
-= -- 2469
-> -- 2339
-< -- 8
-+ -- 863
-- -- 810
-* -- 2618
-:= -- 5543
-add.period$ -- 185
+            803 strings with 14381 characters,
+and the built_in function-call counts, 33380 in all, are:
+= -- 2470
+> -- 2380
+< -- 7
++ -- 877
+- -- 826
+* -- 2640
+:= -- 5583
+add.period$ -- 184
 call.type$ -- 44
-change.case$ -- 448
+change.case$ -- 454
 chr.to.int$ -- 45
 cite$ -- 45
 duplicate$ -- 2077
-empty$ -- 1836
-format.name$ -- 935
-if$ -- 6251
+empty$ -- 1832
+format.name$ -- 951
+if$ -- 6272
 int.to.chr$ -- 3
 int.to.str$ -- 1
-missing$ -- 487
+missing$ -- 489
 newline$ -- 225
 num.names$ -- 182
-pop$ -- 1135
+pop$ -- 1142
 preamble$ -- 1
-purify$ -- 412
+purify$ -- 418
 quote$ -- 0
-skip$ -- 953
+skip$ -- 957
 stack$ -- 0
-substring$ -- 941
+substring$ -- 931
 swap$ -- 1169
-text.length$ -- 8
+text.length$ -- 7
 text.prefix$ -- 0
 top$ -- 0
 type$ -- 396
 warning$ -- 1
 while$ -- 211
 width$ -- 0
-write$ -- 562
+write$ -- 560
 (There was 1 warning)

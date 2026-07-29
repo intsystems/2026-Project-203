@@ -77,19 +77,20 @@ Chen, X.; Chen, T.; Sun, H.; Wu, Z.~S.; and Hong, M. 2020.
   Associates Inc.
 \newblock ISBN 9781713829546.
 
-\bibitem[{Crawshaw et~al.(2025)Crawshaw, Modi, Liu, and
-  Gower}]{crawshaw2025exploration}
-Crawshaw, M.; Modi, C.; Liu, M.; and Gower, R.~M. 2025.
-\newblock An Exploration of Non-{E}uclidean Gradient Descent: {M}uon and its
-  Many Variants.
-\newblock arXiv:2510.09827.
-
 \bibitem[{Cutkosky and Mehta(2020)}]{cutkosky2020momentum}
 Cutkosky, A.; and Mehta, H. 2020.
 \newblock Momentum Improves Normalized {SGD}.
 \newblock In \emph{Proceedings of the 37th International Conference on Machine
   Learning}, volume 119 of \emph{Proceedings of Machine Learning Research},
   2260--2268. PMLR.
+
+\bibitem[{Douillard et~al.(2024)Douillard, Feng, Rusu, Chhaparia, Donchev,
+  Kuncoro, Ranzato, Szlam, and Shen}]{douillard2024diloco}
+Douillard, A.; Feng, Q.; Rusu, A.~A.; Chhaparia, R.; Donchev, Y.; Kuncoro, A.;
+  Ranzato, M.; Szlam, A.; and Shen, J. 2024.
+\newblock {D}i{L}o{C}o: Distributed Low-Communication Training of Language
+  Models.
+\newblock arXiv:2311.08105.
 
 \bibitem[{Grishina, Smirnov, and Rakhuba(2025)}]{grishina2025chebyshev}
 Grishina, E.; Smirnov, M.; and Rakhuba, M. 2025.
@@ -102,14 +103,6 @@ Grishina, E.; Smirnov, M.; and Rakhuba, M. 2025.
 Gruntkowska, K.; Gaponov, A.; Tovmasyan, Z.; and Richtárik, P. 2025.
 \newblock Error Feedback for {M}uon and Friends.
 \newblock arXiv:2510.00643.
-
-\bibitem[{Gruntkowska, Tyurin, and Richt{\'a}rik(2023)}]{gruntkowska2023ef21}
-Gruntkowska, K.; Tyurin, A.; and Richt{\'a}rik, P. 2023.
-\newblock {EF21-P} and Friends: Improved Theoretical Communication Complexity
-  for Distributed Optimization with Bidirectional Compression.
-\newblock In \emph{Proceedings of the 40th International Conference on Machine
-  Learning}, volume 202 of \emph{Proceedings of Machine Learning Research},
-  11761--11807. PMLR.
 
 \bibitem[{Gupta et~al.(2025)Gupta, Celente, Shivanna, Braithwaite, Dexter,
   Tang, Udagawa, Silva, Ramanath, and Keerthi}]{gupta2025effective}
@@ -169,8 +162,8 @@ Kravatskiy, A.; Kozyrev, I.; Kozlov, N.; Vinogradov, A.; Merkulov, D.; and
   Optimization.
 \newblock arXiv:2512.09678.
 
-\bibitem[{Krizhevsky, Hinton et~al.(2009)}]{krizhevsky2009cifar}
-Krizhevsky, A.; Hinton, G.; et~al. 2009.
+\bibitem[{Krizhevsky and Hinton(2009)}]{krizhevsky2009cifar}
+Krizhevsky, A.; and Hinton, G. 2009.
 \newblock Learning multiple layers of features from tiny images.
 
 \bibitem[{Large et~al.(2024)Large, Liu, Huh, Bahng, Isola, and
@@ -252,6 +245,12 @@ Safaryan, M.; and Richtarik, P. 2021.
 \newblock In Meila, M.; and Zhang, T., eds., \emph{Proceedings of the 38th
   International Conference on Machine Learning}, volume 139 of
   \emph{Proceedings of Machine Learning Research}, 9224--9234. PMLR.
+
+\bibitem[{Seide et~al.(2014)Seide, Fu, Droppo, Li, and Yu}]{seide20141bit}
+Seide, F.; Fu, H.; Droppo, J.; Li, G.; and Yu, D. 2014.
+\newblock 1-bit stochastic gradient descent and its application to
+  data-parallel distributed training of speech {DNN}s.
+\newblock In \emph{Interspeech 2014}, 1058--1062.
 
 \bibitem[{Shah et~al.(2025)Shah, Polloreno, Stratos, Monk, Chaluvaraju, Hojel,
   Ma, Thomas, Tanwer, Shah, Nguyen, Smith, Callahan, Pust, Parmar, Rushton,

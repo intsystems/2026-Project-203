@@ -36,6 +36,22 @@
 % Recommended for better-looking tables
 \usepackage{booktabs}
 
+% Float placement. The body is float-dense: every page from the fourth
+% carries a full-width figure or a table, and LaTeX's defaults reserve more
+% of each page for running text than those pages have to give, which strands
+% white space at the foot of a column. These are the usual relaxations of
+% the placement fractions; they move floats, and change nothing else.
+\renewcommand{\topfraction}{0.9}
+\renewcommand{\bottomfraction}{0.7}
+\renewcommand{\textfraction}{0.1}
+\renewcommand{\floatpagefraction}{0.8}
+\renewcommand{\dbltopfraction}{0.9}
+\renewcommand{\dblfloatpagefraction}{0.8}
+\setcounter{topnumber}{3}
+\setcounter{bottomnumber}{2}
+\setcounter{totalnumber}{4}
+\setcounter{dbltopnumber}{1}
+
 % Math, multi-row tables, subfigures, and cross-references used in the paper.
 \usepackage{amsmath}
 \usepackage{amssymb}

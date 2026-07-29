@@ -111,8 +111,12 @@ The dynamical core of the proof is the behavior of the estimator
 The divergence originates in the tail ($t\ge3$): the reflections
 $\bar{\mathbf D}^{\pm}$ share the diagonal $(\tfrac7{25},-\tfrac7{25})$, while
 their off-diagonal $\pm\tfrac{24}{25}$ reverses sign at every step. The rotation
-$\mathbf S_1$ and the rank-one $\mathbf S_2$ form a two-step preamble. The next
-lemma says what it is for, and that something like it is unavoidable.
+$\mathbf S_1$ and the rank-one $\mathbf S_2$ form a two-step preamble. Only
+$\mathbf S_2$ needs a word: at a rank-deficient argument the spectral-ball LMO
+is not unique, and $\mathbf S_2$ is the value returned by the rank-$r$
+convention of the main text, which is also what our implementation computes.
+The next lemma says what the preamble is for, and that something like it is
+unavoidable.
 
 \begin{lemma}[Two cycles, and only one diverges]\label{lem:efsm_twocycles}
 Write $\bar{\mathbf D}^{\pm}=\smat{a}{\pm b}{\pm b}{-a}$ with $a^2+b^2=1$ and

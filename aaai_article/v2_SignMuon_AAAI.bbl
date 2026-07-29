@@ -60,13 +60,6 @@ Chen, X.; Chen, T.; Sun, H.; Wu, Z.~S.; and Hong, M. 2020.
   Associates Inc.
 \newblock ISBN 9781713829546.
 
-\bibitem[{Crawshaw et~al.(2025)Crawshaw, Modi, Liu, and
-  Gower}]{crawshaw2025exploration}
-Crawshaw, M.; Modi, C.; Liu, M.; and Gower, R.~M. 2025.
-\newblock An Exploration of Non-{E}uclidean Gradient Descent: {M}uon and its
-  Many Variants.
-\newblock arXiv:2510.09827.
-
 \bibitem[{Cutkosky and Mehta(2020)}]{cutkosky2020momentum}
 Cutkosky, A.; and Mehta, H. 2020.
 \newblock Momentum Improves Normalized {SGD}.
@@ -74,19 +67,19 @@ Cutkosky, A.; and Mehta, H. 2020.
   Learning}, volume 119 of \emph{Proceedings of Machine Learning Research},
   2260--2268. PMLR.
 
+\bibitem[{Douillard et~al.(2024)Douillard, Feng, Rusu, Chhaparia, Donchev,
+  Kuncoro, Ranzato, Szlam, and Shen}]{douillard2024diloco}
+Douillard, A.; Feng, Q.; Rusu, A.~A.; Chhaparia, R.; Donchev, Y.; Kuncoro, A.;
+  Ranzato, M.; Szlam, A.; and Shen, J. 2024.
+\newblock {D}i{L}o{C}o: Distributed Low-Communication Training of Language
+  Models.
+\newblock arXiv:2311.08105.
+
 \bibitem[{Gruntkowska et~al.(2025)Gruntkowska, Gaponov, Tovmasyan, and
   Richtárik}]{gruntkowska2025error}
 Gruntkowska, K.; Gaponov, A.; Tovmasyan, Z.; and Richtárik, P. 2025.
 \newblock Error Feedback for {M}uon and Friends.
 \newblock arXiv:2510.00643.
-
-\bibitem[{Gruntkowska, Tyurin, and Richt{\'a}rik(2023)}]{gruntkowska2023ef21}
-Gruntkowska, K.; Tyurin, A.; and Richt{\'a}rik, P. 2023.
-\newblock {EF21-P} and Friends: Improved Theoretical Communication Complexity
-  for Distributed Optimization with Bidirectional Compression.
-\newblock In \emph{Proceedings of the 40th International Conference on Machine
-  Learning}, volume 202 of \emph{Proceedings of Machine Learning Research},
-  11761--11807. PMLR.
 
 \bibitem[{Gupta et~al.(2025)Gupta, Celente, Shivanna, Braithwaite, Dexter,
   Tang, Udagawa, Silva, Ramanath, and Keerthi}]{gupta2025effective}
@@ -146,8 +139,8 @@ Kravatskiy, A.; Kozyrev, I.; Kozlov, N.; Vinogradov, A.; Merkulov, D.; and
   Optimization.
 \newblock arXiv:2512.09678.
 
-\bibitem[{Krizhevsky, Hinton et~al.(2009)}]{krizhevsky2009cifar}
-Krizhevsky, A.; Hinton, G.; et~al. 2009.
+\bibitem[{Krizhevsky and Hinton(2009)}]{krizhevsky2009cifar}
+Krizhevsky, A.; and Hinton, G. 2009.
 \newblock Learning multiple layers of features from tiny images.
 
 \bibitem[{Large et~al.(2024)Large, Liu, Huh, Bahng, Isola, and
@@ -210,6 +203,12 @@ Safaryan, M.; and Richtarik, P. 2021.
   International Conference on Machine Learning}, volume 139 of
   \emph{Proceedings of Machine Learning Research}, 9224--9234. PMLR.
 
+\bibitem[{Seide et~al.(2014)Seide, Fu, Droppo, Li, and Yu}]{seide20141bit}
+Seide, F.; Fu, H.; Droppo, J.; Li, G.; and Yu, D. 2014.
+\newblock 1-bit stochastic gradient descent and its application to
+  data-parallel distributed training of speech {DNN}s.
+\newblock In \emph{Interspeech 2014}, 1058--1062.
+
 \bibitem[{Shah et~al.(2025)Shah, Polloreno, Stratos, Monk, Chaluvaraju, Hojel,
   Ma, Thomas, Tanwer, Shah, Nguyen, Smith, Callahan, Pust, Parmar, Rushton,
   Mazarakis, Kapila, Srivastava, Singla, Romanski, Vanjani, and
@@ -220,14 +219,6 @@ Shah, I.; Polloreno, A.~M.; Stratos, K.; Monk, P.; Chaluvaraju, A.; Hojel, A.;
   S.; Singla, S.; Romanski, T.; Vanjani, Y.; and Vaswani, A. 2025.
 \newblock Practical Efficiency of {M}uon for Pretraining.
 \newblock arXiv:2505.02222.
-
-\bibitem[{Shulgin et~al.(2026)Shulgin, AlRashed, Orabona, and
-  Richt{\'a}rik}]{shulgin2025inexactmuon}
-Shulgin, E.; AlRashed, S.; Orabona, F.; and Richt{\'a}rik, P. 2026.
-\newblock Beyond the Ideal: Analyzing the Inexact {M}uon Update.
-\newblock In \emph{Proceedings of the 29th International Conference on
-  Artificial Intelligence and Statistics (AISTATS)}.
-\newblock ArXiv:2510.19933.
 
 \bibitem[{Sun et~al.(2023)Sun, Wang, Li, and Wang}]{sun2023signmomentum}
 Sun, T.; Wang, Q.; Li, D.; and Wang, B. 2023.
@@ -250,6 +241,14 @@ Takezawa, Y.; Koloskova, A.; Jiang, X.; and Stich, S.~U. 2026.
 Th\'{e}rien, B.; Huang, X.; Defazio, A.; Rish, I.; and Belilovsky, E. 2025.
 \newblock {M}u{L}o{C}o: {M}uon is a practical inner optimizer for {D}i{L}o{C}o.
 \newblock arXiv:2505.23725.
+
+\bibitem[{Yang et~al.(2021)Yang, Hu, Babuschkin, Sidor, Liu, Farhi, Ryder,
+  Pachocki, Chen, and Gao}]{yang2021tuning}
+Yang, G.; Hu, E.~J.; Babuschkin, I.; Sidor, S.; Liu, X.; Farhi, D.; Ryder, N.;
+  Pachocki, J.; Chen, W.; and Gao, J. 2021.
+\newblock Tuning Large Neural Networks via Zero-Shot Hyperparameter Transfer.
+\newblock In \emph{Advances in Neural Information Processing Systems
+  (NeurIPS)}.
 
 \bibitem[{Yang, Simon, and Bernstein(2023)}]{yang2023spectral}
 Yang, G.; Simon, J.~B.; and Bernstein, J. 2023.
