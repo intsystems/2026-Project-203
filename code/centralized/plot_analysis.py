@@ -146,10 +146,15 @@ class Bundle:
         self.curve_rows = read_rows(root / "curves.csv")
         # Selection and reporting share a horizon under the current protocol, so
         # the sweep axis is labelled from the data rather than from a constant
-        # that could disagree with it.
-        self.sweep_epochs = next(
-            (int(float(r["epochs"])) for r in self.runs if r["phase"] == "lr"),
-            final_epochs)
+        # that could disagree with it. The longest wins if a tree holds more than
+        # one: that is the current sweep, and `sweep()` then drops the rest.
+        horizons = {int(float(r["epochs"])) for r in self.runs
+                    if r["phase"] == "lr" and r["epochs"]}
+        self.sweep_epochs = max(horizons) if horizons else final_epochs
+        if len(horizons) > 1:
+            print(f"[warn] this tree holds lr sweeps at {sorted(horizons)} epochs; "
+                  f"plotting the {self.sweep_epochs}-epoch one and ignoring the "
+                  f"rest. Keep one protocol per results tree.")
 
     def reported(self) -> Dict[str, Dict]:
         """``{optimizer: {lr, n_seeds, acc}}`` for the reported (``final``) runs.
@@ -183,7 +188,10 @@ class Bundle:
         """
         out: Dict[str, Dict[float, float]] = defaultdict(dict)
         for r in self.runs:
-            if r["phase"] != "lr":
+            # Horizon as well as phase. A tree that also holds a previous sweep at
+            # a different --final-epochs would otherwise merge the two into one
+            # curve and take the better of each rate, which is a figure of nothing.
+            if r["phase"] != "lr" or _f(r["epochs"]) != self.sweep_epochs:
                 continue
             lr, acc = _f(r["lr"]), _f(r["val_acc_tail"])
             if lr is None or acc is None:
