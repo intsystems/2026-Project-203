@@ -59,16 +59,18 @@ Every sign channel is a strict one-bit channel (the paper's convention)
 ``sign(x)`` is **zero** at ``x = 0``, and that is not a corner case here:
 ``polar(M)`` has an exactly-zero column wherever ``M`` does, and ``M`` does
 wherever a feature was zero for the whole local batch -- which after ReLU and
-MaxPool is common. Measured on CNN2 with an odd client count, **8-17% of raw
-sign entries are zero**, every round (``uplink_zero_frac`` still records the
-raw rate, before any mapping).
+MaxPool is common. On SignMuon's majority-vote uplink this was measured at
+**8-17% of raw sign entries per round** on CNN2 (2026-07-27, before the
+convention below; ``uplink_zero_frac`` records the same raw rate on every run).
 
 The paper's convention, and the default here, maps every exact zero to an
 independent random ``+-1`` (``common.optimizers.sign_pm1``), on **all** sign
 channels -- the majority-vote uplink, both EF21 residual channels, and the
-MuonSign sign-downlink. This makes each channel exactly one bit per parameter,
-costs nothing in expected descent (a zeroed entry carries no directional
-information), and keeps the scaled-sign contraction lemma, whose identity
+MuonSign sign-downlink. This makes each channel exactly one bit per parameter
+*whatever the zero rate*, so ``uplink_zero_frac`` is now a diagnostic and no
+longer feeds the bit accounting. It costs nothing in expected descent (a zeroed
+entry carries no directional information), and it keeps the scaled-sign
+contraction lemma, whose identity
 ``||C(Y)-Y||_F^2 = ||Y||_F^2 - ||Y||_1^2/d`` holds for any tie-breaking.
 With ``+-1`` client messages and an **odd** client count the majority vote
 cannot tie; ``mv_tie_frac`` still measures raw ties, counted *before* any
@@ -304,7 +306,8 @@ def compresses_downlink(spec: MethodSpec) -> bool:
 
 def communication_bits(name: str, n_matrix: int, n_aux: int,
                        uplink_zero_frac: float = 0.0,
-                       n_layers: int = 0) -> Dict[str, float]:
+                       n_layers: int = 0,
+                       uplink_zeros: str = "random") -> Dict[str, float]:
     """Bits per parameter per round, and the reduction against full precision.
 
     The paper's headline is a "32x reduction in transmitted data". Four things
@@ -312,11 +315,13 @@ def communication_bits(name: str, n_matrix: int, n_aux: int,
     all four:
 
     * **The uplink alphabet.** Under the paper's convention exact zeros are
-      randomized to +-1 (``sign_pm1``), so a symbol is a genuine 1 bit and the
-      uplink reduction is the full 32x. Under the legacy ``--uplink-zeros keep``
-      the alphabet is ternary and a symbol costs ``H(p0, (1-p0)/2, (1-p0)/2)``
-      bits -- 1.37 bits at a 10% zero rate, 1.02 at the 0.2% CNN2 actually shows.
-      This function reports whichever regime the run is in.
+      randomized to +-1 (``sign_pm1``), so a symbol is a genuine 1 bit whatever
+      the raw zero rate, and the per-channel reduction is the full 32x. Pass the
+      run's ``uplink_zeros`` so that this is not assumed: under the legacy
+      ``keep`` the majority-vote alphabet is ternary and a symbol costs
+      ``H(p0, (1-p0)/2, (1-p0)/2)`` bits (1.37 at a 10% zero rate), which is what
+      ``uplink_zero_frac`` is for. The EF21 channels go through ``sign_pm1``
+      unconditionally, so they are binary under either setting.
     * **The auxiliary group is never compressed.** Biases, BatchNorm scales and the
       head go uncompressed in both directions. On CNN2 they are 0.28% of the
       parameters, so this costs little -- but it is what turns "1 bit per
@@ -341,10 +346,17 @@ def communication_bits(name: str, n_matrix: int, n_aux: int,
     import math
 
     _, spec = resolve_method(name)
+    if uplink_zeros not in ("keep", "random", "positive"):
+        # Not pedantry: a typo here would silently report the idealized 1 bit for a
+        # run that actually transmitted a third symbol, which is the whole point of
+        # taking the convention as an argument.
+        raise ValueError(f"uplink_zeros must be 'keep', 'random' or 'positive', "
+                         f"got {uplink_zeros!r}")
     p0 = min(max(float(uplink_zero_frac), 0.0), 1.0 - 1e-12)
+    ternary = (spec.uplink == "sign_mv" and uplink_zeros == "keep" and p0 > 0.0)
     if spec.uplink == "exact":
         up_per = 32.0
-    elif p0 <= 0.0:
+    elif not ternary:
         up_per = 1.0
     else:
         up_per = -(p0 * math.log2(p0) + (1.0 - p0) * math.log2((1.0 - p0) / 2.0))
@@ -359,6 +371,10 @@ def communication_bits(name: str, n_matrix: int, n_aux: int,
     down = down_per * n_matrix + 32.0 * n_aux + down_scalars
     base = 32.0 * total
     return {
+        # Per *symbol* on the compressed channel, before the uncompressed
+        # auxiliary group and the EF21 scales are averaged in: 1.0 under the
+        # paper's convention, the ternary entropy under ``--uplink-zeros keep``.
+        "uplink_bits_per_symbol": up_per,
         "uplink_bits_per_param": up / total if total else 0.0,
         "downlink_bits_per_param": down / total if total else 0.0,
         "uplink_reduction": base / up if up else 0.0,

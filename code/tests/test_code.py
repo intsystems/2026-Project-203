@@ -974,6 +974,95 @@ def test_aggregate_groups_by_seed(tmp_path=None):
     assert abs(agg["std"][-1] - 2.0) < 1e-12          # sample std of 80, 82, 84
 
 
+def test_seeds_from_two_machines_stay_one_group():
+    """``hardware`` must not split a seed set.
+
+    ``save_run`` stamps the GPU, driver and commit into every config, so before
+    ``hardware`` was ignored a five-seed sweep spread over two boxes grouped as two
+    groups of one -- and every tool downstream then reported "1 seed" and printed a
+    blank std, which reads as agreement rather than as a missing measurement.
+    """
+    import aggregate
+
+    base = {"algorithm": "signmuon", "lr": 0.05, "rounds": 2000}
+    a = dict(base, seed=0, hardware={"gpu_name": "A100", "torch_version": "2.8.0"})
+    b = dict(base, seed=1, hardware={"gpu_name": "RTX A4000", "torch_version": "2.9.0"})
+    assert aggregate.group_key(a) == aggregate.group_key(b)
+
+    # ...but a real difference still splits, or the grouping would be useless.
+    c = dict(base, seed=2, lr=0.02, hardware=a["hardware"])
+    assert aggregate.group_key(a) != aggregate.group_key(c)
+
+
+def test_the_export_bundle_round_trips_to_a_plottable_tree():
+    """export_article -> .zip -> open_bundle -> a tree the plotters can read.
+
+    This is the whole federated workflow off a remote box: compute, bundle, download
+    one file, unpack, plot. The load-bearing part is that the bundle keeps the
+    ``metrics.json`` tree shape, so ``--bundle`` is just ``--root`` on the unpacked
+    copy and no figure code has to know that bundles exist.
+    """
+    import json
+    import tempfile
+    from pathlib import Path
+
+    import aggregate
+    from federated import export_article
+
+    with tempfile.TemporaryDirectory() as td:
+        root = Path(td) / "federated"
+        for alg, lr, accs in (("signmuon", 0.05, (84.0, 84.4)),
+                              ("muon", 0.1, (85.8, 86.2))):
+            for seed, acc in enumerate(accs):
+                d = root / f"fed_{alg}" / f"seed{seed}"
+                d.mkdir(parents=True)
+                cfg = {"algorithm": alg, "lr": lr, "seed": seed, "rounds": 200,
+                       "split": "full", "weight_decay": 0.0, "last_k": 2,
+                       "target_acc": 80.0, "dataset": "cifar10", "model": "cnn2",
+                       "n_parties": 11, "uplink_zeros": "random",
+                       "n_matrix_params": 762_560, "n_aux_params": 2_146,
+                       "n_matrix_layers": 3, "device": "cuda:0"}
+                hist = {"steps": [0, 100, 200],
+                        "test_acc": [10.0, acc - 1.0, acc],
+                        "test_loss": [2.3, 0.6, 0.5],
+                        "gain_spread": [1.0, 1.0, 1.0]}
+                (d / "metrics.json").write_text(
+                    json.dumps({"config": cfg, "history": hist}), encoding="utf-8")
+                # A model.pt is what makes the tree too big to move; it must be
+                # left behind rather than bundled.
+                (d / "model.pt").write_bytes(b"\x00" * 4096)
+
+        out = Path(td) / "federated_export"
+        rc = export_article.main(["--root", str(root), "--out", str(out),
+                                  "--overnight", str(Path(td) / "nope")])
+        assert rc == 0, "export failed"
+
+        for name in ("SUMMARY.md", "MANIFEST.json", "runs.csv", "curves.csv",
+                     "table_federated.csv", "communication.csv", "configs.json"):
+            assert (out / name).is_file(), f"{name} missing from the bundle"
+
+        table = (out / "table_federated.csv").read_text(encoding="utf-8")
+        assert "signmuon" in table and "muon" in table
+        # The accounting comes from `communication_bits`, not a second copy of it.
+        comm = (out / "communication.csv").read_text(encoding="utf-8")
+        assert "29.4" in comm, comm
+
+        archive = out.parent / "federated_export_results.zip"
+        assert archive.is_file(), "the .zip is the file to download"
+        assert not any(p.name == "model.pt" for p in out.rglob("*")), \
+            "model weights must not travel in the bundle"
+
+        # Unpack somewhere else entirely, as a download would.
+        dest = Path(td) / "downloaded"
+        dest.mkdir()
+        bundle = export_article.open_bundle(archive, unpack_to=dest)
+        runs_dir = export_article.runs_root(bundle)
+        runs = aggregate.load_runs([runs_dir])
+        assert len(runs) == 4, f"expected 4 runs in the unpacked bundle, got {len(runs)}"
+        keys = {aggregate.group_key(r["config"]) for r in runs}
+        assert len(keys) == 2, "two methods, two seeds each"
+
+
 def test_aggregate_labels_are_unique():
     """Two groups differing only in an unprinted field must not share a label.
 
@@ -1297,6 +1386,12 @@ def test_communication_accounting_is_honest_about_the_round_trip():
     broadcast a full-precision model, so their round trip stays under 2x however
     good the uplink is. Reading this off ``spec.downlink`` gets SignMuon wrong,
     which is why ``compresses_downlink`` exists.
+
+    The alphabet is the run's, not an assumption: a raw zero rate inflates the cost
+    only under ``--uplink-zeros keep``, since the default randomizes the zeros to
+    +-1 and the channel is then a genuine bit whatever that rate is. Charging the
+    ternary entropy to a run that transmits +-1 is what this used to do, and it put
+    the run logs 0.37 bits above the paper's own table.
     """
     from federated.algorithms import communication_bits
 
@@ -1308,12 +1403,24 @@ def test_communication_accounting_is_honest_about_the_round_trip():
     # would dominate. This is the "+ epsilon" in "1 bit per parameter".
     clean = communication_bits("signmuon", n_mat, n_aux, uplink_zero_frac=0.0)
     assert 1.0 < clean["uplink_bits_per_param"] < 1.12, clean["uplink_bits_per_param"]
+    assert 29.0 < clean["uplink_reduction"] < 29.9, clean["uplink_reduction"]
 
-    # The measured ternary alphabet costs more again.
-    real = communication_bits("signmuon", n_mat, n_aux, uplink_zero_frac=0.10)
-    assert 1.40 < real["uplink_bits_per_param"] < 1.50, real["uplink_bits_per_param"]
-    assert real["uplink_reduction"] < clean["uplink_reduction"]
-    assert 20 < real["uplink_reduction"] < 25, real["uplink_reduction"]
+    # A raw zero rate does NOT move the default accounting: those zeros are
+    # transmitted as +-1. This is the paper's Table "Communication per client per
+    # round", and a run log has to agree with it.
+    measured = communication_bits("signmuon", n_mat, n_aux, uplink_zero_frac=0.15)
+    assert measured == clean, "randomized zeros must cost exactly one bit"
+
+    # Only the legacy ternary channel pays the entropy, and only on the
+    # majority-vote uplink -- the EF21 residual goes through sign_pm1 either way.
+    legacy = communication_bits("signmuon", n_mat, n_aux, uplink_zero_frac=0.10,
+                                uplink_zeros="keep")
+    assert 1.40 < legacy["uplink_bits_per_param"] < 1.50, legacy["uplink_bits_per_param"]
+    assert legacy["uplink_reduction"] < clean["uplink_reduction"]
+    assert 20 < legacy["uplink_reduction"] < 25, legacy["uplink_reduction"]
+    for name in ("ef21signmuon", "ef21muonusign", "ef21muonsign"):
+        assert (communication_bits(name, n_mat, n_aux, 0.10, uplink_zeros="keep")
+                == communication_bits(name, n_mat, n_aux, 0.10)), name
 
     # Dense server-side quantity: the round trip is dominated by the 32-bit
     # downlink. polar(.) for the two server-LMO methods, a scaled average of

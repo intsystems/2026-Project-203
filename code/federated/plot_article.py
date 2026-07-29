@@ -1,6 +1,11 @@
 """The federated figure as the article prints it: two panels, one shared legend.
 
+    python3 -m federated.plot_article --bundle results/federated_results.zip
     python3 -m federated.plot_article --root results/federated --n-parties 11
+
+``--bundle`` is the normal path: it takes the archive ``federated.export_article``
+writes, unpacks it if it is still a ``.zip``, and draws from the ``metrics.json``
+tree inside. ``--root`` reads a live results tree on the machine that trained it.
 
 ``plot_federated.py`` is the exploratory plotter -- one file per metric, legend
 parked in the gutter, any metric you ask for. That layout does not survive
@@ -22,8 +27,9 @@ Deliberate departures from the exploratory plotter
   a third of the axis on it is what flattened everything else.
 * **Markers, spaced apart per method** so that two curves within a line width of
   each other can still be told apart -- the same device Figure 1 uses.
-* **No per-curve seed count in the legend.** Every curve here is five seeds; the
-  caption says so once.
+* **No per-curve seed count in the legend.** The panel title reports it once,
+  read off the runs rather than hard-coded, so a figure drawn from a partial sweep
+  says how partial it is instead of claiming the paper's five.
 """
 
 from __future__ import annotations
@@ -146,6 +152,21 @@ def _draw_series(ax, data, metric, *, bands: bool, collect_handles: bool):
     return handles, labels
 
 
+def _band_note(data: Dict[str, List[dict]]) -> str:
+    """What the band means, read off the runs rather than assumed.
+
+    The paper's figure is five seeds per method, but a figure drawn mid-sweep is
+    not, and a hard-coded "over 5 seeds" would say otherwise. A single seed carries
+    no dispersion at all, so it is named as such instead of being given a band's
+    worth of authority.
+    """
+    counts = sorted({len(runs) for runs in data.values()})
+    if counts == [1]:
+        return "single seed: no dispersion measured"
+    span = f"{counts[0]}" if len(counts) == 1 else f"{counts[0]}--{counts[-1]}"
+    return f"band is $\\pm1$ s.d. over {span} seeds"
+
+
 def draw(plt, data: Dict[str, List[dict]], out: Path, formats: List[str]) -> List[Path]:
     fig, axes = plt.subplots(1, 2, figsize=(TEXT_WIDTH, 3.2))
     handles, labels = [], []
@@ -211,7 +232,7 @@ def draw(plt, data: Dict[str, List[dict]], out: Path, formats: List[str]) -> Lis
                 pad = 0.06 * (hi_t - lo_t)
                 panel.set_ylim(lo_t - pad, hi_t + pad)
 
-    axes[0].set_title("band is $\\pm1$ s.d. over 5 seeds", color=MUTED,
+    axes[0].set_title(_band_note(data), color=MUTED,
                       fontsize=FS_ANNOT - 1.0, loc="left", pad=5)
     fig.tight_layout(rect=(0, 0.14, 1, 1))
     fig.legend(handles, labels, loc="lower center", ncol=6, frameon=False,
@@ -223,8 +244,12 @@ def draw(plt, data: Dict[str, List[dict]], out: Path, formats: List[str]) -> Lis
 def main() -> int:
     p = argparse.ArgumentParser(description=__doc__,
                                 formatter_class=argparse.RawDescriptionHelpFormatter)
+    p.add_argument("--bundle", default=None,
+                   help="Archive from 'federated.export_article' -- the .zip itself "
+                        "or the directory it unpacks to. Takes precedence over --root")
     p.add_argument("--root", default="results/federated")
-    p.add_argument("--out", default=None, help="default: <root>/figures/")
+    p.add_argument("--out", default=None,
+                   help="default: <root>/figures/, or <bundle>/figures/")
     p.add_argument("--n-parties", type=int, default=11)
     p.add_argument("--rounds", type=int, default=2000)
     p.add_argument("--formats", nargs="+", default=["pdf", "png"])
@@ -234,7 +259,15 @@ def main() -> int:
     matplotlib.use("Agg")
     import matplotlib.pyplot as plt
 
-    root = Path(args.root)
+    if args.bundle:
+        from federated.export_article import open_bundle, runs_root
+        bundle = open_bundle(Path(args.bundle))
+        root = runs_root(bundle)
+        print(f"Bundle {bundle.resolve()}")
+        if args.out is None:
+            args.out = str(bundle / "figures")
+    else:
+        root = Path(args.root)
     if not root.is_dir():
         print(f"No runs at {root.resolve()}.")
         return 1

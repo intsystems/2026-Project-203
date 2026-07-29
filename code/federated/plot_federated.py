@@ -1,7 +1,7 @@
 """Federated accuracy and loss curves, with a seed band, from ``results/federated/``.
 
     python3 -m federated.plot_federated
-    python3 -m federated.plot_federated --root results/federated --out figures/
+    python3 -m federated.plot_federated --bundle results/federated_results.zip
     python3 -m federated.plot_federated --metrics test_acc test_loss --n-parties 11
 
 Replaces ``notebooks/plot_federated.ipynb``, which read the pre-refactor
@@ -20,7 +20,9 @@ count, say) is a *different experiment*, so ``--n-parties`` / ``--rounds`` filte
 rather than overlay, and the caption records what was pinned.
 
 Output goes to ``<root>/figures/`` as PDF and PNG. Nothing is written into
-``aaai_article/``.
+``aaai_article/``. This is the *exploratory* plotter: the figure the paper prints
+(``fig:exp_3``) is the two-panel ``fig_federated_main.pdf`` of
+``federated.plot_article``.
 """
 
 from __future__ import annotations
@@ -37,7 +39,7 @@ from common.utils import results_root
 
 use_paper_style()
 
-#: The paper places these as ``0.48\textwidth`` subfigures.
+#: One panel per file, at the width a two-up pair would occupy on the page.
 PANEL_WIDTH = 0.48 * TEXT_WIDTH
 
 #: Axis labels, and whether lower is better (which fixes the legend corner).
@@ -47,7 +49,9 @@ METRICS = {
     "val_acc": ("validation accuracy (%)", False),
     "train_loss": ("train cross-entropy", True),
     "gain_spread": ("realized gain spread (max/min over layers)", True),
-    "uplink_zero_frac": ("fraction of transmitted entries equal to zero", True),
+    # The RAW sign output, before the randomized-zero mapping. Nothing transmitted
+    # is zero under the default convention, so this is a diagnostic, not a cost.
+    "uplink_zero_frac": ("raw sign entries equal to zero (before the mapping)", True),
     "mv_tie_frac": ("fraction of tied majority votes", True),
 }
 
@@ -126,6 +130,9 @@ def fig_metric(plt, data: Dict[str, List[dict]], metric: str, xlabel: str):
 def get_args():
     p = argparse.ArgumentParser(
         description=__doc__, formatter_class=argparse.RawDescriptionHelpFormatter)
+    p.add_argument("--bundle", default=None,
+                   help="Archive from 'federated.export_article' -- the .zip itself "
+                        "or the directory it unpacks to. Takes precedence over --root")
     p.add_argument("--root", default=None,
                    help="Run tree to read (default: results/federated/)")
     p.add_argument("--out", default=None,
@@ -154,7 +161,15 @@ def main() -> int:
         print("matplotlib is required: pip install -r requirements.txt")
         return 1
 
-    root = Path(args.root) if args.root else results_root() / "federated"
+    if args.bundle:
+        from federated.export_article import open_bundle, runs_root
+        bundle = open_bundle(Path(args.bundle))
+        root = runs_root(bundle)
+        print(f"Bundle {bundle.resolve()}")
+        if args.out is None:
+            args.out = str(bundle / "figures")
+    else:
+        root = Path(args.root) if args.root else results_root() / "federated"
     if not root.is_dir():
         print(f"No runs at {root.resolve()}.\n"
               f"Run `python3 -m federated.main ...` or "

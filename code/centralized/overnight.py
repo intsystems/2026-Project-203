@@ -834,6 +834,9 @@ def get_args():
     p.add_argument("--seed", type=int, default=0)
     p.add_argument("--num-workers", type=int, default=2,
                    help="DataLoader workers for training (Windows spawn is costly)")
+    p.add_argument("--no-export", action="store_true",
+                   help="Skip the closing 'centralized.export_article' step. The "
+                        "bundle is the file you download, so this is for debugging")
     p.add_argument("--deterministic", action="store_true",
                    help="Disable cuDNN autotuning: bitwise reproducible but slower. "
                         "Off by default -- with multiple seeds we measure seed "
@@ -1082,8 +1085,28 @@ def main() -> None:
     finally:
         save_state(state)
         refresh(echo=True)
-        print(f"\n[{stamp()}] pack the results for the paper with:\n"
-              f"    python3 -m centralized.export_article")
+        if not args.no_export:
+            export()
+
+
+def export() -> None:
+    """Pack the results and print the one file to download.
+
+    Runs even after an interrupt: a sweep that stopped at seed 2 still produced a
+    table worth carrying home, and the bundle's MANIFEST says how partial it is.
+    Never fatal -- the runs are already on disk, and losing the archive step should
+    not make the sweep look like a failure.
+    """
+    from centralized import export_article
+    try:
+        print(f"\n{'=' * 78}\n[{stamp()}] packing the results\n{'=' * 78}", flush=True)
+        export_article.main([])
+    except SystemExit:
+        raise
+    except Exception as exc:                                 # noqa: BLE001
+        print(f"[{stamp()}] could not write the bundle: {type(exc).__name__}: {exc}")
+        print("The runs themselves are intact under results/centralized; "
+              "run 'python3 -m centralized.export_article' by hand.")
 
 
 if __name__ == "__main__":

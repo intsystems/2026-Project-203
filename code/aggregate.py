@@ -26,7 +26,14 @@ from typing import Any, Dict, Iterable, List, Optional, Sequence, Tuple
 
 # Config fields that do not affect the trajectory (or that identify the run
 # rather than the experiment) and are therefore ignored when grouping.
-IGNORED_FIELDS = {"seed", "run_name", "device", "data", "datadir", "download"}
+#
+# ``hardware`` is here because ``save_run`` stamps the machine into every config:
+# without it, seeds run on two different GPUs land in two groups of one instead of
+# one group of two, and every tool downstream reports "1 seed" and prints a blank
+# std. It does perturb the trajectory at the last bit, which is the point of
+# reporting the seed spread rather than a bitwise trajectory.
+IGNORED_FIELDS = {"seed", "run_name", "device", "data", "datadir", "download",
+                  "hardware"}
 
 
 def group_key(config: Dict[str, Any]) -> Tuple[Tuple[str, Any], ...]:

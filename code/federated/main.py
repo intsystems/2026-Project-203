@@ -3,14 +3,14 @@
     # tune: held-out validation split; no test image is ever scored
     python3 -m federated.main --model cnn2 --dataset cifar10 \
         --algorithm signmuon --lr-scaling unit-gain --split tune \
-        --rounds 400 --n_parties 10 --n_steps 3 --batch_size 64 \
-        --lr 0.03 --device cuda:0 --eval_freq 50 --seed 0
+        --rounds 400 --n_parties 11 --n_steps 3 --batch_size 64 \
+        --lr 0.05 --device cuda:0 --eval_freq 20 --seed 0
 
     # final: partition all 50k across the clients and report on the test set
     python3 -m federated.main --model cnn2 --dataset cifar10 \
         --algorithm signmuon --lr-scaling unit-gain --split full \
-        --rounds 2000 --n_parties 10 --n_steps 3 --batch_size 64 \
-        --lr 0.03 --device cuda:0 --eval_freq 100 --seed 0
+        --rounds 2000 --n_parties 11 --n_steps 3 --batch_size 64 \
+        --lr 0.05 --device cuda:0 --eval_freq 100 --seed 0
 
 Results go to ``results/federated/<run_name>/seed<seed>/metrics.json``. The seed is
 part of the path, so a multi-seed sweep is just the same command with different
@@ -86,6 +86,13 @@ class FederatedConfig:
     loader: str
     mv_ties: str
     uplink_zeros: str
+    # Parameter counts, so the communication accounting can be recomputed from
+    # metrics.json alone rather than by rebuilding the model. They are a property
+    # of (dataset, model), but recording them is what lets `export_article` produce
+    # `tab:commacct` for a model it does not construct.
+    n_matrix_params: int = 0
+    n_aux_params: int = 0
+    n_matrix_layers: int = 0
 
 
 def get_params() -> argparse.ArgumentParser:
@@ -265,9 +272,15 @@ def summarize(history: History, args, eval_name: str, method: str,
     if zeros:
         print(f"uplink zero fraction        : {mean_z:.4f} mean, {zeros[-1]:.4f} final")
 
-    comm = communication_bits(method, n_matrix, n_aux, mean_z, n_layers=n_layers)
+    # The run's own alphabet, not an assumed one: under the default the zeros are
+    # randomized and a symbol is a genuine bit whatever `mean_z` says, while
+    # `--uplink-zeros keep` really does pay the ternary entropy.
+    comm = communication_bits(method, n_matrix, n_aux, mean_z, n_layers=n_layers,
+                              uplink_zeros=args.uplink_zeros)
     print(f"communication               : {comm['uplink_bits_per_param']:.2f} bits/param up, "
-          f"{comm['downlink_bits_per_param']:.2f} down")
+          f"{comm['downlink_bits_per_param']:.2f} down   "
+          f"({comm['uplink_bits_per_symbol']:.2f} bits/symbol on the uplink, "
+          f"--uplink-zeros {args.uplink_zeros})")
     print(f"  vs full precision         : {comm['uplink_reduction']:.1f}x uplink, "
           f"{comm['downlink_reduction']:.1f}x downlink, "
           f"{comm['round_trip_reduction']:.1f}x round trip   <-- quote the round trip")
@@ -344,8 +357,16 @@ def main() -> None:
         uplink_zeros=args.uplink_zeros,
     )
 
-    # 2) model
+    # 2) model. The parameter split is needed twice -- once here to stamp the
+    #    counts into the config, once after training to print the summary -- and
+    #    `split_param_names` is the single rule both the drivers use.
     global_model = build_model(args.dataset, args.model)
+    matrix_names, _ = split_param_names(global_model, 2)
+    named = dict(global_model.named_parameters())
+    config.n_matrix_params = sum(named[n].numel() for n in matrix_names)
+    config.n_aux_params = (sum(p.numel() for p in global_model.parameters())
+                           - config.n_matrix_params)
+    config.n_matrix_layers = len(matrix_names)
 
     # 3) train
     print(f"Starting {method} on {device} (split={args.split}, "
@@ -383,12 +404,9 @@ def main() -> None:
         uplink_zeros=args.uplink_zeros,
     )
 
-    matrix_names, _ = split_param_names(global_model, 2)
-    named = dict(global_model.named_parameters())
-    n_matrix = sum(named[n].numel() for n in matrix_names)
-    n_aux = sum(p.numel() for p in global_model.parameters()) - n_matrix
-    summarize(history, args, data.eval_name, method, n_matrix, n_aux,
-              n_layers=len(matrix_names))
+    summarize(history, args, data.eval_name, method,
+              config.n_matrix_params, config.n_aux_params,
+              n_layers=config.n_matrix_layers)
 
     out = run_dir(results_root() / "federated", args.run_name, args.seed)
     save_run(out, config, history, model=global_model.to("cpu"))

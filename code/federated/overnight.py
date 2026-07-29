@@ -726,9 +726,11 @@ def build_report(args, state, budget, sec, tuned, notes: List[str]) -> str:
                   "**comm. saving** is the *round-trip* reduction against full "
                   "precision, with the uncompressed auxiliary group counted in "
                   "(the sign alphabet is a genuine 1 bit under the randomized-zero "
-                  "convention). It is ~2x for the uplink-only "
-                  "methods -- they still broadcast a full-precision model every "
-                  "round -- and ~25x for the two that compress both directions. "
+                  "convention). On CNN2 it is 1.9x for the three uplink-only "
+                  "methods -- MuonUSign, EF21-SignMuon and EF21-MuonUSign still "
+                  "broadcast a full-precision model every round -- and 29.4x for the "
+                  "four that are 1 bit in both directions (SignMuon, MuonSign, "
+                  "EF21-MuonSign, SignSGD). "
                   "**Quote this number, not the uplink-only one.**",
                   "",
                   "**gain spread** is `max/min` over layers of the realized "
@@ -821,7 +823,10 @@ def get_args():
                    help="Rebalancing will not shorten the tuning horizon below this")
     p.add_argument("--final-rounds", type=int, default=2000,
                    help="Round budget for the full-50k runs; 2000 matches the paper")
-    p.add_argument("--final-seeds", nargs="*", type=int, default=[0, 1, 2])
+    p.add_argument("--final-seeds", nargs="*", type=int, default=[0, 1, 2, 3, 4],
+                   help="Seeds for the full-50k runs; five is what the paper's "
+                        "federated table reports. Rebalancing drops seeds from the "
+                        "end first if the budget cannot hold them, and says so")
     p.add_argument("--max-final-seeds", type=int, default=5,
                    help="Upper limit when the budget has slack to spend on error bars")
     p.add_argument("--lr-points", type=int, default=5)
@@ -839,6 +844,9 @@ def get_args():
                    help="Rounds used to measure the per-round cost in preflight")
 
     p.add_argument("--resume", action="store_true", help="Skip jobs already recorded")
+    p.add_argument("--no-export", action="store_true",
+                   help="Skip the closing 'federated.export_article' step. The "
+                        "bundle is the file you download, so this is for debugging")
     p.add_argument("--report-only", action="store_true",
                    help="Rebuild REPORT.md from state.json and exit: runs nothing and "
                         "is safe to call while a run is in flight")
@@ -960,6 +968,28 @@ def main() -> None:
     finally:
         save_state(state)
         refresh(echo=True)
+        if not args.no_export:
+            export()
+
+
+def export() -> None:
+    """Bundle the results and print the one file to download.
+
+    Runs even after an interrupt: a night that stopped at seed 3 still produced a
+    table worth carrying home, and a partial bundle says how partial it is. Never
+    fatal -- the runs are already on disk, and losing the archive step should not
+    make the night look like a failure.
+    """
+    from federated import export_article
+    try:
+        print(f"\n{'=' * 78}\n[{stamp()}] packing the results\n{'=' * 78}", flush=True)
+        export_article.main([])
+    except SystemExit:
+        raise
+    except Exception as exc:                                 # noqa: BLE001
+        print(f"[{stamp()}] could not write the bundle: {type(exc).__name__}: {exc}")
+        print("The runs themselves are intact under results/federated; "
+              "run 'python3 -m federated.export_article' by hand.")
 
 
 if __name__ == "__main__":
