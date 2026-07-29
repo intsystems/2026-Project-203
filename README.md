@@ -57,21 +57,19 @@ diverges. We localize that to a single layer type and explain the mechanism.
 
 ## Abstract
 
-SignMuon (sign compression of the Muon update to one bit per parameter) is the most
-straightforward adaptation of Muon for training deep neural networks under an
-extremely low communication budget. Although SignMuon significantly outperforms
-SignSGD in practice, it may diverge even on a linear function. It is natural to
-conjecture that the order of operations is to blame, and that placing the sign
-before rather than after the Linear Minimization Oracle (LMO) might fix this issue.
-We show that the resulting algorithm, which we call MuonSign, still diverges even on
-a linear function. Thus, neither naive placement of the sign around the LMO yields a
-convergent algorithm. At the same time, EF21 does fix MuonSign: EF21-MuonSign
-provably achieves the standard `O(T^{-1/2})` rate for smooth nonconvex optimization,
-decisively outperforms SignSGD, and matches SignMuon when training various deep
-learning models — on image classification, in federated settings, and on language
-modelling — providing a reliable drop-in replacement for SignSGD. Compressing the
-downlink as well is where the guarantee starts to cost something, and we measure
-what.
+SignMuon — sign compression of the Muon update to one bit per parameter — is the
+most straightforward adaptation of Muon to an extremely low communication budget.
+It outperforms SignSGD in practice, yet it can diverge on a linear function. The
+natural conjecture is that the order of operations is to blame, and that signing
+*before* rather than after the Linear Minimization Oracle (LMO) would fix it. It
+does not: sign-before (**MuonUSign**) diverges too, as does signing on both sides
+(**MuonSign**), so no naive placement of the sign around the LMO converges. Error
+feedback repairs one of them: **EF21-MuonUSign** attains the standard `O(T^{-1/2})`
+rate for smooth nonconvex optimization and decisively outperforms SignSGD, and
+compressing the downlink as well costs little beyond that. What the guarantee
+costs is the placement. Across centralized, federated and language-modelling
+experiments the best placement is consistently sign-*after*-the-LMO — precisely
+the one our counterexamples break and error feedback fails to repair.
 
 ## The eight methods
 
@@ -103,8 +101,8 @@ practitioners do.
 
 | Experiment | Setting | What it decides |
 | :--- | :--- | :--- |
-| Counterexamples | exact LMO, closed form | Theorems 1–4 — reproduce in **< 10 s** on CPU |
-| Synthetic quadratic | `F(X) = ½⟨X, AXB⟩`, 500×500 | descent rate vs the sign floor, at a matched 1-bit budget |
+| Counterexamples | exact LMO, closed form | Theorems 1–3 reproduce in **< 10 s** on CPU; Theorem 4's figure ~20 s |
+| Synthetic quadratic | `F(X) = ½⟨X, AXB⟩`, 100×100 | descent rate vs the sign floor, at a matched 1-bit budget |
 | Centralized CIFAR-10 | ResNet-18, 75 epochs | does 1-bit cost accuracy? |
 | Federated CIFAR-10 | CNN2, 11 clients, 2000 rounds | does it survive a real federation? |
 | nanoGPT speedrun | 12-layer transformer, 8×H100 | does it survive matrices wide enough for the rank term to bite? |
@@ -158,7 +156,7 @@ figure in the paper**, with the published hyperparameters filled in.
 ├── code/             everything runnable  ->  code/README.md
 │   ├── common/         optimizers, models, per-layer LR rules
 │   ├── centralized/    ResNet-18 / CIFAR-10
-│   ├── federated/      all ten methods, one parameterized driver
+│   ├── federated/      all eleven methods, one parameterized driver
 │   ├── synthetic/      the convex quadratic benchmark
 │   ├── counterexamples/  Theorems 1-4, exact LMO
 │   └── nanogpt/        modded-nanogpt speedrun port
@@ -173,12 +171,11 @@ figure in the paper**, with the published hyperparameters filled in.
   same criterion re-derives the `√max(1, m/n)` factor already shipped in reference
   Muon. Selection is on a held-out validation split; the test set is never read
   during tuning.
-* **1 bit per parameter is an approximation.** `sign(0) = 0`, so the uplink alphabet
-  is `{−1, 0, +1}`. On CNN2 roughly 10% of entries are the third symbol every round
-  (a feature that is zero across the local batch gives an exactly-zero gradient
-  column, hence a zero column in the polar factor), which is ≈1.37 bits. Every run
-  records `uplink_zero_frac`; `--uplink-zeros random` makes the channel a genuine
-  one bit.
+* **1 bit per parameter, exactly.** Exact zeros are resolved to a random ±1
+  (`--uplink-zeros random`, the default), so every transmitted symbol is a genuine
+  bit. Counting the uncompressed auxiliary group, the realized cost is 1.087 bits
+  per parameter, a 29.4× reduction rather than 32×. Pass `--uplink-zeros keep` to
+  recover the old ternary alphabet for diagnostics.
 * **BatchNorm statistics never update in the federated setting.** Local models are
   discarded each round and BatchNorm runs in inference mode during accumulation, so
   the running statistics stay at their initialization for the whole run. This is

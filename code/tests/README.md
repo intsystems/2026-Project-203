@@ -26,7 +26,7 @@ so that a change to the code cannot silently invalidate a sentence in the paper.
 | Per-layer scaling | `unit-gain` re-derives the shipped Muon aspect factor, and equalizes the per-step gain exactly |
 | Federated ↔ centralized | **The load-bearing one**, below |
 | Batched ↔ sequential | The synthetic sweeps' fast path reproduces `run_one` on all ten methods — the same kind of two-implementations problem, below |
-| Federated protocol | The validation split is held out before partitioning; the GPU augmentation matches torchvision; the uplink alphabet is ternary |
+| Federated protocol | The validation split is held out before partitioning; the GPU augmentation matches torchvision; the uplink alphabet is strictly +-1 by default, ternary only under `--uplink-zeros keep` |
 | Centralized export | The paper's table aggregates per-seed tail means, in that order; every driver phase lands in the right bucket; the figures are a function of the export bundle alone |
 | Plumbing | The metrics schema, multi-seed aggregation, the anonymity scan |
 

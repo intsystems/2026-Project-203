@@ -131,7 +131,7 @@ selected rate:
 ```bash
 for rule in none unit-gain mup; do
   python3 -m federated.tune --stage lr --lr-scaling $rule \
-      --methods signmuon muonsign signsgd --split tune --out results/federated/rules_$rule
+      --methods signmuon muonsign signsgd --out results/federated/rules_$rule
 done
 ```
 
@@ -172,7 +172,7 @@ code; do not carry them over:
   censored; two rows were off their stated grid.
 * The `8–17%` uplink-zero range — still worth recording as a diagnostic, but it
   no longer feeds any bit-accounting claim, since zeros are randomized.
-* The round-trip communication table (`1.9×` vs `25×`) — recompute with
+* The round-trip communication table (now `~2×` vs `~29×`) — recompute with
   `communication_bits` under the current alphabet (now a genuine 1 bit).
 
 ---
