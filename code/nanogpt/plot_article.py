@@ -61,6 +61,11 @@ from common.plotting import (COLUMN_WIDTH, FS_LABEL, FS_LEGEND, INK_2,
 SCALE = 7.2 / COLUMN_WIDTH
 use_paper_style(scale=SCALE)
 
+#: Inset tick labels, in printed points. One point under the ordinary tick size
+#: (FS_TICK = 8): an inset is read after the parent axes, so it may be smaller,
+#: but not so small that the template's legibility floor is breached.
+FS_INSET_TICK = 7.0
+
 #: The canonical run per method. Explicit rather than "latest matching log":
 #: ``logs/`` also holds the pre-fix EF21 runs, and a paper figure must not depend
 #: on directory order. The five non-EF21 arms are unaffected by that fix (their
@@ -197,7 +202,11 @@ def _zoom(ax, draw, xlim, ylim, rect=_INSET_RECT, nticks=3):
     axins.set_ylim(*ylim)
     axins.set_xlabel("")
     axins.set_ylabel("")
-    axins.tick_params(axis="both", labelsize=12.5, length=3.5, width=1.0)
+    # Sized like everything else in this file: a PRINTED point size times SCALE,
+    # never a bare number. A literal 12.5 here printed at 5.8 pt after LaTeX's
+    # 1/SCALE reduction -- below the template's floor and unreadable.
+    axins.tick_params(axis="both", labelsize=FS_INSET_TICK * SCALE,
+                      length=3.5, width=1.0)
     axins.xaxis.set_major_locator(plt.MaxNLocator(nticks))
     axins.yaxis.set_major_locator(plt.MaxNLocator(nticks))
     axins.grid(True, linestyle="--", linewidth=0.7, alpha=0.25)
