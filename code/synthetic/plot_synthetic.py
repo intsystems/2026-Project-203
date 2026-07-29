@@ -35,11 +35,13 @@ from __future__ import annotations
 import argparse
 import json
 import math
+from matplotlib import ticker
 from pathlib import Path
 from typing import Dict, Sequence
 
-from common.plotting import (FS_ANNOT, FS_LABEL, FS_LEGEND, INK_2, MUTED,
-                             TEXT_WIDTH, color_of, label_of, order_methods,
+from common.plotting import (AXIS, FS_ANNOT, FS_LABEL, FS_LEGEND, INK_2, MUTED,
+                             SURFACE, TEXT_WIDTH, color_of, label_of,
+                             order_methods,
                              figure_legend, panel_legend, save_figure,
                              style_axes, use_paper_style)
 from common.utils import results_root
@@ -130,6 +132,56 @@ def _draw_trajectory(ax, data: Dict[str, dict], key: str, ylabel: str) -> int:
     return drawn
 
 
+def _plateau_inset(ax, data: Dict[str, dict], key: str, frac: float = 0.55):
+    """Zoom on the settled band, where the ranking the tables report lives.
+
+    Over the full axis the eight norm-fixed plateaus are one line: they span
+    less than a factor of two, against the fifteen decades SGD covers. The main
+    panel shows that they settle; this shows what they settle *to*, which is the
+    quantity a fixed-target iteration count actually ranks.
+    """
+    tails = {}
+    for method, payload in data.items():
+        hist = payload["result"].get(key)
+        if hist:
+            tails[method] = (int(len(hist) * frac), hist[int(len(hist) * frac):])
+    focus = [y for m, (_, ys) in tails.items() if m not in UNNORMALIZED
+             for y in ys if y > 0]
+    if len(focus) < 2:
+        return None
+    lo, hi = min(focus), max(focus)
+    lo, hi = lo / 1.35, hi * 1.35
+
+    axins = ax.inset_axes([0.42, 0.55, 0.56, 0.40], zorder=5)
+    style_axes(axins, logy=True)
+    # style_axes makes a panel transparent so a neighbour's labels can sit in
+    # the gutter. An inset is the opposite case: it lies on top of the curves it
+    # magnifies, and has to hide them to be legible.
+    axins.patch.set_alpha(1.0)
+    axins.set_facecolor(SURFACE)
+    for side, spine in axins.spines.items():
+        spine.set_visible(True)
+        spine.set_color(AXIS)
+        spine.set_linewidth(0.5)
+    for method, (start, ys) in tails.items():
+        axins.plot(range(start, start + len(ys)), ys, color=color_of(method),
+                   linewidth=1.1, zorder=3)
+    axins.set_ylim(lo, hi)
+    axins.set_xlim(start, start + len(ys))
+    axins.set_xticks([])
+    # The band is under a decade wide, so the decade ticks alone would label it
+    # once or not at all: a reader could rank the plateaus but not read one off.
+    # Label the powers-of-ten subdivisions instead.
+    axins.yaxis.set_minor_locator(
+        ticker.LogLocator(base=10.0, subs=tuple(range(2, 10)), numticks=12))
+    axins.yaxis.set_minor_formatter(
+        ticker.LogFormatterSciNotation(minor_thresholds=(4.0, 0.4)))
+    axins.tick_params(which="both", labelsize=FS_ANNOT - 2.0, pad=1.0,
+                      length=2.0, colors=MUTED)
+    ax.indicate_inset_zoom(axins, edgecolor=MUTED, linewidth=0.6, alpha=0.5)
+    return axins
+
+
 def fig_trajectory(plt, data: Dict[str, dict], key: str, ylabel: str):
     """A single trajectory panel -- the diagnostic form, one metric at a time."""
     fig, ax = plt.subplots(figsize=(PANEL_WIDTH, 2.4))
@@ -171,6 +223,7 @@ def fig_trajectories(plt, data: Dict[str, dict]):
         if not _draw_trajectory(ax, data, key, ylabel):
             plt.close(fig)
             return None
+        _plateau_inset(ax, data, key)
     handles, labels = axes[0][0].get_legend_handles_labels()
     rows = 1 + (len(labels) - 1) // MAX_LEGEND_COLS
     ncol = -(-len(labels) // rows)          # balance the rows, don't fill-then-spill
