@@ -123,8 +123,8 @@ def muon_lmo(Y: np.ndarray, tol: float = 1e-9) -> np.ndarray:
 def scaled_sign(Y: np.ndarray) -> np.ndarray:
     r"""Contractive 1-bit compressor :math:`\mathrm{mean}|\mathbf Y|\,\operatorname{sign}(\mathbf Y)`.
 
-    This is the ``USign`` / ``UDSign`` scaled-sign operator: it transmits one bit
-    per entry (the sign) plus a single shared magnitude scalar per matrix.
+    The uplink compressor of the EF21 methods: one bit per entry (the sign)
+    plus a single shared magnitude scalar per matrix.
     """
     return np.mean(np.abs(Y)) * np.sign(Y)
 
@@ -236,12 +236,13 @@ class SignMuon(Optimizer):
 
 
 class MuonUSign(Optimizer):
-    """Algorithm ``alg:muon_usign`` (a.k.a. MuonSign): sign **before** the LMO.
+    """Algorithm ``alg:muon_usign``: sign **before** the LMO (Theorem 2).
 
     ``s = sign(M_tilde);  D = LMO(s);  X <- X - eta * D``.
 
-    Because the LMO is scale-invariant, using the scaled sign instead of the
-    plain sign gives the identical direction, so MuonUSign == MuonSign here.
+    Because the LMO is scale-invariant, feeding it the scaled sign instead of
+    the plain sign gives the identical direction. Not to be confused with
+    ``MuonSign``, which signs the LMO output as well.
     """
 
     name = "MuonUSign"

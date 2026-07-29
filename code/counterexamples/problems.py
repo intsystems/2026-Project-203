@@ -7,8 +7,9 @@ Linear instances (constant gradient ``grad f(W) = G``, objective ``f = Tr(G^T W)
   **SignMuon** (sign after the LMO) diverges.  Here ``G = 1000 * u1 v1^T + O``
   with ``O`` orthogonal, so ``LMO(G) = O`` and ``<G, sign(O)> < 0``.
 
-* ``muonsign_counterexample`` -- the 5x5 instance of Theorem 2 on which
-  **MuonSign / MuonUSign** (sign before the LMO) diverges.  Here
+* ``muonsign_counterexample`` -- the single 5x5 instance of Theorems 2 and 3,
+  on which **MuonUSign** (sign before the LMO) and **MuonSign** (sign on both
+  sides) both diverge.  Here
   ``sign(G) = S`` for a fixed sign matrix ``S`` whose polar factor
   ``D = LMO(S)`` satisfies ``<G, D> < 0``.
 
@@ -339,6 +340,37 @@ def ef21_signmuon_counterexample(mu=0.0, nesterov=False):
 # --------------------------------------------------------------------------
 
 
+def ef21_alternating_cycle(a=7 / 25, b=24 / 25, steps=40):
+    """The *harmless* limit cycle, and why the counterexample needs a preamble.
+
+    Runs the EF21 estimator recursion ``d <- d + mean|D-d| * sign(D-d)`` from
+    ``d = 0`` on the purely alternating targets ``Dbar^-, Dbar^+, ...`` with
+    ``Dbar^+- = [[a, +-b], [+-b, -a]]`` -- i.e. the tail of the counterexample
+    with its two-step preamble removed.
+
+    It enters a period-two cycle at once whose (2,2) average is ``-a/2``: the
+    SAME sign as every target value ``-a``, so the iterate does not run away.
+    The divergent cycle of Lemma "Wrong-sign limit cycle" is a *different*
+    period-two orbit of the same recursion, sitting in a different sign-pattern
+    cell, and the preamble exists only to land the estimator in that cell.
+
+    Returns ``(d_odd, d_even, mean22)``.
+    """
+    Dp = np.array([[a, b], [b, -a]])
+    Dm = np.array([[a, -b], [-b, -a]])
+    d = np.zeros((2, 2))
+    hist = []
+    for t in range(1, steps + 1):
+        D = Dm if t % 2 else Dp
+        R = D - d
+        d = d + np.abs(R).mean() * np.sign(R)
+        hist.append(d.copy())
+    d_odd, d_even = hist[-2], hist[-1]        # steps -2 and -1 have opposite parity
+    if steps % 2 == 1:                        # last index is odd -> swap
+        d_odd, d_even = d_even, d_odd
+    return d_odd, d_even, 0.5 * (d_odd[1, 1] + d_even[1, 1])
+
+
 def _self_check():
     from counterexamples.optimizers import muon_lmo
 
@@ -358,6 +390,13 @@ def _self_check():
     print(f"  D[4,2] (mismatch entry)  = {D2[3, 1]:+.4f}   (paper: -0.2425)")
     print(f"  <G, LMO(sign(G))>        = {np.sum(G2 * D2):+.3f}   (paper: -13.89)")
     print(f"  <G, LMO(G)>  (Muon)      = {np.sum(G2 * muon_lmo(G2)):+.3f}   (descends, > 0)")
+
+    print("== Appendix (why the counterexample needs its preamble) ==")
+    a = 7 / 25
+    d_odd, d_even, m22 = ef21_alternating_cycle(a=a)
+    print(f"  alternating targets alone -> 2-cycle with (2,2) mean = {m22:+.6f}")
+    print(f"  predicted -a/2 = {-a/2:+.6f}; target value is {-a:+.4f}  "
+          f"(same sign -> no divergence)")
 
     print("== Appendix (EF21-SignMuon, universal 2x2 construction) ==")
     from counterexamples.optimizers import EF21SignMuon
