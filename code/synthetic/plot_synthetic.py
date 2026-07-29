@@ -132,25 +132,40 @@ def _draw_trajectory(ax, data: Dict[str, dict], key: str, ylabel: str) -> int:
     return drawn
 
 
-def _plateau_inset(ax, data: Dict[str, dict], key: str, frac: float = 0.55):
-    """Zoom on the settled band, where the ranking the tables report lives.
+def _arrival_inset(ax, data: Dict[str, dict], key: str):
+    """Zoom on the window where the methods arrive, not on where they end up.
 
-    Over the full axis the eight norm-fixed plateaus are one line: they span
-    less than a factor of two, against the fifteen decades SGD covers. The main
-    panel shows that they settle; this shows what they settle *to*, which is the
-    quantity a fixed-target iteration count actually ranks.
+    The criterion the tables report is a crossing time, so the question the
+    figure has to answer is which curve reaches the target first. Over the full
+    axis that happens in the first sixth of the x range, inside a fold of curves
+    a millimetre wide, and the remaining five sixths are flat. The window is
+    placed from the recorded crossing times: it runs to a little past the last
+    of them, and spans from just under the lowest plateau to well above the
+    target, so every arrival happens inside it.
     """
-    tails = {}
+    series, crossings, plateaus = {}, [], []
     for method, payload in data.items():
-        hist = payload["result"].get(key)
-        if hist:
-            tails[method] = (int(len(hist) * frac), hist[int(len(hist) * frac):])
-    focus = [y for m, (_, ys) in tails.items() if m not in UNNORMALIZED
-             for y in ys if y > 0]
-    if len(focus) < 2:
+        rec = payload["result"]
+        hist = rec.get(key)
+        if not hist:
+            continue
+        series[method] = hist
+        if method in UNNORMALIZED:
+            continue
+        plateaus.append(sorted(hist[int(len(hist) * 0.8):])[len(hist[int(len(hist) * 0.8):]) // 2])
+        if rec.get("reached_target") and rec.get("iters_to_converge"):
+            crossings.append(rec["iters_to_converge"])
+    if len(plateaus) < 2 or not crossings:
         return None
-    lo, hi = min(focus), max(focus)
-    lo, hi = lo / 1.35, hi * 1.35
+
+    lo = min(p for p in plateaus if p > 0) / 1.5
+    hi = lo * 90.0
+    x_hi = min(max(len(h) for h in series.values()), int(1.35 * max(crossings)))
+    # Start where the fastest curve first drops under the top of the window, so
+    # the near-vertical opening plunge is left to the main panel.
+    entries = [next((t for t, y in enumerate(ys) if y <= hi), None)
+               for m, ys in series.items() if m not in UNNORMALIZED]
+    x_lo = max(0, min(t for t in entries if t is not None) - 10)
 
     axins = ax.inset_axes([0.42, 0.55, 0.56, 0.40], zorder=5)
     style_axes(axins, logy=True)
@@ -163,21 +178,37 @@ def _plateau_inset(ax, data: Dict[str, dict], key: str, frac: float = 0.55):
         spine.set_visible(True)
         spine.set_color(AXIS)
         spine.set_linewidth(0.5)
-    for method, (start, ys) in tails.items():
-        axins.plot(range(start, start + len(ys)), ys, color=color_of(method),
-                   linewidth=1.1, zorder=3)
+    # The criterion is a crossing of this line, so draw it: the order in which
+    # the curves cut it is the column the table reports. Only on the loss panel
+    # -- the target is on F, and there is no counterpart for the gradient norm.
+    target = next(iter(data.values()))["problem"].get("target_loss")
+    if key == "loss_history" and target and lo < target < hi:
+        axins.axhline(target, color=MUTED, linewidth=0.7, linestyle=(0, (3, 2)),
+                      zorder=2)
+    for method, ys in series.items():
+        axins.plot(range(len(ys)), ys, color=color_of(method), linewidth=1.2,
+                   zorder=3)
     axins.set_ylim(lo, hi)
-    axins.set_xlim(start, start + len(ys))
-    axins.set_xticks([])
-    # The band is under a decade wide, so the decade ticks alone would label it
-    # once or not at all: a reader could rank the plateaus but not read one off.
-    # Label the powers-of-ten subdivisions instead.
-    axins.yaxis.set_minor_locator(
-        ticker.LogLocator(base=10.0, subs=tuple(range(2, 10)), numticks=12))
-    axins.yaxis.set_minor_formatter(
-        ticker.LogFormatterSciNotation(minor_thresholds=(4.0, 0.4)))
+    axins.set_xlim(x_lo, x_hi)
+    axins.tick_params(axis="x", labelsize=FS_ANNOT - 2.0, pad=1.0, length=2.0)
+    axins.xaxis.set_major_locator(ticker.MaxNLocator(4, integer=True))
+    # Label the powers-of-ten subdivisions only when the window is under a
+    # decade, where the decade ticks would label it once or not at all. Over a
+    # wider window they are clutter: eight labels per decade on a two-inch axis.
+    if hi / lo < 12.0:
+        axins.yaxis.set_minor_locator(
+            ticker.LogLocator(base=10.0, subs=tuple(range(2, 10)), numticks=12))
+        axins.yaxis.set_minor_formatter(
+            ticker.LogFormatterSciNotation(minor_thresholds=(4.0, 0.4)))
+    else:
+        axins.minorticks_off()
     axins.tick_params(which="both", labelsize=FS_ANNOT - 2.0, pad=1.0,
                       length=2.0, colors=MUTED)
+    # The tick labels sit outside the inset's own patch, over whatever the main
+    # panel has drawn there -- in the loss panel, straight across the plateau
+    # band. Give each its own opaque backing.
+    for label in axins.get_xticklabels() + axins.get_yticklabels():
+        label.set_bbox(dict(facecolor=SURFACE, edgecolor="none", pad=0.4))
     ax.indicate_inset_zoom(axins, edgecolor=MUTED, linewidth=0.6, alpha=0.5)
     return axins
 
@@ -223,7 +254,7 @@ def fig_trajectories(plt, data: Dict[str, dict]):
         if not _draw_trajectory(ax, data, key, ylabel):
             plt.close(fig)
             return None
-        _plateau_inset(ax, data, key)
+        _arrival_inset(ax, data, key)
     handles, labels = axes[0][0].get_legend_handles_labels()
     rows = 1 + (len(labels) - 1) // MAX_LEGEND_COLS
     ncol = -(-len(labels) // rows)          # balance the rows, don't fill-then-spill
