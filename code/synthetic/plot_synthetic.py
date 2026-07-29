@@ -8,17 +8,22 @@ Reads ``results/synthetic*/<method>/<stage>.json`` and skips, with a message,
 any figure whose stage has not been run -- so a partial run still produces the
 figures it can.
 
-Five figures, each named for the ``\\label`` it belongs to rather than for a
-float number (the numbers move whenever a float is added elsewhere):
+Each figure is named for the ``\\label`` it belongs to rather than for a float
+number (the numbers move whenever a float is added elsewhere):
 
-===========  =========================  ==================================
-stage        file                       paper
-===========  =========================  ==================================
-``final``    ``loss``, ``GN``           ``fig:synthetic_results``
-``floor``    ``floor``                  ``fig:synthetic_dynamics`` (left)
-``horizon``  ``horizon``                ``fig:synthetic_dynamics`` (right)
-``kappa``    ``kappa``                  ``fig:synthetic_kappa``
-===========  =========================  ==================================
+=========================  =====================  =========================
+figure                     stages it needs        paper
+=========================  =====================  =========================
+``synthetic_main``         ``final``              ``fig:synthetic_main``
+``loss``, ``GN``           ``final``              ``fig:synthetic_results``
+``diagnostics``            ``floor``,             ``fig:synthetic_dynamics``
+                           ``horizon``, ``kappa``
+=========================  =====================  =========================
+
+``diagnostics`` is one row of three panels under a single legend, the layout
+the counterexample and federated figures use, because the panels draw the same
+ten methods. Drawn one per figure with a legend beside each, the legend was
+wider than the axes it belonged to.
 
 Output goes to ``<results>/figures/`` as both PDF and PNG. Nothing is written
 into ``aaai_article/``: copy a figure over deliberately once you have looked at
@@ -32,8 +37,8 @@ import json
 from pathlib import Path
 from typing import Dict, Sequence
 
-from common.plotting import (FS_ANNOT, FS_LABEL, INK_2, MUTED, TEXT_WIDTH,
-                             color_of, label_of, legend, order_methods,
+from common.plotting import (FS_ANNOT, FS_LABEL, FS_LEGEND, INK_2, MUTED,
+                             TEXT_WIDTH, color_of, label_of, order_methods,
                              figure_legend, panel_legend, save_figure,
                              style_axes, use_paper_style)
 from common.utils import results_root
@@ -55,12 +60,10 @@ MAX_LEGEND_COLS = 5
 #: ``stage -> the figures that need it``. Used to report what a partial run is
 #: missing, instead of failing on the first absent file.
 FIGURES = {
-    "trajectories": "final",
-    "loss": "final",
-    "gnorm": "final",
-    "floor": "floor",
-    "horizon": "horizon",
-    "kappa": "kappa",
+    "trajectories": ("final",),
+    "loss": ("final",),
+    "gnorm": ("final",),
+    "diagnostics": ("floor", "horizon", "kappa"),
 }
 
 
@@ -166,56 +169,46 @@ def fig_trajectories(plt, data: Dict[str, dict]):
 # --------------------------------------------------------------------------
 
 
-def fig_floor(plt, data: Dict[str, dict]):
-    """``||grad F||_inf`` against ``eta``, with the fitted exponent per method.
+def _curve(ax, method: str, xs, ys) -> None:
+    """One method's series, labelled with its name and nothing else.
 
-    The theory says a `+-1` step of fixed length cannot converge at a constant
-    rate: the gradient plateaus at a level linear in ``eta``. A slope of 1 on
-    this log-log plot is that prediction; SGD has no floor and is expected to be
-    absent or ragged.
+    The fitted exponents used to ride in the label. With ten methods that made
+    the legend wider than the axes it belonged to, and the panels were squeezed
+    into the strip left over. Every exponent is a column of the table these
+    panels illustrate, so the label carries the name alone and the legend goes
+    under the row, as in every other figure in the paper.
     """
-    fig, ax = plt.subplots(figsize=(PANEL_WIDTH, 2.4))
-    style_axes(ax, logx=True, logy=True)
+    ax.plot(xs, ys, color=color_of(method), linewidth=1.5, marker="o",
+            markersize=3.2, label=label_of(method), zorder=3)
+
+
+def _panel_floor(ax, data: Dict[str, dict]) -> int:
+    """``||grad F||_inf`` against ``eta``: the accuracy floor of a constant step.
+
+    A normalized step of fixed length cannot converge at a constant rate; the
+    gradient plateaus at a level linear in ``eta``, so slope 1 is the
+    prediction. SGD has no floor and is absent by construction.
+    """
     drawn = 0
     for method, payload in data.items():
-        rec = payload["result"]
-        rows = [r for r in rec["rows"] if r.get("settled")]
+        rows = [r for r in payload["result"]["rows"] if r.get("settled")]
         if len(rows) < 2:
             continue
-        slope = rec.get("slope_gnorm")
-        ax.plot([r["lr"] for r in rows], [r["g_inf"] for r in rows],
-                color=color_of(method), linewidth=1.5, marker="o", markersize=3.2,
-                label=f"{label_of(method)}  (slope {slope:.2f})"
-                      if slope is not None else label_of(method), zorder=3)
+        _curve(ax, method, [r["lr"] for r in rows], [r["g_inf"] for r in rows])
         drawn += 1
-    if not drawn:
-        plt.close(fig)
-        return None
     ax.set_xlabel(r"step size $\eta$", color=INK_2, fontsize=FS_LABEL)
     ax.set_ylabel(r"floor $\|\nabla F\|_\infty$", color=INK_2, fontsize=FS_LABEL)
-    ax.set_title("slope 1 is the predicted linear floor", color=MUTED,
-                 fontsize=FS_ANNOT - 1.5, loc="left", pad=6)
-    legend(ax, outside=True)
-    fig.tight_layout()
-    return fig
+    return drawn
 
 
-# --------------------------------------------------------------------------
-# fig:synthetic_dynamics (right) -- best error at each tuned budget
-# --------------------------------------------------------------------------
-
-
-def fig_horizon(plt, data: Dict[str, dict]):
+def _panel_horizon(ax, data: Dict[str, dict]) -> int:
     """Error against budget ``T``, with ``(eta, mu, schedule)`` retuned at each.
 
     Plots the quantity the theorems bound, ``min_t ||grad F(X_t)||_*^2`` in the
-    norm dual to each method's LMO ball, so the fitted ``p`` on the curve is the
-    ``p`` in the table. ``p = 1/2`` is the nonconvex bound the theorems prove,
-    ``p = 1`` a strongly convex rate. Retuning per budget is the point --
-    imposing one schedule on every budget measures the schedule, not the method.
+    norm dual to each method's LMO ball, so the exponent fitted on the curve is
+    the ``p`` in the table. Retuning per budget is the point: imposing one
+    schedule on every budget measures the schedule, not the method.
     """
-    fig, ax = plt.subplots(figsize=(PANEL_WIDTH, 2.4))
-    style_axes(ax, logx=True, logy=True)
     drawn = 0
     for method, payload in data.items():
         rec = payload["result"]
@@ -225,55 +218,72 @@ def fig_horizon(plt, data: Dict[str, dict]):
         # Falls back to the Frobenius norm for a results tree written before the
         # dual norm was recorded.
         dual = all(r.get("best_dual") is not None for r in rows)
-        p = rec.get("exponent_dual_sq") if dual else rec.get("exponent_gnorm")
         ys = ([r["best_dual"] ** 2 for r in rows] if dual
               else [r["best_gnorm"] for r in rows])
-        ax.plot([r["T"] for r in rows], ys,
-                color=color_of(method), linewidth=1.5, marker="o", markersize=3.2,
-                label=f"{label_of(method)}  (p = {p:.2f})" if p is not None
-                      else label_of(method), zorder=3)
+        _curve(ax, method, [r["T"] for r in rows], ys)
         drawn += 1
-    if not drawn:
-        plt.close(fig)
-        return None
     ax.set_xlabel("budget $T$ (iterations)", color=INK_2, fontsize=FS_LABEL)
     ax.set_ylabel(r"$\min_{t\leq T}\|\nabla F(\mathbf{X}_t)\|_*^2$",
                   color=INK_2, fontsize=FS_LABEL)
-    ax.set_title(r"$p = 1/2$ is the nonconvex prediction", color=MUTED,
-                 fontsize=FS_ANNOT - 1.5, loc="left", pad=6)
-    legend(ax, outside=True)
-    fig.tight_layout()
-    return fig
+    return drawn
 
 
-# --------------------------------------------------------------------------
-# fig:synthetic_kappa -- the same, against the condition number
-# --------------------------------------------------------------------------
-
-
-def fig_kappa(plt, data: Dict[str, dict]):
+def _panel_kappa(ax, data: Dict[str, dict]) -> int:
     """Best gradient norm within the budget against ``L/sigma``, tuned at each."""
-    fig, ax = plt.subplots(figsize=(PANEL_WIDTH, 2.4))
-    style_axes(ax, logx=True, logy=True)
     drawn = 0
     for method, payload in data.items():
-        rec = payload["result"]
-        rows = rec.get("rows") or []
+        rows = payload["result"].get("rows") or []
         if len(rows) < 2:
             continue
-        s = rec.get("exponent_kappa")
-        ax.plot([r["kappa"] for r in rows], [r["best_gnorm"] for r in rows],
-                color=color_of(method), linewidth=1.5, marker="o", markersize=3.2,
-                label=f"{label_of(method)}  (slope {s:.2f})" if s is not None
-                      else label_of(method), zorder=3)
+        _curve(ax, method, [r["kappa"] for r in rows],
+               [r["best_gnorm"] for r in rows])
         drawn += 1
-    if not drawn:
-        plt.close(fig)
-        return None
     ax.set_xlabel(r"condition number $L/\sigma$", color=INK_2, fontsize=FS_LABEL)
-    ax.set_ylabel(r"best $\|\nabla F\|$ within budget", color=INK_2, fontsize=FS_LABEL)
-    legend(ax, outside=True)
-    fig.tight_layout()
+    ax.set_ylabel(r"best $\|\nabla F\|$ within budget", color=INK_2,
+                  fontsize=FS_LABEL)
+    return drawn
+
+
+#: ``stage -> (panel drawer, subcaption)``, in printed order.
+DIAGNOSTIC_PANELS = (
+    ("floor", _panel_floor, "floor"),
+    ("horizon", _panel_horizon, "budget"),
+    ("kappa", _panel_kappa, "conditioning"),
+)
+
+
+def fig_diagnostics(plt, staged: Dict[str, Dict[str, dict]]):
+    """The three log-log diagnostics as one row, under a single legend.
+
+    Laid out like the counterexample and federated figures: full text width, one
+    legend beneath the row because the panels draw the same ten methods, and no
+    per-panel legend at all. A stage that has not been run drops its panel
+    rather than the whole figure.
+    """
+    present = [(stage, draw) for stage, draw, _ in DIAGNOSTIC_PANELS
+               if staged.get(stage)]
+    if not present:
+        return None
+    fig, axes = plt.subplots(1, len(present), figsize=(TEXT_WIDTH, 2.35),
+                             squeeze=False)
+    for ax, (stage, draw) in zip(axes[0], present):
+        style_axes(ax, logx=True, logy=True)
+        if not draw(ax, staged[stage]):
+            plt.close(fig)
+            return None
+    # Across every panel, not just the first: SGD has no floor and so never
+    # appears in the left one, and a legend taken from there alone would omit a
+    # method the other two panels draw.
+    handles, labels = {}, []
+    for ax in axes[0]:
+        for handle, lab in zip(*ax.get_legend_handles_labels()):
+            if lab not in handles:
+                handles[lab], _ = handle, labels.append(lab)
+    rows = 1 + (len(labels) - 1) // MAX_LEGEND_COLS
+    figure_legend(fig, [handles[lab] for lab in labels], labels,
+                  ncol=-(-len(labels) // rows), fontsize=FS_LEGEND)
+    fig.subplots_adjust(left=0.075, right=0.995, top=0.97,
+                        bottom=0.30 + 0.07 * (rows - 1), wspace=0.30)
     return fig
 
 
@@ -316,40 +326,48 @@ def main() -> int:
     out = Path(args.out) if args.out else results / "figures"
 
     builders = {
-        "trajectories": lambda d: fig_trajectories(plt, d),
-        "loss": lambda d: fig_trajectory(plt, d, "loss_history", "$F(X_t)$"),
-        "gnorm": lambda d: fig_trajectory(plt, d, "grad_norm_history",
+        "trajectories": lambda s: fig_trajectories(plt, s["final"]),
+        "loss": lambda s: fig_trajectory(plt, s["final"], "loss_history",
+                                         "$F(X_t)$"),
+        "gnorm": lambda s: fig_trajectory(plt, s["final"], "grad_norm_history",
                                           r"$\|\nabla F(X_t)\|_F$"),
-        "floor": lambda d: fig_floor(plt, d),
-        "horizon": lambda d: fig_horizon(plt, d),
-        "kappa": lambda d: fig_kappa(plt, d),
+        "diagnostics": lambda s: fig_diagnostics(plt, s),
     }
     stems = {"trajectories": "synthetic_main", "loss": "loss", "gnorm": "GN",
-             "floor": "floor", "horizon": "horizon", "kappa": "kappa"}
+             "diagnostics": "diagnostics"}
 
     cache: Dict[str, Dict[str, dict]] = {}
     written, skipped = [], []
     for name in args.figures:
-        stage = FIGURES[name]
-        if stage not in cache:
-            cache[stage] = load_stage(results, stage)
-        data = cache[stage]
-        if not data:
-            skipped.append(f"{name}: stage '{stage}' has no output under "
-                           f"{results.name}/ -- run "
-                           f"`python3 -m synthetic.run_gpu --stages {stage}`")
+        stages = FIGURES[name]
+        for stage in stages:
+            if stage not in cache:
+                cache[stage] = load_stage(results, stage)
+        staged = {stage: cache[stage] for stage in stages}
+        missing = [stage for stage in stages if not staged[stage]]
+        if len(missing) == len(stages):
+            skipped.append(
+                f"{name}: no output for {' or '.join(missing)} under "
+                f"{results.name}/ -- run "
+                f"`python3 -m synthetic.run_gpu --stages {' '.join(missing)}`")
             continue
-        fig = builders[name](data)
+        if missing:
+            # A multi-panel figure drops the panels it cannot draw rather than
+            # the whole figure, but says which, so a partial run is never
+            # mistaken for a complete one.
+            skipped.append(f"{name}: drawn without the "
+                           f"{', '.join(missing)} panel(s), which have no output")
+        fig = builders[name](staged)
         if fig is None:
             note = (" (--mode final keeps trajectories only for a single problem "
                     "instance; re-run with --save-histories)"
-                    if stage == "final" else " (too few usable points to plot)")
-            skipped.append(f"{name}: '{stage}' ran but has nothing to draw{note}")
+                    if "final" in stages else " (too few usable points to plot)")
+            skipped.append(f"{name}: ran but has nothing to draw{note}")
             continue
-        # tight only for the diagnostics: the two paper figures are already
-        # laid out at their printed width and must not be re-scaled.
+        # Every figure here is laid out at the width it prints at, so none of
+        # them may be re-scaled by a tight bounding box.
         written += save_figure(fig, out, stems[name], formats=args.formats,
-                               tight=name not in ("trajectories", "loss", "gnorm"))
+                               tight=False)
         plt.close(fig)
 
     for line in skipped:

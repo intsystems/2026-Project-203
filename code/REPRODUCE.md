@@ -165,9 +165,9 @@ value without saying which of the two it is.
 | :--- | :--- | :--- |
 | `stability` | Largest stable `η`, and the step length `η_max‖S‖_F`. SGD is the control: it must return `2/L` | `tab:synthetic_dynamics` |
 | `alignment` | Distribution of `ρ_t = ⟨∇F, D_t⟩/(‖∇F‖_F‖D_t‖_F)` along the tuned trajectory | `tab:synthetic_alignment` |
-| `floor` | Plateau `F∞(η)`, `‖∇F‖∞(η)` of a constant step and their exponents in `η` | `tab:synthetic_dynamics`, `fig:synthetic_floor` |
-| `horizon` | `err ~ T^-p`, `η* ~ T^-q` tuned separately at each budget | `tab:synthetic_dynamics`, `fig:synthetic_horizon` |
-| `kappa` | The tuned comparison swept over condition number at `L = 1` | `fig:synthetic_kappa` |
+| `floor` | Plateau `F∞(η)`, `‖∇F‖∞(η)` of a constant step and their exponents in `η` | `tab:synthetic_dynamics`, `fig:synthetic_dynamics` (left) |
+| `horizon` | `err ~ T^-p`, `η* ~ T^-q` tuned separately at each budget | `tab:synthetic_dynamics`, `fig:synthetic_dynamics` (centre) |
+| `kappa` | The tuned comparison swept over condition number at `L = 1` | `fig:synthetic_dynamics` (right) |
 | `grid` | Fewest iterations to `F ≤ 1e-3` within `T_max = 5000`, `η` and `μ` tuned per method | `tab:synthetic_tuned` |
 | `final` | Re-runs those optima with saved curves | `fig:synthetic_main` |
 
@@ -199,10 +199,13 @@ Three points where the code has to match the theory exactly, and does:
 python3 -m synthetic.plot_synthetic       # reads results/synthetic/
 ```
 
-Writes `loss`, `GN`, `floor`, `horizon` and `kappa` as PDF + PNG into
+Writes `synthetic_main`, `loss`, `GN` and `diagnostics` as PDF + PNG into
 `results/synthetic/figures/`, and reports which stages have not been run rather
-than failing. Nothing is copied into `aaai_article/` automatically; do that
-deliberately.
+than failing. `diagnostics` is one full-width row — floor, budget, conditioning
+— under a single legend, the layout the counterexample and federated figures
+use, since all three panels draw the same ten methods; it drops a panel whose
+stage is missing rather than the whole figure. Nothing is copied into
+`aaai_article/` automatically; do that deliberately.
 
 ### What is pinned, and what is not
 
