@@ -377,9 +377,6 @@ def summarize(out: Path) -> str:
         lines += rows + [""]
 
     # -- grid / final ---------------------------------------------------
-    # `tab:synthetic_results` / `fig:synthetic_results` are the *superseded*
-    # 500x500 run and are not regenerated from here; these two stages feed the
-    # current-protocol pair.
     for mode, title in (("grid", "Tuned comparison (`tab:synthetic_tuned`)"),
                         ("final", "Re-run at the tuned optima "
                                   "(`fig:synthetic_main`)")):

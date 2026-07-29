@@ -15,7 +15,7 @@ number (the numbers move whenever a float is added elsewhere):
 figure                     stages it needs        paper
 =========================  =====================  =========================
 ``synthetic_main``         ``final``              ``fig:synthetic_main``
-``loss``, ``GN``           ``final``              ``fig:synthetic_results``
+``loss``, ``GN``           ``final``              (diagnostic, not in the paper)
 ``diagnostics``            ``floor``,             ``fig:synthetic_dynamics``
                            ``horizon``, ``kappa``
 =========================  =====================  =========================
@@ -109,7 +109,7 @@ def _problem_caption(payloads: Sequence[dict]) -> str:
 
 
 # --------------------------------------------------------------------------
-# fig:synthetic_results -- loss and gradient-norm trajectories
+# fig:synthetic_main -- loss and gradient-norm trajectories
 # --------------------------------------------------------------------------
 
 
