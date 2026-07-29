@@ -2,12 +2,14 @@
 
 Run both of these from ``code/``::
 
-    python3 -m synthetic.run_gpu              # everything, ~1 h
+    python3 -m synthetic.run_gpu --force      # everything, ~1.5 h
     python3 -m synthetic.run_gpu --archive    # rebuild SUMMARY.md + the .zip
 
 The first runs the CPU test suite as a preflight, then all seven stages, and
 writes the archive itself; the second only rebuilds it, from whatever is
-already on disk. Useful variants::
+already on disk. ``--force`` is what makes the first a *rerun*: a stage whose
+output is already on disk is skipped, so without it a box that has run before
+skips all seven and exits in seconds looking like a success. Useful variants::
 
     python3 -m synthetic.run_gpu --quick             # ~2 min smoke test
     python3 -m synthetic.run_gpu --stages floor horizon

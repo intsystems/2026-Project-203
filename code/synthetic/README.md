@@ -13,12 +13,18 @@ metrics are scored at the exact model `X`, and with a closed-form gradient eithe
 point is one matmul away.
 
 ```bash
-python3 -m synthetic.run_gpu              # every stage, ~1 h on one GPU
+python3 -m synthetic.run_gpu --force      # every stage, ~1.5 h on one GPU
 python3 -m synthetic.run_gpu --archive    # rebuild SUMMARY.md + the .zip
 ```
 
 Everything is at `100 × 100` and averaged over three independent draws of
 `(A, B)`.
+
+`--force` is what makes the first command a *rerun*: a stage whose
+`<method>/<mode>.json` is already on disk is skipped, so without it a box that
+has run before skips all seven stages and exits in seconds looking like a
+success. It overwrites `results/synthetic/` and the `.zip` beside it. Drop it
+only on a fresh tree, or to resume a run that died part-way.
 
 ## The modes
 
