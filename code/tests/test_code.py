@@ -1636,19 +1636,25 @@ def test_every_lr_grid_follows_its_method_step_norm():
         norms = {round(step_norm(method, m, n), 9) for method in members}
         assert len(norms) == 1, (family, norms)
 
-    # ... and the two windows are then a decade apart, as their norms are.
+    # ... and the two windows are a decade apart at both ends, as their step
+    # norms are.
     sign = parse_lr_grid(DEFAULT_LR_GRIDS["signmuon"])
     lmo = parse_lr_grid(DEFAULT_LR_GRIDS["muon"])
     ratio = step_norm("signmuon", m, n) / step_norm("muon", m, n)
     assert abs(lmo[0] / sign[0] - ratio) < 1e-9
     assert abs(lmo[-1] / sign[-1] - ratio) < 1e-9
 
-    # Both windows reach the stability edge measured by ``--mode stability`` at
-    # this size (0.111 for a sign step, 1.49 for an LMO one) without running
-    # past it: beyond the edge every point diverges, so an optimum landing on
-    # the top of the grid would be a fact about the method, not a narrow grid.
-    assert 0.01 < sign[-1] <= 0.1114
-    assert 0.1 < lmo[-1] <= 1.486
+    # Neither window stops below the stability edge that ``--mode stability``
+    # measures for its family at this size. A stable eta the grid cannot reach
+    # is a censored optimum waiting to happen, which is what a window stopping
+    # at 0.01 did to MuonUSign. Points above the edge are nearly free: they
+    # diverge in a few steps and the runner retires them.
+    SIGN_EDGE, LMO_EDGE = 0.1343, 1.894        # largest eta_max in each family
+    assert sign[-1] >= SIGN_EDGE, (sign[-1], SIGN_EDGE)
+    assert lmo[-1] >= LMO_EDGE, (lmo[-1], LMO_EDGE)
+
+    # Both still clear the values that were censored in the pre-fix run.
+    assert sign[-1] > 0.01 and lmo[-1] > 0.1
 
 
 def test_newton_schulz_step_is_measurably_shorter_than_the_exact_lmo():

@@ -104,14 +104,22 @@ in a Haar-random eigenbasis, so `L` and `σ` are the extreme products
 ### Two commands
 
 ```bash
-python3 -m synthetic.run_gpu              # every stage, ~1 h on one GPU
+python3 -m synthetic.run_gpu --force      # every stage, ~1.6 h on one GPU
 python3 -m synthetic.run_gpu --archive    # rebuild SUMMARY.md + the .zip
 ```
 
 The first runs `tests/test_code.py` as a preflight and refuses to start if it
 fails, then all seven stages, then writes the archive itself; the second only
-rebuilds it from what is already on disk. Everything lands under
-`results/synthetic/`:
+rebuilds it from what is already on disk.
+
+**`--force` is what makes it a rerun.** A stage whose `<method>/<mode>.json`
+already exists is skipped, so on a box that has run before, plain
+`run_gpu` skips all seven and exits in seconds looking like a success. Drop
+`--force` only on the first run of a fresh tree, or to resume one that died
+part-way. `--force` overwrites `results/synthetic/` and the `.zip` beside it;
+move both aside first if the previous run still backs numbers in the paper.
+
+Everything lands under `results/synthetic/`:
 
 | Path | What it is |
 | :--- | :--- |
@@ -130,7 +138,6 @@ Useful variants:
 python3 -m synthetic.run_gpu --list                 # what each stage measures
 python3 -m synthetic.run_gpu --quick                # ~2 min smoke test, own tree
 python3 -m synthetic.run_gpu --stages floor horizon # split the run
-python3 -m synthetic.run_gpu --force                # redo a stage already on disk
 ```
 
 `--quick` writes to `results/synthetic_quick/` and `--m N` to
@@ -138,6 +145,19 @@ python3 -m synthetic.run_gpu --force                # redo a stage already on di
 belong. `--m` is not a cost knob: below ~200×200 a step is dominated by
 kernel-launch latency rather than arithmetic, so `--m 20` and `--m 100` take
 about the same time. What a sweep costs is (configurations × iterations).
+
+### Checking a run came back clean
+
+```bash
+grep -c '†' results/synthetic/SUMMARY.md      # censored optima; expect 0
+```
+
+A `†` marks a tuned value sitting on the edge of its grid, which is an upper
+bound rather than a measurement. Each learning-rate window now ends *past* the
+largest stability edge measured for its family, so a surviving `†` means the
+optimum is at the edge of stability — a fact about the method — rather than a
+grid too narrow to hold it. Either way the row should not be quoted as a tuned
+value without saying which of the two it is.
 
 ### The stages
 
