@@ -8,14 +8,14 @@ that way:
 * **federated** — can these methods actually do federated learning?
 
 Nothing below needs a code change. The convention change (`sign_pm1`) is already
-in and the test suite is 70/70.
+in and the test suite passes.
 
 ---
 
 ## 0. Before starting (10 min)
 
 ```bash
-python3 -m tests.test_code                    # must be 70/70
+python3 -m tests.test_code                    # must pass with no failures
 python3 -m federated.tune --stage anchors     # per-layer multipliers + transported grid anchors
 python3 -m counterexamples.enumerate_minimality   # the Thm 2-3 minimality claims
 ```

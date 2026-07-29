@@ -18,7 +18,7 @@ is part of the path, so a multi-seed sweep is the same command with different
 from __future__ import annotations
 
 import argparse
-from dataclasses import dataclass
+from dataclasses import dataclass, fields
 
 from centralized.data import DEFAULT_VAL_SEED, VAL_SIZE
 from centralized.train import OPTIMIZER_CHOICES, resolve_optimizer_name, train
@@ -28,6 +28,15 @@ from common.utils import results_root, run_dir, save_run, seed_everything
 
 @dataclass
 class RunConfig:
+    """What is recorded in ``metrics.json`` as the identity of this run.
+
+    An explicit allowlist, not ``vars(args)``: ``aggregate.py`` groups runs by
+    their config minus a few per-run fields, so anything recorded here that does
+    not change the trajectory -- ``--num-workers``, ``--nondeterministic``,
+    ``--log-gain`` -- would silently split one experiment into two groups. Every
+    field name matches its argparse destination, and ``from_args`` relies on that.
+    """
+
     dataset: str
     model: str
     optimizer: str
@@ -55,6 +64,16 @@ class RunConfig:
     data: str
     download: bool
     run_name: str
+
+    @classmethod
+    def from_args(cls, args: argparse.Namespace) -> "RunConfig":
+        missing = [f.name for f in fields(cls) if not hasattr(args, f.name)]
+        if missing:
+            raise AttributeError(
+                f"RunConfig fields with no matching CLI argument: {missing}. "
+                f"Add the argument, or drop the field -- the two are kept in step "
+                f"by name.")
+        return cls(**{f.name: getattr(args, f.name) for f in fields(cls)})
 
 
 def get_params() -> argparse.ArgumentParser:
@@ -160,35 +179,7 @@ def main() -> None:
         tune = "_tune" if args.split == "tune" else ""
         args.run_name = f"{args.dataset}_{args.model}_{args.optimizer}{suffix}{tune}"
 
-    config = RunConfig(
-        dataset=args.dataset,
-        model=args.model,
-        optimizer=args.optimizer,
-        epochs=args.epochs,
-        batch_size=args.batch_size,
-        lr=args.lr,
-        lr_aux=args.lr_aux,
-        momentum=args.momentum,
-        nesterov=bool(args.nesterov),
-        ns_steps=args.ns_steps,
-        lmo_dtype=args.lmo_dtype,
-        lr_scaling=args.lr_scaling,
-        scale_baselines=bool(args.scale_baselines),
-        constant_lr=bool(args.constant_lr),
-        head_adamw=args.head_adamw,
-        n_head_tensors=args.n_head_tensors,
-        weight_decay=args.weight_decay,
-        weight_decay_mode=args.weight_decay_mode,
-        split=args.split,
-        val_seed=args.val_seed,
-        last_k=args.last_k,
-        target_acc=args.target_acc,
-        seed=args.seed,
-        device=args.device,
-        data=args.data,
-        download=bool(args.download),
-        run_name=args.run_name,
-    )
+    config = RunConfig.from_args(args)
 
     print(f"Training {args.optimizer} on {args.dataset}/{args.model} "
           f"(lr_scaling={args.lr_scaling}, split={args.split}, seed={args.seed})")

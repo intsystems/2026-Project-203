@@ -1,12 +1,16 @@
 """Equal-budget, validation-only learning-rate search.
 
-    # stage 1: is the optimal auxiliary rate method-independent?
-    python3 -m centralized.tune --stage aux --device cuda:0
+The overnight driver (``centralized.overnight``) runs all of this for you; these
+stages exist for driving one of them by hand.
 
-    # stage 2: which per-layer scaling exponent?
-    python3 -m centralized.tune --stage alpha --method signmuon --device cuda:0
+    # is the optimal auxiliary rate method-independent?
+    python3 -m centralized.tune --stage aux --epochs 15 --device cuda:0
 
-    # stage 3: eta_0 per method, identical budget for all of them
+    # which per-layer scaling exponent?  (not needed for the paper: the
+    # --log-gain diagnostic measures it directly)
+    python3 -m centralized.tune --stage alpha --epochs 15 --method signmuon
+
+    # eta_0 per method, identical budget for all of them
     python3 -m centralized.tune --stage lr --lr-scaling unit-gain --device cuda:0
 
 Three properties make this a defensible protocol rather than a sweep:
@@ -26,11 +30,13 @@ Three properties make this a defensible protocol rather than a sweep:
    (``extend_grid``, up to four widenings), because it needs the resumable job
    state that only the overnight driver keeps.
 
-The search is coarse (``sqrt(10)`` spacing) then fine (the lattice neighbours of the
-winner, deduped against the coarse grid) and runs at a reduced epoch count. The
-horizon-stability check -- re-running the top few at the full budget to confirm a
-short proxy did not reorder the ranking -- is the overnight driver's ``verify``
-phase (``--phases ... verify ...``).
+``--epochs`` defaults to the **reporting horizon**, 75, for the ``lr`` stage. An
+earlier version tuned at 15 and reported at 75; re-running the top rates at 75
+reversed the ranking for both methods checked, because each run anneals cosinally
+over its own horizon and a short run therefore spends its budget on a different
+schedule. The ``aux`` and ``alpha`` stages ask only whether two arms pick the
+*same* value at a shared horizon, where that bias cancels, so pass
+``--epochs 15`` there and keep them cheap.
 """
 
 from __future__ import annotations
@@ -44,7 +50,8 @@ import sys
 from pathlib import Path
 from typing import Dict, List, Optional, Sequence, Tuple
 
-from common.lr_scaling import RULES
+from centralized.train import LMO_FAMILY
+from common.lr_scaling import FAMILY_SIGN, RULES
 from common.utils import results_root
 
 HERE = Path(__file__).resolve().parent
@@ -84,6 +91,24 @@ SCALED_ANCHOR_BOOST: Dict[str, float] = {
 
 AUX_GRID = [1e-4, 2e-4, 5e-4, 1e-3, 2e-3]
 ALPHA_GRID = [0.0, 0.5, 1.0]
+
+
+def anchor_for(method: str, rule: str) -> float:
+    """Where ``method``'s grid is centred under a per-layer scaling ``rule``.
+
+    Only the sign family's anchor moves with the rule: the LMO family carries the
+    aspect factor under every rule, so its ``eta_0`` means the same thing
+    throughout, and ``sgd``/``adam`` are run unscaled, as practitioners run them.
+    One function rather than the same three lines in each caller -- they had
+    drifted apart once already, and a mis-anchored grid is invisible until the
+    tuned rate comes out at an endpoint twelve hours later.
+    """
+    if method not in LEGACY_ANCHORS:
+        raise KeyError(f"unknown method {method!r}; known: {sorted(LEGACY_ANCHORS)}")
+    cls = LMO_FAMILY.get(method)                # None for the torch baselines
+    boost = (SCALED_ANCHOR_BOOST.get(rule, 1.0)
+             if cls is not None and cls.family == FAMILY_SIGN else 1.0)
+    return LEGACY_ANCHORS[method] * boost
 
 # --------------------------------------------------------------------------
 # The round grid
@@ -161,31 +186,6 @@ def extend_grid(grid: Sequence[float], *, low: bool, points: int = 2) -> List[fl
         return sorted([lattice_value(k - i - 1) for i in range(points)] + g)
     k = lattice_index(g[-1])
     return sorted(g + [lattice_value(k + i + 1) for i in range(points)])
-
-
-def refine_grid(best: float, factor: float = 2.0, points: int = 4) -> List[float]:
-    """The lattice neighbours of ``best``.
-
-    The 1-2-5 lattice is the finest round resolution available, so there is no
-    sub-lattice refinement to do: a "fine" stage below 2x would have to emit
-    off-lattice values. This returns the immediate neighbours instead, which fills
-    in points a strided or extended coarse grid may have skipped and is a no-op
-    otherwise -- callers dedupe against the state file. ``factor`` is accepted for
-    signature compatibility and ignored.
-    """
-    k = lattice_index(best)
-    half = max(1, (points - 1) // 2)
-    return [lattice_value(k - half + i) for i in range(2 * half + 1)]
-
-
-def geom_grid(anchor: float, decades: float, points: int) -> List[float]:
-    """Deprecated: log-spaced grid, kept so external callers do not break.
-
-    Snaps onto the lattice, so it no longer returns off-lattice values; ``decades``
-    is honoured only to the nearest lattice step.
-    """
-    steps = max(1, round(2 * decades * 3))
-    return round_grid(anchor, min(points, steps + 1))
 
 
 # --------------------------------------------------------------------------
@@ -335,8 +335,8 @@ def stage_aux(args) -> Dict:
     anchors = args.aux_anchors or ["signmuon", "muon"]
     out: Dict[str, Dict] = {}
     for method in anchors:
-        base = LEGACY_ANCHORS[method] * SCALED_ANCHOR_BOOST.get(args.lr_scaling, 1.0)
-        lr_grid = geom_grid(base, decades=0.5, points=4)      # 4 x 4 = 16 configs
+        base = anchor_for(method, args.lr_scaling)
+        lr_grid = round_grid(base, points=args.lr_points)
         print(f"\n=== aux stage: {method} (lr around {base:.4g}) ===")
         results = []
         for lr in lr_grid:
@@ -376,11 +376,12 @@ def stage_alpha(args) -> Dict:
     method. ``alpha = 0`` is a global learning rate, ``1/2`` is the unit-gain rule,
     ``1`` is muP-with-alignment.
 
-    Caveat worth reporting: ResNet-18 is a **weak instrument** for this. Twelve of
-    its twenty conv layers have ``fan_in/fan_out = 9`` exactly, and those hold ~63%
-    of the parameters, so ``alpha`` is only identified through the transition and
-    1x1-downsample layers. Confirm on a second architecture (or read the
-    ``--log-gain`` diagnostic, which measures the exponent directly) before
+    Caveat worth reporting: ResNet-18 is a **weak instrument** for this. Thirteen
+    of its twenty conv weight tensors have ``fan_in/fan_out = 9`` exactly and hold
+    84.5% of all parameters -- and one shape alone, ``(512, 4608)`` appearing three
+    times, is 63% of the model -- so ``alpha`` is only identified through the
+    transition and 1x1-downsample layers. Confirm on a second architecture (or read
+    the ``--log-gain`` diagnostic, which measures the exponent directly) before
     treating a small val-accuracy gap as decisive.
     """
     method = args.method or "signmuon"
@@ -389,7 +390,7 @@ def stage_alpha(args) -> Dict:
         rule = f"power:{alpha:g}"
         boost = SCALED_ANCHOR_BOOST["unit-gain"] ** (2 * alpha)   # ~fan_in^alpha
         base = LEGACY_ANCHORS[method] * boost
-        grid = geom_grid(base, decades=1.0, points=5)
+        grid = round_grid(base, points=args.lr_points)
         print(f"\n=== alpha stage: {method}, alpha={alpha:g} (lr around {base:.4g}) ===")
         results = []
         for lr in grid:
@@ -425,60 +426,36 @@ def stage_alpha(args) -> Dict:
 def stage_lr(args) -> Dict:
     """Tune ``eta_0`` per method under a fixed scaling rule, equal budget for all."""
     methods = args.methods or ALL_METHODS
-    boost = SCALED_ANCHOR_BOOST.get(args.lr_scaling, 1.0)
     out: Dict[str, Dict] = {}
 
     for method in methods:
-        # Only the sign family's anchor moves with the scaling rule; the LMO family
-        # keeps the aspect factor under every rule, so its eta_0 is unchanged.
-        from centralized.train import LMO_FAMILY
-        cls = LMO_FAMILY.get(method)
-        is_sign = cls is not None and cls.family == "sign"
-        base = LEGACY_ANCHORS[method] * (boost if is_sign else 1.0)
-
-        coarse = geom_grid(base, decades=1.5, points=7)
-        print(f"\n=== lr stage: {method} (coarse, 7 pts around {base:.4g}) ===")
+        base = anchor_for(method, args.lr_scaling)
+        # One sweep, not coarse-then-fine: the 1-2-5 lattice already *is* the
+        # finest round resolution, so a refinement stage below 2x would have to
+        # emit off-lattice values, and the neighbours of an interior winner in a
+        # run of consecutive lattice points are measured by construction.
+        grid = round_grid(base, points=args.lr_points)
+        print(f"\n=== lr stage: {method} "
+              f"({args.lr_points} pts around {base:.4g}) ===")
         results = [run_one(args, lr=lr, lr_aux=args.lr_aux, lr_scaling=args.lr_scaling,
                            method=method, epochs=args.epochs,
-                           tag=f"lr_{method}_{args.lr_scaling}_c{lr:.4g}")
-                   for lr in coarse]
+                           tag=f"lr_{method}_{args.lr_scaling}_{lr:.4g}")
+                   for lr in grid]
         best = best_of(results)
         if best is None:
             print(f"  every run failed for {method}")
             continue
-        warn = boundary_warning(best, coarse)
+        warn = boundary_warning(best, grid)
         if warn:
             print(warn)
-
-        # ``refine_grid`` returns lattice NEIGHBOURS, and ``coarse`` is a run of
-        # consecutive lattice points -- so for an interior winner every "fine"
-        # point is already measured. Dedupe, or the stage silently pays for 3
-        # duplicate runs per method (~30% of its budget) and reports a config
-        # count it never ran.
-        measured = {f"{lr:.6g}" for lr in coarse}
-        fine = [lr for lr in refine_grid(best["lr"], factor=2.0, points=4)
-                if f"{lr:.6g}" not in measured]
-        if fine:
-            print(f"  fine ({len(fine)} new pt(s) around {best['lr']:.4g}):")
-            results += [run_one(args, lr=lr, lr_aux=args.lr_aux,
-                                lr_scaling=args.lr_scaling,
-                                method=method, epochs=args.epochs,
-                                tag=f"lr_{method}_{args.lr_scaling}_f{lr:.4g}")
-                        for lr in fine]
-        else:
-            print(f"  fine: the lattice neighbours of {best['lr']:.4g} are all "
-                  f"in the coarse grid already -- nothing to refine")
-        n_configs = len(coarse) + len(fine)
-        best = best_of(results)
         out[method] = {"best": best, "all": [r for r in results if r],
-                       "n_configs": n_configs,
-                       "boundary_warning": warn}
+                       "n_configs": len(grid), "boundary_warning": warn}
         print(f"  BEST: lr={best['lr']:.6g}, val {best['val_acc']:.2f}% "
-              f"({n_configs} configs)")
+              f"({len(grid)} configs)")
 
     if out:
         print(f"\n--- eta_0 per method (rule '{args.lr_scaling}', "
-              f"{next(iter(out.values()))['n_configs']} configs each) ---")
+              f"{args.lr_points} configs each) ---")
         for method, d in out.items():
             flag = "  [BOUNDARY]" if d["boundary_warning"] else ""
             print(f"  {method:<16} eta_0 = {d['best']['lr']:<12.6g} "
@@ -495,7 +472,6 @@ def _check_family_agreement(out: Dict[str, Dict]) -> None:
     not a protocol note -- and if it fails, that is a real finding about where the
     families differ.
     """
-    from centralized.train import LMO_FAMILY
     groups: Dict[str, List[Tuple[str, float]]] = {}
     for method, d in out.items():
         cls = LMO_FAMILY.get(method)
@@ -537,10 +513,16 @@ def get_args():
 
     p.add_argument("--dataset", type=str, default="cifar10")
     p.add_argument("--model", type=str, default="resnet18")
-    p.add_argument("--epochs", type=int, default=20,
-                   help="Short proxy horizon for tuning. Confirm the ranking "
-                        "survives the full budget with the overnight driver's "
-                        "'verify' phase")
+    p.add_argument("--epochs", type=int, default=75,
+                   help="Training horizon. For --stage lr this must be the horizon "
+                        "the paper reports (75): a shorter proxy anneals over a "
+                        "different schedule and reordered the rates when it was "
+                        "checked. --stage aux and --stage alpha compare two arms at "
+                        "one shared horizon, where that bias cancels, so run those "
+                        "with --epochs 15")
+    p.add_argument("--lr-points", type=int, default=5,
+                   help="Lattice points per method: 3 per decade, so 5 spans "
+                        "~1.3 decades and 7 spans ~2")
     p.add_argument("--batch-size", type=int, default=128)
     p.add_argument("--lr-aux", type=float, default=1e-3)
     p.add_argument("--momentum", type=float, default=0.9)

@@ -6,9 +6,10 @@ python3 -m tests.test_code      # ~1 min, no GPU, no downloads
 pytest tests/test_code.py       # or under pytest
 ```
 
-68 checks in one file, [`test_code.py`](test_code.py). No GPU, no dataset, no
-network. Both `overnight.py` drivers run it as their first preflight step and refuse
-to start a night if it fails.
+One file, [`test_code.py`](test_code.py). No GPU, no dataset, no network, about a
+minute. Both `overnight.py` drivers run it as their first preflight step and refuse
+to start a night if it fails, printing the failing assertions rather than just the
+test names.
 
 ## What it is actually for
 
@@ -26,6 +27,7 @@ so that a change to the code cannot silently invalidate a sentence in the paper.
 | Federated ↔ centralized | **The load-bearing one**, below |
 | Batched ↔ sequential | The synthetic sweeps' fast path reproduces `run_one` on all ten methods — the same kind of two-implementations problem, below |
 | Federated protocol | The validation split is held out before partitioning; the GPU augmentation matches torchvision; the uplink alphabet is ternary |
+| Centralized export | The paper's table aggregates per-seed tail means, in that order; every driver phase lands in the right bucket; the figures are a function of the export bundle alone |
 | Plumbing | The metrics schema, multi-seed aggregation, the anonymity scan |
 
 ## The load-bearing test

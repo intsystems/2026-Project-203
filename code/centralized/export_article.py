@@ -1,21 +1,32 @@
-"""Collapse the centralized results tree into a handful of small CSVs.
+"""Pack the centralized results tree into one small archive to bring home.
 
     python3 -m centralized.export_article                  # scan + write + archive
     python3 -m centralized.export_article --no-archive     # leave the folder only
     python3 -m centralized.export_article --phase final    # just the reported runs
 
+This is the **second of the two commands** in the centralized workflow: run
+``centralized.overnight`` on the GPU box, then this, then download the single
+``results/article_export.tar.gz`` it prints. Unpack it anywhere and
+``centralized.plot_analysis --bundle <dir>`` redraws every figure from it -- the
+run tree itself never has to leave the machine.
+
 Why this exists
 ---------------
 ``results/centralized`` is one directory per run, each holding a ``metrics.json``
-next to a ``model.pt`` of tens of megabytes. The article needs the former and none
-of the latter, so pulling the tree over a link is mostly wasted bytes. This walks
-the tree, derives every number the paper quotes, and writes:
+next to a ``model.pt`` of tens of megabytes (a 33-job ResNet-18 sweep is ~1.5 GB).
+The article needs the former and none of the latter. This walks the tree, derives
+every number the paper quotes, and writes:
 
+    table_cifar.csv     the paper's table, aggregated over seeds exactly as it
+                        defines the columns -- mean +/- sample std of per-seed
+                        tail means. Quote from here, not by hand.
     runs.csv            one row per run: config + derived summary metrics
     curves.csv          tidy per-epoch series, for the figures
     gain.csv            the ``--log-gain`` series, per epoch
     gain_fits.csv       log-log slope of gain_median vs epoch (the alpha measurement)
-    scaling_compare.csv final runs pivoted optimizer x lr_scaling, with the delta
+    environment.json    every machine that contributed, with GPU / driver / CUDA /
+                        Python / PyTorch / commit, and how many runs each produced
+    hardware.tex        the same as a LaTeX table for the reproducibility appendix
     configs.json        the full config of every run, nothing dropped
     overnight/          whatever small files the overnight driver left behind
 
@@ -23,8 +34,8 @@ Everything is stdlib -- no torch, no numpy -- so it runs on a login node without
 touching the training environment, and it is a **pure read**: nothing is written
 inside a run directory, matching the convention ``aggregate.py`` documents.
 
-The summary printed at the end is the point of the `--print` default: it is meant
-to be copy-pasteable, so the numbers can be discussed before the bundle is moved.
+The summary printed at the end is meant to be copy-pasteable, so the numbers can
+be discussed before the bundle is moved.
 """
 
 from __future__ import annotations
@@ -36,7 +47,7 @@ import math
 import shutil
 import tarfile
 from pathlib import Path
-from typing import Any, Dict, Iterable, List, Optional, Sequence, Tuple
+from typing import Any, Dict, List, Optional, Sequence, Tuple
 
 # code/ -- this file is code/centralized/export_article.py. Recomputed locally
 # rather than imported from common.utils, which pulls in torch.
@@ -74,8 +85,8 @@ def phase_of(run_name: str) -> str:
         if stem.startswith(prefix):
             stem = stem[len(prefix):]
             break
-    for marker, phase in (("wd_", "wd"), ("gain_", "gain"), ("alpha", "alpha"),
-                          ("lr_", "lr"), ("verify_", "verify"),
+    for marker, phase in (("wd_", "wd"), ("gain_", "gain"), ("aux_", "aux"),
+                          ("alpha", "alpha"), ("lr_", "lr"),
                           ("preflight", "preflight")):
         if stem.startswith(marker):
             return phase
@@ -141,10 +152,10 @@ def fit_gain_slope(hist: Dict[str, Any],
                    key: str = "gain_median") -> Optional[Tuple[float, float, int]]:
     """Least-squares slope of ``log(gain)`` against ``log(epoch)``.
 
-    Deliberately identical to ``overnight._fit_gain_slope`` -- same series, same
-    epoch-0 exclusion (the accumulated update is identically zero there, so its log
-    is undefined), same four-point minimum -- so the exported slope reproduces the
-    one the overnight report already printed instead of being a second opinion.
+    Epoch 0 is excluded -- the accumulated update is identically zero there, so its
+    log is undefined -- and four points are the minimum worth fitting. The overnight
+    driver's report calls this same function, so the slope it prints mid-run and the
+    slope in ``gain_fits.csv`` cannot drift apart.
 
     A slope near 1/2 means successive sign steps stay incoherent (the ``unit-gain``
     exponent); near 1 means they align (the muP exponent).
@@ -238,76 +249,42 @@ def _r(val: Optional[float], nd: int = 4) -> Optional[float]:
     return None if val is None else round(val, nd)
 
 
-def group_finals(runs: Sequence[Run]) -> Dict[Tuple[str, str], List[Run]]:
-    """Final-phase runs keyed by ``(optimizer, lr_scaling)``, seeds kept together.
+def group_reported(runs: Sequence[Run]) -> Dict[Tuple, List[Run]]:
+    """Reported runs keyed by everything except the seed, seeds kept together.
 
-    Shared by the comparison CSV and the console summary. When they each built their
-    own index, one kept the first seed of a repeated configuration and the other the
-    last, so the same cell could disagree between the two outputs.
+    The key carries ``weight_decay`` as well as the optimizer and rate, so the
+    decay ablation cannot merge into the row it is an ablation *of* -- the two run
+    at the same ``eta_0`` by design, which is exactly what makes them collide under
+    a looser key.
     """
-    out: Dict[Tuple[str, str], List[Run]] = {}
+    out: Dict[Tuple, List[Run]] = {}
     for run in runs:
-        if run.phase != "final":
+        if run.phase not in ("final", "wd"):
             continue
-        key = (str(run.config.get("optimizer")), str(run.config.get("lr_scaling")))
+        key = (run.phase, str(run.config.get("optimizer")),
+               run.config.get("lr"), run.config.get("lr_scaling"),
+               run.config.get("weight_decay"), run.config.get("epochs"))
         out.setdefault(key, []).append(run)
     for group in out.values():
         group.sort(key=lambda r: (r.seed is None, r.seed))
     return out
 
 
-#: Fields that must agree across the two rule groups for a head-to-head to be
-#: about the rule. ``lr`` is excluded on purpose -- each rule is tuned separately,
-#: so a differing eta_0 is the comparison working, not a confound.
-MATCHED_FIELDS = ("weight_decay", "weight_decay_mode", "momentum", "epochs",
-                  "batch_size", "head_adamw", "lr_aux", "dataset", "model",
-                  "split", "last_k")
+def mean_std(values: Sequence[Optional[float]]) -> Tuple[Optional[float], Optional[float], int]:
+    """``(mean, sample std, n)`` over the non-``None`` entries.
 
-
-def confounds(by: Dict[Tuple[str, str], List[Run]]) -> List[str]:
-    """Config fields that differ *between* lr_scaling groups.
-
-    A scaling-rule comparison only measures the rule if nothing else moved. This
-    has teeth: an earlier unit-gain sweep in this project ran at ``weight_decay
-    5e-4, coupled`` while the mup sweep ran at ``0, decoupled``, and since
-    ``_unit_gain`` and ``_mup`` are the *same* multiplier for the LMO family, every
-    apparent "rule effect" on those methods was the decay. Reporting that as a rule
-    comparison would have been a fabricated result, so the exporter refuses rather
-    than leaving it to the reader to notice.
+    Sample std (``n-1``), and ``None`` rather than ``0.0`` at ``n = 1``: a single
+    seed measured no dispersion at all, and printing zero for it reads as perfect
+    agreement.
     """
-    per_rule: Dict[str, Dict[str, set]] = {}
-    for (_, rule), group in by.items():
-        seen = per_rule.setdefault(rule, {f: set() for f in MATCHED_FIELDS})
-        for run in group:
-            for field in MATCHED_FIELDS:
-                seen[field].add(repr(run.config.get(field)))
-    if len(per_rule) < 2:
-        return []
-    bad = []
-    for field in MATCHED_FIELDS:
-        values = {rule: seen[field] for rule, seen in per_rule.items()}
-        union: set = set()
-        for vals in values.values():
-            union |= vals
-        if len(union) > 1:
-            bad.append(field)
-    return bad
-
-
-def agg(group: Sequence[Run], fn) -> Tuple[Optional[float], int]:
-    """``(mean over seeds, n_seeds contributing)``; ``(None, 0)`` if nothing recorded.
-
-    Averaging across seeds rather than picking one keeps the table honest once the
-    seed sweep lands; with a single seed it is the identity.
-    """
-    vals = [v for v in (fn(r) for r in group) if v is not None]
+    vals = [v for v in values if v is not None]
     if not vals:
-        return None, 0
-    return sum(vals) / len(vals), len(vals)
-
-
-def _tail_test(run: Run) -> Optional[float]:
-    return _tail_mean(run.history, "test_acc", run.last_k)
+        return None, None, 0
+    mean = sum(vals) / len(vals)
+    if len(vals) == 1:
+        return mean, None, 1
+    var = sum((v - mean) ** 2 for v in vals) / (len(vals) - 1)
+    return mean, math.sqrt(var), len(vals)
 
 
 def _relpath(path: Path) -> str:
@@ -420,60 +397,120 @@ def write_gain(runs: Sequence[Run], out: Path) -> Tuple[Optional[Path], Optional
     return series_path, fit_path
 
 
-def write_scaling_compare(runs: Sequence[Run], out: Path,
-                          targets: Sequence[float]) -> Optional[Path]:
-    """Final runs pivoted optimizer x lr_scaling.
+def table_rows(runs: Sequence[Run], targets: Sequence[float]) -> List[Dict[str, Any]]:
+    """The paper's table: one row per reported configuration, aggregated over seeds.
 
-    This is the comparison the overnight report never made: it tuned and reported
-    under one rule per invocation, so the two rules only meet by being read side by
-    side. ``eta_0`` is carried into the output because the rules were tuned
-    separately and the delta is meaningless without it.
+    Every column is a **per-seed quantity first, averaged over seeds second**, which
+    is how the paper defines them and is not the same as aggregating the pooled
+    epochs: the tail mean of a pooled series is not the mean of the per-seed tail
+    means once two seeds record different numbers of epochs.
+
+    Sorted by test accuracy, descending, which is the order the table is printed in.
     """
-    by = group_finals(runs)
-    if not by:
+    rows: List[Dict[str, Any]] = []
+    for key, group in group_reported(runs).items():
+        phase, opt, lr, rule, wd, epochs = key
+        k = group[0].last_k
+        acc, acc_sd, n = mean_std([_tail_mean(r.history, "test_acc", k) for r in group])
+        row: Dict[str, Any] = {
+            "phase": phase, "optimizer": opt, "lr": lr, "lr_scaling": rule,
+            "weight_decay": wd, "epochs": epochs, "n_seeds": n,
+            "seeds": " ".join(str(r.seed) for r in group if r.seed is not None),
+            "last_k": k,
+            "test_acc_mean": _r(acc, 2), "test_acc_std": _r(acc_sd, 2),
+            "train_acc_mean": _r(mean_std(
+                [_last(r.history, "train_acc") for r in group])[0], 2),
+            "test_loss_mean": _r(mean_std(
+                [_tail_mean(r.history, "test_loss", k) for r in group])[0], 4),
+            "epoch_seconds_median": _r(mean_std(
+                [_median(r.history, "epoch_seconds") for r in group])[0], 1),
+        }
+        for t in targets:
+            reached = [_steps_to(r.history, "test_acc", t) for r in group]
+            row[f"epochs_to_{t:g}"] = _r(mean_std(reached)[0], 1)
+            # A method that never crossed the threshold in some seeds makes the
+            # mean of the others an underestimate. Say how many crossed.
+            row[f"n_reached_{t:g}"] = sum(1 for v in reached if v is not None)
+        rows.append(row)
+    rows.sort(key=lambda r: (r["phase"], -(r["test_acc_mean"] or -1e9)))
+    return rows
+
+
+TABLE_COLS = ["phase", "optimizer", "lr", "lr_scaling", "weight_decay", "epochs",
+              "n_seeds", "seeds", "last_k", "test_acc_mean", "test_acc_std",
+              "train_acc_mean", "test_loss_mean", "epoch_seconds_median"]
+
+
+def write_table(runs: Sequence[Run], out: Path,
+                targets: Sequence[float]) -> Optional[Path]:
+    rows = table_rows(runs, targets)
+    if not rows:
         return None
-    rules = sorted({rule for _, rule in by})
-    bad = confounds(by)
-
-    path = out / "scaling_compare.csv"
-    metric_cols = ["test_acc_tail", "n_seeds", "lr",
-                   *[f"epochs_to_{t:g}" for t in targets]]
+    cols = TABLE_COLS + [c for t in targets
+                         for c in (f"epochs_to_{t:g}", f"n_reached_{t:g}")]
+    path = out / "table_cifar.csv"
     with open(path, "w", encoding="utf-8", newline="") as fh:
-        w = csv.writer(fh)
-        # The delta column is withheld rather than qualified: a number in a CSV
-        # gets quoted, a caveat in a header does not travel with it.
-        if bad:
-            w.writerow([f"CONFOUNDED: the rule groups also differ in "
-                        f"{', '.join(bad)} -- these columns are not a scaling-rule "
-                        f"comparison and no delta is reported"])
-        header = ["optimizer"]
-        for rule in rules:
-            header += [f"{m}[{rule}]" for m in metric_cols]
-        if len(rules) == 2 and not bad:
-            header.append(f"delta_test_acc_tail[{rules[1]}-{rules[0]}]")
-        w.writerow(header)
-
-        for opt in sorted({o for o, _ in by}):
-            row: List[Any] = [opt]
-            tails: Dict[str, Optional[float]] = {}
-            for rule in rules:
-                group = by.get((opt, rule)) or []
-                if not group:
-                    row += [None] * len(metric_cols)
-                    tails[rule] = None
-                    continue
-                tail, n = agg(group, _tail_test)
-                tails[rule] = tail
-                row += [_r(tail), n, group[0].config.get("lr")]
-                for t in targets:
-                    reached, _ = agg(group, lambda r, t=t: _steps_to(
-                        r.history, "test_acc", t))
-                    row.append(_r(reached, 1))
-            if len(rules) == 2 and not bad:
-                a, b = tails[rules[0]], tails[rules[1]]
-                row.append(_r(b - a) if (a is not None and b is not None) else None)
-            w.writerow(row)
+        w = csv.DictWriter(fh, fieldnames=cols, extrasaction="ignore")
+        w.writeheader()
+        w.writerows(rows)
     return path
+
+
+# --------------------------------------------------------------------------
+# The machine
+# --------------------------------------------------------------------------
+
+def write_environment(runs: Sequence[Run], out: Path) -> List[Path]:
+    """Which machines produced these runs, as JSON and as a LaTeX table row.
+
+    The paper's reproducibility appendix has to name the exact GPU, driver, CUDA,
+    Python and PyTorch. Recovering that months later from memory is precisely the
+    thing that goes wrong, so every run stamps it into its own ``metrics.json``
+    (``common.utils.save_run``) and the bundle carries the distinct values here.
+    Anonymous by construction -- ``common.hardware`` collects no hostname, no
+    username and no absolute paths.
+    """
+    # Imported lazily and only for its renderers: `common.hardware` reaches for
+    # torch inside `describe()`, which this never calls, so the module stays
+    # importable on a login node.
+    from common.hardware import LATEX_FOOTER, LATEX_HEADER, as_latex_row, as_sentence
+
+    seen: Dict[Tuple, Dict[str, Any]] = {}
+    missing = 0
+    for run in runs:
+        hw = run.config.get("hardware")
+        if not isinstance(hw, dict):
+            missing += 1
+            continue
+        key = (hw.get("gpu"), hw.get("cpu"), hw.get("os"), hw.get("python"),
+               hw.get("torch"), hw.get("cuda"), hw.get("driver"),
+               hw.get("git_commit"))
+        entry = seen.setdefault(key, {"hardware": hw, "n_runs": 0, "runs": []})
+        entry["n_runs"] += 1
+        entry["runs"].append(f"{run.run_name}/seed{run.seed}")
+
+    payload = {
+        "machines": [{"hardware": e["hardware"], "n_runs": e["n_runs"],
+                      "runs": sorted(e["runs"])} for e in seen.values()],
+        "runs_without_a_hardware_record": missing,
+    }
+    json_path = out / "environment.json"
+    json_path.write_text(json.dumps(payload, indent=2), encoding="utf-8")
+
+    tex_path = out / "hardware.tex"
+    body = [LATEX_HEADER]
+    for e in seen.values():
+        body.append(as_latex_row(f"Centralized CIFAR-10 (ResNet-18), "
+                                 f"{e['n_runs']} runs", e["hardware"]))
+    body.append(LATEX_FOOTER)
+    tex_path.write_text("\n".join(body) + "\n", encoding="utf-8")
+
+    for e in seen.values():
+        print(f"  [{e['n_runs']} runs] {as_sentence(e['hardware'])}")
+    if missing:
+        print(f"  WARNING {missing} run(s) carry no hardware record -- they predate "
+              f"common/hardware.py; re-run or fill the appendix by hand")
+    return [json_path, tex_path]
 
 
 def write_configs(runs: Sequence[Run], out: Path) -> Path:
@@ -491,13 +528,18 @@ def write_configs(runs: Sequence[Run], out: Path) -> Path:
     return path
 
 
-def copy_overnight(out: Path, max_bytes: int = 4 * 1024 * 1024) -> List[Path]:
+def copy_overnight(out: Path, root: Path,
+                   max_bytes: int = 4 * 1024 * 1024) -> List[Path]:
     """Copy the overnight driver's own small artifacts (state, report) verbatim.
+
+    Taken from ``root``'s sibling rather than from the default results tree, so a
+    ``--root`` pointing at a copied-out directory picks up *that* run's report
+    instead of whatever happens to sit in ``results/overnight``.
 
     Globbed rather than named, so a renamed report still travels; size-capped so a
     stray checkpoint in that directory cannot inflate the bundle.
     """
-    src = RESULTS / "overnight"
+    src = root.parent / "overnight"
     if not src.is_dir():
         return []
     dst = out / "overnight"
@@ -534,62 +576,34 @@ def print_summary(runs: Sequence[Run], targets: Sequence[float]) -> None:
     rules = sorted({str(r.config.get("lr_scaling")) for r in runs
                     if r.config.get("lr_scaling")})
     print(f"lr_scaling rules present: {', '.join(rules) or '(none)'}")
+    if len(rules) > 1:
+        print("  !! more than one per-layer rule in this tree. They are recorded per "
+              "run, so\n  !! nothing is corrupted, but a table built across them is "
+              "not one comparison.")
 
     target = targets[0]
-    for phase, title in (("final", "FINAL RUNS (full 50k, test set)"),
+    for phase, title in (("final", "PAPER TABLE (full 50k, test set)"),
                          ("wd", "WEIGHT-DECAY ABLATION")):
-        sel = [r for r in runs if r.phase == phase]
-        if not sel:
+        rows = [r for r in table_rows(runs, targets) if r["phase"] == phase]
+        if not rows:
             continue
         print(f"\n--- {title} ---")
-        print(f"{'optimizer':<16}{'rule':<12}{'eta_0':>11}{'ep':>5}{'sd':>4}"
-              f"{'tail test':>11}{'best':>8}{f'->{target:g}%':>8}")
-        rows = sorted(sel, key=lambda r: -(_tail_test(r) or -1e9))
-        for run in rows:
-            lr = run.config.get("lr")
-            print(f"{str(run.config.get('optimizer')):<16}"
-                  f"{str(run.config.get('lr_scaling')):<12}"
-                  f"{(f'{lr:.6g}' if isinstance(lr, (int, float)) else '-'):>11}"
-                  f"{str(run.config.get('epochs')):>5}"
-                  f"{('-' if run.seed is None else run.seed):>4}"
-                  f"{_fmt(_tail_test(run), '11.2f')}"
-                  f"{_fmt(_best(run.history, 'test_acc'), '8.2f')}"
-                  f"{str(_steps_to(run.history, 'test_acc', target) or '-'):>8}")
-
-    # The mup-vs-unit-gain question, answered inline.
-    by = group_finals(runs)
-    frules = sorted({rule for _, rule in by})
-    if len(frules) >= 2:
-        bad = confounds(by)
-        print("\n--- SCALING RULE, HEAD TO HEAD (tail test acc) ---")
-        if bad:
-            print(f"  !! CONFOUNDED: the rule groups also differ in "
-                  f"{', '.join(bad)}.")
-            print("  !! This is NOT a scaling-rule comparison. Deltas withheld.")
-            print("  !! Note unit-gain and mup are the SAME multiplier for the LMO")
-            print("  !! family, so any apparent rule effect there is the other "
-                  "variable.")
-        print(f"{'optimizer':<16}" + "".join(f"{r:>13}" for r in frules) +
-              ("" if bad else f"{'delta':>9}"))
-        wins = {r: 0 for r in frules}
-        deltas: List[float] = []
-        for opt in sorted({o for o, _ in by}):
-            vals = [agg(by.get((opt, rule)) or [], _tail_test)[0] for rule in frules]
-            line = f"{opt:<16}" + "".join(_fmt(v, '13.2f') for v in vals)
-            if len(frules) == 2 and not bad and all(v is not None for v in vals):
-                delta = vals[1] - vals[0]
-                line += f"{delta:>+9.2f}"
-                deltas.append(delta)
-                wins[frules[1 if delta > 0 else 0]] += 1
-            print(line)
-        if deltas:
-            mean = sum(deltas) / len(deltas)
-            print("  per-method wins: " +
-                  ", ".join(f"{k}={v}" for k, v in wins.items()) +
-                  f"; mean delta {mean:+.2f} pp over {len(deltas)} methods")
-            print("  a near-even split, or a mean delta inside the seed spread, means"
-                  "\n  the rule does not decide accuracy -- itself the result to "
-                  "report.")
+        print(f"{'optimizer':<16}{'eta_0':>10}{'n':>3}{'test acc':>16}"
+              f"{'train':>8}{f'ep->{target:g}%':>10}{'s/ep':>7}")
+        for row in rows:
+            sd = ("" if row["test_acc_std"] is None
+                  else f" +/- {row['test_acc_std']:.2f}")
+            lr = row["lr"]
+            print(f"{row['optimizer']:<16}"
+                  f"{(f'{lr:.6g}' if isinstance(lr, (int, float)) else '-'):>10}"
+                  f"{row['n_seeds']:>3}"
+                  f"{_fmt(row['test_acc_mean'], '10.2f')}{sd:<6}"
+                  f"{_fmt(row['train_acc_mean'], '8.2f')}"
+                  f"{_fmt(row[f'epochs_to_{target:g}'], '10.1f')}"
+                  f"{_fmt(row['epoch_seconds_median'], '7.1f')}")
+        thin = [r["optimizer"] for r in rows if r["n_seeds"] < 2]
+        if thin:
+            print(f"  single-seed, no dispersion measured: {', '.join(thin)}")
 
     fits = [(r, fit_gain_slope(r.history)) for r in runs]
     fits = [(r, f) for r, f in fits if f]
@@ -625,11 +639,13 @@ def write_manifest(out: Path, root: Path, runs: Sequence[Run],
         "| :--- | ---: | :--- |",
     ]
     blurb = {
+        "table_cifar.csv": "**the paper's table**: mean +/- sample std over seeds",
         "runs.csv": "one row per run: config + derived summary metrics",
         "curves.csv": "tidy per-epoch series for the figures",
         "gain.csv": "accumulated-gain series (`--log-gain` runs only)",
         "gain_fits.csv": "log-log slope of gain_median vs epoch",
-        "scaling_compare.csv": "final runs pivoted optimizer x lr_scaling",
+        "environment.json": "every machine that contributed: GPU, CUDA, Python, torch",
+        "hardware.tex": "the same as a LaTeX row for the reproducibility appendix",
         "configs.json": "full config of every run",
     }
     for path in written:
@@ -641,6 +657,7 @@ def write_manifest(out: Path, root: Path, runs: Sequence[Run],
     if bad:
         lines += ["", "## Unreadable", ""]
         lines += [f"* `{p}` -- {e}" for p, e in bad]
+    seeds_per_group = sorted({row["n_seeds"] for row in table_rows(runs, targets)})
     lines += [
         "",
         "## Notes",
@@ -652,8 +669,11 @@ def write_manifest(out: Path, root: Path, runs: Sequence[Run],
         "  never used for selection.",
         "* `epochs_to_*` is recomputed from the history here, so it does not depend",
         "  on the training logs having been kept.",
-        "* Single seed per configuration unless `runs.csv` shows otherwise: check",
-        "  `seed` before quoting any difference as a result.",
+        f"* Reported configurations carry {', '.join(str(s) for s in seeds_per_group)}"
+        f" seed(s). `test_acc_std` is a *sample* std and is empty at one seed --",
+        "  a single seed measured no dispersion; do not read a blank as agreement.",
+        "* Redraw every figure from this bundle with",
+        "  `python3 -m centralized.plot_analysis --bundle <this directory>`.",
         "",
     ]
     path = out / "MANIFEST.md"
@@ -720,13 +740,15 @@ def main(argv: Optional[Sequence[str]] = None) -> int:
         write_runs(runs, args.out, args.targets),
         write_curves(runs, args.out),
     ]
+    table = write_table(runs, args.out, args.targets)
+    if table:
+        written.append(table)
     series_path, fit_path = write_gain(runs, args.out)
     written += [pp for pp in (series_path, fit_path) if pp]
-    compare = write_scaling_compare(runs, args.out, args.targets)
-    if compare:
-        written.append(compare)
+    print("\nmachines:")
+    written += write_environment(runs, args.out)
     written.append(write_configs(runs, args.out))
-    written += copy_overnight(args.out)
+    written += copy_overnight(args.out, args.root)
     written.append(write_manifest(args.out, args.root, runs, written, bad,
                                   args.targets))
 
@@ -736,6 +758,8 @@ def main(argv: Optional[Sequence[str]] = None) -> int:
     if not args.no_archive:
         archive = make_archive(args.out)
         print(f"archive: {archive}  ({archive.stat().st_size / 1024:.0f} KiB)")
+        print("  ^ this single file is what to bring home. Unpack it, then:\n"
+              "      python3 -m centralized.plot_analysis --bundle article_export")
 
     if not args.quiet:
         print_summary(runs, args.targets)

@@ -46,13 +46,23 @@ code/
 Two entry points do the whole protocol in one resumable, budget-aware command:
 
 ```bash
-python3 -m centralized.overnight --device cuda:0 --budget-hours 0 --download
+python3 -m centralized.overnight --device cuda:0 --download
 python3 -m federated.overnight   --device cuda:0 --budget-hours 12 --download
 ```
 
-Both self-check, time your GPU, print a schedule with a finish time per phase, and
-rewrite a `REPORT.md` after every phase so you can read it mid-run. Ctrl-C stops
-cleanly and writes it. `--dry-run` prints the schedule and exits.
+Both self-check, record the exact GPU / CUDA / Python / PyTorch, time your GPU,
+print a schedule with a finish time per phase, and rewrite a `REPORT.md` after
+every phase so you can read it mid-run. Ctrl-C stops cleanly and writes it.
+`--dry-run` prints the schedule and exits. The centralized driver has no deadline
+by default; the federated one takes `--budget-hours 0` for the same.
+
+When a centralized run finishes, one more command packs everything the paper needs
+into a single ~1 MB archive to download, leaving the ~1.5 GB of checkpoints behind:
+
+```bash
+python3 -m centralized.export_article                         # -> results/article_export.tar.gz
+python3 -m centralized.plot_analysis --bundle article_export  # unpack it here, redraw the figures
+```
 
 ## Method names
 

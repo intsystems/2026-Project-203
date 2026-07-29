@@ -1615,6 +1615,42 @@ def test_step_norms_match_the_lr_scaling_module():
     assert abs(float((U @ Vt).norm()) - math.sqrt(min(m, n))) < 1e-4
 
 
+def test_every_lr_grid_follows_its_method_step_norm():
+    """The search window has to be keyed off ``||s||_F``, not written by hand.
+
+    A sign step has length ``eta*sqrt(mn)`` and an LMO step ``eta*sqrt(r)``, so
+    at ``100x100`` their optimal ``eta`` differ by a factor of ten and they need
+    different windows. Enumerated per method, the two drifted: ``muonusign`` and
+    ``ef21signmuon`` take an LMO-length step but had been given the sign
+    window, which censored ``muonusign``'s optimum at the upper edge and left
+    ``ef21signmuon``'s smallest floor point unsettled after 60k iterations.
+    """
+    from synthetic.benchmark import (DEFAULT_LR_GRIDS, DEFAULT_METHODS,
+                                     LR_GRID_FAMILIES, parse_lr_grid, step_norm)
+
+    m = n = 100
+    assert set(DEFAULT_LR_GRIDS) == set(DEFAULT_METHODS)
+    for family, members in LR_GRID_FAMILIES.items():
+        specs = {DEFAULT_LR_GRIDS[method] for method in members}
+        assert len(specs) == 1, (family, specs)
+        norms = {round(step_norm(method, m, n), 9) for method in members}
+        assert len(norms) == 1, (family, norms)
+
+    # ... and the two windows are then a decade apart, as their norms are.
+    sign = parse_lr_grid(DEFAULT_LR_GRIDS["signmuon"])
+    lmo = parse_lr_grid(DEFAULT_LR_GRIDS["muon"])
+    ratio = step_norm("signmuon", m, n) / step_norm("muon", m, n)
+    assert abs(lmo[0] / sign[0] - ratio) < 1e-9
+    assert abs(lmo[-1] / sign[-1] - ratio) < 1e-9
+
+    # Both windows reach the stability edge measured by ``--mode stability`` at
+    # this size (0.111 for a sign step, 1.49 for an LMO one) without running
+    # past it: beyond the edge every point diverges, so an optimum landing on
+    # the top of the grid would be a fact about the method, not a narrow grid.
+    assert 0.01 < sign[-1] <= 0.1114
+    assert 0.1 < lmo[-1] <= 1.486
+
+
 def test_newton_schulz_step_is_measurably_shorter_than_the_exact_lmo():
     """Five NS steps leave the singular values in a band around 1, not at 1.
 
@@ -2284,6 +2320,250 @@ def test_momentum_zero_is_not_a_censored_grid_edge():
     src = inspect.getsource(benchmark)
     assert "if m > 0.0" in src, (
         "the momentum-boundary rule no longer excludes the natural bound at 0")
+
+
+# --------------------------------------------------------------------------
+# The centralized run -> archive -> figures pipeline
+# --------------------------------------------------------------------------
+
+
+def _fake_metrics(tmp, run_name, seed, *, optimizer, lr, epochs, split,
+                  top=94.0, weight_decay=0.0, extra_series=None):
+    """One synthetic ``metrics.json``, shaped exactly like a real run's."""
+    import json
+
+    steps = list(range(epochs + 1))
+    hist = {
+        "steps": steps,
+        "test_acc": [10.0 + (top - 10.0) * (s / epochs) for s in steps],
+        "train_acc": [min(100.0, 10.0 + 90.0 * s / epochs) for s in steps],
+        "train_loss": [2.3 * (0.9 ** s) for s in steps],
+        "test_loss": [2.3 * (0.95 ** s) for s in steps],
+        # epoch 0 is an evaluation, not a training epoch, so it has no duration.
+        # A reader that forward-fills or zero-fills this column gets the median
+        # wrong; the schema stores null and the exporter must drop it.
+        "epoch_seconds": [None] + [14.0 for _ in steps[1:]],
+    }
+    if split == "tune":
+        hist["val_acc"] = [a - 0.5 for a in hist["test_acc"]]
+    hist.update(extra_series or {})
+    cfg = {"dataset": "cifar10", "model": "resnet18", "optimizer": optimizer,
+           "epochs": epochs, "lr": lr, "lr_aux": 1e-3, "lr_scaling": "unit-gain",
+           "split": split, "weight_decay": weight_decay, "last_k": 5, "seed": seed,
+           "run_name": run_name, "batch_size": 128, "momentum": 0.9,
+           "hardware": {"gpu": "Test GPU", "cpu": "Test CPU", "os": "Linux 5.15",
+                        "python": "3.11.9", "torch": "2.5.1", "cuda": "12.4",
+                        "gpu_memory_gb": 16.0, "driver": "550.90", "ram_gb": 64.0}}
+    out = tmp / run_name / f"seed{seed}"
+    out.mkdir(parents=True, exist_ok=True)
+    (out / "metrics.json").write_text(json.dumps({"config": cfg, "history": hist}),
+                                      encoding="utf-8")
+
+
+def test_export_attributes_every_phase_the_driver_emits():
+    """Every tag ``overnight`` builds must land in the right phase.
+
+    ``export_article.phase_of`` reads the phase off the directory name, and the
+    names are built by ``tune.run_one`` from the driver's tag. The two are only
+    coupled by convention, so a phase renamed on one side and not the other is
+    silent: the runs simply become ``other`` and drop out of the table. The
+    ``wd`` case is the sharp one -- ``final_wd_*`` also starts with ``final_``,
+    and testing the fallback first would report the decay ablation as a primary
+    result.
+    """
+    from centralized.export_article import phase_of
+    from centralized.tune import canonical_tag
+
+    cases = [
+        (canonical_tag("gain_signmuon", epochs=20), "tune_", "gain"),
+        (canonical_tag("aux_signmuon_lr0.05_aux0.001", epochs=15), "tune_", "aux"),
+        (canonical_tag("lr_signmuon_unit-gain_0.05", epochs=75), "tune_", "lr"),
+        (canonical_tag("signmuon_unit-gain", epochs=75, split="full", seed=1),
+         "final_", "final"),
+        (canonical_tag("wd_signmuon_unit-gain", epochs=75, split="full", seed=0),
+         "final_", "wd"),
+        (canonical_tag("preflight_timing", epochs=2), "tune_", "preflight"),
+    ]
+    for tag, prefix, want in cases:
+        got = phase_of(prefix + tag)
+        assert got == want, f"{prefix + tag!r} -> {got!r}, expected {want!r}"
+
+
+def test_export_table_aggregates_seeds_the_way_the_paper_defines_it(tmp_path=None):
+    """Per-seed tail mean first, mean +/- sample std over seeds second.
+
+    Not the same as pooling every seed's epochs and taking one tail: with three
+    seeds and ``last_k = 5`` the pooled tail is the last five values of *one*
+    seed, so the other two would not enter the number at all. The std must be the
+    sample (n-1) one, and must be absent -- not 0.0 -- at a single seed, since one
+    seed measured no dispersion and a printed zero reads as perfect agreement.
+    """
+    import statistics
+    import tempfile
+    from pathlib import Path
+
+    from centralized.export_article import scan, table_rows
+
+    with tempfile.TemporaryDirectory() as td:
+        tmp = Path(td)
+        tops = [94.0, 94.6, 94.2]
+        for seed, top in enumerate(tops):
+            _fake_metrics(tmp, "final_signmuon_unit-gain_e75_fs%d" % seed, seed,
+                          optimizer="signmuon", lr=0.05, epochs=75, split="full",
+                          top=top)
+        _fake_metrics(tmp, "final_wd_signmuon_unit-gain_e75_fs0", 0,
+                      optimizer="signmuon", lr=0.05, epochs=75, split="full",
+                      top=93.5, weight_decay=5e-4)
+        runs, bad = scan(tmp)
+        assert not bad, bad
+        rows = {r["phase"]: r for r in table_rows(runs, [90.0])}
+
+        # The expected value, recomputed the long way from the same generator.
+        per_seed = []
+        for top in tops:
+            series = [10.0 + (top - 10.0) * (s / 75) for s in range(76)]
+            per_seed.append(sum(series[-5:]) / 5)
+        want = sum(per_seed) / 3
+        assert abs(rows["final"]["test_acc_mean"] - round(want, 2)) < 5e-3, rows
+        assert abs(rows["final"]["test_acc_std"]
+                   - round(statistics.stdev(per_seed), 2)) < 5e-3, rows
+        assert rows["final"]["n_seeds"] == 3
+
+        # The decay ablation runs at the SAME eta_0 by design, so a key that
+        # omitted weight_decay would merge it into the row it is an ablation of.
+        assert rows["wd"]["test_acc_std"] is None, "one seed measured no spread"
+        assert rows["wd"]["weight_decay"] == 5e-4
+
+        # epoch 0 carries no duration; a run that read the null as 0.0 would
+        # report a median of 14.0 -> 7.0 here.
+        assert rows["final"]["epoch_seconds_median"] == 14.0
+
+
+def test_figures_are_a_function_of_the_export_bundle_alone(tmp_path=None):
+    """``plot_analysis`` must read the bundle, and only the bundle.
+
+    The whole point of the archive is that the run tree -- gigabytes of
+    ``model.pt`` -- never leaves the GPU box. If a figure needed anything outside
+    ``runs.csv``/``curves.csv`` it could not be redrawn from what was brought
+    home, which is exactly how the pipeline broke before: the figures went
+    through an intermediate CSV whose columns the aggregator had since renamed.
+    """
+    import tempfile
+    from pathlib import Path
+
+    from centralized.export_article import main as export_main
+    from centralized.plot_analysis import Bundle
+
+    with tempfile.TemporaryDirectory() as td:
+        tmp = Path(td)
+        tree, bundle = tmp / "centralized", tmp / "bundle"
+        for seed in (0, 1):
+            _fake_metrics(tree, f"final_signmuon_unit-gain_e75_fs{seed}", seed,
+                          optimizer="signmuon", lr=0.05, epochs=75, split="full",
+                          top=94.0 + 0.4 * seed)
+        for lr in (0.02, 0.05, 0.1):
+            _fake_metrics(tree, f"tune_lr_signmuon_unit-gain_{lr}_e75_t", 0,
+                          optimizer="signmuon", lr=lr, epochs=75, split="tune",
+                          top=94.0 - 10 * abs(lr - 0.05))
+        assert export_main(["--root", str(tree), "--out", str(bundle),
+                            "--no-archive", "--quiet"]) == 0
+
+        b = Bundle(bundle)
+        rep = b.reported()["signmuon"]
+        assert rep["lr"] == 0.05 and rep["n_seeds"] == 2, rep
+
+        # The sweep is drawn from val_acc -- the metric selection actually ranked.
+        # Plotting the tune runs' test accuracy would draw a number no decision
+        # used, on models trained on 45k rather than 50k.
+        sweep = b.sweep()["signmuon"]
+        assert set(sweep) == {0.02, 0.05, 0.1}, sweep
+        assert max(sweep, key=lambda k: sweep[k]) == 0.05
+
+        curve = b.curve("signmuon", 0.05, "test_acc")
+        assert curve["n_seeds"] == 2 and len(curve["steps"]) == 76
+        assert all(sd >= 0 for sd in curve["std"])
+        assert curve["std"][-1] > 0, "two seeds differ; the band must be nonzero"
+
+
+def test_the_submitted_figures_can_still_be_redrawn():
+    """The pre-2026-07-29 plotting inputs must keep working.
+
+    ``centralized/table2_full.csv`` and ``curves*.json`` are what the figures in
+    the current submission were drawn from, and the run tree behind them is not in
+    this repository -- it is on the machine that produced it. Until the re-run at
+    the new protocol lands, deleting those files or breaking ``LegacyBundle`` would
+    make a published figure unreproducible, and nothing else would notice.
+
+    Pinned here rather than trusted: the exporter's bundle format is what the code
+    is being moved to, so this path has no other user to keep it honest.
+    """
+    from pathlib import Path
+
+    from centralized.plot_analysis import PANELS, LegacyBundle, window_spreads
+
+    here = Path(__file__).resolve().parent.parent / "centralized"
+    for name in ("table2_full.csv", "curves.json", "curves_train_loss.json"):
+        assert (here / name).exists(), (
+            f"{name} is gone; the submitted figures can no longer be redrawn. "
+            f"Restore it from git history, or replace it with an export bundle.")
+
+    bundle = LegacyBundle(here)
+    reported = bundle.reported()
+    wanted = [m for _, ms in PANELS for m in ms] + ["muon"]
+    missing = [m for m in wanted if m not in reported]
+    assert not missing, f"no 75-epoch runs for {missing}"
+
+    # Every panelled method must have a curve for both figure metrics, or a panel
+    # would silently lose a line.
+    for method in wanted:
+        for metric in ("test_acc", "train_loss"):
+            curve = bundle.curve(method, reported[method]["lr"], metric)
+            assert curve and len(curve["steps"]) > 50, (method, metric)
+
+    # The fig:cifar_lr caption quotes these. They are the check that the reader
+    # still selects the same rows as the code that drew the submitted figure.
+    spreads = window_spreads(bundle.sweep())
+    assert abs(spreads["signmuon"] - 0.16) < 0.005, spreads
+    assert abs(spreads["muon"] - 0.28) < 0.005, spreads
+    assert abs(spreads["adam"] - 1.57) < 0.005, spreads
+    assert abs(spreads["signsgd"] - 2.82) < 0.005, spreads
+
+
+def test_grid_anchors_boost_only_the_sign_family():
+    """``anchor_for`` is where every grid is centred, for every phase.
+
+    The sign family's eta_0 is a *base* rate that the per-layer rule then divides
+    by sqrt(fan_in), so under a scaling rule its anchor moves by the reciprocal of
+    the typical multiplier; the LMO family carries the aspect factor under every
+    rule and does not move; SGD and Adam are run unscaled. The same three lines
+    used to be copy-pasted into each phase and had already drifted once.
+    """
+    from centralized.tune import (LEGACY_ANCHORS, SCALED_ANCHOR_BOOST, anchor_for,
+                                  extend_grid, lattice_value, round_grid)
+
+    for rule in ("legacy", "unit-gain", "mup"):
+        boost = SCALED_ANCHOR_BOOST[rule]
+        assert anchor_for("signmuon", rule) == LEGACY_ANCHORS["signmuon"] * boost
+        assert anchor_for("muon", rule) == LEGACY_ANCHORS["muon"]
+        for baseline in ("sgd", "adam"):
+            assert anchor_for(baseline, rule) == LEGACY_ANCHORS[baseline], (
+                f"{baseline} has no norm-fixed step for the rule to act on")
+    try:
+        anchor_for("nosuchmethod", "unit-gain")
+    except KeyError:
+        pass
+    else:
+        raise AssertionError("an unknown method must raise, not silently anchor at 1")
+
+    # Every rate the driver can try is a quotable 1-2-5 lattice point, extensions
+    # included -- otherwise a widened grid would have a different resolution from
+    # the grid it widens, and the equal-budget claim would be approximate.
+    lattice = {f"{lattice_value(k):.6g}" for k in range(-20, 12)}
+    grid = round_grid(0.034, points=5)
+    for _ in range(4):
+        grid = extend_grid(grid, low=False, points=2)
+    assert grid == sorted(grid) and len(set(grid)) == len(grid)
+    assert all(f"{lr:.6g}" in lattice for lr in grid), grid
 
 
 if __name__ == "__main__":
