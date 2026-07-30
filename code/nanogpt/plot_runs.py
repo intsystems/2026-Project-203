@@ -45,6 +45,11 @@ import math
 from collections import OrderedDict
 from pathlib import Path
 
+#: Paths default to this arm's results tree, resolved against this file so
+#: the scripts work from any working directory.
+_HERE = Path(__file__).resolve().parent
+
+
 # --------------------------------------------------------------------------
 # Palette: the documented categorical order (fixed slots, never cycled), stepped
 # for each surface. Eight optimizers == eight slots exactly; a ninth series would
@@ -306,8 +311,8 @@ def make_figure(runs, which, xaxis, theme, args, meta, reference=None):
 def main() -> None:
     ap = argparse.ArgumentParser(description=__doc__,
                                  formatter_class=argparse.RawDescriptionHelpFormatter)
-    ap.add_argument("steps_csv", type=Path, nargs="?", default=Path("results/steps.csv"))
-    ap.add_argument("-o", "--outdir", type=Path, default=Path("figures"))
+    ap.add_argument("steps_csv", type=Path, nargs="?", default=_HERE.parent / "results" / "nanogpt" / "steps.csv")
+    ap.add_argument("-o", "--outdir", type=Path, default=_HERE.parent / "results" / "nanogpt" / "figures" / "exploratory")
     ap.add_argument("--runs-csv", type=Path, default=None,
                     help="runs.csv (default: next to steps.csv); used for the "
                          "'diverged' legend flags")

@@ -13,14 +13,14 @@
 # why the sign family starts at 0.03 rather than at some 1e-4).  Override a
 # single run with SIGNMUON_LR=... and one optimizer name.
 #
-# Logs land in $LOG_DIR (default ./logs) as "<Opt>_lr<lr>_<hash>.txt".
-# Turn them into data with:   python parse_logs.py logs -o results
+# Logs land in $LOG_DIR (default ../results/nanogpt/logs) as
+# "<Opt>_lr<lr>_<hash>.txt".  Turn them into data with:  python parse_logs.py
 # =============================================================================
 set -uo pipefail
 
 SCRIPT="${SCRIPT:-train_gpt.py}"
 NPROC="${NPROC:-8}"
-LOG_DIR="${LOG_DIR:-logs}"
+LOG_DIR="${LOG_DIR:-../results/nanogpt/logs}"
 export LOG_DIR
 # One interpreter for the preflight AND the runs. A bare `torchrun` is a console
 # script on PATH and can easily belong to a DIFFERENT python than `python` does
@@ -182,4 +182,5 @@ if [ ${#failed[@]} -eq 0 ]; then
 else
   echo "$succeeded run(s) ok; exited non-zero: ${failed[*]}"
 fi
-echo "now:  python parse_logs.py $LOG_DIR -o results  &&  python plot_runs.py results/steps.csv"
+echo "now:  python parse_logs.py  &&  python make_tables.py  &&  python plot_article.py"
+echo "      then read ../results/nanogpt/SUMMARY.md"

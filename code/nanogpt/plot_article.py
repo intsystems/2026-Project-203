@@ -6,8 +6,8 @@ paper, styled to match the CIFAR/federated/synthetic figures: the same rcParams,
 the same method colours and no titles (the caption carries the description), all
 from ``common.plotting``.
 
-    python parse_logs.py logs -o results
-    python plot_article.py                    # -> figures/fig_nanogpt_*.pdf
+    python parse_logs.py
+    python plot_article.py     # -> ../results/nanogpt/figures/fig_nanogpt_*.pdf
 
 Two figures:
 
@@ -38,6 +38,7 @@ from __future__ import annotations
 
 import argparse
 import csv
+import sys
 from collections import defaultdict
 from pathlib import Path
 
@@ -46,6 +47,12 @@ matplotlib.use("Agg")
 import matplotlib.pyplot as plt
 import numpy as np
 from matplotlib.lines import Line2D
+
+# This script lives one level below the package root but is documented to run
+# from its own directory (`cd code/nanogpt && python plot_article.py`), which
+# leaves `code/` off sys.path and `common.plotting` unimportable. Put it there.
+_HERE = Path(__file__).resolve().parent
+sys.path.insert(0, str(_HERE.parent))
 
 from common.plotting import (COLUMN_WIDTH, FS_LABEL, FS_LEGEND, INK_2,
                              SERIES, SURFACE, TEXT_WIDTH, color_of,
@@ -353,10 +360,13 @@ def panel_time(ax, steps):
 def main():
     ap = argparse.ArgumentParser(description=__doc__,
                                  formatter_class=argparse.RawDescriptionHelpFormatter)
-    ap.add_argument("--results", default="results", type=Path)
-    ap.add_argument("--outdir", default="figures", type=Path)
+    ap.add_argument("--results", default=_HERE.parent / "results" / "nanogpt",
+                    type=Path)
+    ap.add_argument("--outdir", default=None, type=Path,
+                    help="default: <results>/figures")
     args = ap.parse_args()
 
+    args.outdir = args.outdir or args.results / "figures"
     steps = load_steps(args.results / "steps.csv")
     diag = load_diag(args.results / "diagnostics.csv")
     args.outdir.mkdir(parents=True, exist_ok=True)

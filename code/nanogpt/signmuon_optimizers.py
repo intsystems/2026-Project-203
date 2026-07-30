@@ -162,16 +162,29 @@ def sign_pm1(x):
     """Elementwise sign with exact zeros mapped to independent random +-1.
 
     The paper's convention: every transmitted sign message is exactly one bit
-    per parameter (matches ``common.optimizers.sign_pm1``; duplicated here to
-    keep this file self-contained for the speedrun). Draws from the global
-    torch RNG only when zeros are present.
+    per parameter, so ``sign(0) = 0`` -- a third symbol -- is not allowed. Zeros
+    are not exotic on this model: record #40 zero-initializes ``c_proj`` and the
+    ``O`` block of ``qkvo_w``, and a zero output projection makes the gradient of
+    everything feeding it EXACTLY zero, so at step 0 the whole ``c_fc`` and
+    ``Q/K/V`` set has zero momentum and therefore zero sign.
+
+    Differs from ``common.optimizers.sign_pm1`` in one respect: that one tests
+    ``(x == 0).any()`` first and draws only when it fires, which is right for the
+    CIFAR loops but is a device-to-host SYNC here -- once per sign per OWNED
+    parameter, so a handful per rank per step, inside the very loop the speedrun
+    clock measures. We draw unconditionally instead: one elementwise pass against
+    the LMO's five matmuls. Nothing else in the training loop consumes the torch
+    RNG after initialization (the data loader walks the shards in order), so
+    always advancing the stream costs no reproducibility.
+
+    ``empty_like(...).bernoulli_(0.5)`` rather than ``randint``: it inherits
+    ``x``'s dtype and device without a cast, and the parameters here are both
+    fp32 (the raw hidden matrices) and bf16 (the gates, which record #40 casts
+    with every ``nn.Linear``) -- and float64 under the CPU tests.
     """
     s = torch.sign(x)
-    zero = s == 0
-    if bool(zero.any()):
-        r = torch.randint(0, 2, s.shape, device=s.device).to(s.dtype).mul_(2).sub_(1)
-        s = torch.where(zero, r, s)
-    return s
+    r = torch.empty_like(s).bernoulli_(0.5).mul_(2).sub_(1)
+    return torch.where(s == 0, r, s)
 
 
 def _polar_express_eager(G: Tensor, steps: int = 5) -> Tensor:

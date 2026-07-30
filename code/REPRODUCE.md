@@ -30,14 +30,16 @@ was a bug. Find a label with `grep -n 'label{tab:exp_3}' ../aaai_article/*.tex`.
 | `tab:synthetic_tuned`, `tab:synthetic_alignment`, `tab:synthetic_dynamics`, `fig:synthetic_*` | [3. Synthetic convex problem](#3-synthetic-convex-problem) |
 | `tab:cifar_main`, `tab:cifar_central`, `fig:cifar_results`, `fig:cifar_curves_appendix`, `fig:cifar_lr` | [4. Centralized CIFAR-10](#4-centralized-cifar-10-resnet-18) |
 | `tab:fed_master`, `tab:exp_3`, `tab:commacct`, `fig:exp_3` | [5. Federated CIFAR-10](#5-federated-cifar-10-tabexp_3-figexp_3) |
-| `tab:nanogpt`, `tab:nanogpt_diag`, `fig:nanogpt*` | [nanogpt/README.md](nanogpt/README.md) |
-| — | [6. Multi-seed runs](#6-multi-seed-runs) |
+| `tab:nanogpt`, `tab:nanogpt_diag`, `fig:nanogpt*` | [6. NanoGPT speedrun](#6-language-modelling-the-nanogpt-speedrun-tabnanogpt-fignanogpt) |
+| — | [7. Multi-seed runs](#7-multi-seed-runs) |
 
 Sections 3, 4 and 5 all follow the same shape: **compute on the GPU box → one
 archive to download → unpack and plot anywhere.** The archive is
 `results/synthetic_results.zip`, `results/article_export.tar.gz` and
 `results/federated_export_results.zip` respectively, and each is written by the
-command that computes, so there is nothing extra to remember.
+command that computes, so there is nothing extra to remember. Section 6 (nanoGPT)
+needs no archive: its logs are small enough to live in the repository, under
+`results/nanogpt/`, which is the one part of `results/` that git tracks.
 
 ## The two overnight drivers
 
@@ -525,7 +527,78 @@ Two things to keep stated in the paper: `lr_aux = 0.001` is used throughout and 
 not tuned per method (`--stage aux` is the check that it may be held fixed), and
 BatchNorm running statistics are never updated from data in the federated setting.
 
-## 6. Multi-seed runs
+## 6. Language modelling: the nanoGPT speedrun (`tab:nanogpt`, `fig:nanogpt*`)
+
+The one arm that needs rented hardware — **8×H100 for ~25 minutes of training per
+method, eight methods** — and the one whose *analysis* needs nothing at all. The
+released logs are in the repository, so every number and figure in the paper can be
+rebuilt on a laptop without a GPU, without torch, and without downloading FineWeb.
+Read [`nanogpt/README.md`](nanogpt/README.md) before changing a setting.
+
+### 6a. Rebuild every nanoGPT number and figure, no GPU (~5 seconds)
+
+```bash
+cd code/nanogpt
+python parse_logs.py     # ../results/nanogpt/logs -> runs.csv, steps.csv, diagnostics.csv
+python make_tables.py    # -> SUMMARY.md, MANIFEST.json, tab_nanogpt.tex, tab_nanogpt_diag.tex
+python plot_article.py   # -> ../results/nanogpt/figures/fig_nanogpt_{main,appendix,diag}.pdf
+```
+
+`parse_logs.py` and `make_tables.py` are standard library only; `plot_article.py`
+needs matplotlib. Then:
+
+```bash
+cat ../results/nanogpt/SUMMARY.md               # both tables, the control check, provenance
+diff <(sed -n '/tabular/,/tabular/p' ../../aaai_article/signmuon_body.tex) \
+     ../results/nanogpt/tab_nanogpt.tex         # the paper's table vs the derived one
+```
+
+`SUMMARY.md` is the file to read. It carries `tab:nanogpt`, `tab:nanogpt_diag`, the
+record-#40 control check (does the `Muon` arm land on the published curve?), the
+wall-clock spread the appendix quotes, and a provenance table saying which build of
+`signmuon_optimizers.py` produced each log — the eight runs are **not** all of one
+vintage, and `nanogpt/README.md` §"Provenance" says why that is sound.
+
+### 6b. The runs themselves (8×H100)
+
+```bash
+cd code/nanogpt
+bash setup_env.sh && source .venv/bin/activate   # venv + a real Flash-Attention-3 fetch
+python data/cached_fineweb10B.py 9               # ~900M train tokens + the val chunk
+NANOGPT_ITERS=200 bash run_all.sh                # smoke pass first: do this once
+bash run_all.sh                                  # the eight hero runs (~25 min each)
+```
+
+`run_all.sh` preflights the environment once rather than eight times, runs `Muon`
+first (it *is* record #40's optimizer, so it must land on record #40's published
+curve — `reference_record40.csv` is the pass/fail line), and writes logs into
+`../results/nanogpt/logs/`. Then rerun §6a. No FA3 on your node, or only one GPU?
+`NPROC=8 SCRIPT=train_gpt_a100.py bash run_all.sh` swaps FA3 → FlexAttention and
+FP8 → bf16, both outside the optimizer.
+
+Before renting anything, run the two CPU tests (they need torch, nothing else):
+
+```bash
+SIGNMUON_NO_COMPILE=1 python test_signmuon_optimizers.py   # update rules == the paper's
+python test_distributed_sharding.py                        # sharded step() == centralized
+```
+
+### 6c. What is fixed a priori, and what is not
+
+Nothing here is tuned by us. Every hyperparameter outside the matrix optimizer is
+record #40's own; the five LMO-family methods run at the record's own `η₀ = 0.06`,
+and the three sign-family methods at `0.03`, the spectral discount derived in
+`app:lrscale` and defended three independent ways in `train_gpt.py`'s
+`OPTIMIZER_CONFIG` comment. So every contrast in `tab:nanogpt` is
+matched-hyperparameter. The one number with real uncertainty is that `0.03`;
+`SIGN_PROBE_LR=0.01 bash run_all.sh` adds one downside probe per sign method.
+
+Unlike §4 and §5, this arm is **single-run**: the table quotes record #40's own
+five-seed spread (`± 0.0009`) as the noise scale instead, so differences below
+~0.003 are not results. The runs in the repository predate the `SIGNMUON_SEED` knob
+and are unseeded; see `nanogpt/README.md` §"Provenance".
+
+## 7. Multi-seed runs
 
 Any command above becomes a multi-seed sweep by varying `--seed`; the seed is part
 of the output path, so nothing is overwritten:
@@ -575,10 +648,10 @@ agreement. Claim a gap only when it exceeds the seed spread.
   (`TEXT_WIDTH` / `COLUMN_WIDTH`) and included at `width=\textwidth` /
   `\columnwidth`, so a 9 pt label is 9 pt on the page. Do the same for a new one
   rather than styling it locally.
-* **`nanogpt/`** has its own [README](nanogpt/README.md). It *is* in the paper —
-  `tab:nanogpt` and `fig:nanogpt` are main text, `tab:nanogpt_diag`,
-  `fig:nanogpt_appendix` and `fig:nanogpt_diag` are appendix — but it needs 8×H100
-  and is not reproducible from this file.
+* **`nanogpt/`** has its own [README](nanogpt/README.md), which is the place to read
+  before changing a setting; §6 above is the command reference. Training needs 8×H100,
+  but the released logs are in the repository and every table and figure rebuilds from
+  them on a laptop.
 * **Disk.** `SIGNMUON_RESULTS` relocates the whole `results/` tree and every script
   follows it; `--data` is separate and also worth pointing off the system disk. One
   `model.pt` is 2.9 MB for CNN2 and 42.7 MB for ResNet-18, so the ~127-job federated

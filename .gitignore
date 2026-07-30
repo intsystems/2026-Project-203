@@ -200,7 +200,15 @@ code/data/
 
 # Experiment output. All runs now land under code/results/ ; the rest are the
 # pre-reorganization output directories, kept ignored so old runs stay untracked.
-code/results/
+# The CIFAR, federated and synthetic trees are large and are shipped as the
+# export bundles REPRODUCE.md names, so they stay out of git. code/results/nanogpt/
+# is the exception and IS tracked: those eight runs cost an 8xH100 node and cannot
+# be re-created from this repository, and the whole tree -- logs included -- is
+# 5 MB. Note the `*` : a bare `code/results/` would exclude the directory itself
+# and git would never look inside it, so the negation below could not re-include
+# anything.
+code/results/*
+!code/results/nanogpt/
 code/results_old/
 
 code/saves/

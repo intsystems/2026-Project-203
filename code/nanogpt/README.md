@@ -15,22 +15,31 @@ hyperparameter tuning**. See "Why record #40" below.
 
 ## Files
 
+Code lives here; **every artefact of a run lives in [`../results/nanogpt/`](../results/nanogpt/)**,
+beside `results/synthetic/` and `results/federated/`, so all four experiments are
+read the same way. Start at [`../results/nanogpt/SUMMARY.md`](../results/nanogpt/SUMMARY.md).
+
 | file | what it is |
 |------|------------|
 | `signmuon_optimizers.py` | The eight optimizers. **Single source of truth, shared by both training scripts**, pure-torch (Polar Express LMO, no Triton), unit-testable off-GPU. |
-| `train_gpt.py` | The **8×H100** script: record #40 verbatim (Flash Attention 3 + FP8) with a `SIGNMUON_OPT=` selector. Use for the final runs. |
+| `train_gpt.py` | The **8×H100** script: record #40 (Flash Attention 3 + FP8) with its `Muon` replaced by the `SIGNMUON_OPT=` selector. Use for the final runs. |
 | `train_gpt_a100.py` | The **single-A100** build. Identical to `train_gpt.py` except the two Hopper-only pieces (FA3, FP8) are swapped for Ampere-safe equivalents. Every difference is a `# ===== [A100 DIFF #k] ...` banner. |
-| `test_signmuon_optimizers.py` | Portable CPU test: each optimizer's update recurrence == the numpy paper reference (`../counterexamples/optimizers.py`), **and** the per-layer LR multipliers (== record #40's aspect factor for the LMO family, unit gain for both families, agreement with `../common/lr_scaling.py`). |
+| `test_signmuon_optimizers.py` | Portable CPU test: each optimizer's update recurrence == the numpy paper reference (`../counterexamples/optimizers.py`), the per-layer EF21 compressor scale on the merged `qkvo_w`, **and** the per-layer LR multipliers (== record #40's aspect factor for the LMO family, unit gain for both families, agreement with `../common/lr_scaling.py`). |
 | `test_distributed_sharding.py` | gloo/CPU test: the sharded `step()` == a single-process centralized run, over both padding regimes. |
 | `setup_env.sh` | Builds the venv from `requirements.txt` and verifies it with a real FA3 fetch. **Start here.** |
 | `run_all.sh` | Launches the eight hero runs, one per optimizer, at their starting learning rates. |
-| `parse_logs.py` | Raw logs -> `runs.csv` (one row per run) + `steps.csv` (tidy per-step) + `runs.json`. |
-| `plot_runs.py` | loss-vs-steps and loss-vs-time comparison figures from `steps.csv`, with record #40's own curve drawn behind every validation figure. |
+| `parse_logs.py` | Raw logs -> `runs.csv` (one row per run) + `steps.csv` (tidy per-step) + `diagnostics.csv` + `runs.json`. |
+| `make_tables.py` | Those CSVs -> `SUMMARY.md`, `MANIFEST.json`, and the two LaTeX table bodies. This is what makes `tab:nanogpt` and `tab:nanogpt_diag` *derived* numbers rather than transcribed ones. |
+| `plot_article.py` | The three nanoGPT figures the paper includes (`fig:nanogpt`, `fig:nanogpt_appendix`, `fig:nanogpt_diag`). Run IDs are pinned; see the module docstring for which and why. |
+| `plot_runs.py` | Exploratory loss-vs-steps and loss-vs-time figures from `steps.csv`, with record #40's own curve drawn behind every validation figure. Not used by the paper. |
 | `reference_record40.csv` | Record #40's published validation curve, averaged over its **five** upstream 8×H100 logs (`3.2780 ± 0.0009` at step 2330, `140.7 s`). The pass/fail line for the `Muon` control arm. |
 | `data/cached_fineweb10B.py` | Downloads the pre-tokenized FineWeb-10B GPT-2 tokens (same stream for every record). |
 | `requirements.txt` | Python deps (mirrors upstream; `torch==2.10`). |
 | `train_gpt_rec40_reference.py` | The **verbatim record-#40 source** (from its run log), for provenance / diffing. Not wired to the optimizer knob. |
-| `plot_article.py` | The three nanoGPT figures the paper includes (`fig:nanogpt`, `fig:nanogpt_appendix`, `fig:nanogpt_diag`). Run IDs are pinned to the post-fix logs; see the module docstring for which and why. |
+
+Everything except the two training scripts is standard-library or
+matplotlib-only, so the whole analysis path runs on a laptop with no GPU and no
+torch; only `run_all.sh` needs the cluster.
 
 ## Setup
 
@@ -59,7 +68,10 @@ The venv is not optional, and neither is its own torch. Both pins are in
   on the newer driver.
 
 For provenance, record #40 itself ran **torch `2.10.0.dev20250926+cu126`, Python 3.10.12,
-Triton 3.5.0, CUDA 12.6**.
+Triton 3.5.0, CUDA 12.6**; the eight runs in the paper ran **torch `2.10.0+cu128`
+(PyPI, CUDA 12.8), Python 3.12.3**, on an 8×H100 SXM node with driver `595.71.05`.
+Those are read back out of the logs by `make_tables.py` and land in
+[`../results/nanogpt/MANIFEST.json`](../results/nanogpt/MANIFEST.json).
 
 If FA3 still will not resolve, skip it -- FlexAttention instead, still 8 GPUs:
 
@@ -108,6 +120,7 @@ Valid `SIGNMUON_OPT`: `SignMuon`, `EF21-SignMuon`, `MuonUSign`, `MuonSign`,
 |---|---|
 | `SIGNMUON_LR`, `SIGNMUON_MOMENTUM`, `SIGNMUON_WD` | override the method's hyperparameters |
 | `SIGNMUON_LR_SCALING` | per-layer rule: `unit-gain` (default), `semantic`, `mup`, `legacy`, `none` |
+| `SIGNMUON_SEED` | RNG seed (default `0`); see **Provenance** — the eight logged runs predate it |
 | `SIGNMUON_RUN_ID` | override the log name (default `<Opt>_lr<lr>_<hash>`) |
 | `NANOGPT_ITERS`, `NANOGPT_VAL_EVERY` | shorten a run / change the validation cadence |
 | `LOG_DIR`, `DATA_PATH` | where logs are written / where the `.bin` shards live |
@@ -116,9 +129,16 @@ Valid `SIGNMUON_OPT`: `SignMuon`, `EF21-SignMuon`, `MuonUSign`, `MuonSign`,
 Each logged run records `train_gpt*.py` **and** `signmuon_optimizers.py` verbatim, so a
 log fully reproduces the optimizer definitions even though they are imported. It also
 carries a machine-readable `RUNMETA {...}` / `RUNEND {...}` JSON header, the per-layer
-LR multiplier table, **per-step training loss**, and the usual validation points.
+LR multiplier table, **per-step training loss**, per-validation compressor diagnostics,
+and the usual validation points.
 A run whose loss goes non-finite logs `DIVERGED` and stops -- that is a result, not a
 crash, and the analysis tooling reports it as such.
+
+`EF21-MuonSign` is the one method with two models, and each validation reports
+**both**: `val_loss` is the exact server model `X` (the iterate the convergence
+corollary bounds) and `val_loss_W` is the sign-compressed broadcast model `W` (the
+iterate every gradient was actually evaluated at). They separate by ~2.2 nats here,
+which is the point of printing both.
 
 ### Validate the port before reading any result
 
@@ -138,33 +158,108 @@ kernels and its batched sharded transport with a pure-torch, per-parameter equiv
 (identical arithmetic, more kernel launches). All eight methods pay that cost equally, so
 every cross-method comparison — including loss-vs-time — stays fair.
 
-## Analysis
+## Results, and how to regenerate them
+
+Everything a run produces is under [`../results/nanogpt/`](../results/nanogpt/):
+
+| path | what it is |
+|---|---|
+| `SUMMARY.md` | **read this first.** Both paper tables, the record-#40 control check, the wall-clock spread, and the provenance table. |
+| `logs/` | the eight raw speedrun logs (each embeds its own source; ~300 kB apiece) |
+| `runs.csv` | one row per run: final/best val loss (and `_w` for the broadcast model), `steps_to_<target>` / `ms_to_<target>`, ms/step, peak memory, seed, GPU |
+| `steps.csv` | tidy `run_id, optimizer, lr, lr_scaling, step, wallclock_ms, train_loss, val_loss, val_loss_w` |
+| `diagnostics.csv` | one row per (run, validation, layer type): compressor contraction `alpha_up`/`alpha_dn`, estimator lag, server/broadcast gap, per-block `mean\|grad\|` |
+| `runs.json` | `runs.csv` plus the raw `RUNMETA`/`RUNEND` dicts |
+| `MANIFEST.json` | per-run provenance: environment, and the SHA-256 of the source each log embeds |
+| `tab_nanogpt.tex`, `tab_nanogpt_diag.tex` | the two LaTeX table bodies, for diffing against the paper |
+| `figures/` | `fig_nanogpt_{main,appendix,diag}.{pdf,png}` |
+
+Three commands rebuild all of it from the logs, on any machine, with no GPU:
 
 ```bash
-python parse_logs.py logs -o results          # -> results/{runs,steps}.csv, runs.json
-python plot_runs.py results/steps.csv -o figures
-python plot_runs.py results/steps.csv -o figures --both-themes --anytime --minutes
+cd code/nanogpt
+python parse_logs.py        # logs        -> runs.csv, steps.csv, diagnostics.csv, runs.json
+python make_tables.py       # those CSVs  -> SUMMARY.md, MANIFEST.json, tab_nanogpt*.tex
+python plot_article.py      # those CSVs  -> figures/fig_nanogpt_{main,appendix,diag}.*
 ```
 
-`parse_logs.py` prints a summary table (final/best val loss, wall-clock, ms/step,
-diverged) and writes:
+`parse_logs.py` also prints the summary table to the terminal. `steps_to_<target>` is
+linearly interpolated between validation points, so it does not depend on where the
+(coarse, every-250-step) validation grid happens to fall; the `_w` columns repeat the
+crossing on `EF21-MuonSign`'s broadcast model, because its `X` column never reaches
+these targets and a single set of columns would report "never" for a method that in
+fact trains normally at the iterate its gradients are taken at.
 
-* `runs.csv` -- one row per run, including `steps_to_<target>` / `ms_to_<target>`
-  (linearly interpolated between validation points, so the number does not depend on
-  where the coarse validation grid happens to fall);
-* `steps.csv` -- tidy `run_id, optimizer, lr, lr_scaling, step, wallclock_ms,
-  train_loss, val_loss`, one row per logged step;
-* `runs.json` -- the same plus the raw `RUNMETA`/`RUNEND` dicts.
+The headline numbers, for reference — full table in `SUMMARY.md`:
 
-`plot_runs.py` writes four figures (PDF + PNG): {validation, training} loss vs
-{steps, wall-clock}. **Steps** compares the methods as *optimizers* (same data, same
-number of updates); **wall-clock** compares them as *systems*, on the speedrun's own
-`train_time` clock, with validation and compilation excluded. The default is the raw
-curve, not the running-minimum "anytime best" envelope used in some published
-figures -- an envelope is monotone by construction and hides exactly the instability
-the sign methods are being tested for; `--anytime` overlays it dashed if you want the
-comparison. `--metric perplexity` relabels to `exp(loss)`; `--only Muon SignMuon`
-restricts the figure.
+| method | step | η₀ | val. loss | steps to 3.35 |
+|---|---|---|---|---|
+| `Muon` (== record #40) | lmo | 0.06 | **3.2785** | 1.00× |
+| `EF21-SignMuon` | lmo | 0.06 | 3.2860 | 1.02× |
+| `SignMuon` | sign | 0.03 | 3.2881 | 1.02× |
+| `MuonUSign` | lmo | 0.06 | 3.2959 | 1.05× |
+| `EF21-MuonUSign` | lmo | 0.06 | 3.3203 | 1.13× |
+| `EF21-MuonSign` (`W`) | lmo | 0.06 | 3.3213 | 1.14× |
+| `MuonSign` | sign | 0.03 | 3.3249 | 1.14× |
+| `SignSGD` | sign | 0.03 | 3.4049 | — |
+| `EF21-MuonSign` (`X`) | lmo | 0.06 | 5.5198 | — |
+
+For exploratory work rather than the paper's figures:
+
+```bash
+python plot_runs.py                                     # -> figures/exploratory/
+python plot_runs.py --both-themes --anytime --minutes
+```
+
+`plot_runs.py` writes four figures (PDF + PNG; eight with `--both-themes`):
+{validation, training} loss vs {steps, wall-clock}. **Steps** compares the methods as
+*optimizers* (same data, same number of updates); **wall-clock** compares them as
+*systems*, on the speedrun's own `train_time` clock, with validation and compilation
+excluded. The default is the raw curve, not the running-minimum "anytime best"
+envelope used in some published figures — an envelope is monotone by construction and
+hides exactly the instability the sign methods are being tested for; `--anytime`
+overlays it dashed if you want the comparison. `--metric perplexity` relabels to
+`exp(loss)`; `--only Muon SignMuon` restricts the figure. Its output is gitignored;
+the paper's three figures are not.
+
+## Provenance: which build produced which log
+
+A speedrun log embeds its own source, so this is checkable rather than asserted, and
+`make_tables.py` checks it: `MANIFEST.json` carries the SHA-256 of `train_gpt.py` and
+of `signmuon_optimizers.py` *as recorded in each log*, and `SUMMARY.md` labels the
+distinct builds. There are two, and one difference from the working tree. None of it
+invalidates the comparison, but all of it is worth knowing before you re-run anything.
+
+**Build B — the five non-EF21 arms** (`Muon`, `SignSGD`, `SignMuon`, `MuonUSign`,
+`MuonSign`). The first vintage. No compressor diagnostics, and the EF21 compressor's
+`mean|·|` was taken over the whole merged `qkvo_w` rather than per Q/K/V/O block.
+
+**Build A — the three EF21 arms**, re-run after that second point was fixed. The fix
+is confined to `_scaled_sign`, which **only the EF21 methods call**: `Muon` never
+compresses, and the other four transmit a bare entrywise `sign`, which is scale-free
+and therefore identical whether the tensor is read as one layer or four. So the five
+build-B arms are unaffected by it and were not re-run — the tables mix vintages, but
+not in a way that changes any of their numbers. Both vintages ran on the same node on
+the same day; `MANIFEST.json` shows the identical torch and driver.
+
+**The working tree differs from both, in one function.** `sign_pm1` now maps exact
+zeros to an independent random ±1, as the paper's convention requires (a transmitted
+`0` would make the alphabet ternary and break the one-bit accounting); the logged
+builds used `torch.sign`, i.e. `sign(0) = 0`. It bites in exactly one place on this
+model: record #40 zero-initializes `c_proj` and the `O` block of `qkvo_w`, so at step
+0 the gradient of every `c_fc` and of `Q/K/V` is *exactly* zero, and the four
+sign-terminated methods now take a full random ±1 step there instead of no step at
+all. The three EF21 methods are unaffected even at step 0, because their compressor
+scale `mean|Δ|` is then zero as well. A re-run will therefore not reproduce these
+curves bit-for-bit; it should reproduce them to well within the ±0.0009 seed spread
+record #40 reports.
+
+**The eight runs are unseeded.** Upstream modded-nanogpt seeds nothing, and neither
+did this port when they were made — `MANIFEST.json` records `seed: null` for all
+eight, and that means "whatever torch drew at process start", not "seed 0".
+`SIGNMUON_SEED` (default `0`) now pins it. Only the RNG is pinned: cuDNN/cuBLAS
+autotuning and the reduction order are left alone, because forcing deterministic
+kernels would change the very wall-clock the table reports.
 
 
 ## How the single A100 imitates 8×H100
@@ -330,7 +425,8 @@ So the 1-bit "compression" is a property of the update **rule**, reproduced exac
 the wire transport — the honest distributed analog of the centralized algorithms the paper
 analyzes. `EF21-MuonSign` keeps an exact server model `X` in state and lets the live
 params be the sign-compressed broadcast model `W`; `swap_in_exact()`/`swap_out_exact()`
-expose `X` for validation (the scripts report val loss on `X`).
+expose `X` for validation, and the scripts report the loss at **both** models on the
+same validation tokens.
 
 ## Testing
 
@@ -354,6 +450,11 @@ parameter in an early chunk but nothing in the last one needs a *fresh* scratch 
 the padded `reduce_scatter`; reusing the earlier one silently zeroes an already-averaged
 gradient, which on 8 GPUs would have frozen six of the ten `attn_gate` matrices for the
 whole run without any error message.
+
+Neither test drives an input with an exact zero in it, so both are insensitive to the
+`sign_pm1` tie-breaking described under **Provenance**; the compressor tests do exercise
+it indirectly, since a residual confined to one Q/K/V/O block leaves the other three
+blocks at `mean|Δ| = 0` and the random signs there must still be scaled away to nothing.
 
 ## Why record #40 (and not the current NorMuon record)
 

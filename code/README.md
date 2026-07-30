@@ -24,7 +24,7 @@ python3 -m tests.test_code          # CPU only, no downloads, ~1 min
 | see the convex-benchmark modes | [`synthetic/`](synthetic/README.md) |
 | run the language-modelling arm | [`nanogpt/`](nanogpt/README.md) |
 | know what the tests actually pin | [`tests/`](tests/README.md) |
-| redraw a figure | `counterexamples.run_counterexamples`, `synthetic.plot_synthetic`, `centralized.plot_analysis`, `federated.plot_article` — see [REPRODUCE.md](REPRODUCE.md) |
+| redraw a figure | `counterexamples.run_counterexamples`, `synthetic.plot_synthetic`, `centralized.plot_analysis`, `federated.plot_article`, `nanogpt/plot_article.py` — see [REPRODUCE.md](REPRODUCE.md) |
 | package this for double-blind review | [ANONYMIZATION.md](ANONYMIZATION.md) |
 
 ```
@@ -40,7 +40,11 @@ code/
 ├── counterexamples/      Theorems 1–4, exact LMO
 ├── nanogpt/              modded-nanogpt speedrun port
 ├── tests/test_code.py    the CPU test suite
-└── results/              all output (created on first run)
+└── results/              all output (created on first run; gitignored except nanogpt/)
+    ├── synthetic/        per-method JSON, figures, SUMMARY.md, MANIFEST.json
+    ├── federated/        per-run metrics.json (one directory per config x seed)
+    ├── analysis/         the centralized figures
+    └── nanogpt/          the eight speedrun logs, CSVs, figures, SUMMARY.md
 ```
 
 Each of the four experiments follows the same shape — **compute on the GPU box → one

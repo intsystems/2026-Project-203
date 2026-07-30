@@ -5,7 +5,9 @@ the training script and of ``signmuon_optimizers.py`` (so the run reproduces
 itself), then a JSON ``RUNMETA`` header, then one line per step. Excellent for
 provenance, useless for plotting. This module extracts the numbers.
 
-Outputs (into ``-o OUTDIR``, default ``results/``):
+Outputs (into ``-o OUTDIR``, default ``../results/nanogpt/``, the tree
+REPRODUCE.md treats as this arm's results, beside ``synthetic/`` and
+``federated/``):
 
 ``runs.csv``
     One row per run: optimizer, lr, momentum, weight decay, lr-scaling rule,
@@ -34,8 +36,8 @@ optimizers.
 
 Usage
 -----
-    python parse_logs.py logs -o results
-    python parse_logs.py logs/Muon_lr0.06_ab12cd34.txt logs/SignMuon_*.txt
+    python parse_logs.py                     # the eight canonical runs
+    python parse_logs.py ../results/nanogpt/logs/Muon_lr0.06_5db64adc.txt
 """
 
 from __future__ import annotations
@@ -46,6 +48,11 @@ import json
 import re
 from pathlib import Path
 from typing import Any, Iterable
+
+#: Paths default to this arm's results tree, resolved against this file so
+#: the scripts work from any working directory.
+_HERE = Path(__file__).resolve().parent
+
 
 __all__ = ["parse_log", "parse_many", "write_csv", "RunRecord"]
 
@@ -240,6 +247,10 @@ def parse_log(path: Path) -> RunRecord | None:
         momentum=meta.get("momentum"),
         weight_decay=meta.get("weight_decay"),
         lr_scaling=meta.get("lr_scaling"),
+        # Absent from logs written before the seed knob existed (the eight runs in
+        # the paper), where the initialization is whatever torch drew at process
+        # start -- so `None` here means "unseeded", not "seed 0".
+        seed=meta.get("seed"),
         world_size=meta.get("world_size"),
         train_steps=meta.get("train_steps", total_steps),
         tokens_per_step=meta.get("tokens_per_step"),
@@ -269,42 +280,37 @@ def parse_log(path: Path) -> RunRecord | None:
     return rec
 
 
-def time_to_loss(rec: RunRecord, target: float) -> float | None:
+def _first_crossing(pts: list[tuple[float, float]], target: float) -> float | None:
+    """First x at which the piecewise-linear curve through ``pts`` reaches
+    ``target`` from above. ``None`` if it never does."""
+    prev = None
+    for x, v in pts:
+        if v <= target:
+            if prev is None:
+                return float(x)
+            px, pv = prev
+            if pv == v:
+                return float(x)
+            return px + (pv - target) / (pv - v) * (x - px)
+        prev = (x, v)
+    return None
+
+
+def time_to_loss(rec: RunRecord, target: float, key: str = "val_loss") -> float | None:
     """Training milliseconds until validation loss first reaches ``target``.
 
     Linearly interpolates between the two bracketing validation points, so the
     number does not depend on where the (coarse) validation grid happens to fall.
     """
-    pts = [(s["wallclock_ms"], s["val_loss"]) for s in rec.steps
-           if s["val_loss"] is not None and s["wallclock_ms"] is not None]
-    prev = None
-    for ms, v in pts:
-        if v <= target:
-            if prev is None:
-                return ms
-            pms, pv = prev
-            if pv == v:
-                return ms
-            frac = (pv - target) / (pv - v)
-            return pms + frac * (ms - pms)
-        prev = (ms, v)
-    return None
+    return _first_crossing([(s["wallclock_ms"], s[key]) for s in rec.steps
+                            if s.get(key) is not None
+                            and s["wallclock_ms"] is not None], target)
 
 
-def steps_to_loss(rec: RunRecord, target: float) -> float | None:
+def steps_to_loss(rec: RunRecord, target: float, key: str = "val_loss") -> float | None:
     """Optimizer steps until validation loss first reaches ``target``."""
-    pts = [(s["step"], s["val_loss"]) for s in rec.steps if s["val_loss"] is not None]
-    prev = None
-    for st, v in pts:
-        if v <= target:
-            if prev is None:
-                return float(st)
-            pst, pv = prev
-            if pv == v:
-                return float(st)
-            return pst + (pv - target) / (pv - v) * (st - pst)
-        prev = (st, v)
-    return None
+    return _first_crossing([(s["step"], s[key]) for s in rec.steps
+                            if s.get(key) is not None], target)
 
 
 def parse_many(paths: Iterable[Path]) -> list[RunRecord]:
@@ -323,18 +329,43 @@ def parse_many(paths: Iterable[Path]) -> list[RunRecord]:
 
 
 _RUN_FIELDS = ["run_id", "optimizer", "family", "lr", "momentum", "weight_decay",
-               "lr_scaling", "world_size", "gpu", "train_steps", "last_step",
+               "lr_scaling", "seed", "world_size", "gpu", "train_steps", "last_step",
                "diverged", "val_rose", "completed", "final_val_loss", "best_val_loss",
                "final_val_loss_w", "best_val_loss_w",
                "train_time_ms", "ms_per_step", "peak_memory_mib", "log"]
 
 
+def _relative_log(path_str: str, outdir: Path) -> str:
+    """The log's path as recorded in the outputs: relative to ``outdir`` when it
+    sits under it, else the bare filename.
+
+    Never the absolute path. These CSVs ship in the repository and in the
+    double-blind bundle, and an absolute path carries the analyst's username --
+    which is exactly what ``anonymize.py`` fails the build on.
+    """
+    p = Path(path_str)
+    if not p.is_absolute():          # already rewritten; idempotent
+        return p.as_posix()
+    try:
+        return p.resolve().relative_to(outdir.resolve()).as_posix()
+    except ValueError:
+        return p.name
+
+
 def write_csv(records: list[RunRecord], outdir: Path, targets: list[float]) -> None:
     outdir.mkdir(parents=True, exist_ok=True)
+    for r in records:
+        r["log"] = _relative_log(r["log"], outdir)
 
     fields = list(_RUN_FIELDS)
     for t in targets:
-        fields += [f"steps_to_{t:g}", f"ms_to_{t:g}"]
+        # ``_w`` columns are the same crossing measured on EF21-MuonSign's
+        # broadcast model, and are empty for every other method. They exist
+        # because the X column never reaches these targets for that one arm, so a
+        # single set of columns would report "never" for a method that in fact
+        # trains normally at the iterate its gradients are taken at.
+        fields += [f"steps_to_{t:g}", f"ms_to_{t:g}",
+                   f"steps_to_{t:g}_w", f"ms_to_{t:g}_w"]
     with (outdir / "runs.csv").open("w", newline="", encoding="utf-8") as fh:
         w = csv.DictWriter(fh, fieldnames=fields)
         w.writeheader()
@@ -343,6 +374,9 @@ def write_csv(records: list[RunRecord], outdir: Path, targets: list[float]) -> N
             for t in targets:
                 row[f"steps_to_{t:g}"] = steps_to_loss(r, t)
                 row[f"ms_to_{t:g}"] = time_to_loss(r, t)
+                if r.get("final_val_loss_w") is not None:
+                    row[f"steps_to_{t:g}_w"] = steps_to_loss(r, t, "val_loss_w")
+                    row[f"ms_to_{t:g}_w"] = time_to_loss(r, t, "val_loss_w")
             w.writerow(row)
 
     with (outdir / "steps.csv").open("w", newline="", encoding="utf-8") as fh:
@@ -391,11 +425,15 @@ def _collect(inputs: list[str]) -> list[Path]:
 def main() -> None:
     ap = argparse.ArgumentParser(description=__doc__,
                                  formatter_class=argparse.RawDescriptionHelpFormatter)
-    ap.add_argument("inputs", nargs="+", help="log files and/or directories of logs")
-    ap.add_argument("-o", "--outdir", default="results", type=Path)
-    ap.add_argument("--target", type=float, nargs="*", default=[3.28],
+    ap.add_argument("inputs", nargs="*", default=[str(_HERE.parent / "results" / "nanogpt" / "logs")],
+                    help="log files and/or directories of logs "
+                         "(default: ../results/nanogpt/logs)")
+    ap.add_argument("-o", "--outdir", default=_HERE.parent / "results" / "nanogpt", type=Path)
+    ap.add_argument("--target", type=float, nargs="*", default=[3.35, 3.28],
                     help="val-loss targets for the time-to-loss columns "
-                         "(default 3.28, the speedrun's own target)")
+                         "(default 3.35, the threshold `tab:nanogpt` reports, "
+                         "and 3.28, the speedrun's own target -- which only the "
+                         "uncompressed Muon arm reaches inside the budget)")
     args = ap.parse_args()
 
     paths = _collect(args.inputs)

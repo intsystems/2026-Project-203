@@ -850,6 +850,16 @@ if "NANOGPT_ITERS" in os.environ:
     args.num_iterations = int(os.environ["NANOGPT_ITERS"])
 if "NANOGPT_VAL_EVERY" in os.environ:
     args.val_loss_every = int(os.environ["NANOGPT_VAL_EVERY"])
+# Seed. Upstream modded-nanogpt seeds nothing at all, so every record run starts
+# from a different initialization and reports a five-seed spread instead; we keep
+# the loop identical but pin the draw, so a re-run of one method reproduces its
+# own curve. Seeding the RNG is all that is pinned: cuDNN/cuBLAS autotuning and
+# the reduce_scatter reduction order stay as they are, because forcing
+# deterministic kernels would change the wall-clock that Table `tab:nanogpt`
+# reports. Every rank takes the SAME seed -- initialization is broadcast from
+# rank 0 anyway, and the only other RNG consumer is `sign_pm1` on the rank that
+# owns the parameter.
+seed = int(os.environ.get("SIGNMUON_SEED", 0))
 muon_momentum_target = opt_cfg["momentum"]  # final value of the momentum warmup/cooldown
 
 # Self-describing run id: the log filename alone identifies the experiment.
@@ -873,7 +883,9 @@ master_process = (rank == 0) # this process will do logging, checkpointing etc.
 logfile = None
 run_id = args.run_id
 if master_process:
-    logfile = os.path.join(os.environ.get("LOG_DIR", "logs"), f"{run_id}.txt")
+    logfile = os.path.join(
+        os.environ.get("LOG_DIR", os.path.join("..", "results", "nanogpt", "logs")),
+        f"{run_id}.txt")
     # `run_id` may contain a directory component, so create the *parent of the
     # logfile*, not just "logs" (record #40's default id was "new/<uuid>", which
     # crashed here on a fresh checkout because logs/new/ never got created).
@@ -903,6 +915,8 @@ def nvidia_smi():
 print0(nvidia_smi())
 print0("="*100)
 
+torch.manual_seed(seed)
+torch.cuda.manual_seed_all(seed)
 model: nn.Module = GPT(
     vocab_size=50257,
     num_layers=12,
@@ -952,6 +966,7 @@ print0("RUNMETA " + json.dumps(dict(
     momentum=opt_cfg["momentum"],
     weight_decay=opt_cfg["weight_decay"],
     lr_scaling=opt_cfg["lr_scaling"],
+    seed=seed,
     adam_lr=optimizer1.param_groups[0]["lr"],
     num_iterations=args.num_iterations,
     iteration_extension=args.iteration_extension,
