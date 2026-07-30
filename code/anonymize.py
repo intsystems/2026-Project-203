@@ -408,11 +408,50 @@ def _manifest(included: Sequence[str], stripped: Sequence[str]) -> str:
 # --------------------------------------------------------------------------
 
 
+def scrub_results(root: Path, write: bool = False) -> List[tuple]:
+    """Rewrite machine-specific paths out of an existing ``results/`` tree.
+
+    The writers scrub as they go, but a tree predating that carries the paths of
+    the box that made it -- and `results/` now ships with the code, so those files
+    are read rather than merely stored. Deleting them is the other option and a
+    worse one: they are results.
+
+    Text files only, in place, using the same `common.paths.scrub_text` the writers
+    use, so this cannot disagree with them. Returns ``(relative path, hits)`` per
+    file changed; ``write=False`` reports without touching anything.
+    """
+    from common.paths import scrub_text
+
+    results = root / "results"
+    changed = []
+    for path in sorted(results.rglob("*")) if results.is_dir() else []:
+        if not path.is_file() or not _scannable(path):
+            continue
+        try:
+            before = path.read_text(encoding="utf-8")
+        except (UnicodeDecodeError, OSError):
+            continue
+        after = scrub_text(before)
+        if after == before:
+            continue
+        rel = path.relative_to(root).as_posix()
+        changed.append((rel, sum(1 for a, b in zip(before.splitlines(),
+                                                   after.splitlines()) if a != b)))
+        if write:
+            path.write_text(after, encoding="utf-8")
+    return changed
+
+
 def main() -> int:
     p = argparse.ArgumentParser(description=__doc__,
                                 formatter_class=argparse.RawDescriptionHelpFormatter)
     p.add_argument("--check", action="store_true",
                    help="Scan for identifying material; exit 1 if anything is found")
+    p.add_argument("--scrub-results", action="store_true",
+                   help="Rewrite machine-specific paths out of results/ in place. "
+                        "Reports what it would change; add --write to apply")
+    p.add_argument("--write", action="store_true",
+                   help="With --scrub-results, actually rewrite the files")
     p.add_argument("--build", type=str, metavar="ZIP", default=None,
                    help="Write the anonymous supplement to this path")
     p.add_argument("--root", type=str, default=str(ROOT))
@@ -424,11 +463,23 @@ def main() -> int:
             print(f"{rule.name:<20} {rule.why}\n{'':<20} /{rule.pattern}/")
         return 0
 
-    if not args.check and not args.build:
-        p.error("nothing to do: pass --check and/or --build ZIP")
+    if not args.check and not args.build and not args.scrub_results:
+        p.error("nothing to do: pass --check, --scrub-results and/or --build ZIP")
 
     root = Path(args.root).resolve()
     status = 0
+
+    if args.scrub_results:
+        changed = scrub_results(root, write=args.write)
+        if not changed:
+            print(f"results/ under {root} already carries no machine-specific path.")
+        else:
+            verb = "Rewrote" if args.write else "Would rewrite"
+            print(f"{verb} {len(changed)} file(s):")
+            for rel, hits in changed:
+                print(f"    {rel}  ({hits} line(s))")
+            if not args.write:
+                print("\nNothing was written. Re-run with --write to apply.")
 
     if args.check:
         findings, with_outputs = scan_tree(root)
