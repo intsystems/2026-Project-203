@@ -41,6 +41,18 @@ command that computes, so there is nothing extra to remember. Section 6 (nanoGPT
 needs no archive: its logs are small enough to live in the repository, under
 `results/nanogpt/`, which is the one part of `results/` that git tracks.
 
+`results/` holds only what the paper currently reports:
+
+| Path | Arm |
+| :--- | :--- |
+| `article_export/`, `article_export.tar.gz`, `analysis/` | centralized (§4) |
+| `federated/`, `federated_export_results.zip`, `federated_overnight/`, `federated_tuning_logs/` | federated (§5) |
+| `synthetic/`, `synthetic_results.zip` | synthetic (§3) |
+| `nanogpt/` | language modelling (§6), git-tracked |
+
+Superseded runs live in `results_old/`, which nothing reads. Both directories are
+gitignored, apart from `results/nanogpt/`.
+
 ## The two overnight drivers
 
 Sections 4 and 5 are each one command:
@@ -231,10 +243,11 @@ the reported metrics mean.
 # 1. on the GPU box
 python3 -m centralized.overnight --device cuda:0 --download
 
-# 2. download the file it prints: results/article_export.tar.gz  (~1 MB)
+# 2. bring back the file it prints: results/article_export.tar.gz  (~1 MB)
+#    and unpack it to results/article_export/
 
-# 3. unpack it next to code/, then
-python3 -m centralized.plot_analysis --bundle article_export   # -> results/analysis/
+# 3. redraw the figures  ->  results/analysis/
+python3 -m centralized.plot_analysis
 ```
 
 The driver calls `centralized.export_article` when it finishes, so the archive is
@@ -244,9 +257,10 @@ of `model.pt`.
 
 Step 3 writes `fig:cifar_results` (`cifar_main`), `fig:cifar_curves_appendix`
 (`curves_75ep`), `fig:cifar_train_loss` (`train_loss_75ep`) and `fig:cifar_lr`
-(`lr_sensitivity`) as PNG and PDF, and prints the range-matched sweep spreads the
-`fig:cifar_lr` caption quotes. Nothing is copied into `aaai_article/`
-automatically; do that deliberately.
+(`lr_sensitivity`) as PNG and PDF, and prints the two sweep spreads the
+`fig:cifar_lr` caption quotes: the absolute window `[0.01, 0.05]`, and the range
+within a factor of five of each method's own optimum. Nothing is copied into
+`aaai_article/` automatically; do that deliberately.
 
 At the 12.9 s/epoch measured on an RTX A4000 the schedule reads:
 
@@ -272,16 +286,11 @@ The archive contains:
 | `overnight/` | `REPORT.md` and `state.json` from the driver |
 | `MANIFEST.md` | what each file is, and how many seeds each configuration carries |
 
-> **Redrawing the *submitted* figures, before the re-run lands.** The figures in the
-> current submission came from the 2026-07-27 run, whose tree is on the GPU box
-> rather than in this repository. `centralized/table2_full.csv` and `curves*.json` —
-> `aggregate.py`'s outputs from that run — are committed, and
-> `python3 -m centralized.plot_analysis --legacy` reproduces all four figures from
-> them **byte for byte** (pinned by
-> `test_the_submitted_figures_can_still_be_redrawn`). Its sweep panel is test
-> accuracy at 15 epochs, because that is what the old protocol selected on; the
-> `--bundle` path is validation accuracy at 75. Delete those files once the re-run
-> has replaced the figures, not before.
+> **The AAAI-submitted figures.** The paper reports the 2026-07-30 re-run. The
+> figures in the frozen AAAI submission came from an earlier run under the
+> 15-epoch selection protocol, and the compatibility path that redrew them has been
+> removed along with its inputs. To reproduce them, check out the commit that
+> carried `centralized/table2_full.csv`.
 
 ### 4b. Selection happens at the reporting horizon
 

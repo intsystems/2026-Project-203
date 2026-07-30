@@ -198,8 +198,9 @@ cython_debug/
 code/data_federated/
 code/data/
 
-# Experiment output. All runs now land under code/results/ ; the rest are the
-# pre-reorganization output directories, kept ignored so old runs stay untracked.
+# Experiment output. What the paper currently reports lands under code/results/ ;
+# superseded runs are moved to code/results_old/ (see its README) and stay ignored,
+# as do the pre-reorganization output directories below.
 # The CIFAR, federated and synthetic trees are large and are shipped as the
 # export bundles REPRODUCE.md names, so they stay out of git. code/results/nanogpt/
 # is the exception and IS tracked: those eight runs cost an 8xH100 node and cannot

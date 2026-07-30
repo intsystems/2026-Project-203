@@ -227,25 +227,25 @@ We compare all six matrix-aware 1-bit methods against Muon, SignSGD, SGD and Ada
 \hline
 \textbf{Method} & $\boldsymbol{\eta_0}$ & \textbf{Test acc (\%)} & \textbf{Ep.\ to $\mathbf{90\%}$} \\
 \hline
-EF21-SignMuon & $0.01$ & $94.64 \pm 0.24$ & $8.7$ \\
-SignMuon & $0.02$ & $94.53 \pm 0.22$ & $8.3$ \\
-Muon & $0.05$ & $94.49 \pm 0.09$ & $7.7$ \\
+SignMuon & $0.02$ & $94.60 \pm 0.15$ & $7.7$ \\
+Muon & $0.1$ & $94.35 \pm 0.27$ & $7.7$ \\
+EF21-SignMuon & $0.02$ & $94.31 \pm 0.11$ & $9.0$ \\
 \hline
-EF21-MuonSign & $0.01$ & $94.22 \pm 0.13$ & $10.3$ \\
-EF21-MuonUSign & $0.2$ & $94.15 \pm 0.16$ & $8.7$ \\
-MuonUSign & $0.02$ & $93.90 \pm 0.08$ & $10.0$ \\
-MuonSign & $0.005$ & $93.65 \pm 0.21$ & $15.0$ \\
+EF21-MuonUSign & $0.05$ & $94.14 \pm 0.07$ & $10.3$ \\
+EF21-MuonSign & $0.005$ & $94.04 \pm 0.10$ & $11.0$ \\
+MuonUSign & $0.02$ & $93.98 \pm 0.12$ & $10.3$ \\
 \hline
-Adam & $0.0005$ & $93.35 \pm 0.15$ & $18.8$ \\
-SignSGD & $0.002$ & $93.27 \pm 0.16$ & $19.0$ \\
-SGD & $0.02$ & $93.13 \pm 0.07$ & $21.7$ \\
+Adam & $0.001$ & $93.37 \pm 0.27$ & $20.0$ \\
+SignSGD & $0.002$ & $93.37 \pm 0.26$ & $19.0$ \\
+MuonSign & $0.1$ & $93.31 \pm 0.21$ & $17.7$ \\
+SGD & $0.02$ & $93.04 \pm 0.14$ & $21.3$ \\
 \hline
 \end{tabular}
 \caption{Centralized ResNet-18 / CIFAR-10, $75$ epochs. Test accuracy is the mean $\pm$ s.d.\ over three seeds of the last five epochs; ``Ep.\ to $90\%$'' is the mean epoch at which it first reaches $90\%$.}
 \label{tab:cifar_main}
 \end{table}
 
-The top three rows of Table~\ref{tab:cifar_main} lie within one seed spread, so we claim only that sign-after \emph{matches} Muon at one bit per parameter, error feedback costing nothing measurable besides. What does resolve is the comparison against SignSGD, which spends the same budget without the \textsc{lmo}: that margin measures the geometry, not the compressor. Within the family the ordering exceeds the noise, after before both sides, and the training loss orders the methods identically (Figure~\ref{fig:cifar_train_loss}). The threshold column separates them far more sharply: SignMuon reaches $90\%$ in $8.3$ epochs against $18.8$--$21.7$ for SGD, SignSGD and Adam, and orthogonalization's overhead still leaves a ${\sim}2\times$ wall-clock margin.
+Sign-after heads the table, but its margin over Muon is smaller than one seed spread, so what Table~\ref{tab:cifar_main} supports is that it \emph{matches} Muon at one bit per parameter rather than exceeds it. Error feedback is no longer costless: EF21-SignMuon lies $0.29$ points below SignMuon against standard deviations of $0.11$ and $0.15$, while remaining level with Muon. The separation that does resolve is the $1.2$ points over SignSGD, which spends the same budget without the \textsc{lmo} and is therefore attributable to the geometry rather than to the compressor. Both families order the placements after, before, both sides, decisively in the absence of error feedback and within the seed spread in its presence, and sign-on-both-sides now lies below SignSGD, as it does under federation. The threshold column separates the methods more sharply: SignMuon attains $90\%$ in $7.7$ epochs against $19.0$--$21.3$ for SGD, SignSGD and Adam, and the overhead of orthogonalization still leaves a factor of about two in wall-clock.
 
 \subsection{Federated Learning}
 \begin{table}[!tb]

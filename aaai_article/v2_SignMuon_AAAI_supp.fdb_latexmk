@@ -1,13 +1,13 @@
 # Fdb version 4
-["bibtex v2_SignMuon_AAAI_supp"] 1785403821.41267 "v2_SignMuon_AAAI_supp.aux" "v2_SignMuon_AAAI_supp.bbl" "v2_SignMuon_AAAI_supp" 1785403827.78288 0
+["bibtex v2_SignMuon_AAAI_supp"] 1785441235.70693 "v2_SignMuon_AAAI_supp.aux" "v2_SignMuon_AAAI_supp.bbl" "v2_SignMuon_AAAI_supp" 1785442508.40121 0
   "./aaai2027.bst" 1784372872.09358 31700 78a7412522b7a75ae1844843e9fe6300 ""
   "./references.bib" 1785325153.73652 26719 86f9e7d5372b300ce0188334c9e90228 ""
-  "v2_SignMuon_AAAI_supp.aux" 1785403825.08481 16296 734a620d1e4f6a07e66ef5d568432137 "pdflatex"
+  "v2_SignMuon_AAAI_supp.aux" 1785442506.73078 16296 a1ca27d7fa647402e9256ea4f25a5cb2 "pdflatex"
   (generated)
   "v2_SignMuon_AAAI_supp.bbl"
   "v2_SignMuon_AAAI_supp.blg"
   (rewritten before read)
-["pdflatex"] 1785403822.21001 "v2_SignMuon_AAAI_supp.tex" "v2_SignMuon_AAAI_supp.pdf" "v2_SignMuon_AAAI_supp" 1785403827.78646 0
+["pdflatex"] 1785442504.91207 "v2_SignMuon_AAAI_supp.tex" "v2_SignMuon_AAAI_supp.pdf" "v2_SignMuon_AAAI_supp" 1785442508.40283 0
   "C:/Users/Alex/AppData/Local/MiKTeX/fonts/map/pdftex/pdftex.map" 1785258241.15146 277445 6f46880da4bfcdb9db4b56d0acd70e14 ""
   "C:/Users/Alex/AppData/Local/MiKTeX/miktex/data/le/pdftex/pdflatex.fmt" 1741112456.67984 12015339 4b6bf11704e52ef6abfe6d06cad4bac2 ""
   "C:/Users/Alex/AppData/Local/Programs/MiKTeX/fonts/enc/dvips/base/8r.enc" 1458473887 4993 1194fb36dfcb11d9ae9802f2b00b60a3 ""
@@ -156,22 +156,22 @@
   "aaai2027.sty" 1784372872.09458 17345 deb6e992ae24fc750226a0fd63df1fa4 ""
   "ef21_musign_reduction.tex" 1785325153.73352 24288 3a4965f410ccf2a412cbb9cc88547b69 ""
   "ef21_signmuon_divergence.tex" 1785325153.73452 21580 b1b3202d6d31e9fc74684b6e1497ffdf ""
-  "images/centralized_images/curves_75ep.pdf" 1785274800.79858 68346 054fbb01b83eb961cb26fb6b61ee978a ""
-  "images/centralized_images/lr_sensitivity.pdf" 1785274800.80058 41583 b3b334be68639ff84db27f4f59f733e3 ""
-  "images/centralized_images/train_loss_75ep.pdf" 1785274800.80158 51779 5905df14ddacd3a77af86818daa32d2e ""
+  "images/centralized_images/curves_75ep.pdf" 1785441053.59913 68408 2e7da7da34fc03134348d7d823c3fcac ""
+  "images/centralized_images/lr_sensitivity.pdf" 1785441053.60211 41560 6412e0331865db19176a3e4d4bb5e629 ""
+  "images/centralized_images/train_loss_75ep.pdf" 1785441053.60013 51775 764d22ffbf334b6738353f69244f18ee ""
   "images/counterexamples/ef21_signmuon_momentum.pdf" 1785399092.56897 116491 9d673b88331ab8b069fce1aaad594d17 ""
   "images/federated_images/fig_federated_main.pdf" 1785274800.80958 59632 4f91ee26fce2c2abbc67ed41e30b59c0 ""
   "images/nanogpt/fig_nanogpt_appendix.pdf" 1785306049.12796 160482 5408af9804fdfa6507db1f27dd439fe2 ""
   "images/nanogpt/fig_nanogpt_diag.pdf" 1785306049.12996 43185 ec204dccb5f762eb1e9a6aec5ffec899 ""
   "images/synt/diagnostics.pdf" 1785304171.19003 53954 ebc7ae9421dcfafe111eb29f0fb6b092 ""
   "images/synt/synthetic_main.pdf" 1785305339.85062 396614 f3c72b08a7d576ffdc764e96caff58a5 ""
-  "signmuon_appendix.tex" 1785403731.62535 133007 6d29e2bb531dfe0bc14e6cebf37236d0 ""
+  "signmuon_appendix.tex" 1785442487.63116 134902 78781a768ef986d3f3e5d95ede69a3d2 ""
   "signmuon_mishra_comparison.tex" 1785312804.56011 5272 e487c2ef8769cbfdd52eda6ba86f9d30 ""
   "signmuon_preamble.tex" 1785325153.74352 9620 74abd8dba6111e35cdf09219b598aad8 ""
-  "v2_SignMuon_AAAI.aux" 1785403780.29463 8825 480b3feb635afd882f0283965814c460 ""
+  "v2_SignMuon_AAAI.aux" 1785442502.56221 8825 49af64f1e7e08c1b648fb0bbdafb9ec2 ""
   "v2_SignMuon_AAAI.tex" 1785274800.85259 1007 9495da00f008a4320abb685cc4f70121 ""
-  "v2_SignMuon_AAAI_supp.aux" 1785403825.08481 16296 734a620d1e4f6a07e66ef5d568432137 "pdflatex"
-  "v2_SignMuon_AAAI_supp.bbl" 1785403822.02483 8820 e411749b363e600347bab4188cdf7d09 "bibtex v2_SignMuon_AAAI_supp"
+  "v2_SignMuon_AAAI_supp.aux" 1785442506.73078 16296 a1ca27d7fa647402e9256ea4f25a5cb2 "pdflatex"
+  "v2_SignMuon_AAAI_supp.bbl" 1785441236.01151 8820 e411749b363e600347bab4188cdf7d09 "bibtex v2_SignMuon_AAAI_supp"
   "v2_SignMuon_AAAI_supp.tex" 1785274800.9146 1314 40ef68682369a82abdd5a6b0d8342c36 ""
   (generated)
   "v2_SignMuon_AAAI_supp.aux"

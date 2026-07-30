@@ -2305,7 +2305,8 @@ def test_unpacked_result_bundles_are_excluded_from_scan_and_bundle():
                 "centralized/article_export.stale_2026-07-29/MANIFEST.md",
                 "federated_export/SUMMARY.md",
                 "federated_export_results.zip",
-                "results/federated/run/seed0/metrics.json"):
+                "results/federated/run/seed0/metrics.json",
+                "results_old/synthetic_prefix_grid/SUMMARY.md"):
         assert anonymize._excluded(rel), f"{rel} should be excluded"
 
     # ...without swallowing the source that lives beside them.
@@ -2852,49 +2853,6 @@ def test_every_cross_module_import_resolves():
                               f"not define it")
     assert not broken, "dangling imports:\n  " + "\n  ".join(broken)
 
-
-def test_the_submitted_figures_can_still_be_redrawn():
-    """The pre-2026-07-29 plotting inputs must keep working.
-
-    ``centralized/table2_full.csv`` and ``curves*.json`` are what the figures in
-    the current submission were drawn from, and the run tree behind them is not in
-    this repository -- it is on the machine that produced it. Until the re-run at
-    the new protocol lands, deleting those files or breaking ``LegacyBundle`` would
-    make a published figure unreproducible, and nothing else would notice.
-
-    Pinned here rather than trusted: the exporter's bundle format is what the code
-    is being moved to, so this path has no other user to keep it honest.
-    """
-    from pathlib import Path
-
-    from centralized.plot_analysis import PANELS, LegacyBundle, window_spreads
-
-    here = Path(__file__).resolve().parent.parent / "centralized"
-    for name in ("table2_full.csv", "curves.json", "curves_train_loss.json"):
-        assert (here / name).exists(), (
-            f"{name} is gone; the submitted figures can no longer be redrawn. "
-            f"Restore it from git history, or replace it with an export bundle.")
-
-    bundle = LegacyBundle(here)
-    reported = bundle.reported()
-    wanted = [m for _, ms in PANELS for m in ms] + ["muon"]
-    missing = [m for m in wanted if m not in reported]
-    assert not missing, f"no 75-epoch runs for {missing}"
-
-    # Every panelled method must have a curve for both figure metrics, or a panel
-    # would silently lose a line.
-    for method in wanted:
-        for metric in ("test_acc", "train_loss"):
-            curve = bundle.curve(method, reported[method]["lr"], metric)
-            assert curve and len(curve["steps"]) > 50, (method, metric)
-
-    # The fig:cifar_lr caption quotes these. They are the check that the reader
-    # still selects the same rows as the code that drew the submitted figure.
-    spreads = window_spreads(bundle.sweep())
-    assert abs(spreads["signmuon"] - 0.16) < 0.005, spreads
-    assert abs(spreads["muon"] - 0.28) < 0.005, spreads
-    assert abs(spreads["adam"] - 1.57) < 0.005, spreads
-    assert abs(spreads["signsgd"] - 2.82) < 0.005, spreads
 
 
 def test_grid_anchors_boost_only_the_sign_family():

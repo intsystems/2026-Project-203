@@ -762,8 +762,9 @@ def main(argv: Optional[Sequence[str]] = None) -> int:
     if not args.no_archive:
         archive = make_archive(args.out)
         print(f"archive: {archive}  ({archive.stat().st_size / 1024:.0f} KiB)")
-        print("  ^ this single file is what to bring home. Unpack it, then:\n"
-              "      python3 -m centralized.plot_analysis --bundle article_export")
+        print("  ^ this single file is what to bring home. Unpack it to\n"
+              "    results/article_export/, then:\n"
+              "      python3 -m centralized.plot_analysis")
 
     if not args.quiet:
         print_summary(runs, args.targets)

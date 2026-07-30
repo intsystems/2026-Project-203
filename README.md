@@ -133,10 +133,11 @@ python3 -m centralized.overnight --device cuda:0 --budget-hours 12 --download
 python3 -m federated.overnight   --device cuda:0 --budget-hours 24 --download
 ```
 
-Download that archive and redraw the figures anywhere:
+Download that archive, unpack it to `results/article_export/`, and redraw the
+figures anywhere:
 
 ```bash
-python3 -m centralized.plot_analysis --bundle article_export
+python3 -m centralized.plot_analysis
 python3 -m federated.plot_article --bundle results/federated_export_results.zip
 ```
 

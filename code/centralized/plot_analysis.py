@@ -1,22 +1,13 @@
 """Figures for the centralized ResNet-18/CIFAR-10 study.
 
-    python3 -m centralized.plot_analysis --bundle article_export   # the new protocol
-    python3 -m centralized.plot_analysis --legacy                  # the submitted figures
+    python3 -m centralized.plot_analysis
 
-Both write to ``results/analysis/``. Two input formats, one set of figure
-functions:
-
-* **``--bundle``** reads ``runs.csv`` and ``curves.csv`` from
-  ``python3 -m centralized.export_article``. That is the point of the bundle: a
-  few hundred KiB, so the figures can be redrawn on a laptop from the one archive
-  brought off the GPU box, and every figure is a function of exactly the files the
-  paper ships.
-* **``--legacy``** reads `aggregate.py`'s ``table2_full.csv`` and ``curves*.json``
-  from ``centralized/``. These are the files the *submitted* figures were drawn
-  from, and the run tree behind them is not local, so this path stays until the
-  re-run at the new protocol lands. It reproduces those figures as published --
-  including the sweep panel's test accuracy at 15 epochs, which is what the old
-  protocol selected on.
+Writes to ``results/analysis/``. The input is ``--bundle`` (default
+``results/article_export``): the ``runs.csv`` and ``curves.csv`` written by
+``python3 -m centralized.export_article``. That is the point of the bundle -- a
+few hundred KiB, so the figures can be redrawn on a laptop from the one archive
+brought off the GPU box, and every figure is a function of exactly the files the
+paper ships.
 
 Three figures for the paper, one diagnostic:
 
@@ -32,9 +23,10 @@ uncompressed baselines -- with Muon repeated in each as a gray reference, since
 every comparison in the paper is against it. Each is written as both PNG and PDF,
 and authored at its printed width so a point is a point.
 
-Numbers quoted in the captions (the range-matched sweep spreads) are **printed**
-at the end of a run rather than read off the plot, so a caption can be checked
-against the data it describes.
+The two sweep spreads the ``fig:cifar_lr`` caption quotes -- the absolute window
+``[0.01, 0.05]``, and the range within a factor of five of each method's own
+optimum -- are **printed** at the end of a run rather than read off the plot, so
+the caption can be checked against the data it describes.
 
 Nothing here writes into ``aaai_article/``: the paper's figures are copied over
 deliberately, not overwritten by a plotting run.
@@ -44,7 +36,6 @@ from __future__ import annotations
 
 import argparse
 import csv
-import json
 import math
 from collections import defaultdict
 from pathlib import Path
@@ -131,13 +122,9 @@ def read_rows(path: Path) -> List[Dict[str, str]]:
 class Bundle:
     """``runs.csv`` + ``curves.csv``, indexed the two ways the figures need."""
 
-    #: The selection phase now ranks on validation accuracy; ``LegacyBundle``
-    #: overrides this because the old protocol's sweep panel is test accuracy.
+    #: What the sweep panel plots, for its axis label: the selection phase ranks
+    #: on validation accuracy.
     sweep_metric = "validation"
-    #: Autoscale the sweep panel: a rate two lattice steps off the optimum can sit
-    #: anywhere, and a fixed window inherited from another protocol would clip it
-    #: silently. ``LegacyBundle`` pins the published one instead.
-    sweep_ylim: Optional[Tuple[float, float]] = None
 
     def __init__(self, root: Path, final_epochs: int = 75) -> None:
         self.root = root
@@ -233,117 +220,6 @@ class Bundle:
         return {"steps": steps, "mean": mean, "std": std, "n_seeds": len(per_seed)}
 
 
-class LegacyBundle:
-    """The pre-2026-07-29 inputs: `aggregate.py`'s summary CSV plus curve JSONs.
-
-    The figures in the current submission were drawn from these files, and the run
-    tree that produced them is not local, so this path has to keep working until
-    the re-run at the new protocol lands. It is a read-only compatibility shim
-    exposing the same three accessors as ``Bundle``, so there is still exactly one
-    set of figure functions -- two of those would drift, and the published figures
-    are the ones that must not move.
-
-    Two differences from the bundle path are real and are surfaced rather than
-    papered over: these files carry only seed-*aggregated* curves (per-seed data
-    was never written out), and the sweep panel holds **test** accuracy at 15
-    epochs, because that is what the old protocol selected on. The new protocol
-    selects on validation accuracy at the reporting horizon; ``sweep_metric`` and
-    ``sweep_epochs`` carry the difference into the axis label.
-    """
-
-    #: Runs belonging to a side experiment rather than the main comparison.
-    #: ``split=tune`` held a validation set out of training, so its test accuracy
-    #: is not comparable with a full-split run; ``scale_baselines=True`` applies
-    #: the per-layer rule to SGD/Adam, which is a different question. Both fields
-    #: appear in a label only when `aggregate.unique_labels` had to disambiguate.
-    EXCLUDE = {"split": "tune", "scale_baselines": "True"}
-
-    sweep_metric = "test"
-    #: The window the submitted fig:cifar_lr was drawn in, pinned so this path
-    #: reproduces it rather than merely resembling it.
-    sweep_ylim = (83.5, 95.2)
-
-    def __init__(self, root: Path, *, final_epochs: int = 75,
-                 sweep_epochs: int = 15) -> None:
-        self.root = root
-        self.final_epochs = final_epochs
-        self.sweep_epochs = sweep_epochs
-        self.rows = [r for r in self._summary(root / "table2_full.csv")]
-        self.curves = {
-            "test_acc": self._curves(root / "curves.json", "test_acc"),
-            "train_loss": self._curves(root / "curves_train_loss.json", "train_loss"),
-        }
-
-    @staticmethod
-    def _fields(label: str) -> Dict[str, str]:
-        return dict(tok.split("=", 1) for tok in label.split() if "=" in tok)
-
-    def _summary(self, path: Path) -> List[Dict]:
-        for r in read_rows(path):
-            f = self._fields(r["label"])
-            if any(f.get(k) == v for k, v in self.EXCLUDE.items()):
-                continue
-            # `n_seeds` was renamed to `n_runs` when the aggregator learned to
-            # count runs rather than seeds; accept either, since these files
-            # predate the rename and a fresh one would not.
-            n = r.get("n_runs") or r.get("n_seeds") or "1"
-            yield {"label": r["label"], "opt": f["optimizer"],
-                   "epochs": int(f["epochs"]), "lr": float(f["lr"]),
-                   "acc": float(r["final_test_acc_mean"]), "n": int(n)}
-
-    @staticmethod
-    def _curves(path: Path, want: str) -> Dict[str, Dict]:
-        if not path.exists():
-            print(f"[skip] {path.name} not found; figures needing {want} are omitted")
-            return {}
-        payload = json.loads(path.read_text(encoding="utf-8"))
-        if payload.get("metric") != want:
-            print(f"[warn] {path.name} holds {payload.get('metric')!r}, not {want!r}")
-        return dict(payload.get("curves") or {})
-
-    def reported(self) -> Dict[str, Dict]:
-        out: Dict[str, Dict] = {}
-        for r in self.rows:
-            if r["epochs"] != self.final_epochs:
-                continue
-            cand = {"lr": r["lr"], "n_seeds": r["n"], "acc": r["acc"],
-                    "label": r["label"]}
-            prev = out.get(r["opt"])
-            # Seed count first: a 3-seed group and a 1-seed group can sit at the
-            # same rate and differ only in weight decay, and the better-measured
-            # one is the one to show even when the thinner one scored a shade higher.
-            if prev is None or (cand["n_seeds"], cand["acc"]) > (prev["n_seeds"],
-                                                                 prev["acc"]):
-                out[r["opt"]] = cand
-        return out
-
-    def sweep(self) -> Dict[str, Dict[float, float]]:
-        out: Dict[str, Dict[float, float]] = defaultdict(dict)
-        for r in self.rows:
-            if r["epochs"] == self.sweep_epochs:
-                out[r["opt"]][r["lr"]] = max(out[r["opt"]].get(r["lr"], -1e9),
-                                             r["acc"])
-        return out
-
-    def curve(self, optimizer: str, lr: float,
-              metric: str) -> Optional[Dict[str, List[float]]]:
-        entry = self.reported().get(optimizer)
-        table = self.curves.get(metric) or {}
-        got = table.get(entry["label"]) if entry else None
-        if got is None:
-            # No curve under the winning group's label. Fall back to the nearest
-            # rate that has one rather than dropping the method: ranking by the
-            # curve's own final value would depend on whether the metric is
-            # better-high (accuracy) or better-low (loss).
-            same = [(r["lr"], table[r["label"]]) for r in self.rows
-                    if r["opt"] == optimizer and r["epochs"] == self.final_epochs
-                    and r["label"] in table]
-            if not same:
-                return None
-            _, got = min(same, key=lambda t: abs(math.log(t[0]) - math.log(lr)))
-        return {"steps": got["steps"], "mean": got["mean"], "std": got["std"],
-                "n_seeds": got.get("n_runs", got.get("n", 1))}
-
 
 def best_curve(bundle, method: str, metric: str) -> Optional[Tuple[Dict, int]]:
     """``(curve, n_seeds)`` for ``method``'s reported configuration.
@@ -367,10 +243,13 @@ def best_curve(bundle, method: str, metric: str) -> Optional[Tuple[Dict, int]]:
 def window_spreads(sweep: Dict[str, Dict[float, float]]) -> Dict[str, float]:
     """Val-accuracy range of each method inside ``COMMON_WINDOW``.
 
-    This is the quantity the caption of ``fig:cifar_lr`` quotes, and quoting it
-    from the plot by eye is how a caption goes stale. Only rates every method was
-    swept over count, or a method with a wider grid is penalized for the extra
-    points at the ends.
+    One of the two spreads the caption of ``fig:cifar_lr`` quotes -- quoting either
+    from the plot by eye is how a caption goes stale. Only rates inside the shared
+    window count, or a method with a wider grid is penalized for the extra points
+    at the ends. A method swept nowhere near the window is absent from the result
+    rather than scored on one point; ``main`` names those, since a silently short
+    list would read as agreement. See ``relative_spreads`` for the comparison that
+    survives optima two decades apart.
     """
     lo, hi = COMMON_WINDOW
     out = {}
@@ -378,6 +257,31 @@ def window_spreads(sweep: Dict[str, Dict[float, float]]) -> Dict[str, float]:
         vals = [a for lr, a in pts.items() if lo <= lr <= hi]
         if len(vals) >= 2:
             out[method] = max(vals) - min(vals)
+    return out
+
+
+def relative_spreads(sweep: Dict[str, Dict[float, float]],
+                     factor: float = 5.0) -> Dict[str, Tuple[float, int]]:
+    """Val-accuracy range within ``factor`` either side of each method's optimum.
+
+    ``window_spreads`` matches an *absolute* interval, which was the right
+    comparison while the optima sat within a decade of one another. They no
+    longer do -- SignSGD selects 0.002 and Muon 0.1 -- so a fixed window now
+    measures how far each method's grid happens to lie from its own optimum
+    rather than how flat it is there. This matches the window to the method
+    instead: it is the quantity the caption of ``fig:cifar_lr`` quotes for the
+    SignMuon/SignSGD comparison, which is exact because those two emit steps of
+    identical Frobenius length.
+    """
+    out: Dict[str, Tuple[float, int]] = {}
+    for method, pts in sweep.items():
+        if not pts:
+            continue
+        star = max(pts, key=pts.get)
+        vals = [a for lr, a in pts.items()
+                if star / factor <= lr <= star * factor]
+        if len(vals) >= 2:
+            out[method] = (max(vals) - min(vals), len(vals))
     return out
 
 
@@ -416,8 +320,8 @@ def figure_lr_sensitivity(bundle, out: Path) -> Path:
                        f"{bundle.sweep_epochs} epochs",
                        color=INK_2, fontsize=FS_LABEL)
     axes[0].set_xlim(1.2e-4, 1.5)
-    if bundle.sweep_ylim:
-        axes[0].set_ylim(*bundle.sweep_ylim)
+    # The y-axis autoscales: a rate two lattice steps off the optimum can sit
+    # anywhere, and a fixed window would clip it silently.
 
     fig.subplots_adjust(left=0.075, right=0.985, top=0.975, bottom=0.185, wspace=0.16)
     return _save(fig, out / "lr_sensitivity.png")
@@ -587,28 +491,13 @@ def main() -> None:
                    default=here.parent / "results" / "article_export",
                    help="Directory written by centralized.export_article "
                         "(default: results/article_export)")
-    p.add_argument("--legacy", type=Path, nargs="?", const=here, default=None,
-                   metavar="DIR",
-                   help="Draw from aggregate.py's table2_full.csv + curves*.json "
-                        "instead (default DIR: centralized/). This is the path that "
-                        "reproduces the submitted figures, whose run tree is not "
-                        "local; it selects on test accuracy at --sweep-epochs, as "
-                        "the old protocol did")
     p.add_argument("--out", type=Path, default=here.parent / "results" / "analysis")
     p.add_argument("--epochs", type=int, default=75,
                    help="Reporting horizon, for the axis limits")
-    p.add_argument("--sweep-epochs", type=int, default=15,
-                   help="--legacy only: the horizon its learning-rate sweep was run "
-                        "at. The bundle path reads this off the data instead")
     args = p.parse_args()
 
-    if args.legacy is not None:
-        bundle = LegacyBundle(args.legacy, final_epochs=args.epochs,
-                              sweep_epochs=args.sweep_epochs)
-        source, n = args.legacy, len(bundle.rows)
-    else:
-        bundle = Bundle(args.bundle, final_epochs=args.epochs)
-        source, n = args.bundle, len(bundle.runs)
+    bundle = Bundle(args.bundle, final_epochs=args.epochs)
+    source, n = args.bundle, len(bundle.runs)
     args.out.mkdir(parents=True, exist_ok=True)
 
     reported = bundle.reported()
@@ -629,13 +518,25 @@ def main() -> None:
 
     # The caption of fig:cifar_lr quotes these; print them so it can be checked
     # rather than remembered.
-    spreads = window_spreads(bundle.sweep())
+    sweep = bundle.sweep()
+    spreads = window_spreads(sweep)
     if spreads:
         lo, hi = COMMON_WINDOW
-        print(f"\n{bundle.sweep_metric}-accuracy spread within the range-matched "
+        print(f"\n{bundle.sweep_metric}-accuracy spread within the absolute "
               f"window [{lo:g}, {hi:g}] -- quoted in the fig:cifar_lr caption:")
         for method, spread in sorted(spreads.items(), key=lambda kv: kv[1]):
             print(f"  {PRETTY.get(method, method):<16}{spread:6.2f} points")
+        absent = sorted(set(sweep) - set(spreads))
+        if absent:
+            print(f"  (not swept there: {', '.join(PRETTY.get(m, m) for m in absent)})")
+
+    rel = relative_spreads(sweep)
+    if rel:
+        print(f"\n{bundle.sweep_metric}-accuracy spread within a factor of 5 of "
+              f"each method's own optimum -- also quoted in that caption:")
+        for method, (spread, n) in sorted(rel.items(), key=lambda kv: kv[1][0]):
+            print(f"  {PRETTY.get(method, method):<16}{spread:6.2f} points "
+                  f"over {n} rates")
 
 
 if __name__ == "__main__":

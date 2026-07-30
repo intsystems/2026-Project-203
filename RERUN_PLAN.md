@@ -24,6 +24,11 @@ budget exponent comes out at `p ≈ 2`, not the `p ≈ 1` this file used to pred
 counterexample code did need one change after all — it followed `sign(0) = 0` where
 the paper randomizes — for which see §3.
 
+The **centralized** arm is outside this file's scope. It was re-run on 2026-07-30
+under the fixed code — 126 runs, three seeds, `η₀` selected at the reporting
+horizon — and its bundle now backs `tab:cifar_main`, `tab:cifar_central` and every
+centralized figure. See [`code/centralized/README.md`](code/centralized/README.md).
+
 ---
 
 ## 0. Before starting (10 min)
@@ -168,8 +173,9 @@ multiplier — that is the rule working, not a problem.
   phase's boundary column in `REPORT.md` — no rerun needed unless it was censored.
 * **`lr_aux = 0.001` is held fixed, not verified, in the federated arm.**
   `python3 -m federated.tune --stage aux --rounds 400` (~30 configs, ~2 h) would
-  let the appendix say "verified method-independent", which is what the
-  centralized arm can already claim from its own `aux` phase.
+  let the appendix report a measurement. Expect a bound on the exposure rather
+  than "verified method-independent": the centralized `aux` phase **disagreed** on
+  2026-07-30 (SignMuon `0.001`, Muon `0.002`, a difference of 0.16 points).
 
 ---
 
