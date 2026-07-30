@@ -38,6 +38,8 @@ from typing import Any, Dict, Iterable, List, Optional, Sequence
 import numpy as np
 import torch
 
+from common.paths import results_root as _results_root
+
 
 # --------------------------------------------------------------------------
 # Seeding
@@ -63,18 +65,6 @@ def seed_everything(seed: int, deterministic: bool = True) -> None:
     else:
         torch.backends.cudnn.deterministic = False
         torch.backends.cudnn.benchmark = True
-
-
-def make_generator(seed: int) -> torch.Generator:
-    """A ``torch.Generator`` for DataLoader shuffling.
-
-    Passing an explicit generator to every ``DataLoader`` decouples the batch
-    order from the global RNG, so model initialization and data order can be
-    seeded independently and neither is perturbed by the other.
-    """
-    g = torch.Generator()
-    g.manual_seed(int(seed))
-    return g
 
 
 def seed_worker(worker_id: int) -> None:  # pragma: no cover - needs num_workers>0
@@ -209,13 +199,11 @@ def results_root() -> Path:
     scratch filesystem, a network share. A multi-day sweep writes a ``model.pt``
     per job, and running the system disk out of space mid-run loses the night;
     pointing this at a roomy volume is cheaper than discovering that at 04:00.
-    ``aggregate.py`` and the plotting scripts pick the new location up
-    automatically, since they all resolve through here.
+
+    Defined in `common.paths`, which imports no torch, so that the exporters and
+    plotters can resolve the same override without it.
     """
-    override = os.environ.get("SIGNMUON_RESULTS")
-    if override:
-        return Path(override).expanduser()
-    return Path(__file__).resolve().parents[1] / "results"
+    return _results_root()
 
 
 def run_dir(saves_root: Path | str, run_name: str, seed: int) -> Path:

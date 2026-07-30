@@ -2,8 +2,9 @@
 
 Consumes ``steps.csv`` / ``runs.csv`` as written by ``parse_logs.py``:
 
-    python parse_logs.py logs -o results
-    python plot_runs.py results/steps.csv -o figures
+    python parse_logs.py    # ../results/nanogpt/logs/ -> ../results/nanogpt/*.csv
+    python plot_runs.py     # ../results/nanogpt/steps.csv
+                            #     -> ../results/nanogpt/figures/exploratory/
 
 and writes, for each of {steps, time} x {val, train}, a PDF and a PNG.
 

@@ -122,6 +122,10 @@ ALLOW = (
     "varunneal", "ragulpr",   # upstream contributors credited in the port
     "@torch", "@dataclass", "@property", "@staticmethod", "@contextmanager",
     "@classmethod", "@abstractmethod",
+    # Invented placeholders in `common/paths.py` and the test that pins it. That
+    # code exists to strip real home paths out of the export bundles, so it has to
+    # quote the shape of one; these three are not anybody's username.
+    "/home/someone/", "/home/u/", "/home/user/",
 )
 
 #: Files skipped by the scan itself. ``anonymize.py`` has to spell out the names it

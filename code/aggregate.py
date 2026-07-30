@@ -24,6 +24,8 @@ import math
 from pathlib import Path
 from typing import Any, Dict, Iterable, List, Optional, Sequence, Tuple
 
+from common.paths import results_root
+
 # Config fields that do not affect the trajectory (or that identify the run
 # rather than the experiment) and are therefore ignored when grouping.
 #
@@ -172,9 +174,11 @@ def main() -> None:
 
     here = Path(__file__).resolve().parent
     # Default: the whole results/ tree, plus the pre-reorganization directories so
-    # that runs made before the code was restructured are still picked up.
+    # that runs made before the code was restructured are still picked up. The
+    # results tree is resolved through `common.paths`, so a sweep redirected with
+    # SIGNMUON_RESULTS is aggregated from where it actually wrote.
     roots = [Path(r) for r in args.root] if args.root else [
-        here / "results", here / "saves", here / "saves_federated"]
+        results_root(), here / "saves", here / "saves_federated"]
     roots = [r for r in roots if r.exists()]
     if not roots:
         print("No saves directories found.")

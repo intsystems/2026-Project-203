@@ -18,6 +18,7 @@ is part of the path, so a multi-seed sweep is the same command with different
 from __future__ import annotations
 
 import argparse
+import sys
 from dataclasses import dataclass, fields
 
 from centralized.data import DEFAULT_VAL_SEED, VAL_SIZE
@@ -169,6 +170,11 @@ def main() -> None:
 
     args.optimizer = resolve_optimizer_name(args.optimizer)
     resolve_rule(args.lr_scaling)                 # fail fast on an unknown rule
+    if args.log_gain and not args.constant_lr:
+        print("WARNING: --log-gain without --constant-lr: the cosine schedule "
+              "saturates the accumulated update, so the growth exponent will "
+              "measure the schedule rather than the alignment of successive "
+              "steps. Pass --constant-lr.", file=sys.stderr)
     if args.dataset == "mnist":
         args.weight_decay = 0.0
 

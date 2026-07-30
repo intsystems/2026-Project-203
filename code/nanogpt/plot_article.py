@@ -9,7 +9,7 @@ from ``common.plotting``.
     python parse_logs.py
     python plot_article.py     # -> ../results/nanogpt/figures/fig_nanogpt_*.pdf
 
-Two figures:
+Three figures:
 
 ``fig_nanogpt_main``   (main text, 1 single-column panel)
     validation loss vs optimizer step for all eight methods, with a zoomed inset

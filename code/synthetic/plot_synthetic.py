@@ -1,7 +1,7 @@
 """Figures for the synthetic convex problem, from the JSON ``run_gpu`` writes.
 
     python3 -m synthetic.plot_synthetic                      # results/synthetic/
-    python3 -m synthetic.plot_synthetic --results results/synthetic_20x20
+    python3 -m synthetic.plot_synthetic --results results/synthetic_20x20  # --m 20 pass
     python3 -m synthetic.plot_synthetic --figures loss gnorm
 
 Reads ``results/synthetic*/<method>/<stage>.json`` and skips, with a message,
@@ -436,8 +436,9 @@ def get_args():
         description=__doc__, formatter_class=argparse.RawDescriptionHelpFormatter)
     p.add_argument("--results", default=None,
                    help="Directory holding <method>/<stage>.json "
-                        "(default: results/synthetic/). Point it at "
-                        "results/synthetic_20x20/ to plot a small-size pass.")
+                        "(default: results/synthetic/). A `run_gpu --m 20` "
+                        "small-size pass writes results/synthetic_20x20/, so "
+                        "point it there to plot one.")
     p.add_argument("--out", default=None,
                    help="Where to write the figures (default: <results>/figures/)")
     p.add_argument("--figures", nargs="+", default=sorted(FIGURES),
@@ -462,7 +463,7 @@ def main() -> int:
     if not results.is_dir():
         print(f"No results at {results.resolve()}.\n"
               f"Run `python3 -m synthetic.run_gpu` first (or `--m 20` for a "
-              f"small pass, which writes results/synthetic_20x20/).")
+              f"small pass, whose output lands in results/synthetic_20x20/).")
         return 1
     out = Path(args.out) if args.out else results / "figures"
 

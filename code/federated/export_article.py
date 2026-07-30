@@ -54,6 +54,8 @@ import zipfile
 from pathlib import Path
 from typing import Any, Dict, List, Optional, Sequence, Tuple
 
+from common.paths import repo_relative, results_root, scrub
+
 # code/ -- this file is code/federated/export_article.py. Recomputed locally rather
 # than imported from common.utils, which pulls in torch.
 ROOT = Path(__file__).resolve().parents[1]
@@ -518,7 +520,10 @@ def write_rules(rows: Sequence[Dict[str, Any]], out: Path) -> Path:
 
 def write_configs(runs: Sequence[Run], out: Path) -> Path:
     path = out / "configs.json"
-    payload = {run.path.parent.as_posix(): run.config for run in runs}
+    # Keys are run directories and the values hold whatever the CLI was given, so
+    # both can carry the absolute path -- hence the username -- of the box that
+    # ran them. `scrub` cuts those back to `results/...`; see `common/paths.py`.
+    payload = scrub({run.path.parent.as_posix(): run.config for run in runs})
     path.write_text(json.dumps(payload, indent=2, default=str), encoding="utf-8")
     return path
 
@@ -584,7 +589,10 @@ def copy_overnight(out: Path, driver_root: Path) -> List[str]:
     for name in ("REPORT.md", "state.json", "schedule.txt"):
         src = driver_root / name
         if src.is_file():
-            shutil.copy2(src, dest / name)
+            # Not a straight copy: `state.json` stores an absolute log and metrics
+            # path per job, which begins with a home directory (`common/paths.py`).
+            (dest / name).write_text(repo_relative(src.read_text(encoding="utf-8")),
+                                     encoding="utf-8")
             copied.append(name)
     return copied
 
@@ -798,9 +806,8 @@ def main(argv: Optional[Sequence[str]] = None) -> int:
                    help="Write the bundle directory but do not zip it")
     args = p.parse_args(argv)
 
-    # Resolved late and without importing torch, so this runs on a login node.
-    import os
-    results = Path(os.environ.get("SIGNMUON_RESULTS") or (ROOT / "results")).expanduser()
+    # Resolved without importing torch, so this runs on a login node.
+    results = results_root()
     root = args.root or results / "federated"
     out = args.out or results / "federated_export"
     driver = args.overnight or results / "federated_overnight"
@@ -841,7 +848,7 @@ def main(argv: Optional[Sequence[str]] = None) -> int:
     manifest = {
         "generated_by": "federated.export_article",
         "argv": [Path(sys.argv[0]).name] + list(sys.argv[1:]),
-        "source_tree": str(root.resolve()),
+        "source_tree": repo_relative(str(root.resolve())),
         "git": git_commit(),
         "runs": len(runs),
         "runs_by_phase": {ph: sum(1 for r in runs if r.phase == ph)

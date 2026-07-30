@@ -54,6 +54,7 @@ import matplotlib.pyplot as plt
 # panel would be unreadable for a dichromat reader. Muon is therefore chrome-gray,
 # not a fourth hue -- which is also what it is conceptually, the reference every
 # panel is read against.
+from common.paths import results_root                                   # noqa: E402
 from common.plotting import (FS_LABEL, GRID, INK_2, REFERENCE, SERIES,  # noqa: E402
                              SURFACE, TEXT_WIDTH, panel_legend, style_axes,
                              use_paper_style)
@@ -484,14 +485,15 @@ def _save(fig, path: Path) -> Path:
 
 
 def main() -> None:
-    here = Path(__file__).resolve().parent
+    # Honours SIGNMUON_RESULTS, so a run redirected to another volume plots from
+    # where it actually wrote.
+    results = results_root()
     p = argparse.ArgumentParser(description=__doc__,
                                 formatter_class=argparse.RawDescriptionHelpFormatter)
-    p.add_argument("--bundle", type=Path,
-                   default=here.parent / "results" / "article_export",
+    p.add_argument("--bundle", type=Path, default=results / "article_export",
                    help="Directory written by centralized.export_article "
                         "(default: results/article_export)")
-    p.add_argument("--out", type=Path, default=here.parent / "results" / "analysis")
+    p.add_argument("--out", type=Path, default=results / "analysis")
     p.add_argument("--epochs", type=int, default=75,
                    help="Reporting horizon, for the axis limits")
     args = p.parse_args()

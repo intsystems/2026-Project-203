@@ -66,6 +66,10 @@ OPTIMIZER_CHOICES = list(LMO_FAMILY) + ["sgd", "adam"]
 MATRIX_RULE_METHODS = {"signmuon", "ef21signmuon", "muonusign", "muonsign",
                        "ef21muonusign", "ef21muonsign", "muon"}
 
+#: Pre-refactor CLI spellings, kept so old commands and logs still resolve. There
+#: is deliberately no entry for the old ``MuonSign``, which used to denote the
+#: sign-BEFORE method the paper now calls MuonUSign: resolving it silently would
+#: change the algorithm rather than the label.
 ALIASES = {"ef_usignmuon": "ef21muonusign", "ef_udsignmuon": "ef21muonsign"}
 
 
@@ -446,7 +450,7 @@ def _summarize(history: History, args) -> None:
     test_loss = history.last_k_mean("test_loss", last_k)
     if test_loss is not None:
         print(f"test_loss mean of last {last_k:<3}: {test_loss:.4f}   "
-              f"(rises late; see REPRODUCE.md 4e)")
+              f"(rises late; see REPRODUCE.md 4a)")
     ep = history.steps_to_target("test_acc", target)
     print(f"epochs to {target:g}% test acc  : {ep if ep is not None else 'not reached'}")
     secs = history.values("epoch_seconds")

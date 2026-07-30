@@ -41,6 +41,7 @@ from typing import Dict, List
 from matplotlib.ticker import MaxNLocator
 
 from aggregate import aggregate_group, group_key, load_runs
+from common.paths import results_root
 from common.plotting import (FS_ANNOT, FS_LEGEND, MUTED, SURFACE, TEXT_WIDTH,
                              color_of, label_of, marker_of, order_methods,
                              save_figure, style_axes, use_paper_style)
@@ -247,7 +248,9 @@ def main() -> int:
     p.add_argument("--bundle", default=None,
                    help="Archive from 'federated.export_article' -- the .zip itself "
                         "or the directory it unpacks to. Takes precedence over --root")
-    p.add_argument("--root", default="results/federated")
+    # Resolved through `common.paths`, so a run redirected with SIGNMUON_RESULTS
+    # is plotted from where it actually wrote.
+    p.add_argument("--root", default=str(results_root() / "federated"))
     p.add_argument("--out", default=None,
                    help="default: <root>/figures/, or <bundle>/figures/")
     p.add_argument("--n-parties", type=int, default=11)

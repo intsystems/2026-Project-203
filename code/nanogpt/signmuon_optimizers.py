@@ -72,7 +72,7 @@ Two things that are specific to the record-#40 model
 -----------------------------------------------------------------------------
 Distributed vs. federated -- the part that actually changes
 -----------------------------------------------------------------------------
-In the FEDERATED code (``code/federated_algorithms.py``) each client keeps its
+In the FEDERATED code (``code/federated/algorithms.py``) each client keeps its
 own momentum / EF21 estimator, compresses ITS OWN update, ships the compressed
 message, and the server aggregates the *compressed* messages (majority vote, or
 an average of scaled-signs). Compression sits on the wire between many clients.

@@ -19,74 +19,80 @@ path in a docstring fails the test suite rather than reaching a reviewer.
 | `project-repo` | A link to this project's own repository |
 | `orcid` | An ORCID identifier |
 
-`python3 -m anonymize --list-rules` prints the patterns.
+`python3 -m anonymize --list-rules` prints the patterns. The notebook-output
+handling in `anonymize.py` is retained but currently inert: the repository holds no
+`.ipynb`.
 
-**Notebooks are scanned as the bundle will ship them**, i.e. with outputs stripped.
-That is the honest object to check: an output cell holding `/home/<user>/project` is
-invisible to a reader skimming the source but is shipped verbatim inside a raw
-`.ipynb` — and `--build` removes it. Scanning the raw file instead would make the
-check fail forever on a leak that cannot reach a reviewer, and a check that always
-fails is a check nobody runs. The scan says out loud which notebooks still carry
-outputs, so nothing depends on remembering that the stripping happens.
+## Two defences, not one
+
+The scan is the gate. The second defence is that the export bundles carry no
+absolute path in the first place: a run tree records where it ran (`state.json`
+stores a log and a metrics path per job, the exporters stamp their source tree
+into a manifest), and on a Linux box those begin with a home directory.
+`common/paths.py:repo_relative` rewrites them to `results/...` as they are
+written, and `test_export_bundles_carry_no_absolute_path` asserts that nothing
+under `results/` carries one. That matters because `--build` excludes `results/`,
+so a bundle copied by hand would otherwise bypass the gate entirely.
 
 ## What is deliberately *not* removed
 
-* **Upstream URLs and third-party author names.** The modded-nanogpt repository this
-  port is built on, the Polar Express implementation it borrows, the contributors
-  credited in comments — these are citations, not self-identification, and removing
-  them would misattribute the work. Only *this* project's repository is flagged.
+* **Upstream URLs and third-party author names.** The modded-nanogpt repository
+  this port is built on, the Polar Express implementation it borrows, the
+  contributors credited in comments: citations, not self-identification, and
+  removing them would misattribute the work. Only *this* project's repository is
+  flagged.
 * **Hardware and driver strings** in the nanoGPT run logs (`NVIDIA H100 80GB`,
-  `Driver Version: …`). The reproducibility checklist asks for exactly this, and it
-  identifies a GPU model, not a person.
+  `Driver Version: …`). The reproducibility checklist asks for exactly this, and
+  it identifies a GPU model, not a person.
 * **Dates.** They constrain the submission window, not the authors.
 
 If a hit is one of these, add it to `ALLOW` in `anonymize.py` **with a one-line
 reason**, so that silencing something stays a visible decision.
 
-## What was found and fixed, 2026-07-27
+## What was found and fixed
 
-The first run of the scan found four kinds of leak, none of which a checklist would have
-caught:
+The 2026-07-27 run of the scan found four kinds of leak, none of which a checklist
+would have caught:
 
-| where | what |
-| :--- | :--- |
-| `common/models.py` ×2 | A docstring crediting a colleague by first name |
-| `nanogpt/`, one module | A **filename** containing a first name, plus four references to it |
-| a nanoGPT notebook | An output cell holding an absolute home-directory path |
-| `results/article_export/MANIFEST.md` | A generated manifest quoting an absolute source path |
+| where | what | fix |
+| :--- | :--- | :--- |
+| `common/models.py` ×2 | A docstring crediting a colleague by first name | rewritten to describe the models |
+| `nanogpt/`, one module | A **filename** containing a first name, plus four references to it | renamed; both files later deleted as superseded |
+| a nanoGPT notebook | An output cell holding an absolute home-directory path | stripped at bundle time; no notebooks remain |
+| `results/*/MANIFEST` and `state.json` | Generated files quoting an absolute source path | excluded from the bundle, and since 2026-07-31 rewritten at the source by `repo_relative` |
 
-The module was renamed and its references updated; the docstrings were rewritten to
-describe the models rather than their provenance; the notebook output is stripped at
-bundle time; the generated export directory is excluded from the bundle. (Both of
-those nanoGPT files have since been deleted outright as superseded.)
+Two are worth dwelling on, being the ones a manual pass misses. A name inside a
+**filename** does not match a `\b…\b` regex, since `\b` counts `_` as a word
+character; the rule uses letter/digit lookarounds instead. And a name inside a
+**notebook output** is invisible to anyone reading the source. Both were found
+only by grepping the built zip independently of the tool that built it, which is
+why step 3 below is not optional.
+
+The 2026-07-31 sweep found the fourth kind at scale: 2,044 absolute paths across
+the results tree and the three export archives, 510 of them in one `state.json`.
+All were rewritten, and the exporters now rewrite as they write.
+
 Russian-language comments in `common/models.py` and the nanoGPT scaffolding were
-translated at the same time — not identifying on
-their own, but they narrow the author pool for no benefit.
-
-Two of them are worth dwelling on, because they are the ones a manual pass
-misses. A name inside a **filename** does not match a `\b…\b` regex, since `\b`
-counts `_` as a word character — the rule now uses letter/digit lookarounds
-instead. And a name inside a **notebook output** is invisible to anyone reading the
-source. Both were found only after grepping the built zip independently of the
-tool that built it, which is why step 3 below is not optional.
+translated at the same time. Not identifying on their own, but they narrow the
+author pool for no benefit.
 
 ## What the bundle contains
 
-`--build` writes a zip with `code/` at the top level, and a `MANIFEST.md` recording
-what was left out, so the omissions are visible rather than silent.
+`--build` writes a zip with `code/` at the top level, and a `MANIFEST.md`
+recording what was left out, so the omissions are visible rather than silent.
 
 **Excluded**: caches (`__pycache__`, `.pytest_cache`, `.ipynb_checkpoints`),
 datasets (`data/`, `data_federated/`, the FineWeb shards), run output (`results/`,
-`results_old/`, `article_export/`), model checkpoints (`*.pt`), stray `*.log` files, and
-`anonymize.py` itself — its identifier list is the one file whose whole content is
-the names that must not ship.
+`results_old/`, `article_export/`), model checkpoints (`*.pt`), stray `*.log`
+files, and `anonymize.py` itself, whose whole content is the names that must not
+ship.
 
-**Included, deliberately**: `results/nanogpt/`, carved back out of the blanket
+**Included, deliberately**: `results/nanogpt/`, carved out of the blanket
 `results/**` rule. Every other bit of run output is regenerated by a command in
-`REPRODUCE.md`; these eight logs cost an 8×H100 node and cannot be. They *are* the
-evidence behind the language-modelling table — `parse_logs.py` and `make_tables.py`
-turn them into it — and they embed the training script and the optimizer definitions
-verbatim. The scan covers them, so they are as anonymous as the source they quote.
+`REPRODUCE.md`; these eight logs cost an 8×H100 node and cannot be. They are the
+evidence behind the language-modelling table, and they embed the training script
+and the optimizer definitions verbatim. The scan covers them, so they are as
+anonymous as the source they quote.
 
 ## Before submitting
 
@@ -109,12 +115,14 @@ verbatim. The scan covers them, so they are as anonymous as the source they quot
        print(' ', h)
    PY
    ```
-4. Check the paper's own PDF metadata separately — this tool covers `code/` only,
+4. If you ship any of `results/` outside the bundle, scan it too: `--build`
+   excludes it, so it is the one path the gate does not cover.
+5. Check the paper's own PDF metadata separately. This tool covers `code/` only,
    and LaTeX embeds the author in `/Author` and `/Title` unless told otherwise.
 
 ## The limits of this
 
-The scan is a regex sweep. It will not catch a self-citation phrased as "our earlier
-work", an acknowledgements paragraph, a distinctive variable name, or a screenshot.
-It covers `code/`, not the paper, not `git` history, and not the repository the code
-is hosted in. Treat it as the floor, not the ceiling.
+The scan is a regex sweep. It will not catch a self-citation phrased as "our
+earlier work", an acknowledgements paragraph, a distinctive variable name, or a
+screenshot. It covers `code/`, not the paper, not `git` history, and not the
+repository the code is hosted in. Treat it as the floor, not the ceiling.

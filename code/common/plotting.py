@@ -42,7 +42,7 @@ __all__ = [
     "TEXT_WIDTH", "COLUMN_WIDTH", "FS_LABEL", "FS_TICK", "FS_LEGEND", "FS_ANNOT",
     "METHOD_LABEL", "METHOD_COLOR", "METHOD_MARKER", "METHOD_ORDER",
     "use_paper_style", "label_of", "color_of", "marker_of", "order_methods",
-    "style_axes", "panel_legend", "legend", "save_figure",
+    "style_axes", "panel_legend", "figure_legend", "legend", "save_figure",
 ]
 
 # -- palette ---------------------------------------------------------------

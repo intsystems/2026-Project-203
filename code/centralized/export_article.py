@@ -49,10 +49,13 @@ import tarfile
 from pathlib import Path
 from typing import Any, Dict, List, Optional, Sequence, Tuple
 
-# code/ -- this file is code/centralized/export_article.py. Recomputed locally
-# rather than imported from common.utils, which pulls in torch.
+from common.paths import repo_relative, results_root
+
+# code/ -- this file is code/centralized/export_article.py.
 ROOT = Path(__file__).resolve().parents[1]
-RESULTS = ROOT / "results"
+#: Honours ``SIGNMUON_RESULTS``, like the driver that calls us. Resolved through
+#: `common.paths` rather than `common.utils`, which pulls in torch.
+RESULTS = results_root()
 
 #: Config fields promoted to columns in ``runs.csv``. Anything not listed still
 #: reaches ``configs.json`` verbatim -- this is a readability choice, not a filter.
@@ -542,6 +545,11 @@ def copy_overnight(out: Path, root: Path,
 
     Globbed rather than named, so a renamed report still travels; size-capped so a
     stray checkpoint in that directory cannot inflate the bundle.
+
+    "Verbatim" except for one rewrite: the driver stores an absolute ``log`` and
+    ``metrics`` path per job, which on the machines we run on begins with a home
+    directory. `repo_relative` cuts those back to ``results/...`` so the bundle
+    carries no username (`common/paths.py`).
     """
     src = root.parent / "overnight"
     if not src.is_dir():
@@ -550,9 +558,15 @@ def copy_overnight(out: Path, root: Path,
     dst.mkdir(parents=True, exist_ok=True)
     copied = []
     for item in sorted(src.iterdir()):
-        if item.is_file() and item.stat().st_size <= max_bytes:
-            shutil.copy2(item, dst / item.name)
-            copied.append(dst / item.name)
+        if not (item.is_file() and item.stat().st_size <= max_bytes):
+            continue
+        target = dst / item.name
+        if item.suffix in (".json", ".md", ".txt", ".csv", ".tex"):
+            target.write_text(repo_relative(item.read_text(encoding="utf-8")),
+                              encoding="utf-8")
+        else:
+            shutil.copy2(item, target)
+        copied.append(target)
     return copied
 
 
@@ -632,7 +646,7 @@ def write_manifest(out: Path, root: Path, runs: Sequence[Run],
     lines = [
         "# Centralized results export",
         "",
-        f"* source: `{root}`",
+        f"* source: `{repo_relative(str(root))}`",
         f"* runs found: {len(runs)}",
         f"* unreadable: {len(bad)}",
         f"* targets for `epochs_to_*`: {', '.join(f'{t:g}%' for t in targets)}",

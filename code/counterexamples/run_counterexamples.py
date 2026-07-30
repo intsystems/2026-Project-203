@@ -307,12 +307,13 @@ def main():
     # steep descenders dominating the axis.  --eta / --T override both.
     #
     # Momentum: the two LINEAR counterexamples are run momentum-free (mu = 0).
-    # This is WITHOUT LOSS OF GENERALITY -- the objective has a constant
-    # gradient G, so the momentum buffer is always a positive scalar multiple of
-    # G, and the Muon LMO is scale-invariant; hence sign(polar(.)) /
-    # polar(sign(.)) and the EF21 targets are identical for every mu in [0, 1)
-    # and both momentum variants (cf. Proposition "reduction").  The mu = 0
-    # trajectory shown is thus the trajectory for all mu.
+    # The gradient is the constant G, so the momentum buffer is (1 - mu^t) G and
+    # six of the eight methods are momentum-invariant in exact arithmetic: the
+    # five whose step is scale-invariant in its target, plus EF21-SignMuon, whose
+    # EF21 target LMO((1 - mu^t) G) = LMO(G) is constant in t.  EF21-MuonUSign
+    # and EF21-MuonSign are not -- their EF21 target (1 - mu^t) G does move with
+    # t -- so their trajectories vary with mu, but stay bounded: no verdict
+    # changes.
     G1, _ = signmuon_counterexample()
     G2, _ = muonsign_counterexample(eps=1.0, M=100.0)
     grad1, loss1 = make_linear_problem(G1)

@@ -5,7 +5,7 @@
 
 Both from the ``code/`` directory.
 
-No GPU, no dataset download, a few seconds. What it pins down:
+No GPU, no dataset download, about a minute. What it pins down:
 
 * the Newton-Schulz helper does not scribble on its input (it used to, whenever
   the input was already bfloat16, because ``Tensor.to`` returns ``self``);
@@ -733,11 +733,6 @@ def test_ef21_estimator_tracks_a_constant_target():
 
 
 # --------------------------------------------------------------------------
-# Plumbing
-# --------------------------------------------------------------------------
-
-
-# --------------------------------------------------------------------------
 # Per-layer learning-rate scaling
 # --------------------------------------------------------------------------
 
@@ -1314,10 +1309,12 @@ def test_federated_step_norms_match_the_family():
 def test_majority_vote_ties_are_recorded():
     """An even client split abstains, and the driver has to say how often.
 
-    ``sign(sum_j s^(j))`` is zero wherever the clients split evenly, so the
-    aggregate is NOT in ``{-1,+1}`` for even ``N`` -- contrary to the paper's
-    prose. The fraction is recorded rather than silently absorbed into the step
-    size.
+    ``sign(sum_j s^(j))`` is zero wherever the clients split evenly, so before a
+    tie-break the aggregate is not in ``{-1,+1}`` at even ``N``. Under the default
+    ``mv_ties="random"`` it is, and the recorded fraction is therefore a raw
+    pre-break diagnostic rather than a property of the transmitted vote. It is
+    recorded rather than silently absorbed into the step size. The paper runs odd
+    ``N``, where the vote cannot tie at all.
     """
     torch.manual_seed(0)
     loaders = [tiny_loader(seed=s) for s in range(4)]        # even N, different data
@@ -1335,18 +1332,20 @@ def test_majority_vote_ties_are_recorded():
     assert not h2.values("mv_tie_frac")
 
 
-def test_the_uplink_alphabet_is_ternary_unless_asked_otherwise():
-    """`sign(0) = 0`, so a client transmits from `{-1, 0, +1}`, not `{-1, +1}`.
+def test_the_uplink_rule_turns_the_compressor_zeros_into_one_bit():
+    """The compressor emits `{-1, 0, +1}`; the uplink rule makes the channel `+-1`.
 
     Not a corner case: `polar(M)` has an exactly-zero column wherever `M` does, and
     `M` does wherever a feature was zero across the whole local batch -- which after
-    ReLU and MaxPool is common (measured at 8-17% of entries on CNN2). So
+    ReLU and MaxPool is common (measured at 8-17% of entries on CNN2). Left alone,
+    that would mean the uplink is not literally one bit per parameter, and an ODD
+    client count would not by itself prevent ties, a zero vote not being `+-1`.
 
-    * the uplink is not literally one bit per parameter, and
-    * an ODD client count does not by itself prevent ties, because a zero vote is
-      not `+-1`.
-
-    Both were assumed rather than checked before this test existed.
+    So it is not left alone: `uplink_zeros` defaults to `random`, which maps each
+    zero to a fair `+-1`, and the paper's accounting assumes exactly that. The
+    ternary alphabet is now the opt-in (`--uplink-zeros keep`) and is retained only
+    as a diagnostic; the raw zero rate is still recorded either way, which is what
+    the last assertion here pins. `communication_bits` is what covers `keep`.
     """
     M = torch.randn(6, 8)
     M[2] = 0.0                                    # a dead unit's gradient row
@@ -2288,6 +2287,67 @@ def test_no_identifying_material():
         + "\n  ".join(str(f) for f in findings[:20]))
 
 
+def test_export_bundles_carry_no_absolute_path():
+    """`repo_relative` must strip the writing machine's prefix, and nothing else.
+
+    An export bundle travels with an anonymous submission, and a run tree records
+    where it ran: `state.json` stores a log and a metrics path per job, the
+    exporters stamp their source tree into a manifest. On our boxes those begin
+    with a home directory, so they carry a name. `anonymize.py` excludes
+    `results/` from the anonymous bundle, but a bundle copied by hand bypasses
+    that, so the paths are rewritten in the files themselves as well.
+
+    The second half of this test is the scar from getting it wrong: normalizing
+    separators over the whole string instead of over the matched path turns every
+    `\\begin` in a generated `hardware.tex` into `/begin`, and every JSON escape
+    with it. Both regressions are silent -- the file still parses.
+    """
+    import re
+    from pathlib import Path
+
+    from common.paths import repo_relative, scrub
+
+    for src, want in (
+        ("/home/someone/SignMuon/code/results/centralized", "results/centralized"),
+        ("/home/u/S/code/results/tuning_logs/g.log", "results/tuning_logs/g.log"),
+        ("D:\\w\\SignMuon\\code\\results\\run\\m.json", "results/run/m.json"),
+        ("/x/y/code/results_old/synthetic_20x20/S.md",
+         "results_old/synthetic_20x20/S.md"),
+        ("* source: `/home/u/S/code/results/centralized`",
+         "* source: `results/centralized`"),
+        # already relative, and absolute-but-unrelated: both untouched
+        ("results/already/relative", "results/already/relative"),
+        ("/opt/data/cifar10", "/opt/data/cifar10"),
+        # the regression
+        ("\\begin{tabular}{@{}llr@{}}", "\\begin{tabular}{@{}llr@{}}"),
+        ("GPU & PyTorch / CUDA & Runs \\\\", "GPU & PyTorch / CUDA & Runs \\\\"),
+        ('{"a": "l1\\nl2", "b": "say \\"hi\\""}', '{"a": "l1\\nl2", "b": "say \\"hi\\""}'),
+        ("\\path{/home/u/code/results/x} \\\\", "\\path{results/x} \\\\"),
+    ):
+        assert repo_relative(src) == want, (src, repo_relative(src), want)
+
+    assert scrub({"a": ["/home/u/S/code/results/x"], "b": 3}) == {"a": ["results/x"],
+                                                                 "b": 3}
+
+    # And the shipped bundles are clean, which is the property that actually
+    # matters: the regex is only a means to it.
+    leak = re.compile(r"/home/\w+|[A-Za-z]:\\{1,2}Users\\{1,2}\w+")
+    binary = {".png", ".pdf", ".pt", ".pth", ".npz", ".gz", ".zip", ".tgz"}
+    results = Path(__file__).resolve().parent.parent / "results"
+    dirty = []
+    for path in sorted(results.rglob("*")) if results.is_dir() else []:
+        if not path.is_file() or path.suffix in binary:
+            continue
+        try:
+            text = path.read_text(encoding="utf-8")
+        except (UnicodeDecodeError, OSError):
+            continue
+        if leak.search(text):
+            dirty.append(path.relative_to(results).as_posix())
+    assert not dirty, ("these would ship a username to a blind reviewer: "
+                       + ", ".join(dirty[:10]))
+
+
 def test_unpacked_result_bundles_are_excluded_from_scan_and_bundle():
     """A downloaded bundle unpacked next to the code is run output, not source.
 
@@ -2385,7 +2445,7 @@ def test_every_code_section_has_a_readme():
 
     root = Path(__file__).resolve().parents[1]
     sections = {"common", "centralized", "federated", "synthetic",
-                "counterexamples", "nanogpt", "tests", "notebooks"}
+                "counterexamples", "nanogpt", "tests"}
     missing = sorted(name for name in sections
                      if (root / name).is_dir() and not (root / name / "README.md").exists())
     assert not missing, f"no README.md in: {missing}"

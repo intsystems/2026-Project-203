@@ -43,8 +43,6 @@ from common.lr_scaling import FAMILY_LMO, FAMILY_SIGN
 __all__ = [
     "zeropower_via_newtonschulz5",
     "muon_lmo",
-    "muon_orthogonalized_update",
-    "scaled_sign",
     "sign_pm1",
     "Muon",
     "SignSGD",
@@ -147,10 +145,6 @@ def muon_lmo(
     return orth.reshape(orig_shape) if orig_shape is not None else orth
 
 
-# Backwards-compatible alias (the pre-refactor name).
-muon_orthogonalized_update = muon_lmo
-
-
 def sign_pm1(Y: Tensor) -> Tensor:
     """Elementwise sign with exact zeros mapped to independent random ``+-1``.
 
@@ -173,14 +167,6 @@ def sign_pm1(Y: Tensor) -> Tensor:
         r = torch.randint(0, 2, s.shape, device=s.device).to(s.dtype).mul_(2).sub_(1)
         s = torch.where(zero, r, s)
     return s
-
-
-def scaled_sign(Y: Tensor) -> Tensor:
-    """Contractive 1-bit compressor ``mean|Y| * sign_pm1(Y)`` (the USign operator).
-
-    One bit per entry plus a single shared magnitude scalar per tensor.
-    """
-    return Y.abs().mean() * sign_pm1(Y)
 
 
 # --------------------------------------------------------------------------
@@ -534,7 +520,7 @@ class EF21MuonSign(_BaseMethod, _EF21Mixin):
 
 
 # --------------------------------------------------------------------------
-# Registry + deprecated aliases
+# Registry
 # --------------------------------------------------------------------------
 
 OPTIMIZERS = {
@@ -551,10 +537,3 @@ OPTIMIZERS = {
 PAPER_METHODS = ["signmuon", "ef21signmuon", "muonusign", "muonsign",
                  "ef21muonusign", "ef21muonsign"]
 REFERENCE_METHODS = ["muon", "signsgd"]
-
-# Pre-refactor class names. ``MuonSign`` used to denote the sign-BEFORE method,
-# which the paper now calls MuonUSign -- the alias below is deliberately NOT
-# provided for that name, because silently resolving it to the new (both-sides)
-# ``MuonSign`` would change the algorithm rather than just the label.
-EF_USignMuon = EF21MuonUSign
-EF_UDSignMuon = EF21MuonSign

@@ -47,7 +47,7 @@ whose first term is the rate and whose second is the floor.
     this is their empirical counterpart on random instances, and the one
     measurement here that is about the methods rather than the protocol. Three
     closed forms anchor it: ``rho = 1`` for SGD, ``||G||_1/(||G||_F sqrt(mn))``
-    for SignSGD, ``||G||_nuc/(||G||_F sqrt(r))`` for Muon. The three
+    for SignSGD, ``||G||_nuc/(||G||_F sqrt(r))`` for Muon. The six
     sign-around-the-LMO methods admit none, which is the subject of the paper.
 
 ``floor``
