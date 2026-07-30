@@ -65,15 +65,24 @@ DISPLAY_NAMES = {name: label_of(name) for name in
 # per-step descent inner product <G, d_t> is positive, so the exact, eta/T-free
 # test is "mean <G, d_t> persistently negative" (verdict_mode="inner").  For the
 # universal EF21-SignMuon instance (periodic ramps, not a quadratic) the ascent is
-# second-order: <G, d_t> stays POSITIVE while f rises, so we instead test the tail
-# slope of f (verdict_mode="slope").
+# second-order: <G, d_t> stays POSITIVE while f rises, so the verdict has to be
+# read off f itself (verdict_mode="period").
 #
-# SLOPE_TOL is ABSOLUTE, and the instance's periodic term scales with A(mu) -- 199
-# at mu=0.99.  The slope verdict is therefore only discriminating at small mu; the
-# mu-independent check of the exact 49/480 rate is counterexamples.problems, which
-# measures over whole periods.
+# It is read as the theorem states it -- f(X_{t+2}) - f(X_t) = c > 0 for every t
+# past the transient -- rather than from a tail slope against an absolute
+# tolerance.  That distinction is not cosmetic.  The bounded methods oscillate over
+# a range that scales with the instance's periodic constant A(mu) (199 at
+# mu = 0.99), so over any fixed window their apparent slope scales with it too:
+# an absolute threshold small enough to catch the ascent at mu = 0 also reports
+# every bounded method as ascending at mu = 0.9.  The per-period increment has no
+# such failure mode -- a bounded trajectory cannot hold a constant positive one --
+# and separates the eight methods correctly at every mu in {0, 0.25, 0.5, 0.9,
+# 0.95, 0.99}, both variants, at T = 60 and at T = 400.
 DIVERGE_TOL = 1e-6
-SLOPE_TOL = 1e-3
+#: A period-two increment counts as divergence when it is positive throughout the
+#: tail and constant to this relative spread.  EF21-SignMuon holds 49/240 to
+#: machine precision; the widest spread any bounded method achieves is O(1).
+PERIOD_TOL = 0.05
 
 # The figure is authored at its printed width (``TEXT_WIDTH``, a two-column
 # float), so every point size below is a point on the page.
@@ -95,13 +104,31 @@ def run(opt_cls, grad_fn, loss_fn, shape, T, eta, mu, nesterov):
     return np.asarray(losses), float(np.mean(inner))
 
 
+def _period_increment(losses, T):
+    """``(min, relative spread)`` of ``f[t+2] - f[t]`` over the tail.
+
+    Theorem 4 states the divergence as a *constant positive* period-two
+    increment, and that is what this measures: a bounded trajectory cannot hold
+    one, however wide its oscillation. The window starts at ``T // 2`` so the
+    transient is excluded.
+    """
+    tail = np.asarray(losses[T // 2:])
+    if tail.size < 4:
+        return (0.0, float("inf"))
+    d = tail[2:] - tail[:-2]
+    mean = float(np.mean(d))
+    if mean == 0.0:
+        return (float(d.min()), float("inf"))
+    return (float(d.min()), float((d.max() - d.min()) / abs(mean)))
+
+
 def run_problem(title, grad_fn, loss_fn, shape, T, eta, mu, nesterov,
                 verdict_mode="inner"):
     """Run every optimizer on one problem, print a table.
 
     ``verdict_mode`` selects the divergence test: ``"inner"`` (mean <G,d> < 0,
-    for the linear objectives) or ``"slope"`` (positive tail slope of f, for the
-    curvature-driven EF21-SignMuon instance).
+    for the linear objectives) or ``"period"`` (a constant positive period-two
+    increment of f, for the curvature-driven EF21-SignMuon instance).
 
     Returns ``(results, diverging)`` where ``results`` maps method -> loss
     trajectory and ``diverging`` lists the methods that diverge.
@@ -126,8 +153,9 @@ def run_problem(title, grad_fn, loss_fn, shape, T, eta, mu, nesterov,
         half = T // 2
         half -= (T - 1 - half) % 2
         slope = float((losses[-1] - losses[half]) / max(1, (T - 1 - half))) / eta
-        if verdict_mode == "slope":
-            is_div = slope > SLOPE_TOL
+        if verdict_mode == "period":
+            lo, spread = _period_increment(losses, T)
+            is_div = lo > DIVERGE_TOL and spread < PERIOD_TOL
         else:
             is_div = mean_inner < -DIVERGE_TOL
         if is_div:
@@ -316,7 +344,7 @@ def main():
             # a straight line, and the band below is still thick enough to see
             # the bounded methods separate.
             builder=ef21_signmuon_counterexample, eta=1.0, T=60,
-            mu=0.0, verdict_mode="slope", ylim=(-1.2, 6.5),
+            mu=0.0, verdict_mode="period", ylim=(-1.2, 6.5),
             ylabel=r"$f(\mathbf{X}_t)$",
         ),
     ]

@@ -27,10 +27,14 @@ Varying-gradient instance (the universal EF21-SignMuon counterexample):
   a period-two cycle whose diagonal averages to the WRONG sign, so ``f -> +inf``
   at the exact rate ``49/480`` per step for every ``L``, ``eta``,
   ``mu in [0, 1)`` and both momentum variants.  The function is
-  ``f(W) = -gamma*W11 + A*(Phi1(W01) + Phi2(W10)) + sum_k b_k(W)``: a linear
+  ``f(W) = gamma*h(W11) + A*(Phi1(W01) + Phi2(W10)) + sum_k b_k(W)``: a linear
   divergence slope, two periodic ramps that keep the off-diagonal gradient
   alternating, and three compactly supported corrections ``b_k`` that seed the
-  first three gradients (all as in the proof).
+  first three gradients (all as in the proof).  Indices are 0-based here, so
+  ``W11`` is the paper's ``W_22``.  ``h`` is the slope ``-v`` levelled off above
+  ``v = 1``, the bounded-below variant the theorem is stated with (Remark
+  "Boundedness below"); it equals ``-v`` on the whole region the iterates visit,
+  ``{W11 <= 7/10}``, so no trajectory sees the modification.
 """
 
 from __future__ import annotations
@@ -179,13 +183,21 @@ _RBUMP = 1.0 / 50.0                      # correction radius r
 
 
 class _PeriodicRamp:
-    r"""A fixed ``C^\infty``, ``p``-periodic ``psi`` with ``\int_0^p psi = 0``.
+    r"""A fixed ``p``-periodic ``psi`` with ``\int_0^p psi = 0``.
 
     ``psi`` is ``+1`` on the first half-period plateau and ``-1`` on the second,
     joined by sine ramps of half-width ``tau`` centered at ``a_up`` (the
     ``-1 -> +1`` crossing) and ``a_up + p/2``.  ``Phi`` is its periodic
     antiderivative.  ``a_up`` is chosen so the required residues land inside the
-    plateaus, i.e. ``psi = +-1`` there exactly.
+    plateaus, i.e. ``psi = +-1`` there exactly, with room to spare: each plateau
+    contains the theorem's whole band ``[rho +- delta]``, ``delta = 1/100``.
+
+    The sine joint makes this ``psi`` only ``C^1``, where the proof asks for a
+    ``C^\infty`` one.  Nothing measured depends on the difference: the trajectory
+    samples ``psi`` only on the plateaus, where the two agree exactly at ``+-1``,
+    and the joint is smoothed purely so ``grad f`` is continuous.  The same holds
+    for the ``C^1`` cutoff :func:`_chi` below, of which the proof uses only
+    ``phi(0) = 1`` and ``supp phi subset [0, 1)``.
     """
 
     def __init__(self, p, a_up):
@@ -346,7 +358,10 @@ def ef21_alternating_cycle(a=7 / 25, b=24 / 25, steps=40):
     Runs the EF21 estimator recursion ``d <- d + mean|D-d| * sign(D-d)`` from
     ``d = 0`` on the purely alternating targets ``Dbar^-, Dbar^+, ...`` with
     ``Dbar^+- = [[a, +-b], [+-b, -a]]`` -- i.e. the tail of the counterexample
-    with its two-step preamble removed.
+    with its two-step preamble removed.  Plain ``np.sign`` suffices here rather
+    than the randomized convention of ``optimizers.sign_pm1``: every residual
+    along either cycle is entrywise nonzero, as both lemmas record, so the two
+    agree and the arithmetic is exact.
 
     It enters a period-two cycle at once whose (2,2) average is ``-a/2``: the
     SAME sign as every target value ``-a``, so the iterate does not run away.
@@ -372,7 +387,20 @@ def ef21_alternating_cycle(a=7 / 25, b=24 / 25, steps=40):
 
 
 def _self_check():
-    from counterexamples.optimizers import muon_lmo
+    from counterexamples.optimizers import muon_lmo, sign_pm1
+
+    print("== the sign convention ==")
+    rng = np.random.default_rng(0)
+    probe = np.array([[-2.0, 0.0], [0.0, 3.0]])
+    print(f"  sign_pm1 of a matrix with two exact zeros -> "
+          f"{sign_pm1(probe, rng).ravel().tolist()} (never 0)")
+    for label, M in (("Theorem 1: O", signmuon_counterexample()[1]["O"]),
+                     ("Theorem 2: S", muonsign_counterexample()[1]["S"]),
+                     ("Theorem 2: polar(S)",
+                      muon_lmo(muonsign_counterexample()[1]["S"]))):
+        assert np.all(M != 0.0), label
+        print(f"  {label:<20} has no zero entry -> its constants are "
+              f"convention-free")
 
     print("== Theorem 1 (SignMuon, 4x4) ==")
     G1, info1 = signmuon_counterexample()

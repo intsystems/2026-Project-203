@@ -3,19 +3,31 @@ Exact-SVD implementations of the eight optimizers studied in the paper
 "SignMuon, MuonSign, and the Role of Error Feedback".
 
 Every method follows the corresponding pseudocode box in the paper verbatim,
-with two deliberate choices:
+with three deliberate choices:
 
   * the Muon LMO defaults to an **exact SVD** (rank-truncated ``U V^T``), which is
     what the theorems are stated about. Pass ``lmo=make_lmo("ns", steps=5)`` to
     run the *implemented* Newton-Schulz oracle instead -- the two are NOT
     interchangeable on these instances, see :func:`newton_schulz_lmo` and
-    ``verify_ns_oracle.py``; and
+    ``verify_ns_oracle.py``;
   * momentum is the EMA / heavy-ball form of the centralized algorithm boxes
     ``M_t = mu*M_{t-1} + (1-mu)*G_t`` with an optional Nesterov look-ahead
-    ``M_tilde = (1-mu)*G_t + mu*M_t``.
+    ``M_tilde = (1-mu)*G_t + mu*M_t``.  Both the coefficient (default
+    ``mu = 0.0``) and the variant are parameters; on the linear instances neither
+    can change a verdict (Proposition "reduction"), and on the EF21-SignMuon
+    instance the trajectory is identical for every setting; and
+  * ``sign(0)`` resolves to an independent random ``+-1``, the paper's convention,
+    so every transmitted symbol is a strict bit.  Each optimizer carries its own
+    generator, seeded by ``sign_seed``, so a run depends only on its own seed and
+    not on what was run before it (as ``synthetic.batched`` does on the GPU side).
 
-The momentum coefficient defaults to ``mu = 0.8`` and standard (non-Nesterov)
-momentum, but both are parameters so the behaviour can be re-tested later.
+The exact zeros this last convention covers are real but confined: no entry of
+the Theorem 1-3 instances or of their oracle outputs is zero, so every constant
+those theorems quote is convention-free.  What the convention does touch is the
+seven *bounded* methods on the Theorem 4 instance, whose field gradient has an
+exactly-zero ``(1,1)`` entry by construction: they stay bounded either way, and
+EF21-SignMuon's own trajectory is untouched, every residual along it being
+strictly nonzero (Lemma "Wrong-sign limit cycle").
 
 Interface (used by ``run_counterexamples.py``)
 ----------------------------------------------
@@ -120,13 +132,30 @@ def muon_lmo(Y: np.ndarray, tol: float = 1e-9) -> np.ndarray:
     return U[:, :r] @ Vt[:r, :]
 
 
-def scaled_sign(Y: np.ndarray) -> np.ndarray:
+def sign_pm1(Y: np.ndarray, rng: np.random.Generator) -> np.ndarray:
+    r"""Elementwise sign with :math:`\operatorname{sign}(0)` drawn uniformly from
+    :math:`\{\pm1\}`.
+
+    The paper's convention, and the reason every sign channel here is a strict one
+    bit rather than a ternary alphabet.  ``rng`` is the caller's generator, so the
+    draws belong to one run and no run depends on the draws of another.
+    """
+    s = np.sign(Y)
+    zeros = s == 0
+    if zeros.any():
+        s = np.where(zeros, rng.choice((-1.0, 1.0), size=s.shape), s)
+    return s
+
+
+def scaled_sign(Y: np.ndarray, rng: np.random.Generator | None = None) -> np.ndarray:
     r"""Contractive 1-bit compressor :math:`\mathrm{mean}|\mathbf Y|\,\operatorname{sign}(\mathbf Y)`.
 
     The uplink compressor of the EF21 methods: one bit per entry (the sign)
-    plus a single shared magnitude scalar per matrix.
+    plus a single shared magnitude scalar per matrix.  ``rng`` supplies the
+    ``sign(0)`` draws; the optimizers below pass their own.
     """
-    return np.mean(np.abs(Y)) * np.sign(Y)
+    sgn = np.sign(Y) if rng is None else sign_pm1(Y, rng)
+    return np.mean(np.abs(Y)) * sgn
 
 
 # --------------------------------------------------------------------------
@@ -144,16 +173,21 @@ class Optimizer:
     eta : float
         Learning rate ``eta_t`` (constant here).
     mu : float
-        Momentum coefficient ``mu``; the paper's experiments fix ``mu = 0.8``.
+        Momentum coefficient ``mu``. Defaults to ``0.0``: on the linear instances
+        the step is the same matrix for every ``mu`` in ``[0, 1)`` and either
+        variant, and on the Theorem 4 instance so is the whole trajectory, so the
+        momentum-free run is the run for all of them.
     nesterov : bool
         If ``True`` use the Nesterov look-ahead effective direction, otherwise
         the standard (default) momentum ``M_tilde = M_t``.
+    sign_seed : int
+        Seed of this optimizer's ``sign(0)`` generator (see :func:`sign_pm1`).
     """
 
     name = "Optimizer"
 
-    def __init__(self, shape, eta: float, mu: float = 0.8, nesterov: bool = False,
-                 lmo=None):
+    def __init__(self, shape, eta: float, mu: float = 0.0, nesterov: bool = False,
+                 lmo=None, sign_seed: int = 0):
         self.shape = tuple(shape)
         self.eta = float(eta)
         self.mu = float(mu)
@@ -162,8 +196,15 @@ class Optimizer:
         # is what the theorems are stated about; pass ``make_lmo("ns", steps=5)``
         # to run the *implemented* Newton-Schulz oracle instead.
         self.lmo = lmo if lmo is not None else muon_lmo
+        # One generator per optimizer, so the tie-break draws of one run cannot
+        # shift another's trajectory.
+        self.rng = np.random.default_rng(sign_seed)
         self.X = np.zeros(self.shape)   # tracked / exact model
         self.M = np.zeros(self.shape)   # momentum buffer M_t
+
+    def sign(self, Y: np.ndarray) -> np.ndarray:
+        """``sign(Y)`` under the paper's randomized convention."""
+        return sign_pm1(Y, self.rng)
 
     # -- momentum ---------------------------------------------------------
     def _effective_direction(self, G: np.ndarray) -> np.ndarray:
@@ -203,7 +244,7 @@ class SignSGD(Optimizer):
 
     def step(self, G):
         M_tilde = self._effective_direction(G)
-        self.X = self.X - self.eta * np.sign(M_tilde)
+        self.X = self.X - self.eta * self.sign(M_tilde)
 
 
 class Muon(Optimizer):
@@ -232,7 +273,7 @@ class SignMuon(Optimizer):
     def step(self, G):
         M_tilde = self._effective_direction(G)
         D = self.lmo(M_tilde)
-        self.X = self.X - self.eta * np.sign(D)
+        self.X = self.X - self.eta * self.sign(D)
 
 
 class MuonUSign(Optimizer):
@@ -249,7 +290,7 @@ class MuonUSign(Optimizer):
 
     def step(self, G):
         M_tilde = self._effective_direction(G)
-        s = np.sign(M_tilde)
+        s = self.sign(M_tilde)
         D = self.lmo(s)
         self.X = self.X - self.eta * D
 
@@ -264,9 +305,9 @@ class MuonSign(Optimizer):
 
     def step(self, G):
         M_tilde = self._effective_direction(G)
-        s_up = np.sign(M_tilde)
+        s_up = self.sign(M_tilde)
         D = self.lmo(s_up)
-        s_down = np.sign(D)
+        s_down = self.sign(D)
         self.X = self.X - self.eta * s_down
 
 
@@ -284,8 +325,9 @@ class EF21SignMuon(Optimizer):
 
     name = "EF21-SignMuon"
 
-    def __init__(self, shape, eta, mu=0.8, nesterov=False, lmo=None):
-        super().__init__(shape, eta, mu, nesterov, lmo)
+    def __init__(self, shape, eta, mu=0.0, nesterov=False, lmo=None,
+                 sign_seed: int = 0):
+        super().__init__(shape, eta, mu, nesterov, lmo, sign_seed)
         self.d_est = np.zeros(self.shape)   # EF21 estimator of the LMO direction
 
     def step(self, G):
@@ -293,7 +335,7 @@ class EF21SignMuon(Optimizer):
         D = self.lmo(M_tilde)
         delta = D - self.d_est
         alpha = np.mean(np.abs(delta))
-        self.d_est = self.d_est + alpha * np.sign(delta)
+        self.d_est = self.d_est + alpha * self.sign(delta)
         self.X = self.X - self.eta * self.d_est
 
 
@@ -307,15 +349,16 @@ class EF21MuonUSign(Optimizer):
 
     name = "EF21-MuonUSign"
 
-    def __init__(self, shape, eta, mu=0.8, nesterov=False, lmo=None):
-        super().__init__(shape, eta, mu, nesterov, lmo)
+    def __init__(self, shape, eta, mu=0.0, nesterov=False, lmo=None,
+                 sign_seed: int = 0):
+        super().__init__(shape, eta, mu, nesterov, lmo, sign_seed)
         self.g_est = np.zeros(self.shape)   # EF21 estimator of the momentum
 
     def step(self, G):
         M_tilde = self._effective_direction(G)
         delta = M_tilde - self.g_est
         alpha = np.mean(np.abs(delta))
-        self.g_est = self.g_est + alpha * np.sign(delta)
+        self.g_est = self.g_est + alpha * self.sign(delta)
         D = self.lmo(self.g_est)
         self.X = self.X - self.eta * D
 
@@ -332,8 +375,9 @@ class EF21MuonSign(Optimizer):
 
     name = "EF21-MuonSign"
 
-    def __init__(self, shape, eta, mu=0.8, nesterov=False, lmo=None):
-        super().__init__(shape, eta, mu, nesterov, lmo)
+    def __init__(self, shape, eta, mu=0.0, nesterov=False, lmo=None,
+                 sign_seed: int = 0):
+        super().__init__(shape, eta, mu, nesterov, lmo, sign_seed)
         self.g_est = np.zeros(self.shape)   # uplink EF21 estimator
         self.W = np.zeros(self.shape)       # compressed broadcast model
 
@@ -350,14 +394,14 @@ class EF21MuonSign(Optimizer):
         # --- uplink EF21 ---
         delta_up = M_tilde - self.g_est
         alpha_up = np.mean(np.abs(delta_up))
-        self.g_est = self.g_est + alpha_up * np.sign(delta_up)
+        self.g_est = self.g_est + alpha_up * self.sign(delta_up)
         # --- exact server step ---
         D = self.lmo(self.g_est)
         self.X = self.X - self.eta * D
         # --- downlink EF21-P (compress the model shift into W) ---
         delta_dn = self.X - self.W
         alpha_dn = np.mean(np.abs(delta_dn))
-        self.W = self.W + alpha_dn * np.sign(delta_dn)
+        self.W = self.W + alpha_dn * self.sign(delta_dn)
 
 
 # --------------------------------------------------------------------------

@@ -1930,6 +1930,35 @@ def test_the_counterexample_package_reproduces_the_theorem_constants():
     assert float(np.sum(G2 * exact_lmo(G2))) > 0                  # Muon descends
 
 
+def test_the_counterexample_constants_do_not_depend_on_the_sign_convention():
+    """No matrix the theorems sign has a zero entry, so ``sign(0)`` never arises.
+
+    ``counterexamples/`` follows the paper and maps an exact zero to a random
+    ``+-1``, which makes every sign channel a strict bit but would make the
+    printed constants seed-dependent if any of them were reached through a tie.
+    None is: the instances and their oracle outputs are entrywise nonzero, so the
+    randomized and the ternary convention agree on all of Theorems 1-3. Pinned
+    because the alternative -- discovering it from a constant that moves between
+    runs -- is expensive.
+    """
+    import numpy as np
+    from counterexamples.optimizers import muon_lmo as exact_lmo, sign_pm1
+    from counterexamples.problems import (muonsign_counterexample,
+                                          signmuon_counterexample)
+
+    G1, info1 = signmuon_counterexample(sigma1=1000.0)
+    G2, info2 = muonsign_counterexample(eps=1.0, M=100.0)
+    for name, M in (("O", info1["O"]), ("polar(G)", exact_lmo(G1)),
+                    ("S", info2["S"]), ("polar(S)", exact_lmo(info2["S"]))):
+        assert np.all(M != 0.0), f"{name} has a zero entry"
+
+    # ... and the tie-break itself never emits a zero, whatever it is handed.
+    rng = np.random.default_rng(0)
+    s = sign_pm1(np.zeros((8, 8)), rng)
+    assert set(np.unique(s)) == {-1.0, 1.0}, np.unique(s)
+    assert np.array_equal(sign_pm1(G2, rng), np.sign(G2))         # no ties -> identical
+
+
 def test_capture_direction_records_the_step_actually_taken():
     """``alignment`` mode is only meaningful if ``d_t`` is the realized step."""
     torch.manual_seed(0)

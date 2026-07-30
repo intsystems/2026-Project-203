@@ -1,131 +1,135 @@
 # Divergence counterexamples
 
-Self-contained, exact-SVD implementations of the eight optimizers from
-*"SignMuon, MuonSign, and the Role of Error Feedback"*, run on the two linear
-divergence counterexamples of Theorems 1-3 and on the universal 2x2 instance of
-Theorem 4 (`th:ef_div`).
+Exact-SVD implementations of the eight optimizers of *"SignMuon, MuonSign, and the
+Role of Error Feedback"*, run on the two linear instances of Theorems 1–3 and on
+the universal 2×2 instance of Theorem 4 (`th:ef_div`). Everything here is CPU,
+numpy only, and finishes in under a minute.
 
-Every method reproduces the corresponding pseudocode box in the paper,
-with two deliberate choices:
+```bash
+cd code                                          # the package root
+python3 -m counterexamples.problems              # the exact constants
+python3 -m counterexamples.run_counterexamples   # fig:divergence_plot
+python3 -m counterexamples.enumerate_minimality  # the Thm 2-3 minimality claims
+python3 -m counterexamples.verify_ns_oracle      # exact vs Newton-Schulz oracle
+```
 
-* **Exact SVD LMO.** The Muon LMO is the rank-truncated polar factor `U Vᵀ`
-  computed from an exact SVD, not the Newton–Schulz polynomial used in
-  practice. Only nonzero singular directions are kept (`r = rank`), because
-  `U @ Vᵀ` from the full SVD is non-unique on rank-deficient inputs — and
-  `sign(G)` is often low-rank.
-* **Momentum.** EMA / heavy-ball momentum `Mₜ = μ·Mₜ₋₁ + (1−μ)·Gₜ` with an
-  optional Nesterov look-ahead `M̃ₜ = (1−μ)·Gₜ + μ·Mₜ`. The runner defaults to
-  `μ = 0.0`, standard (non-Nesterov) momentum — the `Optimizer` class default of
-  `0.8` is always overridden by `run_counterexamples.py`. Both are parameters, and
-  by Proposition 1 neither can change a verdict on the linear problems.
+`run_counterexamples` and `plot_ef21_momentum` are the only scripts in the
+repository that write into `aaai_article/`: each figure goes to `figures/` as
+PNG + PDF and to `../aaai_article/images/counterexamples/` as the PDF LaTeX
+includes.
 
 ## Files
 
 | File | Contents |
 |------|----------|
-| [`optimizers.py`](optimizers.py) | `muon_lmo`, `scaled_sign`, and the 8 optimizers (`OPTIMIZERS` registry) |
-| [`problems.py`](problems.py) | The 4×4 and 5×5 linear counterexamples, the universal 2×2 EF21-SignMuon counterexample (exact theorem construction, per `(μ, variant)`), and a `_self_check` reproducing the paper's exact constants |
-| [`run_counterexamples.py`](run_counterexamples.py) | Runs every method on all three problems, prints verdict tables, saves the figures |
-| [`plot_ef21_momentum.py`](plot_ef21_momentum.py) | Runs EF21-SignMuon on the `(μ, variant)`-specific universal instance for `μ ∈ {0, 0.5, 0.9, 0.95, 0.99}`, both variants; shows divergence at the common slope `49/480` (momentum does not restore convergence) |
-| [`verify_ns_oracle.py`](verify_ns_oracle.py) | The same instances under the *implemented* Newton–Schulz oracle instead of the exact SVD, over step counts and dtypes — which choices of `σ₁`/`M` survive the approximation |
-| `figures/` | Generated plots (`*.png`, `*.pdf`) |
+| [`optimizers.py`](optimizers.py) | `muon_lmo`, `sign_pm1`, `scaled_sign`, the 8 optimizers (`OPTIMIZERS`) |
+| [`problems.py`](problems.py) | the 4×4 and 5×5 linear instances, the universal 2×2 EF21-SignMuon instance built per `(mu, variant)`, and a `_self_check` reproducing the paper's constants |
+| [`run_counterexamples.py`](run_counterexamples.py) | every method on all three problems: verdict tables and `counterexamples_main` |
+| [`plot_ef21_momentum.py`](plot_ef21_momentum.py) | EF21-SignMuon at `mu ∈ {0, 0.5, 0.9, 0.95, 0.99}`, both variants, against the common slope `49/480` |
+| [`enumerate_minimality.py`](enumerate_minimality.py) | which shapes admit a sign/polar mismatch at all |
+| [`verify_ns_oracle.py`](verify_ns_oracle.py) | the same instances under the *implemented* Newton–Schulz oracle, over step counts and dtypes |
+
+## Three conventions
+
+* **Exact SVD LMO.** `muon_lmo` is the rank-truncated polar factor `U Vᵀ` of an
+  exact SVD, which is what the theorems are stated about — not the Newton–Schulz
+  polynomial used in practice. Only nonzero singular directions are kept, because
+  `U @ Vᵀ` from a full SVD is non-unique on rank-deficient input, and `sign(G)` is
+  often low-rank. `verify_ns_oracle` measures what the practical oracle does
+  instead; the two are **not** interchangeable here.
+* **Randomized `sign(0)`.** Zeros map to an independent random `±1`, as in the
+  paper, so every sign channel is a strict bit. Each optimizer owns its generator
+  (`sign_seed`, default 0), so a run depends only on its own seed. No constant in
+  Theorems 1–3 is affected — none of those matrices, or their oracle outputs, has
+  a zero entry. What the convention does reach is the seven bounded methods on the
+  Theorem 4 instance, whose field gradient has an exactly-zero `(1,1)` entry by
+  construction: they stay bounded either way, and EF21-SignMuon's own trajectory
+  is untouched, every residual along it being strictly nonzero.
+* **Momentum** is the EMA form `Mₜ = μ·Mₜ₋₁ + (1−μ)·Gₜ` with an optional Nesterov
+  look-ahead `M̃ₜ = (1−μ)·Gₜ + μ·Mₜ`, `μ = 0` by default. That default costs
+  nothing: on the linear objectives the step is the same matrix for every
+  `μ ∈ [0,1)` and either variant (Proposition 1), and on the Theorem 4 instance so
+  is the entire trajectory.
 
 ## Methods
 
-Six paper algorithms + two references (`SignSGD`, `Muon`). `D = MuonLMO(·)`
-is the exact polar factor; `sign` is elementwise; `scaled_sign(Y) = mean|Y|·sign(Y)`.
+`D = muon_lmo(·)` is the exact polar factor, `sign` is elementwise,
+`scaled_sign(Y) = mean|Y|·sign(Y)`.
 
 | Method | Update direction `d` (`X ← X − η·d`) |
 |--------|--------------------------------------|
-| `SignMuon` | `sign(LMO(M̃))` — sign **after** LMO |
-| `EF21-SignMuon` | EF21 estimator of `LMO(M̃)` (scaled-sign on the residual) |
-| `MuonUSign` | `LMO(sign(M̃))` — sign **before** LMO |
-| `MuonSign` | `sign(LMO(sign(M̃)))` — sign before *and* after LMO |
-| `EF21-MuonUSign` | `LMO(g_est)`, where `g_est` is a scaled-sign EF21 estimate of `M̃` |
-| `EF21-MuonSign` | as above + a second EF21-P loop compressing the downlink model shift |
+| `SignMuon` | `sign(LMO(M̃))` — sign **after** the LMO |
+| `MuonUSign` | `LMO(sign(M̃))` — sign **before** |
+| `MuonSign` | `sign(LMO(sign(M̃)))` — **both** sides |
+| `EF21-SignMuon` | EF21 estimator of `LMO(M̃)`, refreshed by a scaled sign of the residual |
+| `EF21-MuonUSign` | `LMO(g_est)`, `g_est` a scaled-sign EF21 estimate of `M̃` |
+| `EF21-MuonSign` | as above, plus an EF21-P loop compressing the downlink model shift |
 | `SignSGD` (ref) | `sign(M̃)` |
 | `Muon` (ref) | `LMO(M̃)` |
 
-## Running
+## How a verdict is reached
 
-Run from `code/`, the package root — not from this directory.
+On a linear objective `f(W) = Tr(GᵀW)` the gradient is constant, so `f` decreases
+**iff** the per-step inner product `⟨G, dₜ⟩` is positive. The verdict for
+Counterexamples 1–2 is therefore the sign of `mean ⟨G, dₜ⟩` — the exact criterion,
+free of `η` and `T` (`verdict_mode="inner"`).
 
-```bash
-cd code
-python3 -m counterexamples.problems             # reproduces −412.311, −13.888 and the 49/480 table
-python3 -m counterexamples.run_counterexamples  # μ=0 by default; also prints −76; writes figures/
-python3 -m counterexamples.run_counterexamples --nesterov
-python3 -m counterexamples.run_counterexamples --mu 0.9 --eta 2e-3 --T 120
-python3 -m counterexamples.plot_ef21_momentum   # momentum sweep for Counterexample 3
-python3 -m counterexamples.verify_ns_oracle     # exact vs Newton–Schulz oracle
-```
-
-`run_counterexamples.py` writes **one** three-panel figure,
-`counterexamples_main` — one panel per counterexample, in the paper's shared
-method colours (`common.plotting`) — to both `figures/` (PNG + PDF) and
-`../aaai_article/images/counterexamples/` (PDF, which is what LaTeX includes).
-
-For the linear objectives `f(W) = Tr(Gᵀ W)` the gradient is constant, so
-`f` decreases **iff** the per-step descent inner product `⟨G, dₜ⟩` is positive.
-The verdict column therefore tests the sign of `mean ⟨G, dₜ⟩` — the exact
-divergence criterion, independent of `η` and `T` (`verdict_mode="inner"`).
-Counterexample 3 uses `verdict_mode="slope"` instead: its ascent is
-**second-order** (the compressor overshoot, not a downhill step), so `⟨G, dₜ⟩`
-stays positive while `f` rises, and divergence is read off the positive tail
-slope of `f`. It is rebuilt for the run's `(μ, variant)` and diverges for every
-choice.
-
-> At `μ = 0` (the default) the slope test cleanly separates EF21-SignMuon from
-> everything else. At large `μ` it does **not**: the periodic term of the
-> Counterexample-3 landscape scales with `A(μ)` (199 at `μ = 0.99`), so the
-> bounded methods wander over a range that a *fixed absolute* `SLOPE_TOL` reads
-> as ascent. The divergence of EF21-SignMuon is `μ`-independent — its exact rate
-> is `49/480` for every `μ` — but the *verdict column* is only meaningful at
-> small `μ`. Use `counterexamples.problems`, which measures over whole periods,
-> to check the rate at any `μ`.
+Counterexample 3 needs a different test: its ascent is second-order, driven by the
+compressor overshooting rather than by a downhill step, so `⟨G, dₜ⟩` stays positive
+while `f` rises. It is read as the theorem states it — `f(X_{t+2}) − f(X_t) = c > 0`
+for every `t` past the transient — and a method is called divergent when that
+period-two increment is positive throughout the tail and constant to 5%
+(`verdict_mode="period"`). An absolute tolerance on the tail *slope*, which this
+script used until 2026-07-30, does not work: the bounded methods oscillate over a
+range that scales with the instance's periodic constant `A(μ)` (199 at `μ = 0.99`),
+so over a fixed window their apparent slope scales with it too, and a threshold
+tight enough to catch the ascent at `μ = 0` reports every bounded method as
+ascending at `μ = 0.9`. The per-period increment has no such failure mode — a
+bounded trajectory cannot hold a constant positive one — and separates the eight
+methods correctly at every `μ ∈ {0, 0.25, 0.5, 0.9, 0.95, 0.99}`, both variants, at
+`T = 60` and at `T = 400`.
 
 ## Results (defaults: μ = 0, standard momentum)
 
-**Counterexample 1 — SignMuon (Theorem 1, 4×4).** `G = 1000·u₁v₁ᵀ + O`, so
-`LMO(G) = O` but `⟨G, sign(O)⟩ = −412.311 < 0`. Only **SignMuon** diverges;
-every other method (including the EF21 variants) descends.
+**Counterexample 1 — SignMuon (Theorem 1, 4×4).** `G = 1000·u₁v₁ᵀ + O` with `O`
+orthogonal and `Ov₁ = u₁`, so `LMO(G) = O` exactly while `⟨G, sign(O)⟩ =
+−42468/103 ≈ −412.311 < 0`. Only **SignMuon** diverges; every other method,
+including both EF21 variants, descends.
 
-**Counterexample 2 — MuonSign / MuonUSign (Theorem 2, 5×5).** `sign(G) = S`,
-and `polar(S)` disagrees with `S` at exactly the one inflated entry, giving
-`⟨G, LMO(sign(G))⟩ = −13.888 < 0`. **MuonUSign** diverges — and so does
-**MuonSign** here (`−76`), since its downlink sign flips that same entry.
-All EF21 variants, `SignMuon`, `SignSGD`, and `Muon` descend.
+**Counterexample 2 — MuonUSign and MuonSign (Theorems 2–3, 5×5).** `sign(G) = S`,
+and `polar(S)` disagrees with `S` at exactly one entry, the deepest mismatch any
+5×5 sign matrix admits (`D₄₂ = −1/√17`). Loading that entry gives
+`⟨G, LMO(sign(G))⟩ ≈ −13.888` and `⟨G, sign(LMO(sign(G)))⟩ = −76`, so
+**MuonUSign** and **MuonSign** both diverge on the *same* instance. `SignMuon`,
+`SignSGD`, `Muon` and all three EF21 methods descend.
 
-In both linear cases the Error-Feedback methods restore convergence, matching
-the paper's claims. Because the linear-problem step direction is invariant to
-the momentum scaling, the divergence verdicts are identical under `μ ∈ [0,1)`
-and under both momentum variants.
+In both linear cases error feedback restores convergence, matching the paper.
 
-**Counterexample 3 — EF21-SignMuon (universal, Theorem `th:ef_div`).**
+**Counterexample 3 — EF21-SignMuon (Theorem 4, universal 2×2).**
 `ef21_signmuon_counterexample(mu, nesterov)` returns the *exact* function the
-appendix theorem builds for the given momentum coefficient and variant — code
-and proof describe one object. On a *linear* objective EF21-SignMuon cannot be
-broken (its estimator converges to `polar(G)` and the step is genuine descent),
-and a plain quadratic valley diverges only at `μ=0`; so the universal instance
-instead *forces* a fixed sequence of LMO targets — a rotation `S₁`, a rank-one
-map `S₂`, then alternating reflections `D̄^±` — regardless of `(μ, variant)`.
-The reflections share a small diagonal while their `O(1)` off-diagonal flips
-sign each step, so the shared scaled-sign magnitude `αₜ = mean|Δₜ| = 24/25`
-overshoots the diagonal: the estimator's `(2,2)` entry locks into the period-2
-cycle `{−61/200, +131/200}` of mean `+7/40 > 0`, opposite to its target
-`−7/25`, and one coordinate of `X` marches off, so `f → +∞` at the exact rate
-`49/480` per step. The function is
-`f(W) = −γW₂₂ + A(Φ₁(W₁₂)+Φ₂(W₂₁)) + Σₖ bₖ(W)` (`γ=7/12`): a linear divergence
-slope, two periodic ramps `Φᵢ` sustaining the alternating off-diagonal
-gradient, and three compactly supported corrections `bₖ` seeding the first
-three gradients; `A` and the `bₖ` depend on `(μ, variant)` (momentum is a
-positive linear filter of the gradients, which we invert). Divergence holds for
-**every** `L>0`, `η>0`, `μ∈[0,1)` and both variants — the iterate trajectory is
-identical across them, and only **EF21-SignMuon** diverges while `Muon`,
-`EF21-MuonUSign`, `SignSGD` and the others descend. It shows the `Θ(σ_min/L)`
-step-size restriction of the conditional convergence theorem cannot be replaced
-by any `(L, μ)`-only rule. Figures: `run_counterexamples.py` (the right-hand panel of
-`counterexamples_main`, framed so the linear ascent is visible above the band
-the seven bounded methods sit in) and
-[`plot_ef21_momentum.py`](plot_ef21_momentum.py) (the momentum sweep
-`ef21_signmuon_momentum`).
+appendix builds for that momentum coefficient and variant, so code and proof
+describe one object. EF21-SignMuon cannot be broken on a linear objective — its
+estimator converges to `polar(G)` and the step is genuine descent — and a plain
+quadratic valley breaks it only at `μ = 0`; so the universal instance instead
+*forces* a fixed sequence of LMO targets: a rotation `S₁`, a rank-one map `S₂`,
+then alternating reflections `D̄^±`, whatever `(μ, variant)` is. The reflections
+share a small diagonal while their `O(1)` off-diagonal flips sign every step, so
+the shared magnitude `αₜ = mean|Δₜ| = 24/25` overshoots the diagonal: the
+estimator's `(2,2)` entry locks into the period-two cycle `{−61/200, +131/200}`,
+of mean `+7/40 > 0` against its target `−7/25`, and the coordinate it drives runs
+off, so `f → +∞` at exactly `49/480` per step. The function is
+`f(W) = γ·h(W₂₂) + A(Φ₁(W₁₂) + Φ₂(W₂₁)) + Σₖ bₖ(W)` with `γ = 7/12`: a linear
+divergence slope (levelled off above `W₂₂ = 1`, which no iterate reaches, so that
+`f` is bounded below), two periodic ramps `Φᵢ` sustaining the alternating
+off-diagonal gradient, and three compactly supported corrections `bₖ` seeding the
+first three gradients. `A` and the `bₖ` depend on `(μ, variant)` — momentum is a
+positive linear filter of the gradients, which we invert. Divergence holds for
+**every** `L > 0`, `η > 0`, `μ ∈ [0,1)` and both variants, the iterate trajectory
+being identical across them, and only **EF21-SignMuon** diverges while `Muon`,
+`EF21-MuonUSign`, `SignSGD` and the rest stay bounded. It shows that the
+`Θ(σ_min/L)` step-size restriction of the conditional convergence theorem cannot
+be replaced by any `(L, μ)`-only rule.
+
+Figures: the right-hand panel of `counterexamples_main`, framed so the linear
+ascent is visible above the band the seven bounded methods sit in, and
+`ef21_signmuon_momentum` from [`plot_ef21_momentum.py`](plot_ef21_momentum.py).
