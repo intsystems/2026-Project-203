@@ -7,14 +7,22 @@ that way:
 * **synthetic** — does the method behave the way the theory says it does?
 * **federated** — can these methods actually do federated learning?
 
-Nothing below needs a code change. The convention change (`sign_pm1`) is already
-in and the test suite passes.
+The convention change (`sign_pm1`) is in on the torch side and the test suite
+passes.
 
 Updated 2026-07-30 after the federated proofread: `communication_bits` now takes
 the run's alphabet (§4), `--final-seeds` defaults to five, and §2b is restated as
 the one outstanding federated claim rather than a table that no longer exists.
 The N = 11 five-seed federated table itself is **done** — §2 is a re-run
 recipe, not outstanding work.
+
+Updated again 2026-07-30 after the synthetic and counterexample proofread. Both are
+**done**; §1 is likewise a re-run recipe rather than outstanding work. Two things in
+this section had gone stale and are corrected below: every stage now runs at
+100 × 100 (there is no 500 × 500 anywhere, in the code or in the appendix), and the
+budget exponent comes out at `p ≈ 2`, not the `p ≈ 1` this file used to predict. The
+counterexample code did need one change after all — it followed `sign(0) = 0` where
+the paper randomizes — for which see §3.
 
 ---
 
@@ -32,68 +40,64 @@ tuned rate downstream inherits them.
 
 ---
 
-## 1. Synthetic — alignment with theory (~2.5 h, or ~1 h without `grid`)
+## 1. Synthetic — alignment with theory (~1.6 h, all seven stages)
 
-The paper's claims here are about *exponents and signs*, not about winning.
-Run in this order; the first stage is the control.
+**Status: done.** The reported numbers come from the 2026-07-29 run at commit
+`cf18382` on an RTX A4000, whose `SUMMARY.md` fills `tab:synthetic_tuned`,
+`tab:synthetic_alignment`, `tab:synthetic_dynamics`, both synthetic figures and every
+number in `app:images_task`. The 2026-07-30 proofread re-checked all of them against
+that file and found no discrepancy, no censored optimum and no learning rate on a
+grid edge. What follows is the recipe for re-running it, not a list of gaps.
 
-```bash
-python3 -m synthetic.run_gpu --stages stability   # ~5 min  CONTROL: SGD must give eta_max = 2/L
-python3 -m synthetic.run_gpu --stages alignment   # ~20 min rho_t > 0 on random instances (Table 6)
-python3 -m synthetic.run_gpu --stages floor       # ~25 min floor slope = 1 (Table 7)
-python3 -m synthetic.run_gpu --stages horizon     # ~45 min p, q exponents (Table 7)
-python3 -m synthetic.run_gpu --stages kappa       # ~30 min conditioning sweep (Fig. 7)
-python3 -m synthetic.run_gpu --stages grid final  # ~3 h   Tables 3/8 re-run + Fig. 6 curves
-python3 -m synthetic.plot_synthetic               # all five figures
-```
-
-### Running at 100x100 to save time
-
-Only `grid` and `final` use the paper's 500x500; the five sweep stages above
-already run at **100x100** by default, so most of this list is cheap already.
-To put everything at 100x100:
+The paper's claims here are about *exponents and signs*, not about winning. One
+command does the lot; run the stages separately only to split the wall clock.
 
 ```bash
-python3 -m synthetic.run_gpu --m 100 --n 100                       # all stages
-python3 -m synthetic.run_gpu --stages grid final --m 100 --n 100   # just the expensive two
+python3 -m synthetic.run_gpu --force              # all seven, ~1.6 h, writes the .zip
+python3 -m synthetic.plot_synthetic               # both figures, from results/synthetic/
 ```
 
-That writes to `results/synthetic_100x100/`, a separate tree, so a small pass
-can never land where 500x500 numbers belong.
+```bash
+python3 -m synthetic.run_gpu --stages stability   # ~2 min  CONTROL: SGD must give eta_max = 2/L
+python3 -m synthetic.run_gpu --stages alignment   # ~3 min  rho_t > 0 on random instances
+python3 -m synthetic.run_gpu --stages floor       # ~35 min floor slope = 1
+python3 -m synthetic.run_gpu --stages horizon     # ~18 min p, q exponents
+python3 -m synthetic.run_gpu --stages kappa       # ~22 min conditioning sweep
+python3 -m synthetic.run_gpu --stages grid final  # ~15 min the fixed-target table + curves
+```
 
-**Pass `--m/--n` to every invocation of a given pass, or to none.** The tree name
-is chosen by whether the flag was given, not by the size that actually ran, so
-sweeps without it (`results/synthetic/`) and `grid` with it
-(`results/synthetic_100x100/`) end up split across two trees despite being the
-same size. The `--list` time estimates assume the default sizes and are far too
-pessimistic at 100x100.
+**Everything is 100 × 100, every stage, and `--m` is not a cost knob.** There is no
+500 × 500 left in the code or in the appendix, and no separate size for `grid`. At
+these sizes a step is kernel-launch bound, so `--m 20` and `--m 100` cost about the
+same; what a sweep costs is (configurations × iterations). `--m N` writes to
+`results/synthetic_NxN/` rather than `results/synthetic/`, so pass it to every
+invocation of a pass or to none — the tree name is chosen by whether the flag was
+given, not by the size that ran.
 
-**One paper consequence, worth deciding before you run.** The appendix states
-500x500 in three places, and the superseded Table in `app:synthetic_v1` is a
-500x500 result. New numbers at 100x100 make the new-vs-superseded comparison
-apples-to-oranges, and the condition number changes with it (3.65e4 at 100x100
-against 1.645e7 for the 500x500 seed-1337 draw). Two clean options: keep `grid`
-at 500x500 purely for comparability with the published table, or run everything
-at 100x100 and relabel the superseded section as the historical 500x500 record.
-The sweeps are unaffected either way -- they measure exponents, which is the
-size-robust part.
+**`--force` is what makes it a re-run.** Without it a box that has run before skips
+every stage and exits in seconds looking like a success.
 
-**Do not skip `stability`.** SGD's η_max reproducing the textbook `2/L` is the
-only end-to-end check that the harness is measuring what it claims; if that
-fails, every other number in the study is suspect.
+**Do not skip `stability`.** SGD's η_max reproducing the textbook `2/L` is the only
+end-to-end check that the harness is measuring what it claims; if that fails, every
+other number in the study is suspect. The 2026-07-29 run gives `2.063` against
+`2/L = 2.019`, a ratio of `1.02`.
 
-**What fills what.** `results/synthetic/SUMMARY.md` fills the four `[fill]`
-slots in `app:images_task` and Tables `tab:synthetic_alignment`,
-`tab:synthetic_dynamics`. The predicted values are printed alongside the
-measured ones, so a disagreement is visible without cross-referencing the paper.
+**What to expect from the exponents, so a correct result is not "fixed".** The floor
+slope is `1.000` for eight of the nine methods that have a floor and `0.989` for
+SignSGD. The budget pair does *not* come out at either textbook value: the eight
+norm-fixed methods tune `η*` as the nonconvex bound prescribes (`q ∈ [0.39, 0.55]`,
+about `1/2`) while the error they attain falls at `p ∈ [1.76, 2.14]`, about twice
+what strong convexity would give, because a quadratic is easier than the worst case
+of its smoothness class. An earlier version of this file predicted `p ≈ 1`; that was
+wrong, and the appendix now states the measured pair and what it means.
 
-**Expect `p` to disagree with 1/2, and say so.** The instance is strongly convex
-(σ > 0 by construction), so `p = q = 1` is the *correct* answer there and
-`p = 1/2` is the nonconvex bound. The paper already says the fit reports which
-regime the instance is in; do not "fix" a p ≈ 1.
-
-**Any row flagged `[BOUNDARY]`** in the grid stage is not a tuned value — widen
-the grid and re-run that method before publishing it.
+**Any row flagged `[BOUNDARY]`**, or any `†` in a `SUMMARY.md` table row, is not a
+tuned value — widen the grid and re-run that method before publishing it.
+`grep '†' results/synthetic/SUMMARY.md | grep '^|'` lists them (a plain `grep -c`
+also counts the three legend lines). The 2026-07-29 run has five, every one of them a
+*momentum* of `0.99` at the top of its grid, for SGD and SignSGD at the largest
+condition numbers, which the appendix states as a one-sided bound rather than a
+measurement. No learning rate is censored.
 
 ---
 
@@ -182,8 +186,14 @@ reviewer to press.
   across two federation scales. The headline is that the compressed methods keep
   up with Muon and beat SignSGD; differences within a seed spread are not
   results.
-* **Counterexamples** — worst case, exact oracle. Already done and unchanged by
-  the convention (verified: no instance has a zero entry).
+* **Counterexamples** — worst case, exact oracle. Done, and the published constants
+  are unchanged by the randomized-sign convention: no Theorem 1–3 instance, and no
+  oracle output of one, has a zero entry, which
+  `test_the_counterexample_constants_do_not_depend_on_the_sign_convention` now pins.
+  The numpy module itself did have to change, having used `sign(0) = 0` where the
+  paper randomizes; `fig:divergence_plot`'s third panel is redrawn as a result, its
+  band of bounded methods slightly noisier. Nothing else in the figure moves, and no
+  verdict does.
 
 ---
 
@@ -194,8 +204,9 @@ code; do not carry them over:
 
 * Tables 4–5 (federated) — protocol changed (validation split, per-layer rule,
   uniform decay/AdamW head, N = 11).
-* Table 3 / Table 8 (synthetic) — grids were one-decade linear and left optima
-  censored; two rows were off their stated grid.
+* ~~Table 3 / Table 8 (synthetic) — grids were one-decade linear and left optima
+  censored; two rows were off their stated grid.~~ **Regenerated** by the 2026-07-29
+  run on five-decade per-family grids; no optimum is censored now.
 * The `8–17%` uplink-zero range — still worth recording as a diagnostic, but it
   no longer feeds any bit-accounting claim, since zeros are randomized.
 * The round-trip communication table (now `~1.9×` vs `29.4×`) — `communication_bits`

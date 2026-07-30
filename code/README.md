@@ -43,34 +43,19 @@ code/
 └── results/              all output (created on first run)
 ```
 
-Two entry points do the whole protocol in one resumable, budget-aware command:
+Each of the four experiments follows the same shape — **compute on the GPU box → one
+archive to download → unpack and plot anywhere** — and each is one or two commands:
 
 ```bash
-python3 -m centralized.overnight --device cuda:0 --download
-python3 -m federated.overnight   --device cuda:0 --budget-hours 12 --download
+python3 -m counterexamples.run_counterexamples                  # CPU, seconds
+python3 -m synthetic.run_gpu      --force                       # ~1.6 h, one GPU
+python3 -m centralized.overnight  --device cuda:0 --download    # the whole protocol
+python3 -m federated.overnight    --device cuda:0 --budget-hours 24 --download
 ```
 
-Both self-check, record the exact GPU / CUDA / Python / PyTorch, time your GPU,
-print a schedule with a finish time per phase, and rewrite a `REPORT.md` after
-every phase so you can read it mid-run. Ctrl-C stops cleanly and writes it.
-`--dry-run` prints the schedule and exits. The centralized driver has no deadline
-by default; the federated one takes `--budget-hours 0` for the same.
-
-Each driver ends by packing everything the paper needs into a single ~1 MB archive,
-leaving the checkpoints behind. Download that one file, then redraw the figures
-anywhere:
-
-```bash
-# centralized  -> results/article_export.tar.gz
-python3 -m centralized.plot_analysis --bundle article_export
-
-# federated    -> results/federated_export_results.zip
-python3 -m federated.plot_article --bundle results/federated_export_results.zip
-```
-
-`centralized.export_article` and `federated.export_article` rebuild their archive at
-any time from what is on disk, without retraining. The federated plotters unpack the
-`.zip` themselves.
+[REPRODUCE.md](REPRODUCE.md) has the rest: what each driver guarantees, which archive
+it writes, and the command that redraws each figure from it. This file covers only
+what is true of *every* method, whichever experiment runs it.
 
 ## Method names
 
@@ -142,15 +127,11 @@ fraction of the initialization's:
 
 The first row is the aspect factor already in the reference Muon implementation —
 the criterion *derives* it, which is the main evidence that it is the right
-criterion. The second row is its missing counterpart. `python3 -m common.lr_scaling`
-lists the alternatives (`mup`, `mishra-analysis`, `power:α,β`) and what each assumes.
-
-On CNN2 the sign family's multiplier spans **7.8×** (`fan_in` 75 → 4608), a wider
-spread than ResNet-18 offers, so the federated setting is the more sensitive test of
-the rule. `python3 -m federated.tune --stage anchors` prints the per-layer
-multipliers for both families, their spread, the grid anchor each method inherits,
-and the per-layer step-length ratio a single global rate would have to absorb
-(8.7× on `conv1`, 67.9× on `fc1`).
+criterion. The second row is its missing counterpart. The derivation, the alternatives
+(`mup`, `mishra-analysis`, `power:α,β`) and the measurement that chooses between them
+are in [`common/README.md`](common/README.md#lr_scalingpy); `python3 -m
+federated.tune --stage anchors` prints the per-layer multipliers on CNN2, where the
+sign family's span of **7.8×** makes the federated setting the more sensitive test.
 
 ## Three caveats worth knowing
 
@@ -164,7 +145,10 @@ and the per-layer step-length ratio a single global rate would have to absorb
   the channel is one bit whatever that rate is. Runs still record
   `uplink_zero_frac` (the raw rate, before mapping) as a diagnostic;
   `--uplink-zeros keep` restores the ternary channel, and is the only setting under
-  which a zero rate costs bits.
+  which a zero rate costs bits. The convention holds in the numpy counterexample code
+  too (`counterexamples.optimizers.sign_pm1`, one generator per optimizer so a run
+  depends only on its own seed), where it changes no published constant — none of the
+  Theorem 1–3 matrices, or their oracle outputs, has a zero entry.
   See [`federated/README.md`](federated/README.md) for why the client count is 11.
 * **BatchNorm in the federated setting.** Local models are discarded each round and
   BatchNorm runs in inference mode during gradient accumulation, so the running

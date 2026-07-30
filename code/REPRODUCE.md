@@ -79,17 +79,18 @@ gives up is printed and recorded in `REPORT.md`.
 
 ## 1. Counterexamples (`fig:divergence_plot`, Theorems 1–3)
 
-CPU, numpy only, **under a minute in total**. No hyperparameters to tune. See
+CPU, numpy only, **under a minute in total**. Nothing to tune, nothing to download.
+Why the instances are built as they are, and what each verdict column means, is in
 [`counterexamples/README.md`](counterexamples/README.md).
 
 ```bash
-python3 -m counterexamples.problems               # prints the theorem constants
+python3 -m counterexamples.problems               # the theorem constants
 python3 -m counterexamples.run_counterexamples    # fig:divergence_plot
 python3 -m counterexamples.enumerate_minimality   # the Thm 2-3 minimality claims
 python3 -m counterexamples.verify_ns_oracle --trajectories   # exact vs Newton-Schulz
 ```
 
-`counterexamples.problems` verifies the exact values quoted in Theorems 1–2 and the
+`counterexamples.problems` prints the exact values quoted in Theorems 1–2 and the
 Theorem 4 rate:
 
 ```
@@ -99,17 +100,16 @@ rate 49/480 = 0.102083 for every mu in {0, 0.25, 0.5, 0.9, 0.99}, both variants
 ```
 
 Theorem 3's `<G, sign(LMO(sign(G)))> = -76` is printed by `run_counterexamples`, in
-its Counterexample-2 table. That script and `plot_ef21_momentum` below write to
-**both** `counterexamples/figures/` (PNG + PDF) and
-`../aaai_article/images/counterexamples/` (PDF, which is what LaTeX includes); they
-are the only scripts in the repository that write into `aaai_article/`.
+its Counterexample-2 table. That script and `plot_ef21_momentum` below are the only
+two in the repository that write into `aaai_article/`: each figure goes to
+`counterexamples/figures/` as PNG + PDF and to
+`../aaai_article/images/counterexamples/` as the PDF LaTeX includes.
 
-The LMO here is an **exact rank-truncated SVD**, matching the theorem statements;
-deep-learning runs use Newton–Schulz, as practitioners do, and `verify_ns_oracle`
-measures the difference on these instances. It takes `--steps`, `--sigmas`, `--Ms`,
-`--trajectories`, `--traj-steps`, `--traj-dtype`, `--eta`, `--T`, and deliberately
-has **no** `--mu`/`--nesterov` — those belong to `run_counterexamples`, where
-momentum provably cannot change the trajectory (Proposition 1).
+`verify_ns_oracle` re-evaluates the instances under the *implemented* Newton–Schulz
+oracle instead of the exact SVD the theorems are stated for, sweeping `--steps`,
+`--sigmas` and `--Ms`. It deliberately has **no** `--mu`/`--nesterov` — those belong
+to `run_counterexamples`, where momentum provably cannot change the trajectory
+(Proposition 1).
 
 ## 2. EF21-SignMuon divergence (Theorem 4)
 
@@ -117,19 +117,21 @@ momentum provably cannot change the trajectory (Proposition 1).
 python3 -m counterexamples.plot_ef21_momentum    # fig:ef21_momentum, ~20 s, CPU
 ```
 
-Verifies the exact rate `49/480` per step for every `μ ∈ {0, 0.5, 0.9, 0.95, 0.99}`
+Confirms the exact rate `49/480` per step for every `μ ∈ {0, 0.5, 0.9, 0.95, 0.99}`
 and both momentum variants; `counterexamples.problems` prints the same check over
-`μ ∈ {0, 0.25, 0.5, 0.9, 0.99}`. Both measure the slope over a whole number of
-periods: the trajectory is period-two, so a window whose endpoints have opposite
-parity leaks half an oscillation into the slope and never shows the exact rate — a
-real bug here, fixed 2026-07-28.
+`μ ∈ {0, 0.25, 0.5, 0.9, 0.99}`. Both measure the rise over a whole number of
+periods, because the trajectory is period-two and a window whose endpoints have
+opposite parity leaks half an oscillation into the slope — which is also why
+`run_counterexamples` reads its verdict off the *period-two increment* rather than
+off a tail slope against an absolute tolerance
+([`counterexamples/README.md`](counterexamples/README.md)).
 
 ## 3. Synthetic convex problem
 
 `F(X) = ½⟨X, AXB⟩` on `100 × 100` matrices, three independent draws of `(A, B)`,
 `X₀ ~ N(0, 0.01)` entrywise, with `L` and `σ` known in closed form. What each stage
-measures, and why the problem is built this way, is in
-[`synthetic/README.md`](synthetic/README.md).
+measures, why the problem is built this way, how the grids are set and what the
+batched runner does are all in [`synthetic/README.md`](synthetic/README.md).
 
 ```bash
 python3 -m synthetic.run_gpu --force      # every stage, ~1.6 h on one GPU
@@ -138,13 +140,41 @@ python3 -m synthetic.plot_synthetic       # figures, from results/synthetic/
 ```
 
 The first runs `tests/test_code.py` as a preflight, then all seven stages, then
-writes the archive; the second only rebuilds it from what is on disk.
+writes the archive; the second only rebuilds it from what is on disk. Useful
+variants:
 
-**`--force` is what makes it a rerun.** A stage whose `<method>/<mode>.json` already
-exists is skipped, so on a box that has run before, plain `run_gpu` skips all seven
-and exits in seconds looking like a success. `--force` overwrites
-`results/synthetic/` and the `.zip` beside it; move both aside first if the previous
-run still backs numbers in the paper.
+```bash
+python3 -m synthetic.run_gpu --list                 # what each stage measures
+python3 -m synthetic.run_gpu --quick                # ~2 min smoke test, own tree
+python3 -m synthetic.run_gpu --stages floor horizon # split the run
+grep '†' results/synthetic/SUMMARY.md | grep '^|'   # the censored cells, if any
+```
+
+That last command lists table rows only, not the three legend lines that explain the
+dagger, so a plain `grep -c` is not the check. On the 2026-07-29 run it prints five
+rows, all of them a *momentum* of `0.99` at the top of its grid, for SGD and SignSGD
+at the largest condition numbers. **No learning rate is censored**, which is the
+condition for reporting the tuned rates as measurements.
+
+**`--force` is what makes the first command a rerun.** A stage is considered done as
+soon as one `<method>/<mode>.json` exists, so on a box that has run before, plain
+`run_gpu` skips all seven and exits in seconds looking like a success. `--force`
+re-runs them and overwrites those JSON files in place — it does not clear the
+directory, so if the earlier run covered a different `--methods` set its files
+survive. Move `results/synthetic/` and the `.zip` beside it aside first if the
+previous run still backs numbers in the paper. `--quick` writes to
+`results/synthetic_quick/` and `--m N` to `results/synthetic_NxN/`, so no smoke test
+can land where the reported numbers belong.
+
+| Stage | Feeds |
+| :--- | :--- |
+| `stability` | `tab:synthetic_dynamics` — SGD is the control and must return `2/L`. **Do not skip it**: it is the only end-to-end check that the harness measures what it claims |
+| `alignment` | `tab:synthetic_alignment` |
+| `floor` | `tab:synthetic_dynamics`, `fig:synthetic_dynamics` (left) |
+| `horizon` | `tab:synthetic_dynamics`, `fig:synthetic_dynamics` (centre) |
+| `kappa` | `fig:synthetic_dynamics` (right) |
+| `grid` | `tab:synthetic_tuned` |
+| `final` | `fig:synthetic_main` |
 
 | Path under `results/synthetic/` | What it is |
 | :--- | :--- |
@@ -157,37 +187,17 @@ run still backs numbers in the paper.
 right-click it under `code/results/` and choose Download; `results/` is gitignored,
 so nothing else leaves the box on its own.
 
-```bash
-python3 -m synthetic.run_gpu --list                 # what each stage measures
-python3 -m synthetic.run_gpu --quick                # ~2 min smoke test, own tree
-python3 -m synthetic.run_gpu --stages floor horizon # split the run
-grep -c '†' results/synthetic/SUMMARY.md            # censored optima; expect 0
-```
-
-`--quick` writes to `results/synthetic_quick/` and `--m N` to
-`results/synthetic_NxN/`, so no smoke test can land where the reported numbers
-belong. `--m` is not a cost knob: below ~200×200 a step is latency- rather than
-compute-bound. What a sweep costs is (configurations × iterations).
-
-| Stage | Feeds |
-| :--- | :--- |
-| `stability` | `tab:synthetic_dynamics` — SGD is the control and must return `2/L`. **Do not skip it**: it is the only end-to-end check that the harness measures what it claims |
-| `alignment` | `tab:synthetic_alignment` |
-| `floor` | `tab:synthetic_dynamics`, `fig:synthetic_dynamics` (left) |
-| `horizon` | `tab:synthetic_dynamics`, `fig:synthetic_dynamics` (centre) |
-| `kappa` | `fig:synthetic_dynamics` (right) |
-| `grid` | `tab:synthetic_tuned` |
-| `final` | `fig:synthetic_main` |
-
 Three things to know when reading the output. A `†` marks a tuned value on the edge
 of its grid, which is an upper bound rather than a measurement — each learning-rate
-window now ends *past* the largest stability edge measured for its family, so a
-surviving `†` means the optimum is at the edge of stability, a fact about the method,
-rather than a grid too narrow to hold it. Expect `p` to disagree with 1/2: the
-instance is strongly convex by construction, so `p = q = 1` is the *correct* answer
-there and `p = 1/2` is the nonconvex bound; do not "fix" a `p ≈ 1`. And EF21-MuonSign
-is scored on `X`, the exact model the guarantee bounds, while its gradient is taken
-at the broadcast `W` — which the closed-form gradient makes free.
+window ends *past* the largest stability edge measured for its family, so a surviving
+`†` means the optimum sits at the edge of stability, a fact about the method, rather
+than a grid too narrow to hold it. Expect `p` and `q` to disagree with each other:
+the step sizes come out tuned as the nonconvex bound prescribes (`q ≈ 1/2`) while the
+error attained falls at `p ≈ 2`, twice what strong convexity would give, because a
+quadratic is easier than the worst case of its smoothness class — so neither `p ≈ 1/2`
+nor `p ≈ 1` is the value to expect, and a `p` near 2 is not a bug. And EF21-MuonSign
+is scored on `X`, the exact model the guarantee bounds, while its gradient is taken at
+the broadcast `W` — which the closed-form gradient makes free.
 
 ### What is pinned, and what is not
 
@@ -198,18 +208,12 @@ does not depend on what ran before it. `grid` also re-runs its winner alone befo
 reporting it, since in bfloat16 a matmul of a different batch width can round
 differently.
 
-Across machines it is *not* bit-exact and cannot be: a different GPU or BLAS
-perturbs a gradient at the last bit, `sign` is discontinuous, and an entry within
-rounding of zero flips the step by `O(1)` — which is the instability this paper is
-about. What survives is everything the tables report, each being a statistic over a
-trajectory rather than a single iterate: between two float32 reduction orders at
-`100 × 100` over 800 steps they agree to `3e-3` at worst, `1e-5` on the alignment
-statistics.
-
-`--lmo-dtype bfloat16` is the default, matching reference Muon. It carries ~3 decimal
-digits, so for the methods that sign the LMO *output* an entry of `polar(M)` near
-zero can flip; `float32` removes that, and the value used is recorded in every
-output JSON.
+Across machines it is *not* bit-exact and cannot be: a different GPU or BLAS perturbs
+a gradient at the last bit, `sign` is discontinuous, and an entry within rounding of
+zero flips the step by `O(1)` — which is the instability this paper is about. What
+survives is everything the tables report, each being a statistic over a trajectory
+rather than a single iterate; `synthetic/README.md` gives the measured per-method
+agreement, and the `--lmo-dtype bfloat16` default that makes the effect visible.
 
 ## 4. Centralized CIFAR-10 (ResNet-18)
 
