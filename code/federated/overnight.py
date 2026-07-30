@@ -65,6 +65,7 @@ from pathlib import Path
 from typing import Dict, List, Optional
 
 from common.lr_scaling import describe_rule, resolve_rule
+from common.paths import scrub
 from common.utils import results_root
 from federated.algorithms import method_family
 from federated.tune import (ALL_METHODS, ROOT, add_common_args, anchor_for, best_of,
@@ -127,8 +128,15 @@ def load_state() -> Dict:
 
 
 def save_state(state: Dict) -> None:
+    """Persist the driver state, with machine-specific paths taken out.
+
+    Scrubbed on the way to disk rather than in memory: the driver reopens
+    ``job["metrics"]`` to refit a diagnostic, and both drivers run from ``code/``,
+    so a `results/...` path resolves on resume just as an absolute one did. Now
+    that `results/` ships with the code, `state.json` is a file reviewers read.
+    """
     OUT_DIR.mkdir(parents=True, exist_ok=True)
-    STATE_PATH.write_text(json.dumps(state, indent=2), encoding="utf-8")
+    STATE_PATH.write_text(json.dumps(scrub(state), indent=2), encoding="utf-8")
 
 
 def record(state: Dict, tag: str, result) -> None:

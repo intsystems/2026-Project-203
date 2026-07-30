@@ -52,6 +52,7 @@ from typing import Dict, List, Optional, Sequence, Tuple
 
 from centralized.train import LMO_FAMILY
 from common.lr_scaling import FAMILY_SIGN, RULES
+from common.paths import scrub_text
 from common.utils import results_root
 
 HERE = Path(__file__).resolve().parent
@@ -264,7 +265,11 @@ def run_one(args, *, lr: float, lr_aux: float, lr_scaling: str,
     print(f"  lr={lr:<12.6g} lr_aux={lr_aux:<10.6g} -> ", end="", flush=True)
     with open(log_path, "w", encoding="utf-8") as logf:
         proc = subprocess.run(cmd, cwd=ROOT, stdout=logf, stderr=subprocess.STDOUT, text=True)
-    text = log_path.read_text(encoding="utf-8", errors="replace")
+    # Rewritten in place: the child prints where it saved its run, and a traceback
+    # quotes the source tree, so its stdout carries the writing machine's paths --
+    # and `results/` now ships with the code. See `federated/tune.py`.
+    text = scrub_text(log_path.read_text(encoding="utf-8", errors="replace"))
+    log_path.write_text(text, encoding="utf-8")
 
     if proc.returncode != 0:
         tail = "".join(text.splitlines(keepends=True)[-3:]).strip()
@@ -275,8 +280,8 @@ def run_one(args, *, lr: float, lr_aux: float, lr_scaling: str,
     metrics = (results_root() / "centralized" / run_name /
                f"seed{args.seed if seed is None else seed}" / "metrics.json")
     out: Dict[str, float] = {"lr": lr, "lr_aux": lr_aux, "epochs": epochs,
-                             "split": split, "log": str(log_path),
-                             "metrics": str(metrics)}
+                             "split": split, "log": scrub_text(str(log_path)),
+                             "metrics": scrub_text(str(metrics))}
     m_val = _SUMMARY_RE.search(text)
     m_test = _FINAL_RE.search(text)
     m_time = _EPOCH_TIME_RE.search(text)

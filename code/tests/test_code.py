@@ -1052,6 +1052,12 @@ def test_the_export_bundle_carries_no_home_path():
 
     Checked with `anonymize`'s own rules rather than a local regex, so the test and
     the scanner cannot drift apart.
+
+    The home path is written with forward slashes rather than built from the temp
+    directory. Built from it, this test passed on Windows and failed on Linux: the
+    fixture came out `C:\\...\\home\\someuser\\...`, which the home-path rule cannot
+    match, so the `datadir` leak it was meant to catch was invisible on the machine
+    the test was written on and stopped the GPU box's preflight instead.
     """
     import json
     import tempfile
@@ -1070,7 +1076,13 @@ def test_the_export_bundle_carries_no_home_path():
                    "target_acc": 80.0, "dataset": "cifar10", "model": "cnn2",
                    "lr_scaling": "unit-gain", "scale_baselines": False,
                    "run_name": "final_signmuon_unit-gain_e2000_f",
-                   "datadir": str(root.parent.parent / "data_federated")}
+                   # An absolute --data, as `--data /home/<name>/datasets` gives.
+                   # POSIX-style on purpose (see the docstring), and silenced with
+                   # the line pragma rather than by adding it to `anonymize.ALLOW`:
+                   # ALLOW is substring-based, so allowing it globally would make
+                   # the scan below skip the very leak this test exists to catch.
+                   "datadir": "/home/someuser/SignMuon/code/data_federated",  # anonymize: allow
+                   "device": "cuda:0"}
             hist = {"steps": [0, 100, 200], "test_acc": [10.0, 80.0, 85.0]}
             (d / "metrics.json").write_text(json.dumps({"config": cfg, "history": hist}))
 

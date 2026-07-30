@@ -30,7 +30,7 @@ import re
 from pathlib import Path
 from typing import Any
 
-__all__ = ["repo_relative", "results_root", "scrub"]
+__all__ = ["repo_relative", "results_root", "scrub", "scrub_text", "strip_user"]
 
 
 def results_root() -> Path:
@@ -88,15 +88,46 @@ def repo_relative(text: str) -> str:
                      _LEADING.sub(r"\g<pre>", text))
 
 
+#: A home directory and the name in it. Deliberately does NOT try to work out
+#: where the repository sits: `repo_relative` handles the paths that reach a
+#: ``results`` segment, and this handles the rest, which are the ones that used to
+#: escape -- ``--data /home/<user>/datasets``, a traceback through
+#: ``/home/<user>/SignMuon/code/federated/main.py``, a child's `Saved run to:`.
+#: In a JSON file a Windows separator arrives doubled, hence ``\\{1,2}``.
+_USER = re.compile(r"(?P<root>/home/|/Users/|[A-Za-z]:\\{1,2}Users\\{1,2})"
+                   r"(?P<user>[A-Za-z0-9._-]+)")
+
+
+def strip_user(text: str) -> str:
+    """Replace the account name in any home path with ``<user>``.
+
+    Anonymity does not require guessing an anchor, only dropping the name: the
+    rest of the path stays readable, and ``<user>`` matches neither
+    ``anonymize.py``'s home-path rule nor its identifier lists, because ``<`` is
+    outside both character classes.
+    """
+    return _USER.sub(lambda m: m.group("root") + "<user>", text)
+
+
+def scrub_text(text: str) -> str:
+    """Make one string safe to ship: repo-relative, then de-named.
+
+    This is the entry point for anything written into a file that travels --
+    which, now that ``results/`` ships with the code, means the run tree itself
+    and not only the export bundles.
+    """
+    return strip_user(repo_relative(text))
+
+
 def scrub(value: Any) -> Any:
-    """`repo_relative` over the strings of a JSON-shaped value, recursively.
+    """`scrub_text` over the strings of a JSON-shaped value, recursively.
 
     For data already parsed into Python. Dictionary *keys* are rewritten too:
     the drivers key jobs by run name, but a caller may hand us a mapping keyed
     by path.
     """
     if isinstance(value, str):
-        return repo_relative(value)
+        return scrub_text(value)
     if isinstance(value, dict):
         return {scrub(k): scrub(v) for k, v in value.items()}
     if isinstance(value, list):

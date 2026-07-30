@@ -52,6 +52,7 @@ from typing import Dict, List, Optional, Sequence, Tuple
 
 from common.lr_scaling import (RULES, describe_rule, fan_in_out, layer_multiplier,
                                resolve_rule)
+from common.paths import scrub_text
 from common.utils import results_root, split_param_names
 from federated.algorithms import method_family
 # One lattice for both settings: same helpers, same resolution, same job identity.
@@ -248,7 +249,13 @@ def run_one(args, *, lr: float, lr_aux: float, lr_scaling: str, method: str,
     with open(log_path, "w", encoding="utf-8") as logf:
         proc = subprocess.run(cmd, cwd=ROOT, stdout=logf, stderr=subprocess.STDOUT, text=True)
     wall = time.perf_counter() - t0
-    text = log_path.read_text(encoding="utf-8", errors="replace")
+    # The child prints where it saved its run, and a traceback quotes the source
+    # tree, so its stdout carries the writing machine's paths. These logs live
+    # under `results/`, which now ships, so they are rewritten in place before
+    # anything reads them -- a fresh run therefore leaves the tree clean rather
+    # than accumulating files the preflight will refuse to start on.
+    text = scrub_text(log_path.read_text(encoding="utf-8", errors="replace"))
+    log_path.write_text(text, encoding="utf-8")
 
     if proc.returncode != 0:
         tail = "".join(text.splitlines(keepends=True)[-3:]).strip()
@@ -259,8 +266,8 @@ def run_one(args, *, lr: float, lr_aux: float, lr_scaling: str, method: str,
     metrics = (results_root() / "federated" / run_name /
                f"seed{args.seed if seed is None else seed}" / "metrics.json")
     out: Dict[str, float] = {"lr": lr, "lr_aux": lr_aux, "rounds": rounds,
-                             "split": split, "log": str(log_path),
-                             "metrics": str(metrics),
+                             "split": split, "log": scrub_text(str(log_path)),
+                             "metrics": scrub_text(str(metrics)),
                              # Recorded so that a consumer of state.json does not
                              # have to parse them back out of the job key.
                              "method": method, "lr_scaling": lr_scaling,

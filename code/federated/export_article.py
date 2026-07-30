@@ -54,7 +54,7 @@ import zipfile
 from pathlib import Path
 from typing import Any, Dict, List, Optional, Sequence, Tuple
 
-from common.paths import repo_relative, results_root, scrub
+from common.paths import repo_relative, results_root, scrub, scrub_text
 
 # code/ -- this file is code/federated/export_article.py. Recomputed locally rather
 # than imported from common.utils, which pulls in torch.
@@ -585,7 +585,11 @@ def copy_metrics(runs: Sequence[Run], out: Path, root: Path) -> int:
             rel = Path(run.path.parent.name)
         dest = dest_root / rel
         dest.mkdir(parents=True, exist_ok=True)
-        shutil.copy2(run.path, dest / "metrics.json")
+        # Rewritten, not copied: a run's own config records `--data`, which is
+        # absolute whenever it was given as an absolute path, and `configs.json`
+        # being scrubbed does not help a reader who opens the metrics file itself.
+        (dest / "metrics.json").write_text(
+            scrub_text(run.path.read_text(encoding="utf-8")), encoding="utf-8")
     return len(runs)
 
 

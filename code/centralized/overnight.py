@@ -112,6 +112,7 @@ from centralized.tune import (ALL_METHODS, AUX_GRID, LEGACY_ANCHORS, ROOT,
                               anchor_for, best_of, boundary_warning,
                               canonical_tag, extend_grid, round_grid, run_one)
 from common.lr_scaling import FAMILY_SIGN, describe_rule, resolve_rule
+from common.paths import scrub
 from common.utils import results_root
 
 OUT_DIR = results_root() / "overnight"
@@ -167,8 +168,15 @@ def load_state() -> Dict:
 
 
 def save_state(state: Dict) -> None:
+    """Persist the driver state, with machine-specific paths taken out.
+
+    Scrubbed on the way to disk rather than in memory: the driver reopens
+    ``job["metrics"]`` to refit a diagnostic, and both drivers run from ``code/``,
+    so a `results/...` path resolves on resume just as an absolute one did. Now
+    that `results/` ships with the code, `state.json` is a file reviewers read.
+    """
     OUT_DIR.mkdir(parents=True, exist_ok=True)
-    STATE_PATH.write_text(json.dumps(state, indent=2), encoding="utf-8")
+    STATE_PATH.write_text(json.dumps(scrub(state), indent=2), encoding="utf-8")
 
 
 def stamp() -> str:
