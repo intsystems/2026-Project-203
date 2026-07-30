@@ -943,7 +943,13 @@ def mode_horizon(args, problems, lr_grids, momenta, out_root) -> List[Dict]:
 
 
 def mode_floor(args, problems, lr_grids, momenta, out_root) -> List[Dict]:
-    """Plateau of a constant step, and its exponent in ``eta``."""
+    """Plateau of a constant step, and its exponent in ``eta``.
+
+    Balancing the two terms of the descent lemma gives
+    ``g_inf = eta L ||s||_F / (2 rho)`` -- slope 1 in ``eta``, which is what the
+    fit tests. The value is an upper bound rather than a prediction (the lemma
+    bounds the increase), and is measured here at ``momenta[0]``.
+    """
     mom = momenta[0]
     summary = []
     for method in args.methods:
@@ -1012,9 +1018,11 @@ def mode_floor(args, problems, lr_grids, momenta, out_root) -> List[Dict]:
         print(f"{r['method']:<16}{n:>9}{r['slope_gnorm']:>20.3f}{r['r2_gnorm']:>7.3f}"
               f"{r['slope_f']:>19.3f}{r['r2_f']:>7.3f}{pred_s:>13}")
     print("\n  The descent lemma predicts a gradient floor linear in eta "
-          "(slope 1) with\n  coefficient L||s||_F^2 / (2 rho). SignMuon and "
-          "SignSGD share ||s||_F^2 = mn\n  exactly, so any gap between their "
-          "floors is attributable to rho alone.")
+          "(slope 1) with\n  coefficient L||s||_F / (2 rho). SignMuon and "
+          "SignSGD share ||s||_F = sqrt(mn)\n  exactly, so any gap between their "
+          "floors is attributable to rho alone.\n  The last column is the other "
+          "term of the lemma, the eta^2 coefficient\n  L||s||_F^2 / 2, printed as "
+          "a scale for F_inf rather than as that prediction.")
     return summary
 
 
@@ -1127,8 +1135,12 @@ def mode_kappa(args, problems, lr_grids, momenta, out_root) -> List[Dict]:
         rec = {"method": method, "rows": rows, "kappas": list(args.kappas),
                "exponent_kappa": slope, "r2_kappa": r2}
         # ``probs`` is the last kappa's instance list; the per-kappa L and sigma
-        # are in ``rows``, this only records the shared shape/basis metadata.
-        _write(out_root, method, "kappa", args, probs, rec)
+        # are in ``rows``, this only records the shared shape/basis metadata --
+        # with the spectrum this sweep actually used, not the one on the command
+        # line, which it overrides.
+        _write(out_root, method, "kappa", args, probs, rec,
+               problem_overrides={"spectrum": "logspace",
+                                  "kappa_sweep": list(args.kappas)})
         summary.append(rec)
 
     header = f"{'method':<16}" + "".join(f"{k:>12.0e}" for k in args.kappas)
@@ -1187,19 +1199,29 @@ def _plateau(history: Sequence[float], tol: float = 0.15) -> Tuple[float, bool]:
     return (m4, abs(m4 - m3) / m4 < tol)
 
 
-def _write(out_root: Path, method: str, mode: str, args, problems, payload) -> None:
+def _write(out_root: Path, method: str, mode: str, args, problems, payload,
+           problem_overrides: Optional[Dict] = None) -> None:
+    """Write ``<method>/<mode>.json``, stamping the instance it was measured on.
+
+    ``problem_overrides`` exists for ``kappa``, which builds its own log-spaced
+    instances rather than the ones ``main`` handed down: recording ``args.spectrum``
+    there would label a log-spaced sweep ``uniform``, contradicting the very
+    columns beside it.
+    """
     method_dir = out_root / method
     method_dir.mkdir(parents=True, exist_ok=True)
     p0 = problems[0]
+    problem = {
+        "m": args.m, "n": args.n, "spectrum": args.spectrum,
+        "basis": args.basis, "shift": args.shift,
+        "L": p0.L, "sigma": p0.sigma, "condition_number": p0.kappa,
+        "target_loss": args.target_loss, "max_iters": args.max_iters,
+        "problem_seeds": args.problem_seeds, "init_seed": args.init_seed,
+        "lmo_dtype": args.lmo_dtype, "runner": args.runner,
+    }
+    problem.update(problem_overrides or {})
     body = {
-        "problem": {
-            "m": args.m, "n": args.n, "spectrum": args.spectrum,
-            "basis": args.basis, "shift": args.shift,
-            "L": p0.L, "sigma": p0.sigma, "condition_number": p0.kappa,
-            "target_loss": args.target_loss, "max_iters": args.max_iters,
-            "problem_seeds": args.problem_seeds, "init_seed": args.init_seed,
-            "lmo_dtype": args.lmo_dtype, "runner": args.runner,
-        },
+        "problem": problem,
         "schedules": args.schedules,
         "result": payload,
     }
@@ -1233,8 +1255,11 @@ def get_args():
 
     g = p.add_argument_group("problem")
     g.add_argument("--m", type=int, default=None,
-                   help="default: 500 for grid/final, 100 for the sweeps")
-    g.add_argument("--n", type=int, default=None)
+                   help=f"matrix rows (default {DEFAULT_SIZE}, every mode, so "
+                        f"that every reported number describes one instance "
+                        f"family); not a cost knob -- see synthetic/README.md")
+    g.add_argument("--n", type=int, default=None,
+                   help=f"matrix columns (default {DEFAULT_SIZE})")
     g.add_argument("--spectrum", choices=["uniform", "logspace"], default="uniform",
                    help="uniform: U(0,1) eigenvalues (L<=1, kappa left to the draw); "
                         "logspace: L=1 and condition number exactly --kappa")
@@ -1248,8 +1273,9 @@ def get_args():
                         "minimizer at the origin, which is a special point for "
                         "sign methods")
     g.add_argument("--problem-seeds", type=int, nargs="+", default=None,
-                   help="one instance per seed, results averaged "
-                        "(default: [1337] for grid/final, three seeds otherwise)")
+                   help=f"one instance per seed, results averaged -- geometric "
+                        f"mean on the error metrics, arithmetic on the iteration "
+                        f"count (default {list(DEFAULT_PROBLEM_SEEDS)}, every mode)")
     g.add_argument("--init-seed", type=int, default=42, help="seed for X_0")
 
     g = p.add_argument_group("run")

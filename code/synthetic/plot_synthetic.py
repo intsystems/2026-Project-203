@@ -271,10 +271,11 @@ def fig_trajectories(plt, data: Dict[str, dict]):
 
 #: The two methods whose step is not norm-fixed. They are references here, not
 #: subjects: on a quadratic with an exactly known Hessian a scaled gradient step
-#: converges to machine precision, so they run fifteen decades below the eight
-#: methods the panels are about. Left to set the y-range, they compress those
-#: eight into the top inch of the axes and force tick labels (``10^-19``) wide
-#: enough to collide with the neighbouring panel.
+#: converges to machine precision, so they run far below the eight methods the
+#: panels are about -- nineteen decades below at the widest, in the conditioning
+#: panel at kappa = 10. Left to set the y-range, they compress those eight into
+#: the top inch of the axes and force tick labels (``10^-19``) wide enough to
+#: collide with the neighbouring panel.
 UNNORMALIZED = ("sgd", "adam")
 
 

@@ -171,8 +171,8 @@ STAGES: List[Stage] = [
         "grid", "grid",
         "The fixed-target criterion: fewest iterations to F <= 1e-3 within "
         "5000, eta and momentum tuned per method. Grids are logarithmic and "
-        "four decades wide, since the optimal eta spans three across these "
-        "methods, and each normalized family's grid runs up to its measured "
+        "five decades wide, since the optimal eta spans three across these "
+        "methods, and each normalized family's grid runs past its measured "
         "stability edge; any optimum landing on an edge is flagged [BOUNDARY] "
         "and is an upper bound rather than a tuned value.",
         estimate="~12 min",
@@ -431,11 +431,16 @@ def summarize(out: Path) -> str:
     payloads = _load(out, "floor")
     if payloads:
         lines += ["## Accuracy floor of a constant step", "",
-                  "Slope of `log(plateau)` against `log(eta)`. The descent lemma "
-                  "predicts the gradient floor is linear in `eta` (slope 1) with "
-                  "coefficient `L||s||_F^2 / (2 rho)`. SignMuon and SignSGD share "
-                  "`||s||_F^2 = mn` exactly, so any gap between their floors is "
-                  "attributable to `rho` alone.", "", _problem_line(payloads),
+                  "Slope of `log(plateau)` against `log(eta)`. Balancing the two "
+                  "terms of the descent lemma predicts the gradient floor is "
+                  "linear in `eta` (slope 1) with coefficient "
+                  "`L||s||_F / (2 rho)`; the slope is what the fit tests, the "
+                  "coefficient being an upper bound rather than a prediction. "
+                  "SignMuon and SignSGD share `||s||_F = sqrt(mn)` exactly, so "
+                  "any gap between their floors is attributable to `rho` alone. "
+                  "The last column is the lemma's *other* term, the `eta^2` "
+                  "coefficient `L||s||_F^2 / 2`, printed as a scale for `F∞`.",
+                  "", _problem_line(payloads),
                   "| method | settled points | d log‖∇F‖/d log η | R² | d log F/d log η | R² | L‖s‖²/2 |",
                   "| :--- | :--- | ---: | ---: | ---: | ---: | ---: |"]
         for p in payloads:
