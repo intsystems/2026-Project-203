@@ -186,6 +186,10 @@ class Run:
 
     def __init__(self, path: Path, payload: Dict[str, Any]) -> None:
         self.path = path
+        #: Where this run sits, as the bundle records it: rooted at ``results/``
+        #: rather than at whatever home directory the GPU box used. Every write of
+        #: a path into a shipped file goes through this, not through ``self.path``.
+        self.rel = repo_relative(path.parent.as_posix())
         self.config: Dict[str, Any] = payload.get("config", {}) or {}
         self.history: Dict[str, Any] = payload.get("history", {}) or {}
         self.phase = phase_of(self.config)
@@ -429,7 +433,7 @@ def write_runs(runs: Sequence[Run], out: Path) -> Path:
             cfg["seed"] = run.seed
             cfg["variant"] = run.variant
             summ = run.summary()
-            w.writerow([run.path.parent.as_posix()]
+            w.writerow([run.rel]
                        + [cfg.get(c) for c in RUN_COLS]
                        + [_r(summ[c]) if isinstance(summ[c], float) else summ[c]
                           for c in summary_cols])
@@ -529,7 +533,7 @@ def write_configs(runs: Sequence[Run], out: Path) -> Path:
     # Keys are run directories and the values hold whatever the CLI was given, so
     # both can carry the absolute path -- hence the username -- of the box that
     # ran them. `scrub` cuts those back to `results/...`; see `common/paths.py`.
-    payload = scrub({run.path.parent.as_posix(): run.config for run in runs})
+    payload = scrub({run.rel: run.config for run in runs})
     path.write_text(json.dumps(payload, indent=2, default=str), encoding="utf-8")
     return path
 
@@ -731,7 +735,8 @@ def summary_markdown(runs: Sequence[Run], rows: Sequence[Dict[str, Any]],
 
     if dropped:
         lines += ["", "## Not included", ""]
-        lines += [f"* `{p.parent.as_posix()}` -- {why}" for p, why in dropped]
+        lines += [f"* `{repo_relative(p.parent.as_posix())}` -- {why}"
+                  for p, why in dropped]
 
     return "\n".join(lines) + "\n"
 
@@ -853,7 +858,9 @@ def main(argv: Optional[Sequence[str]] = None) -> int:
 
     manifest = {
         "generated_by": "federated.export_article",
-        "argv": [Path(sys.argv[0]).name] + list(sys.argv[1:]),
+        # argv carries whatever --root/--out were given, which on the GPU box are
+        # absolute and rooted at a home directory.
+        "argv": [repo_relative(a) for a in [Path(sys.argv[0]).name] + list(sys.argv[1:])],
         "source_tree": repo_relative(str(root.resolve())),
         "git": git_commit(),
         "runs": len(runs),
@@ -861,7 +868,8 @@ def main(argv: Optional[Sequence[str]] = None) -> int:
                           for ph in sorted({r.phase for r in runs})},
         "metrics_copied": n_metrics,
         "overnight_files": driver_files,
-        "excluded": [{"path": p.parent.as_posix(), "reason": why} for p, why in bad],
+        "excluded": [{"path": repo_relative(p.parent.as_posix()), "reason": why}
+                     for p, why in bad],
         "notes": notes,
         "files": sorted(pth.name for pth in written) + ["SUMMARY.md", "runs/"],
     }

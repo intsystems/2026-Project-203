@@ -1040,6 +1040,56 @@ def test_budget_rebalancing_keeps_every_requested_phase_or_says_it_did_not():
             "a proxy horizon must re-enable the check that catches a bad proxy"
 
 
+def test_the_export_bundle_carries_no_home_path():
+    """A bundle exported from a home-rooted tree must be anonymous.
+
+    This matters more now that `results/` ships with the code: the bundle is no
+    longer only a file you download, it is a file reviewers read. The exporter runs
+    on the GPU box, where the tree is `/home/<user>/SignMuon/code/results/...`, and
+    that string reached `runs.csv` (the `path` column) and `MANIFEST.json` (`argv`
+    records whatever --root was given) even after `configs.json` and the driver
+    state had been scrubbed.
+
+    Checked with `anonymize`'s own rules rather than a local regex, so the test and
+    the scanner cannot drift apart.
+    """
+    import json
+    import tempfile
+    from pathlib import Path
+
+    import anonymize
+    from federated import export_article
+
+    with tempfile.TemporaryDirectory() as td:
+        root = Path(td) / "home" / "someuser" / "SignMuon" / "code" / "results" / "federated"
+        for seed in range(2):
+            d = root / "final_signmuon_unit-gain_e2000_f" / f"seed{seed}"
+            d.mkdir(parents=True)
+            cfg = {"algorithm": "signmuon", "lr": 0.05, "seed": seed, "rounds": 200,
+                   "split": "full", "weight_decay": 0.0, "last_k": 2,
+                   "target_acc": 80.0, "dataset": "cifar10", "model": "cnn2",
+                   "lr_scaling": "unit-gain", "scale_baselines": False,
+                   "run_name": "final_signmuon_unit-gain_e2000_f",
+                   "datadir": str(root.parent.parent / "data_federated")}
+            hist = {"steps": [0, 100, 200], "test_acc": [10.0, 80.0, 85.0]}
+            (d / "metrics.json").write_text(json.dumps({"config": cfg, "history": hist}))
+
+        out = Path(td) / "bundle"
+        assert export_article.main(["--root", str(root), "--out", str(out),
+                                    "--overnight", str(Path(td) / "none"),
+                                    "--no-archive"]) == 0
+
+        findings = []
+        for path in sorted(out.rglob("*")):
+            if not path.is_file() or not anonymize._scannable(path):
+                continue
+            findings += anonymize.scan_text(
+                path.relative_to(out).as_posix(),
+                path.read_text(encoding="utf-8", errors="replace"))
+        assert not findings, ("the export bundle is not anonymous:\n  "
+                             + "\n  ".join(str(f) for f in findings[:10]))
+
+
 def test_the_export_keeps_a_baseline_and_its_scaled_ablation_apart():
     """`adam` and `adam --scale-baselines` are two rows, not one.
 
