@@ -989,6 +989,57 @@ def test_seeds_from_two_machines_stay_one_group():
     assert aggregate.group_key(a) != aggregate.group_key(c)
 
 
+def test_budget_rebalancing_keeps_every_requested_phase_or_says_it_did_not():
+    """A phase the user asked for is either run or reported as dropped.
+
+    `autobalance` re-sorts `args.phases` into a canonical order at the end, and that
+    list was spelled out by hand. When `rules` was added it went into the argparse
+    choices, the schedule and the phase sequence but not into that one list, so
+    **any** --budget-hours deleted it -- at 24 h against a 14 h plan, with ten hours
+    of slack and no note. Silent is the part that matters: a dropped phase the
+    report names is a decision, one it does not is a lie about what ran.
+    """
+    import sys
+
+    from federated import overnight as ov
+
+    for budget in (0, 24, 12, 8, 4):
+        argv = sys.argv
+        try:
+            sys.argv = ["x", "--phases", *ov.PHASE_ORDER, "--budget-hours", str(budget)]
+            args = ov.get_args()
+        finally:
+            sys.argv = argv
+        asked = set(args.phases)
+        notes = ov.autobalance(args, 0.127, ov.Budget(budget))
+        blob = " ".join(notes)
+        for phase in asked - set(args.phases):
+            said = ov.PHASE_LABELS.get(phase, phase)
+            assert said in blob, (
+                f"at --budget-hours {budget} the '{phase}' phase was dropped without "
+                f"a note; notes were {notes}")
+        # Every sheddable phase must have a label, or the check above passes
+        # vacuously on the next phase somebody adds.
+        assert set(ov.PHASE_LABELS) <= set(ov.PHASE_ORDER)
+        assert {"rules", "wd", "verify"} <= set(ov.PHASE_LABELS)
+        assert list(args.phases) == [p for p in ov.PHASE_ORDER if p in args.phases], \
+            "phases must come back in canonical order"
+
+    # ...and a shortened tuning horizon is a warning, not a neutral adjustment: it
+    # puts back the proxy that picked the wrong rate for both methods checked.
+    argv = sys.argv
+    try:
+        sys.argv = ["x", "--phases", "lr", "final", "--budget-hours", "6"]
+        args = ov.get_args()
+    finally:
+        sys.argv = argv
+    notes = ov.autobalance(args, 0.127, ov.Budget(6))
+    if args.tune_rounds < args.final_rounds:
+        assert any("PROXY" in n for n in notes), notes
+        assert "verify" in args.phases, \
+            "a proxy horizon must re-enable the check that catches a bad proxy"
+
+
 def test_the_export_keeps_a_baseline_and_its_scaled_ablation_apart():
     """`adam` and `adam --scale-baselines` are two rows, not one.
 

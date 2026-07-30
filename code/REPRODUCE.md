@@ -376,24 +376,32 @@ original tree shape, so `--bundle` is `--root` on the unpacked copy. Phases:
 `lr` (η₀ per method on the lattice) → `verify` (the top rates re-run at
 `--final-rounds` to test horizon stability, skipped when the tuning horizon
 already equals it) → `final` (full 50k, seed-major) → `wd` (the decay ablation
-at `5e-4`). `--tune-rounds` defaults to `--final-rounds`; with the 400-round
-proxy instead, at the ~0.48 s/round of an A100, the schedule reads:
+at `5e-4`), plus the opt-in `rules` (the per-layer rule ablation, §5e).
+
+**`--tune-rounds` defaults to `--final-rounds`**: rates are selected at the horizon
+the table reports, as in §4b. That is not a refinement — the 2026-07-30 run's own
+`verify` phase found the 400-round proxy picking the wrong rate for *both* methods
+it checked (SignMuon 0.05 → 0.1, EF21-MuonSign 0.05 → 0.02), which is the same
+cosine-schedule artefact that retired proxy tuning centrally. At the 0.127 s/round
+measured on an A100 the schedule reads:
 
 ```
   phase     jobs  rounds   hours  cumulative   done by
-  lr          60     400     3.9         3.9   Sat 02:30
-  verify       4    2000     1.1         5.0   Sat 03:36
-  final       60    2000    16.7        21.7   Sat 20:18
-  wd           3    2000     0.8        22.5   Sat 21:06
+  lr          60    2000     4.9         4.9   Fri 03:36
+  verify       -       -       -           -   vacuous: tuning is at the reporting horizon
+  final       60    2000     4.9         9.8   Fri 08:30
+  rules       48    2000     3.9        13.7   Fri 12:25
+  wd           3    2000     0.2        14.0   Fri 12:40
 ```
 
 Sixty jobs per phase, not fifty-five: Adam is additionally tuned under the sign
 rule (`--skip-baseline-variants` turns that off), so twelve tracks cover eleven
-methods. The five-seed protocol is ~22 h; give it `--budget-hours 24`, or two
-nights with `--resume`. At a smaller budget the driver drops seeds from the end
-and says which, and a 3-seed table is not what `tab:exp_3` reports.
-Federated-only variants: `--partition noniid-labeldir --beta 0.5`,
-`--final-seeds 0 1 2`, `--wd-ablation 0`.
+methods. Give it `--budget-hours 0` (no deadline) or two nights with `--resume`.
+Under a tighter budget the driver sheds the ablations, then seeds, then the tuning
+horizon, **naming each** in `REPORT.md`; a shortened horizon reintroduces the proxy,
+so it switches the `verify` check back on and says so. A 3-seed table is not what
+`tab:exp_3` reports. Federated-only variants:
+`--partition noniid-labeldir --beta 0.5`, `--final-seeds 0 1 2`, `--wd-ablation 0`.
 
 ### 5b. The stages by hand
 
@@ -405,12 +413,18 @@ FED="--dataset cifar10 --model cnn2 --n_parties 11 --n_steps 3 --batch_size 64 \
 python3 -m federated.tune --stage anchors $FED
 python3 -m federated.tune --stage votes            # the majority-vote alignment table
 
-# Test whether the auxiliary rate is method-independent  (~30 configs)
-python3 -m federated.tune --stage aux $FED --rounds 400
+# Test whether the auxiliary rate is method-independent  (~30 configs, 400 rounds)
+python3 -m federated.tune --stage aux $FED
 
-# eta_0 per method, equal budget, selected on val_acc only
-python3 -m federated.tune --stage lr $FED --rounds 400 --lr-points 5
+# eta_0 per method, equal budget, selected on val_acc only, at 2000 rounds
+python3 -m federated.tune --stage lr $FED --lr-points 5
 ```
+
+Do not pass `--rounds` to `--stage lr` to make it cheaper. The horizon defaults per
+stage — 2000 for `lr`, because that is where the table is reported, and 400 for
+`aux`, whose comparison is between two arms at a *shared* horizon, where the bias
+cancels. Shortening `lr` reintroduces the proxy that picked the wrong rate for both
+methods it was checked on.
 
 `--stage anchors` is the check that matters: it prints `λ` per layer per family
 and the transported grid anchors, which every tuned rate downstream inherits.
@@ -500,6 +514,31 @@ Two facts to keep stated in the paper: `lr_aux = 0.001` is used throughout and
 is not tuned per method (`--stage aux` checks that it may be held fixed), and
 BatchNorm running statistics are never updated from data in the federated
 setting.
+
+### 5e. The per-layer rule ablation (`rules`)
+
+Whether the sign family's *ordering* depends on the per-layer multiplier. It is
+opt-in, because it answers a question about the rule rather than about the methods:
+
+```bash
+python3 -m federated.overnight --device cuda:0 --budget-hours 0 \
+    --phases lr final rules wd
+```
+
+Each (method, rule) pair is re-tuned **from scratch** under that rule, with its own
+grid search and its own boundary extension, then run at the final horizon on three
+seeds. Both halves matter: a rule shifts the optimal `η₀` by roughly the multiplier
+it prescribes, so comparing rules at one shared rate would measure the shift rather
+than the rule; and an alternative rule whose optimum is censored by its grid would
+lose to a properly tuned `unit-gain` automatically, which would make the ablation
+confirm the rule it exists to test.
+
+`--lr-scaling` itself is not repeated — the `lr` and `final` phases already are it,
+so the ablation compares against the same runs `tab:exp_3` quotes. Defaults:
+`--rule-methods signmuon muonsign signsgd` (the LMO family cannot move, since unit
+gain and µP prescribe it the identical factor), `--rule-alternatives none mup`,
+`--rule-seeds 0 1 2`. The bundle gains `rule_ablation.csv` and a SUMMARY section
+that states the ordering under each rule and whether it changed.
 
 ## 6. Language modelling: the nanoGPT speedrun (`tab:nanogpt`, `fig:nanogpt*`)
 

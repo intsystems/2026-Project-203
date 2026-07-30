@@ -75,6 +75,25 @@ OUT_DIR = results_root() / "federated_overnight"
 STATE_PATH = OUT_DIR / "state.json"
 REPORT_PATH = OUT_DIR / "REPORT.md"
 
+#: Every phase, in the order they are run and must be re-sorted into. **The single
+#: source of this list.** It used to be spelled out in four places, and `rules` was
+#: added to three of them: the fourth silently deleted the phase from any run that
+#: set --budget-hours, requested on the command line or not.
+PHASE_ORDER = ("lr", "verify", "final", "rules", "wd")
+
+#: Run by default. `rules` is opt-in because it costs ~4 h and answers a question
+#: about the per-layer rule rather than about the methods.
+DEFAULT_PHASES = ("lr", "verify", "final", "wd")
+
+#: How a phase is named in the report when rebalancing gives it up. Every
+#: sheddable phase needs an entry, so that dropping one is always something the
+#: report says in words rather than a difference the reader has to notice.
+PHASE_LABELS = {
+    "verify": "the horizon-stability check",
+    "rules": "the per-layer rule ablation",
+    "wd": "the weight-decay ablation",
+}
+
 #: Startup cost of one subprocess (imports, CUDA init, dataset upload), seconds.
 JOB_OVERHEAD_S = 40.0
 
@@ -333,6 +352,9 @@ def autobalance(args, sec: float, budget: Budget) -> List[str]:
     if total() > limit and args.wd_ablation > 0 and "wd" in args.phases:
         args.phases = [p for p in args.phases if p != "wd"]
         dropped.add("wd")
+    if total() > limit and "rules" in args.phases:
+        args.phases = [p for p in args.phases if p != "rules"]
+        dropped.add("rules")
     if total() > limit and "verify" in args.phases:
         args.phases = [p for p in args.phases if p != "verify"]
         dropped.add("verify")
@@ -351,20 +373,38 @@ def autobalance(args, sec: float, budget: Budget) -> List[str]:
     # with the cheap phase needlessly gone. Restore in the reverse order, keeping
     # anything that now fits: dropping the horizon-stability check to save 0.3 h
     # and finishing 1.7 h early is a bad trade.
-    LABEL = {"verify": "the horizon-stability check",
-             "wd": "the weight-decay ablation"}
-    for name in ("verify", "wd"):
+    for name in ("verify", "rules", "wd"):
         if name in dropped:
             args.phases = args.phases + [name]
             if total() > limit:
                 args.phases = [p for p in args.phases if p != name]
             else:
                 dropped.discard(name)
-    for name in ("wd", "verify"):
+    for name in ("wd", "rules", "verify"):
         if name in dropped:
-            notes.append(f"dropped {LABEL[name]}")
-    # ``phases`` is consumed in order, so restore the canonical one.
-    args.phases = [p for p in ["lr", "verify", "final", "wd"] if p in args.phases]
+            notes.append(f"dropped {PHASE_LABELS[name]}")
+
+    # A shortened tuning horizon puts the proxy back, and the proxy is not
+    # trustworthy here: on 2026-07-30 it picked the wrong rate for both methods it
+    # was checked on. So re-enable the check that would catch it, and say plainly
+    # what was given up -- "reduced the tuning horizon" reads like a resolution
+    # setting, and it is not.
+    if args.tune_rounds < args.final_rounds and "lr" in args.phases:
+        if "verify" not in args.phases:
+            args.phases = args.phases + ["verify"]
+            dropped.discard("verify")
+        notes.append(
+            f"WARNING: tuning at {args.tune_rounds} rounds against a "
+            f"{args.final_rounds}-round report, so rates are selected on a PROXY. "
+            f"The 2026-07-30 run found the 400-round proxy picking the wrong rate "
+            f"for both methods checked. The horizon-stability check is switched "
+            f"back on; read its verdict before quoting the table.")
+
+    # ``phases`` is consumed in order, so restore the canonical one. Every phase
+    # name must appear here or it is silently dropped -- which is what happened to
+    # `rules` for its first day: requested on the command line, deleted by any
+    # --budget-hours at all, and never mentioned in the report.
+    args.phases = [p for p in PHASE_ORDER if p in args.phases]
 
     # --- or spend the slack ------------------------------------------------
     while (total() + job_cost(sec, args.final_rounds) * sum(1 for _ in _lr_jobs(args))
@@ -426,7 +466,7 @@ def print_schedule(args, sec: float, budget: Budget, notes: List[str]) -> None:
         print()
     print(f"  {'phase':<8}{'jobs':>6}{'rounds':>8}{'hours':>8}{'cumulative':>12}   done by")
     cum = 0.0
-    for name in ("lr", "verify", "final", "rules", "wd"):
+    for name in PHASE_ORDER:
         if name not in args.phases or not counts[name]:
             why = ("skipped" if name != "verify" or args.tune_rounds < args.final_rounds
                    else "vacuous: tuning already runs at the reporting horizon")
@@ -442,9 +482,15 @@ def print_schedule(args, sec: float, budget: Budget, notes: List[str]) -> None:
           f"stopping early\n  leaves complete tables rather than fragments. The report on "
           f"disk is refreshed after\n  every phase and every final run; Ctrl-C stops cleanly "
           f"and writes it.")
-    extra = n_par * args.lr_extend_rounds * args.lr_extend_points
-    if extra and "lr" in args.phases:
-        print(f"  Plus up to {extra} more lr jobs (+{extra * job_cost(sec, args.tune_rounds) / 3600:.1f} h) "
+    # Both searching phases widen a grid whose optimum lands on an endpoint, so
+    # both contribute to the worst case. Counting only `lr` understated a run that
+    # includes `rules` by a third.
+    searching = (n_par if "lr" in args.phases else 0) + (
+        n_rule_cfg if "rules" in args.phases else 0)
+    extra = searching * args.lr_extend_rounds * args.lr_extend_points
+    if extra:
+        print(f"  Plus up to {extra} more tuning jobs "
+              f"(+{extra * job_cost(sec, args.tune_rounds) / 3600:.1f} h) "
               f"if optima land on grid\n  endpoints: the grid is then widened and that method "
               f"re-tuned.")
     print(flush=True)
@@ -661,7 +707,7 @@ def phase_wd(args, state, budget, sec, tuned: Dict[str, Dict]) -> None:
             save_state(state)
 
 
-def phase_rules(args, state, budget, sec, tuned: Dict[str, Dict]) -> Dict[str, Dict]:
+def phase_rules(args, state, budget, sec) -> Dict[str, Dict]:
     """Re-tune the sign family from scratch under the competing per-layer rules.
 
     The unit-gain multiplier is a heuristic, so the ordering it induces *within* the
@@ -815,6 +861,14 @@ def build_report(args, state, budget, sec, tuned, notes: List[str]) -> str:
                   "`family` column against the rates.", ""]
 
     verify = state["phases"].get("verify", {})
+    if not verify and args.tune_rounds >= args.final_rounds:
+        # Said rather than left to inference: "no horizon section" and "rates were
+        # selected at the horizon they are reported at" look identical in a report,
+        # and only the second is a claim the paper makes.
+        lines += ["## Horizon stability", "",
+                  f"Not applicable: rates were selected at {args.tune_rounds} rounds, "
+                  f"the same horizon the table reports, so there is no proxy to "
+                  f"check.", ""]
     if verify:
         lines += ["## Horizon stability", "",
                   f"Top-{args.verify_top} rates re-run at {args.final_rounds} rounds "
@@ -978,8 +1032,8 @@ def get_args():
                    help="Fraction of the budget the plan is fitted to, leaving room "
                         "for the round time being underestimated")
     p.add_argument("--methods", nargs="*", default=ALL_METHODS)
-    p.add_argument("--phases", nargs="*", default=["lr", "verify", "final", "wd"],
-                   choices=["lr", "verify", "final", "rules", "wd"],
+    p.add_argument("--phases", nargs="*", default=list(DEFAULT_PHASES),
+                   choices=list(PHASE_ORDER),
                    help="`rules` is the per-layer-rule ablation and is off by "
                         "default; add it explicitly")
 
@@ -1157,7 +1211,7 @@ def main() -> None:
             banner("rules", f"  (per-layer rule ablation: "
                             f"{', '.join(args.rule_alternatives)} vs "
                             f"{args.lr_scaling}, sign family)")
-            phase_rules(args, state, budget, sec, tuned or state["phases"].get("lr", {}))
+            phase_rules(args, state, budget, sec)
             refresh()
         if "wd" in args.phases and not _stop["requested"]:
             banner("wd", f"  (decay ablation, wd={args.wd_ablation:g} decoupled)")

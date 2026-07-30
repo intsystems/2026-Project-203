@@ -18,10 +18,18 @@ python3 -m federated.overnight --device cuda:0 --budget-hours 24 --download
 python3 -m federated.plot_article --bundle results/federated_export_results.zip
 ```
 
-Step 1 runs the whole protocol: tune, verify, finals, ablation. It calls
+Step 1 runs `lr` → `final` → `wd`: rates tuned at the horizon the table reports,
+full-50k finals over five seeds, then the weight-decay ablation. (`verify` is in the
+default phase list but is vacuous while the two horizons agree, and says so.) Add
+`--phases lr final rules wd` for the per-layer rule ablation, ~4 h more. It calls
 `federated.export_article` at the end, and step 3 unpacks the `.zip` itself. The
 run tree stays on the GPU box: one 2.9 MB `model.pt` per job, ~370 MB a night,
 and the paper needs no weights.
+
+Under `--budget-hours` the driver fits the plan to the deadline, shedding the
+ablations, then seeds, then the tuning horizon, and **naming each concession** in
+`REPORT.md`. A shortened horizon puts the proxy back, so it re-enables the
+horizon-stability check and warns; `--budget-hours 0` means no deadline.
 
 Read `SUMMARY.md` in the bundle first: `tab:exp_3`, the communication accounting
 and the diagnostics in one file.

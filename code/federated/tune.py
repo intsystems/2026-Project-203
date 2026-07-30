@@ -88,6 +88,21 @@ LEGACY_ANCHORS: Dict[str, float] = {
 
 AUX_GRID = [1e-4, 2e-4, 5e-4, 1e-3, 2e-3]
 
+#: Default horizon per stage, and they differ for a reason.
+#:
+#: ``lr`` ranks rates that are then *reported* at 2000 rounds, so it has to run
+#: there too. A shorter proxy is not a noisier version of the same measurement: the
+#: cosine schedule anneals to zero over each run's own horizon, so a 400-round run
+#: spends nearly its whole budget at a decayed rate, and on 2026-07-30 the proxy
+#: picked the wrong rate for both methods it was checked on. ``federated.overnight``
+#: was fixed then; this standalone path kept the proxy for another day, which meant
+#: the by-hand recipe in REPRODUCE.md and the driver ran different protocols.
+#:
+#: ``aux`` compares the *argmax over lr_aux* between two methods measured at the
+#: same horizon, and a shared horizon bias cancels in that comparison, so it stays
+#: short.
+STAGE_ROUNDS = {"lr": 2000, "aux": 400}
+
 
 # --------------------------------------------------------------------------
 # Transporting an anchor between per-layer rules
@@ -465,14 +480,20 @@ def get_args():
                         "majority-vote alignment table behind --n_parties 11.")
     p.add_argument("--methods", nargs="*", default=None)
     p.add_argument("--aux-anchors", nargs="*", default=None)
-    p.add_argument("--rounds", type=int, default=400,
-                   help="Proxy horizon for ranking rates (final runs use 2000)")
+    p.add_argument("--rounds", type=int, default=None,
+                   help=f"Horizon for this stage. Defaults per stage: "
+                        f"{STAGE_ROUNDS['lr']} for `lr`, the horizon the table "
+                        f"reports, and {STAGE_ROUNDS['aux']} for `aux`, whose "
+                        f"comparison is between two arms at a shared horizon")
     p.add_argument("--lr-points", type=int, default=5,
                    help="Lattice points per method: 3 per decade, so 5 spans ~1.3 decades")
     p.add_argument("--lr-extend-rounds", type=int, default=3)
     p.add_argument("--lr-extend-points", type=int, default=2)
     p.add_argument("--out", type=str, default=None)
-    return add_common_args(p).parse_args()
+    args = add_common_args(p).parse_args()
+    if args.rounds is None:
+        args.rounds = STAGE_ROUNDS.get(args.stage, STAGE_ROUNDS["lr"])
+    return args
 
 
 def vote_alignment(n_values: Sequence[int] = (9, 10, 11, 15),
