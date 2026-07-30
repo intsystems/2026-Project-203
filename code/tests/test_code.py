@@ -1388,7 +1388,7 @@ def test_the_uplink_rule_turns_the_compressor_zeros_into_one_bit():
 
     Not a corner case: `polar(M)` has an exactly-zero column wherever `M` does, and
     `M` does wherever a feature was zero across the whole local batch -- which after
-    ReLU and MaxPool is common (measured at 8-17% of entries on CNN2). Left alone,
+    ReLU and MaxPool is common (measured at 0.1-3.0% of entries on CNN2). Left alone,
     that would mean the uplink is not literally one bit per parameter, and an ODD
     client count would not by itself prevent ties, a zero vote not being `+-1`.
 

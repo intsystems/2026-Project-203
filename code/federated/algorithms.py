@@ -59,9 +59,14 @@ Every sign channel is a strict one-bit channel (the paper's convention)
 ``sign(x)`` is **zero** at ``x = 0``, and that is not a corner case here:
 ``polar(M)`` has an exactly-zero column wherever ``M`` does, and ``M`` does
 wherever a feature was zero for the whole local batch -- which after ReLU and
-MaxPool is common. On SignMuon's majority-vote uplink this was measured at
-**8-17% of raw sign entries per round** on CNN2 (2026-07-27, before the
-convention below; ``uplink_zero_frac`` records the same raw rate on every run).
+MaxPool is common. Measured on CNN2 over the 2026-07-30 five-seed runs, the raw
+rate on the majority-vote uplink is **0.1% to 3.0% of sign entries per round**,
+and it is strongly method-dependent: SignSGD and MuonSign 1.4-3.0%, MuonUSign
+0.1-1.4%, SignMuon 0.19-0.20%. Signing the LMO *output* produces far fewer exact
+zeros than signing the momentum. (``uplink_zero_frac`` records this raw rate on
+every run. An earlier note here said 8-17%, from a 2026-07-27 measurement that
+no run since reproduces; nothing depended on it, because the randomization below
+makes the cost independent of the rate.)
 
 The paper's convention, and the default here, maps every exact zero to an
 independent random ``+-1`` (``common.optimizers.sign_pm1``), on **all** sign
@@ -319,8 +324,9 @@ def communication_bits(name: str, n_matrix: int, n_aux: int,
       the raw zero rate, and the per-channel reduction is the full 32x. Pass the
       run's ``uplink_zeros`` so that this is not assumed: under the legacy
       ``keep`` the majority-vote alphabet is ternary and a symbol costs
-      ``H(p0, (1-p0)/2, (1-p0)/2)`` bits (1.37 at a 10% zero rate), which is what
-      ``uplink_zero_frac`` is for. The EF21 channels go through ``sign_pm1``
+      ``H(p0, (1-p0)/2, (1-p0)/2)`` bits, which is what ``uplink_zero_frac`` is
+      for -- 1.02 to 1.16 bits at the 0.1-3.0% CNN2 actually shows, and 1.37 at
+      the 10% an earlier note assumed. The EF21 channels go through ``sign_pm1``
       unconditionally, so they are binary under either setting.
     * **The auxiliary group is never compressed.** Biases, BatchNorm scales and the
       head go uncompressed in both directions. On CNN2 they are 0.28% of the

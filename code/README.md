@@ -146,7 +146,7 @@ test.
 * **Exact zeros are randomized, so every sign channel is a strict 1 bit.**
   `sign(0) = 0` would make the alphabet ternary, and that is not a corner case:
   `polar(M)` has an exactly-zero column wherever `M` does, which after ReLU and
-  MaxPool is common, at **8–17% of raw sign entries** on SignMuon's majority-vote
+  MaxPool is common, at **0.1–3.0% of raw sign entries** on the majority-vote
   uplink on CNN2. The paper's convention maps each zero to an independent random
   `±1` (`common.optimizers.sign_pm1`), on every sign channel, so the channel is
   one bit whatever that rate is. Runs still record `uplink_zero_frac` (the raw

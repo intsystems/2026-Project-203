@@ -99,6 +99,12 @@ def phase_of(config: Dict[str, Any], primary_rule: Optional[str] = None) -> str:
     one rule, not rules. ``scan`` infers it as the rule most of the finals used
     rather than taking it on trust.
     """
+    # The driver's two timing runs are `--split tune` like any search job, so
+    # without this they land in the tuning table as Muon at 0 and 40 rounds -- which
+    # is what the 2026-07-30 bundle reported. `centralized.export_article` has
+    # always labelled them; this is the federated twin.
+    if "preflight" in str(config.get("run_name") or ""):
+        return "preflight"
     if config.get("split") == "tune":
         return "lr"
     if float(config.get("weight_decay") or 0.0) > 0.0:

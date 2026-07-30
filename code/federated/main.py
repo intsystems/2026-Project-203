@@ -140,10 +140,10 @@ def get_params() -> argparse.ArgumentParser:
                         "uplink. random (default) is the paper's convention: an "
                         "independent +-1, so the channel is a genuine 1 bit; "
                         "positive fills deterministically; keep sends the third "
-                        "symbol, making the alphabet ternary (~1.37 bits/parameter "
-                        "at the zero rate CNN2 exhibits) and is kept only for the "
-                        "alphabet diagnostic. Either way, uplink_zero_frac records "
-                        "the raw zero rate before any mapping")
+                        "symbol, making the alphabet ternary (1.02-1.16 "
+                        "bits/parameter at the 0.1-3.0%% zero rate CNN2 exhibits) "
+                        "and is kept only for the alphabet diagnostic. Either way, "
+                        "uplink_zero_frac records the raw rate before any mapping")
 
     # --- per-layer learning-rate scaling ---------------------------------
     p.add_argument("--lr-scaling", type=str, default="unit-gain",

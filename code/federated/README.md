@@ -165,8 +165,10 @@ not against the paper.
 `sign(0) = 0` would make a client transmit from `{−1, 0, +1}`, and that is no
 corner case: `polar(M)` has an exactly-zero column wherever `M` does, and `M`
 does wherever a feature was zero across the whole local batch, routine after
-ReLU and MaxPool. Measured at **8–17% of raw sign entries per round** on
-SignMuon's uplink on CNN2.
+ReLU and MaxPool. Measured on CNN2 over the five-seed runs at **0.1–3.0% of raw
+sign entries per round**, and strongly method-dependent: SignSGD and MuonSign
+1.4–3.0%, MuonUSign 0.1–1.4%, SignMuon 0.19–0.20%. Signing the LMO *output*
+produces far fewer exact zeros than signing the momentum does.
 
 The default maps each zero to an independent random `±1` (`sign_pm1`) on
 **every** sign channel: the majority-vote uplink, both EF21 residual channels,
