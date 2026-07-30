@@ -994,6 +994,83 @@ def test_seeds_from_two_machines_stay_one_group():
     assert aggregate.group_key(a) != aggregate.group_key(c)
 
 
+def test_the_export_keeps_a_baseline_and_its_scaled_ablation_apart():
+    """`adam` and `adam --scale-baselines` are two rows, not one.
+
+    They share an ``algorithm`` and, in the reported protocol, a seed count, so
+    keying a table row on the algorithm made the winner a dict-ordering accident.
+    The 2026-07-30 export did exactly that and printed the ablation, at eta_0=0.05,
+    as the Adam baseline -- 1.4 points above the plain method the paper reports.
+    """
+    from pathlib import Path
+
+    from federated.export_article import Run, group_reported
+
+    def mk(scaled, lr, seed, acc):
+        cfg = {"algorithm": "adam", "lr": lr, "seed": seed, "split": "full",
+               "weight_decay": 0.0, "last_k": 2, "scale_baselines": scaled,
+               "lr_scaling": "unit-gain", "dataset": "cifar10", "model": "cnn2"}
+        hist = {"steps": [0, 100], "test_acc": [10.0, acc]}
+        return Run(Path(f"/tmp/{'s' if scaled else 'p'}{seed}/metrics.json"),
+                   {"config": cfg, "history": hist})
+
+    runs = ([mk(False, 0.001, s, 77.0 + s * 0.1) for s in range(5)]
+            + [mk(True, 0.05, s, 78.4 + s * 0.1) for s in range(5)])
+    groups = group_reported(runs)
+    assert set(groups) == {"adam", "adam+scaled"}, groups
+    assert len(groups["adam"]) == 5 and len(groups["adam+scaled"]) == 5
+    assert all(not r.config["scale_baselines"] for r in groups["adam"])
+    # ...and the ablation sorts after its baseline rather than above it.
+    assert list(groups) == ["adam", "adam+scaled"]
+
+
+def test_the_rule_ablation_stays_out_of_the_reported_table():
+    """`rules`-phase finals are full-50k, zero-decay runs like any other.
+
+    Only ``lr_scaling`` tells them apart, so without the inference in ``scan`` they
+    land in `tab:exp_3` as extra rows. And the ordering they are compared on has to
+    span the same methods under every rule: the ablation re-tunes three, while the
+    reported rule has eleven, and comparing those two lists finds a difference every
+    time. Both of these were live bugs.
+    """
+    from pathlib import Path
+
+    from federated.export_article import (Run, group_reported, phase_of, rule_rows,
+                                          scan)
+
+    def mk(alg, rule, seed, acc, tmp):
+        cfg = {"algorithm": alg, "lr": 0.05, "seed": seed, "split": "full",
+               "weight_decay": 0.0, "last_k": 2, "lr_scaling": rule,
+               "scale_baselines": False, "dataset": "cifar10", "model": "cnn2"}
+        hist = {"steps": [0, 100], "test_acc": [10.0, acc]}
+        return Run(Path(tmp) / f"{alg}_{rule}_{seed}" / "metrics.json",
+                   {"config": cfg, "history": hist})
+
+    # Eight methods at the reported rule, three of them also re-tuned under `none`.
+    reported = [mk(a, "unit-gain", s, acc, "/t")
+                for a, acc in (("muon", 86.0), ("signmuon", 85.9), ("muonusign", 84.5),
+                               ("signsgd", 81.7), ("muonsign", 81.4))
+                for s in range(3)]
+    ablation = [mk(a, "none", s, acc, "/t")
+                for a, acc in (("signmuon", 85.2), ("signsgd", 81.5), ("muonsign", 81.0))
+                for s in range(3)]
+    for r in ablation:                       # what scan's second pass does
+        r.phase = phase_of(r.config, "unit-gain")
+
+    assert {r.phase for r in ablation} == {"rules"}
+    assert set(group_reported(reported + ablation)) == {
+        "muon", "signmuon", "muonusign", "signsgd", "muonsign"}, \
+        "the ablation must not add rows to the reported table"
+
+    rows = rule_rows(reported + ablation)
+    assert {r["algorithm"] for r in rows} == {"signmuon", "signsgd", "muonsign"}, \
+        "only the methods the ablation actually re-tuned belong in it"
+    per_rule = {}
+    for r in rows:
+        per_rule.setdefault(r["rule"], []).append((r["acc_mean"], r["algorithm"]))
+    assert len(per_rule) == 2 and all(len(v) == 3 for v in per_rule.values())
+
+
 def test_the_export_bundle_round_trips_to_a_plottable_tree():
     """export_article -> .zip -> open_bundle -> a tree the plotters can read.
 
@@ -2209,6 +2286,32 @@ def test_no_identifying_material():
     assert not findings, (
         "identifying material in code/ -- run `python3 -m anonymize --check`:\n  "
         + "\n  ".join(str(f) for f in findings[:20]))
+
+
+def test_unpacked_result_bundles_are_excluded_from_scan_and_bundle():
+    """A downloaded bundle unpacked next to the code is run output, not source.
+
+    Both workflows say to unpack the archive beside `code/`, and the bundles carry
+    the absolute paths of the box that wrote them -- so an unpacked one trips the
+    anonymity scan and, worse, would ship inside the anonymous bundle. `article_export`
+    was already excluded; a copy parked as `article_export.stale_2026-07-29` was not,
+    and neither was the federated bundle, which did not exist when the rule was
+    written.
+    """
+    import anonymize
+
+    for rel in ("article_export/runs.csv",
+                "article_export.stale_2026-07-29/overnight/state.json",
+                "centralized/article_export.stale_2026-07-29/MANIFEST.md",
+                "federated_export/SUMMARY.md",
+                "federated_export_results.zip",
+                "results/federated/run/seed0/metrics.json"):
+        assert anonymize._excluded(rel), f"{rel} should be excluded"
+
+    # ...without swallowing the source that lives beside them.
+    for rel in ("federated/export_article.py", "federated/README.md",
+                "REPRODUCE.md", "results/nanogpt/log.txt"):
+        assert not anonymize._excluded(rel), f"{rel} must still be scanned"
 
 
 def test_anonymity_scan_actually_catches_things():

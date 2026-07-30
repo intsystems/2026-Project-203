@@ -246,6 +246,10 @@ def run_one(args, *, lr: float, lr_aux: float, lr_scaling: str, method: str,
     out: Dict[str, float] = {"lr": lr, "lr_aux": lr_aux, "rounds": rounds,
                              "split": split, "log": str(log_path),
                              "metrics": str(metrics),
+                             # Recorded so that a consumer of state.json does not
+                             # have to parse them back out of the job key.
+                             "method": method, "lr_scaling": lr_scaling,
+                             "seed": args.seed if seed is None else seed,
                              # Wall clock INCLUDING process start-up and evaluation:
                              # what the overnight scheduler has to budget for.
                              "wall_seconds": wall}

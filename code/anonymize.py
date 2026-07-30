@@ -140,7 +140,13 @@ EXCLUDE = (
     "**/__pycache__/**", "**/.pytest_cache/**", "**/.ipynb_checkpoints/**",
     "**/.git/**", "**/.venv/**", "**/venv/**",
     "results/**", "saves/**", "saves_*/**", "output_grid/**",
-    "**/article_export/**", "**/article_export.tar.gz",
+    # Result bundles unpacked *outside* `results/`, which is what both workflows
+    # tell you to do ("unpack it next to code/"). The trailing `*` is load-bearing:
+    # a bundle parked as `article_export.stale_2026-07-29` is the same run output as
+    # `article_export`, and it carries the absolute paths of the box that wrote it.
+    "**/article_export*/**", "**/article_export*.tar.gz",
+    "**/federated_export*/**", "**/federated_export*.zip",
+    "**/synthetic_results*.zip",
     "data/**", "data_federated/**", "**/fineweb10B/**",
     "*.pt", "*.pth", "*.bin", "*.npz",
 )

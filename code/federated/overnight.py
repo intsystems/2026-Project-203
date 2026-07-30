@@ -286,11 +286,18 @@ def _lr_jobs(args):
 
 def plan_cost(args, sec: float) -> Dict[str, float]:
     n_par = sum(1 for _ in _lr_jobs(args))
+    n_rules = sum(1 for r in args.rule_alternatives if r != args.lr_scaling)
+    n_rule_cfg = n_rules * len(args.rule_methods)
     return {
         "lr": n_par * args.lr_points * job_cost(sec, args.tune_rounds),
-        "verify": (len(args.verify_methods) * args.verify_top
-                   * job_cost(sec, args.final_rounds)),
+        # Vacuous, and skipped, once the tuning horizon is the reporting one.
+        "verify": ((len(args.verify_methods) * args.verify_top
+                    * job_cost(sec, args.final_rounds))
+                   if args.tune_rounds < args.final_rounds else 0.0),
         "final": n_par * len(args.final_seeds) * job_cost(sec, args.final_rounds),
+        "rules": (n_rule_cfg * args.lr_points * job_cost(sec, args.tune_rounds)
+                  + n_rule_cfg * len(args.rule_seeds) * job_cost(sec, args.final_rounds)
+                  if "rules" in args.phases else 0.0),
         "wd": (args.wd_ablation_top * job_cost(sec, args.final_rounds)
                if args.wd_ablation > 0 else 0.0),
     }
@@ -395,12 +402,17 @@ def autobalance(args, sec: float, budget: Budget) -> List[str]:
 def print_schedule(args, sec: float, budget: Budget, notes: List[str]) -> None:
     cost = plan_cost(args, sec)
     n_par = sum(1 for _ in _lr_jobs(args))
+    n_rule_cfg = (sum(1 for r in args.rule_alternatives if r != args.lr_scaling)
+                  * len(args.rule_methods))
     counts = {"lr": n_par * args.lr_points,
-              "verify": len(args.verify_methods) * args.verify_top,
+              "verify": (len(args.verify_methods) * args.verify_top
+                         if args.tune_rounds < args.final_rounds else 0),
               "final": n_par * len(args.final_seeds),
+              "rules": n_rule_cfg * (args.lr_points + len(args.rule_seeds)),
               "wd": args.wd_ablation_top if args.wd_ablation > 0 else 0}
     rounds = {"lr": args.tune_rounds, "verify": args.final_rounds,
-              "final": args.final_rounds, "wd": args.final_rounds}
+              "final": args.final_rounds, "rules": args.final_rounds,
+              "wd": args.final_rounds}
 
     print("\n" + "=" * 78)
     desc = ("no deadline -- runs until Ctrl-C" if budget.unlimited
@@ -414,9 +426,11 @@ def print_schedule(args, sec: float, budget: Budget, notes: List[str]) -> None:
         print()
     print(f"  {'phase':<8}{'jobs':>6}{'rounds':>8}{'hours':>8}{'cumulative':>12}   done by")
     cum = 0.0
-    for name in ("lr", "verify", "final", "wd"):
+    for name in ("lr", "verify", "final", "rules", "wd"):
         if name not in args.phases or not counts[name]:
-            print(f"  {name:<8}{'-':>6}{'-':>8}{'-':>8}{'-':>12}   skipped")
+            why = ("skipped" if name != "verify" or args.tune_rounds < args.final_rounds
+                   else "vacuous: tuning already runs at the reporting horizon")
+            print(f"  {name:<8}{'-':>6}{'-':>8}{'-':>8}{'-':>12}   {why}")
             continue
         hrs = cost[name] / 3600.0
         cum += hrs
@@ -506,7 +520,15 @@ def phase_verify(args, state, budget, sec, tuned: Dict[str, Dict]) -> Dict[str, 
     schedule annealed to zero at the horizon, that assumption has real content:
     the two runs do not share a single step size. Deliberately still on the
     **tuning split**, so ``val_acc`` is the comparison metric at both horizons.
+
+    Vacuous once the two horizons agree, which is now the default: there is no
+    proxy left to check. It is kept because ``--tune-rounds`` can still be shortened
+    by hand or by rebalancing, and that is exactly when the check earns its cost.
     """
+    if args.tune_rounds >= args.final_rounds:
+        print(f"  tuning already runs at the reporting horizon "
+              f"({args.final_rounds} rounds); nothing to verify.")
+        return state["phases"].setdefault("verify", {})
     out: Dict[str, Dict] = state["phases"].setdefault("verify", {})
     rulekey = args.lr_scaling.replace(":", "")
     for method in args.verify_methods:
@@ -639,6 +661,110 @@ def phase_wd(args, state, budget, sec, tuned: Dict[str, Dict]) -> None:
             save_state(state)
 
 
+def phase_rules(args, state, budget, sec, tuned: Dict[str, Dict]) -> Dict[str, Dict]:
+    """Re-tune the sign family from scratch under the competing per-layer rules.
+
+    The unit-gain multiplier is a heuristic, so the ordering it induces *within* the
+    sign family rests on it. Two things bound the exposure without an experiment:
+    the LMO family cannot move, because unit gain and muP prescribe it the identical
+    factor, and all three sign methods are tuned and reported under one rule, so a
+    wrong exponent rescales them alike. This settles it directly instead.
+
+    Each (method, rule) gets its own full grid search and its own finals -- a rule
+    that shifted eta_0 without being re-tuned would be a strictly worse rule by
+    construction, which would prove nothing. ``--lr-scaling`` itself is not repeated
+    here: the `lr` and `final` phases already ran it.
+    """
+    if not args.rule_methods or not args.rule_alternatives:
+        return {}
+    out: Dict[str, Dict] = state["phases"].setdefault("rules", {})
+    shapes = matrix_shapes(args.dataset, args.model)
+
+    for rule in args.rule_alternatives:
+        if rule == args.lr_scaling:
+            continue
+        rulekey = rule.replace(":", "")
+        for method in args.rule_methods:
+            key = f"{method}@{rule}"
+            entry = out.setdefault(key, {"rule": rule, "method": method,
+                                         "runs": [], "finals": []})
+            base = anchor_for(method, rule, shapes)
+            grid = entry.get("grid") or round_grid(base, points=args.lr_points)
+            entry["grid"] = grid
+
+            # The grid is widened on a boundary here for the same reason it is in
+            # `phase_lr`, and it matters more: an alternative rule whose optimum is
+            # censored by its grid loses to a properly tuned `--lr-scaling`
+            # automatically, which would make this ablation confirm the rule it is
+            # supposed to test.
+            for extension in range(args.lr_extend_rounds + 1):
+                for lr in grid:
+                    tag = f"rule_{method}_{rulekey}_{lr:.4g}"
+                    jkey = canonical_tag(tag, epochs=args.tune_rounds, split="tune")
+                    if jkey in state["jobs"]:
+                        continue
+                    cost = job_cost(sec, args.tune_rounds)
+                    if not budget.fits(cost) or _stop["requested"]:
+                        return out
+                    print(f"[{stamp()}] rules/{key} lr={lr:.4g} "
+                          f"(~{cost/60:.0f} min) | {budget.report()}")
+                    r = run_one(_tune_args(args), lr=lr, lr_aux=args.lr_aux,
+                                lr_scaling=rule, method=method,
+                                rounds=args.tune_rounds, tag=tag)
+                    record(state, jkey, r)
+                    if r:
+                        entry["runs"].append(r)
+                        save_state(state)
+
+                best = best_of(entry["runs"])
+                if best is None:
+                    break
+                entry["best"] = best
+                warn = boundary_warning(best, grid)
+                print(f"  BEST {key}: eta_0={best['lr']:.6g}  val {best['val_acc']:.2f}%")
+                if not warn:
+                    entry.pop("boundary", None)
+                    break
+                print(warn)
+                entry["boundary"] = warn.strip()
+                if extension == args.lr_extend_rounds:
+                    break
+                grid = extend_grid(grid, low="LOW end" in warn,
+                                   points=args.lr_extend_points)
+                entry["grid"] = grid
+                print(f"  -> extending to [{min(grid):.4g}, {max(grid):.4g}] "
+                      f"(round {extension + 1}/{args.lr_extend_rounds})")
+                save_state(state)
+
+    for rule in args.rule_alternatives:
+        if rule == args.lr_scaling:
+            continue
+        rulekey = rule.replace(":", "")
+        for seed in args.rule_seeds:
+            for method in args.rule_methods:
+                entry = out.get(f"{method}@{rule}") or {}
+                if not entry.get("best"):
+                    continue
+                tag = f"rulefinal_{method}_{rulekey}"
+                jkey = canonical_tag(tag, epochs=args.final_rounds,
+                                     split="full", seed=seed)
+                if jkey in state["jobs"]:
+                    continue
+                cost = job_cost(sec, args.final_rounds)
+                if not budget.fits(cost) or _stop["requested"]:
+                    return out
+                print(f"[{stamp()}] rules-final/{method}@{rule} seed {seed} "
+                      f"(~{cost/60:.0f} min) | {budget.report()}")
+                r = run_one(_tune_args(args), lr=entry["best"]["lr"],
+                            lr_aux=args.lr_aux, lr_scaling=rule, method=method,
+                            rounds=args.final_rounds, tag=tag, split="full", seed=seed)
+                record(state, jkey, r)
+                if r:
+                    entry["finals"].append(r)
+                    save_state(state)
+    return out
+
+
 # --------------------------------------------------------------------------
 # Report
 # --------------------------------------------------------------------------
@@ -747,6 +873,44 @@ def build_report(args, state, budget, sec, tuned, notes: List[str]) -> str:
                   + (" (odd)." if args.n_parties % 2
                      else f" (EVEN -- prefer {args.n_parties + 1})."), ""]
 
+    rules = state["phases"].get("rules", {})
+    if rules:
+        import statistics
+        lines += ["## Per-layer rule ablation (sign family)", "",
+                  "Each (method, rule) pair is re-tuned from scratch, then run at the "
+                  "final horizon. What matters is whether the *ordering* of the "
+                  "methods changes with the rule, not whether `eta_0` does -- it "
+                  "should, by roughly the multiplier the rule prescribes.",
+                  "",
+                  "| method | rule | eta_0 | val @ tune | test acc (finals) | seeds |",
+                  "| :--- | :--- | ---: | ---: | ---: | ---: |"]
+        def _row(method, rule, best, finals, boundary=False, primary=False):
+            got = [x for x in (r.get("test_acc") for r in finals if r) if x is not None]
+            label = f"**{rule}**" if primary else rule
+            return "| " + " | ".join([
+                f"`{method}`", label + ("  (grid boundary)" if boundary else ""),
+                f"{best['lr']:.6g}" if best.get("lr") is not None else "-",
+                f"{best['val_acc']:.2f}%" if best.get("val_acc") is not None else "-",
+                f"{statistics.fmean(got):.2f}%" if got else "-",
+                str(len(got))]) + " |"
+
+        # Grouped by method, its own rule first, so the comparison the ablation is
+        # about -- one method across three rules -- reads down the table.
+        for method in args.rule_methods:
+            # The `--lr-scaling` arm is not re-run here; the `lr`/`final` phases are it.
+            final_runs = [v for v in (state["phases"].get("final") or {}).values()
+                          if v and v.get("method") == method
+                          and v.get("lr_scaling", args.lr_scaling) == args.lr_scaling]
+            lines.append(_row(method, args.lr_scaling,
+                              tuned.get(method, {}).get("best") or {},
+                              final_runs, primary=True))
+            for key, v in sorted(rules.items()):
+                if v.get("method") != method:
+                    continue
+                lines.append(_row(method, v["rule"], v.get("best") or {},
+                                  v.get("finals", []), boundary=bool(v.get("boundary"))))
+        lines.append("")
+
     wd = state["phases"].get("wd", {})
     if wd:
         lines += [f"## Weight-decay ablation (decoupled, wd = {args.wd_ablation:g})", "",
@@ -815,10 +979,16 @@ def get_args():
                         "for the round time being underestimated")
     p.add_argument("--methods", nargs="*", default=ALL_METHODS)
     p.add_argument("--phases", nargs="*", default=["lr", "verify", "final", "wd"],
-                   choices=["lr", "verify", "final", "wd"])
+                   choices=["lr", "verify", "final", "rules", "wd"],
+                   help="`rules` is the per-layer-rule ablation and is off by "
+                        "default; add it explicitly")
 
-    p.add_argument("--tune-rounds", type=int, default=400,
-                   help="Proxy horizon for ranking rates (1/5 of the final horizon)")
+    p.add_argument("--tune-rounds", type=int, default=None,
+                   help="Horizon for ranking rates. Defaults to --final-rounds, "
+                        "i.e. rates are selected at the horizon the table reports. "
+                        "A shorter value is a proxy, and the 2026-07-30 run showed "
+                        "the 400-round proxy picking the wrong rate for both methods "
+                        "it was checked on -- see the `verify` phase")
     p.add_argument("--min-tune-rounds", type=int, default=100,
                    help="Rebalancing will not shorten the tuning horizon below this")
     p.add_argument("--final-rounds", type=int, default=2000,
@@ -833,8 +1003,19 @@ def get_args():
     p.add_argument("--lr-extend-rounds", type=int, default=3)
     p.add_argument("--lr-extend-points", type=int, default=2)
     p.add_argument("--verify-methods", nargs="*", default=["signmuon", "ef21muonsign"],
-                   help="Methods whose top rates are re-run at --final-rounds")
+                   help="Methods whose top rates are re-run at --final-rounds. "
+                        "Vacuous, and skipped, when the tuning horizon already is "
+                        "--final-rounds")
     p.add_argument("--verify-top", type=int, default=2)
+    p.add_argument("--rule-methods", nargs="*", default=["signmuon", "muonsign", "signsgd"],
+                   help="`rules` phase: which methods to re-tune. The sign family, "
+                        "since the LMO family is prescribed the same multiplier by "
+                        "every candidate rule and cannot move")
+    p.add_argument("--rule-alternatives", nargs="*", default=["none", "mup"],
+                   help="`rules` phase: the conventions to compare against "
+                        "--lr-scaling, which is already covered by the `lr` phase")
+    p.add_argument("--rule-seeds", nargs="*", type=int, default=[0, 1, 2],
+                   help="`rules` phase: seeds per (method, rule) at the final horizon")
     p.add_argument("--wd-ablation", type=float, default=5e-4,
                    help="Decay rate for the `wd` phase; 0 disables it")
     p.add_argument("--wd-ablation-top", type=int, default=3)
@@ -855,7 +1036,15 @@ def get_args():
                    help="Print the schedule and exit without training")
     p.add_argument("--force", action="store_true",
                    help="Continue even if the CPU test suite fails")
-    return add_common_args(p).parse_args()
+    args = add_common_args(p).parse_args()
+    # Select at the horizon we report at. The centralized driver already does this,
+    # for the reason a 2026-07-30 federated run then confirmed here: under a cosine
+    # schedule annealed to zero at each run's *own* horizon, a short run spends
+    # nearly its whole budget at a decayed rate, and the rate that wins there is not
+    # the rate that wins at 2000 rounds. It moved for both methods checked.
+    if args.tune_rounds is None:
+        args.tune_rounds = args.final_rounds
+    return args
 
 
 def main() -> None:
@@ -889,10 +1078,14 @@ def main() -> None:
 
     # Resuming across a change of convention would silently mix runs that are not
     # comparable: the cached jobs are keyed by method and rate only.
+    # ``tune_rounds`` belongs here even though it names no final run: a final job's
+    # key does not encode the rate it was launched at, so resuming across a change
+    # of tuning horizon would keep finals selected by the old horizon and pair them
+    # with rates selected by the new one, silently.
     fingerprint = {k: getattr(args, k) for k in
                    ("dataset", "model", "n_parties", "n_steps", "batch_size",
                     "momentum", "weight_decay", "partition", "beta", "lr_aux",
-                    "lr_scaling", "final_rounds")}
+                    "lr_scaling", "final_rounds", "tune_rounds")}
     old = state.get("fingerprint")
     if args.resume and old and old != fingerprint:
         print("REFUSING to resume: this run's settings differ from the recorded ones,")
@@ -959,6 +1152,12 @@ def main() -> None:
                             f"seeds {args.final_seeds})")
             phase_final(args, state, budget, sec,
                         tuned or state["phases"].get("lr", {}), refresh)
+            refresh()
+        if "rules" in args.phases and not _stop["requested"]:
+            banner("rules", f"  (per-layer rule ablation: "
+                            f"{', '.join(args.rule_alternatives)} vs "
+                            f"{args.lr_scaling}, sign family)")
+            phase_rules(args, state, budget, sec, tuned or state["phases"].get("lr", {}))
             refresh()
         if "wd" in args.phases and not _stop["requested"]:
             banner("wd", f"  (decay ablation, wd={args.wd_ablation:g} decoupled)")

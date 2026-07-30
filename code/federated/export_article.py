@@ -61,7 +61,8 @@ ROOT = Path(__file__).resolve().parents[1]
 #: Config fields promoted to columns in ``runs.csv``. Anything not listed still
 #: reaches ``configs.json`` verbatim; this is a readability choice, not a filter.
 RUN_COLS = [
-    "run_name", "seed", "phase", "algorithm", "lr_scaling", "split", "rounds",
+    "run_name", "seed", "phase", "algorithm", "variant", "scale_baselines",
+    "lr_scaling", "split", "rounds",
     "n_parties", "n_steps", "batch_size", "lr", "lr_aux", "momentum",
     "weight_decay", "weight_decay_mode", "partition", "beta", "dataset", "model",
     "ns_steps", "lmo_dtype", "uplink_zeros", "mv_ties", "eval_freq", "last_k",
@@ -81,7 +82,7 @@ CURVE_SERIES = [
 # --------------------------------------------------------------------------
 
 
-def phase_of(config: Dict[str, Any]) -> str:
+def phase_of(config: Dict[str, Any], primary_rule: Optional[str] = None) -> str:
     """Which overnight phase produced this run.
 
     Read off the config rather than the directory name: the federated driver
@@ -89,11 +90,19 @@ def phase_of(config: Dict[str, Any]) -> str:
     a tuning run from a reported one. A run with weight decay on when the primary
     protocol sets it to zero is the ``wd`` ablation, and must be tested first or it
     would be reported as a headline result.
+
+    ``primary_rule`` separates the ``rules`` ablation the same way. Its finals are
+    full-50k runs at zero decay like any other, differing only in ``lr_scaling``, so
+    without this they would land in the reported table -- which compares methods at
+    one rule, not rules. ``scan`` infers it as the rule most of the finals used
+    rather than taking it on trust.
     """
     if config.get("split") == "tune":
         return "lr"
     if float(config.get("weight_decay") or 0.0) > 0.0:
         return "wd"
+    if primary_rule and str(config.get("lr_scaling") or "") != primary_rule:
+        return "rules"
     return "final"
 
 
@@ -176,6 +185,25 @@ class Run:
         self.eval_name = "val" if self.config.get("split") == "tune" else "test"
 
     @property
+    def variant(self) -> str:
+        """The table row this run belongs to, which is not always the algorithm.
+
+        ``--scale-baselines`` gives SGD and Adam the sign family's per-layer rule.
+        That is an ablation, not the baseline the paper reports, and the two share
+        an ``algorithm`` -- so keying a table row on the algorithm alone silently
+        merges them and reports whichever the dict happened to yield. The rule and
+        the client count matter for the same reason: a bundle can legitimately hold
+        more than one of each.
+        """
+        parts = [self.algorithm]
+        if self.config.get("scale_baselines"):
+            parts.append("scaled")
+        rule = str(self.config.get("lr_scaling") or "")
+        if rule and rule != "unit-gain":
+            parts.append(rule)
+        return "+".join(parts)
+
+    @property
     def seed(self) -> Optional[int]:
         seed = self.config.get("seed")
         if seed is not None:
@@ -232,6 +260,20 @@ def scan(root: Path) -> Tuple[List[Run], List[Tuple[Path, str]]]:
             bad.append((path, "no recorded rounds"))
             continue
         runs.append(run)
+
+    # Second pass: the reported protocol is whichever per-layer rule most of the
+    # full-50k runs used, and anything else at that split is the rule ablation.
+    # Inferred rather than assumed, so a tree tuned entirely under `legacy` still
+    # reports a table instead of calling every run an ablation.
+    tally: Dict[str, int] = {}
+    for run in runs:
+        if run.phase == "final":
+            rule = str(run.config.get("lr_scaling") or "")
+            tally[rule] = tally.get(rule, 0) + 1
+    if len(tally) > 1:
+        primary = max(tally, key=lambda k: (tally[k], k == "unit-gain"))
+        for run in runs:
+            run.phase = phase_of(run.config, primary)
     return runs, bad
 
 
@@ -247,36 +289,41 @@ METHOD_ORDER = [
 ]
 
 
-def _order_key(algorithm: str) -> Tuple[int, str]:
+def _order_key(variant: str) -> Tuple[int, int, str]:
+    """Paper order for the plain variants; ablations sort after their baseline."""
+    base, _, suffix = variant.partition("+")
     try:
-        return (METHOD_ORDER.index(algorithm), "")
+        return (METHOD_ORDER.index(base), bool(suffix), suffix)
     except ValueError:
-        return (len(METHOD_ORDER), algorithm)
+        return (len(METHOD_ORDER), bool(suffix), variant)
 
 
 def group_reported(runs: Sequence[Run]) -> Dict[str, List[Run]]:
-    """``final``-phase runs by algorithm, one group per table row.
+    """``final``-phase runs by *variant*, one group per table row.
 
-    Runs that differ in anything but the seed are a *different experiment* and are
+    Runs that differ in anything but the seed are a different experiment and are
     kept apart: if two client counts or two learning rates are present for one
-    method, the larger group wins and the smaller is reported as dropped rather
-    than pooled into a meaningless mean.
+    variant, the larger group wins and the smaller is reported as dropped rather
+    than pooled into a meaningless mean. Grouping on the variant rather than the
+    algorithm is what keeps `adam` and `adam+scaled` in separate rows -- they have
+    five seeds each, so keying on the algorithm made the winner a dict-ordering
+    accident, and the 2026-07-30 export reported the ablation as the baseline.
     """
     by_config: Dict[Tuple, List[Run]] = {}
     for run in runs:
         if run.phase != "final":
             continue
-        key = (run.algorithm, run.config.get("lr"), run.config.get("rounds"),
+        key = (run.variant, run.config.get("lr"), run.config.get("rounds"),
                run.config.get("n_parties"), run.config.get("n_steps"),
-               run.config.get("lr_scaling"), run.config.get("partition"),
+               run.config.get("partition"),
                run.config.get("model"), run.config.get("dataset"))
         by_config.setdefault(key, []).append(run)
 
     best: Dict[str, List[Run]] = {}
     for key, group in by_config.items():
-        alg = key[0]
-        if alg not in best or len(group) > len(best[alg]):
-            best[alg] = group
+        variant = key[0]
+        if variant not in best or len(group) > len(best[variant]):
+            best[variant] = group
     return dict(sorted(best.items(), key=lambda kv: _order_key(kv[0])))
 
 
@@ -316,7 +363,7 @@ def table_rows(runs: Sequence[Run]) -> Tuple[List[Dict[str, Any]], List[str]]:
         notes.append(f"communication columns skipped: {exc.name} is not installed")
 
     rows = []
-    for alg, group in group_reported(runs).items():
+    for variant, group in group_reported(runs).items():
         acc_mean, acc_std, n_seeds = mean_std([r.summary()["acc_tail_mean"] for r in group])
         hit = [v for v in (r.summary()["rounds_to_target"] for r in group) if v is not None]
         rnd_mean, _, _ = mean_std(hit)
@@ -326,17 +373,17 @@ def table_rows(runs: Sequence[Run]) -> Tuple[List[Dict[str, Any]], List[str]]:
         if communication_bits is not None and counts is not None:
             n_mat, n_aux, n_lay = counts
             comm = communication_bits(
-                alg, n_mat, n_aux,
+                ref.algorithm, n_mat, n_aux,
                 ref.summary()["uplink_zero_frac_mean"] or 0.0,
                 n_layers=n_lay,
                 uplink_zeros=str(ref.config.get("uplink_zeros") or "random"),
             )
         elif counts is None:
-            notes.append(f"{alg}: no parameter counts recorded for "
+            notes.append(f"{variant}: no parameter counts recorded for "
                          f"{ref.config.get('dataset')}/{ref.config.get('model')}; "
                          f"communication columns left empty")
         rows.append({
-            "algorithm": alg,
+            "algorithm": variant,
             "lr": ref.config.get("lr"),
             "seeds": n_seeds,
             "acc_mean": acc_mean,
@@ -367,11 +414,12 @@ def write_runs(runs: Sequence[Run], out: Path) -> Path:
     with open(path, "w", newline="", encoding="utf-8") as f:
         w = csv.writer(f)
         w.writerow(["path"] + RUN_COLS + summary_cols)
-        for run in sorted(runs, key=lambda r: (_order_key(r.algorithm), r.phase,
+        for run in sorted(runs, key=lambda r: (_order_key(r.variant), r.phase,
                                                r.seed if r.seed is not None else -1)):
             cfg = dict(run.config)
             cfg["phase"] = run.phase
             cfg["seed"] = run.seed
+            cfg["variant"] = run.variant
             summ = run.summary()
             w.writerow([run.path.parent.as_posix()]
                        + [cfg.get(c) for c in RUN_COLS]
@@ -386,11 +434,11 @@ def write_curves(runs: Sequence[Run], out: Path) -> Path:
         w = csv.writer(f)
         w.writerow(["run_name", "algorithm", "phase", "seed", "lr", "round"]
                    + CURVE_SERIES)
-        for run in sorted(runs, key=lambda r: (_order_key(r.algorithm), r.phase)):
+        for run in sorted(runs, key=lambda r: (_order_key(r.variant), r.phase)):
             steps = run.history.get("steps") or []
             cols = {k: (run.history.get(k) or []) for k in CURVE_SERIES}
             for i, step in enumerate(steps):
-                w.writerow([run.config.get("run_name"), run.algorithm, run.phase,
+                w.writerow([run.config.get("run_name"), run.variant, run.phase,
                             run.seed, run.config.get("lr"), step]
                            + [_r(cols[k][i]) if i < len(cols[k]) else None
                               for k in CURVE_SERIES])
@@ -418,6 +466,53 @@ def write_communication(rows: Sequence[Dict[str, Any]], out: Path) -> Path:
             w.writerow([row["algorithm"], _r(row["uplink_bits_per_param"], 4),
                         _r(row["downlink_bits_per_param"], 4),
                         _r(row["round_trip_reduction"], 2)])
+    return path
+
+
+def rule_rows(runs: Sequence[Run]) -> List[Dict[str, Any]]:
+    """The per-layer-rule ablation: one row per (method, rule), seeds pooled.
+
+    The reported rule's rows come from the ``final`` phase and the alternatives from
+    ``rules``, so the comparison is against the same runs the paper's table quotes
+    rather than against a re-run of them.
+    """
+    by: Dict[Tuple[str, str], List[Run]] = {}
+    for run in runs:
+        if run.phase not in ("final", "rules") or run.config.get("scale_baselines"):
+            continue
+        rule = str(run.config.get("lr_scaling") or "")
+        by.setdefault((run.algorithm, rule), []).append(run)
+    if len({rule for _, rule in by}) < 2:
+        return []
+
+    # Only the methods the ablation actually re-tuned. Carrying the other eight
+    # along at the reported rule alone would put an eleven-method ordering beside
+    # three-method ones and make every comparison of the two report a difference.
+    covered = {alg for alg, _ in by}
+    n_rules = len({rule for _, rule in by})
+    covered = {alg for alg in covered
+               if sum(1 for a, _ in by if a == alg) == n_rules}
+    by = {k: v for k, v in by.items() if k[0] in covered}
+    if not by:
+        return []
+
+    rows = []
+    for (alg, rule), group in by.items():
+        mean, std, n = mean_std([r.summary()["acc_tail_mean"] for r in group])
+        rows.append({"algorithm": alg, "rule": rule, "phase": group[0].phase,
+                     "lr": group[0].config.get("lr"), "seeds": n,
+                     "acc_mean": mean, "acc_std": std})
+    rows.sort(key=lambda r: (_order_key(r["algorithm"]), r["phase"] != "final", r["rule"]))
+    return rows
+
+
+def write_rules(rows: Sequence[Dict[str, Any]], out: Path) -> Path:
+    path = out / "rule_ablation.csv"
+    with open(path, "w", newline="", encoding="utf-8") as f:
+        w = csv.DictWriter(f, fieldnames=list(rows[0].keys()))
+        w.writeheader()
+        for row in rows:
+            w.writerow({k: (_r(v) if isinstance(v, float) else v) for k, v in row.items()})
     return path
 
 
@@ -514,8 +609,40 @@ def _fmt(val: Optional[float], spec: str = ".2f") -> str:
     return "--" if val is None else format(val, spec)
 
 
+def _rules_section(rules: Sequence[Dict[str, Any]]) -> List[str]:
+    if not rules:
+        return []
+    lines = ["", "## Per-layer rule ablation", "",
+             "Each (method, rule) pair is tuned from scratch under that rule, so a",
+             "rule is not penalized for prescribing a different `eta_0` -- it should.",
+             "What would signify is the *ordering* of the methods changing.",
+             "",
+             "| method | rule | eta_0 | seeds | acc (%) |",
+             "| :--- | :--- | ---: | ---: | ---: |"]
+    for r in rules:
+        std = "" if r["acc_std"] is None else f" +/- {r['acc_std']:.2f}"
+        mark = "**" if r["phase"] == "final" else ""
+        lines.append(f"| {r['algorithm']} | {mark}{r['rule']}{mark} | {r['lr']} | "
+                     f"{r['seeds']} | {_fmt(r['acc_mean'])}{std} |")
+    order = {}
+    for r in rules:
+        order.setdefault(r["rule"], []).append((r["acc_mean"], r["algorithm"]))
+    ranked = {k: [a for _, a in sorted(v, reverse=True)] for k, v in order.items()
+              if all(m is not None for m, _ in v)}
+    if len(ranked) > 1:
+        same = len({tuple(v) for v in ranked.values()}) == 1
+        lines += ["", f"Ordering under each rule: "
+                      + "; ".join(f"`{k}` {' > '.join(v)}" for k, v in ranked.items()),
+                  "", ("**The ordering is the same under every rule.**" if same else
+                       "**The ordering is NOT the same under every rule** -- the "
+                       "sign-family comparison depends on the multiplier, and the "
+                       "paper has to say so.")]
+    return lines
+
+
 def summary_markdown(runs: Sequence[Run], rows: Sequence[Dict[str, Any]],
-                     dropped: Sequence[Tuple[Path, str]]) -> str:
+                     dropped: Sequence[Tuple[Path, str]],
+                     rules: Sequence[Dict[str, Any]] = ()) -> str:
     by_phase: Dict[str, int] = {}
     for run in runs:
         by_phase[run.phase] = by_phase.get(run.phase, 0) + 1
@@ -552,6 +679,9 @@ def summary_markdown(runs: Sequence[Run], rows: Sequence[Dict[str, Any]],
         "`round trip` is the reduction against full precision with the uncompressed",
         "auxiliary group counted in, computed from each run's own sign alphabet. It is",
         "the number to quote, not the uplink-only one.",
+    ]
+    lines += _rules_section(rules)
+    lines += [
         "",
         "## Diagnostics",
         "",
@@ -564,17 +694,17 @@ def summary_markdown(runs: Sequence[Run], rows: Sequence[Dict[str, Any]],
         "| :--- | ---: | ---: | ---: | ---: |",
     ]
     for run in sorted((r for r in runs if r.phase == "final"),
-                      key=lambda r: (_order_key(r.algorithm),
+                      key=lambda r: (_order_key(r.variant),
                                      r.seed if r.seed is not None else -1)):
         s = run.summary()
         lines.append(
-            f"| {run.algorithm} | {run.seed} | "
+            f"| {run.variant} | {run.seed} | "
             f"{_fmt(s['gain_spread_first'])}x -> {_fmt(s['gain_spread_final'])}x | "
             f"{_fmt(s['mv_tie_frac_mean'], '.4f')} | "
             f"{_fmt(s['uplink_zero_frac_mean'], '.4f')} |")
 
     tuned = sorted((r for r in runs if r.phase == "lr"),
-                   key=lambda r: (_order_key(r.algorithm), r.config.get("lr") or 0))
+                   key=lambda r: (_order_key(r.variant), r.config.get("lr") or 0))
     if tuned:
         lines += ["", "## The learning-rate search", "",
                   "Selected on validation accuracy only; no tuning run scores a test image.",
@@ -582,7 +712,7 @@ def summary_markdown(runs: Sequence[Run], rows: Sequence[Dict[str, Any]],
                   "| :--- | ---: | ---: | ---: |"]
         for run in tuned:
             s = run.summary()
-            lines.append(f"| {run.algorithm} | {run.config.get('lr')} | "
+            lines.append(f"| {run.variant} | {run.config.get('lr')} | "
                          f"{_fmt(s['acc_tail_mean'])} | {run.config.get('rounds')} |")
 
     if dropped:
@@ -695,14 +825,18 @@ def main(argv: Optional[Sequence[str]] = None) -> int:
     out.mkdir(parents=True)
 
     rows, notes = table_rows(runs)
+    rules = rule_rows(runs)
     written = [write_runs(runs, out), write_curves(runs, out), write_configs(runs, out)]
     if rows:
         written += [write_table(rows, out), write_communication(rows, out)]
+    if rules:
+        written.append(write_rules(rules, out))
     written += write_environment(runs, out)
     n_metrics = copy_metrics(runs, out, root)
     driver_files = copy_overnight(out, driver)
 
-    (out / "SUMMARY.md").write_text(summary_markdown(runs, rows, bad), encoding="utf-8")
+    (out / "SUMMARY.md").write_text(summary_markdown(runs, rows, bad, rules),
+                                    encoding="utf-8")
 
     manifest = {
         "generated_by": "federated.export_article",
