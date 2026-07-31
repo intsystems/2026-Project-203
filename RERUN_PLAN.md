@@ -29,6 +29,16 @@ under the fixed code — 126 runs, three seeds, `η₀` selected at the reportin
 horizon — and its bundle now backs `tab:cifar_main`, `tab:cifar_central` and every
 centralized figure. See [`code/centralized/README.md`](code/centralized/README.md).
 
+Updated 2026-07-31, after the federated arm was re-run overnight. **§2 and §2b are
+done and §2c is answered**; both are recipes now, not outstanding work. The run was
+175 jobs at commit `1feeb2a`: `η₀` selected at the 2000-round reporting horizon
+rather than the 400-round proxy, under `--uplink-zeros random --mv-ties random`,
+plus the `rules` ablation of §2b. Six of the eleven methods changed rate, and two
+claims in the paper changed with them — MuonSign now stands *above* SignSGD rather
+than below it, and every method but Adam reaches 80% on all five seeds. The old
+tree is archived under `results_old/federated_2026-07-28_ternary/`; nothing in the
+paper is drawn from it any more.
+
 ---
 
 ## 0. Before starting (10 min)
@@ -139,39 +149,37 @@ diverging on the constructed instance is evidence *for* the paper's framing, not
 against it. `muonserver` is the uncompressed control for the server-LMO family —
 do not compare the server-LMO methods against worker-LMO `muon` alone.
 
-### 2b. The per-layer rule ablation — the one outstanding federated claim
+### 2b. The per-layer rule ablation — done
 
-This is the highest-value remaining run. The appendix's "Sensitivity: what the
-rule can and cannot affect" paragraph in `app:lrscale` now states outright that
-the sign family has **not** been re-tuned under the competing conventions, and
-bounds the exposure instead. This closes that gap. (There is no
-`tab:lr_ablation` any more — the table was cut with the N = 3 experiment and
-survives only under `old/`; a new one would go in `app:lrscale`.)
+**Status: done**, in the 2026-07-31 run's `rules` phase, and reported as
+`tab:rule_ablation` in `app:lrscale`. The "Sensitivity: what the rule can and
+cannot affect" paragraph no longer bounds the exposure and leaves it there; it
+reports the measurement. (There is no `tab:lr_ablation` — that table was cut with
+the N = 3 experiment and survives only under `old/`.)
 
-Three tuning passes, sign family only, then a final run at each selected rate:
+The driver runs it as a phase; by hand it is three tuning passes over the sign
+family, then a final run at each selected rate:
 
 ```bash
-for rule in none unit-gain mup; do
-  python3 -m federated.tune --stage lr --lr-scaling $rule \
-      --methods signmuon muonsign signsgd --out results/federated/rules_$rule
-done
+python3 -m federated.overnight --device cuda:0 --phases lr final rules wd
 ```
 
-~45 tuning jobs at 400 rounds plus 9 finals at 2000 ≈ 5–6 h on an A100. Then
-re-run the selected rate of each (method, rule) pair at the final horizon, seed 0,
-and write `results/federated/scaling_compare.csv`. The claim being defended is
-narrow and should be stated narrowly: **the ordering of the methods does not
-change with the rule.** The selected η₀ *does* change, by roughly the prescribed
-multiplier — that is the rule working, not a problem.
+48 jobs at 2000 rounds ≈ 3.9 h at 0.127 s/round. Tune at the reporting horizon,
+not at 400 rounds: the proxy is what this whole re-run retired. The claim being
+defended is narrow and is stated narrowly: **the ordering of the methods does not
+change with the rule** — SignMuon, then MuonSign, then SignSGD under all three.
+The selected η₀ *does* change, by roughly the prescribed multiplier (SignMuon
+`0.002 → 0.1 → 2.0` for global, unit gain, μP), which is the rule working.
 
-### 2c. Two cheap checks on the published table
+### 2c. Two checks on the published table
 
-* **Was SGD's η₀ = 0.1 a censored endpoint?** Every other selected rate in
-  `tab:exp_3` is interior to its method's five-point grid; SGD's transported
-  anchor is 0.02, so 0.1 is the *top* of the initial window and only survives as a
-  tuned value if the boundary extension fired and 0.1 still won. Read the `lr`
-  phase's boundary column in `REPORT.md` — no rerun needed unless it was censored.
-* **`lr_aux = 0.001` is held fixed, not verified, in the federated arm.**
+* **Was SGD's η₀ = 0.1 a censored endpoint?** *Answered.* At the 2000-round
+  horizon SGD selects **0.05**, interior to its 0.005–0.1 grid, and so does every
+  other method: no selected rate in `tab:exp_3` sits on a grid edge. SignMuon was
+  the only method whose optimum reached one, and its widened seven-point grid
+  settles it at 0.1, with 0.2 and 0.5 well below.
+* **`lr_aux = 0.001` is held fixed, not verified, in the federated arm.** Still
+  outstanding, and now the only outstanding federated item.
   `python3 -m federated.tune --stage aux --rounds 400` (~30 configs, ~2 h) would
   let the appendix report a measurement. Expect a bound on the exposure rather
   than "verified method-independent": the centralized `aux` phase **disagreed** on

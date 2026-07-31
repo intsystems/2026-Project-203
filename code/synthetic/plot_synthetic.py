@@ -36,6 +36,7 @@ import argparse
 import json
 import math
 from matplotlib import ticker
+from matplotlib.patches import Rectangle
 from pathlib import Path
 from typing import Dict, Sequence
 
@@ -44,7 +45,7 @@ from common.plotting import (AXIS, FS_ANNOT, FS_LABEL, FS_LEGEND, INK_2, MUTED,
                              order_methods,
                              figure_legend, panel_legend, save_figure,
                              style_axes, use_paper_style)
-from common.utils import results_root
+from common.paths import results_root      # not common.utils: that pulls torch
 
 use_paper_style()
 
@@ -71,6 +72,21 @@ XAXIS_STRIP_IN, LEGEND_ROW_IN = 0.59, 0.17
 #: leave the axes about an inch taller, which is what the log decades need
 #: to be readable on screen at one-to-one.
 TRAJECTORY_HEIGHT, DIAGNOSTIC_HEIGHT = 3.2, 3.0
+
+#: The arrival inset, in axes fractions of the panel it sits in. High enough
+#: that the card around it -- the inset plus a gutter of tick labels on two
+#: sides -- clears the plateau band, which on both panels runs at just under
+#: half height and is the one thing in the upper half worth not covering.
+INSET_RECT = (0.40, 0.62, 0.585, 0.365)
+
+#: How far the inset window reaches past what it is there to show. It is a zoom
+#: on the arrival, so it stops a little above the last thing that arrives -- the
+#: target on the loss panel, the highest plateau on the gradient-norm one -- and
+#: a little under the lowest plateau, which is about one decade in all. The
+#: first version ran to ninety times the lowest plateau and 1.35 times the last
+#: crossing: two decades of headroom, most of it empty, with every crossing
+#: squeezed into the bottom fifth of the inset.
+INSET_HEADROOM, INSET_FLOORROOM, INSET_TAIL = 2.2, 1.5, 1.18
 
 
 def _bottom_fraction(fig_height: float, legend_rows: int) -> float:
@@ -138,10 +154,10 @@ def _arrival_inset(ax, data: Dict[str, dict], key: str):
     The criterion the tables report is a crossing time, so the question the
     figure has to answer is which curve reaches the target first. Over the full
     axis that happens in the first sixth of the x range, inside a fold of curves
-    a millimetre wide, and the remaining five sixths are flat. The window is
-    placed from the recorded crossing times: it runs to a little past the last
-    of them, and spans from just under the lowest plateau to well above the
-    target, so every arrival happens inside it.
+    a millimetre wide, and the remaining five sixths are flat. The window is cut
+    to that fold: from just under the lowest plateau to just over the last thing
+    that arrives, and from the first entry into it to a little past the last
+    recorded crossing.
     """
     series, crossings, plateaus = {}, [], []
     for method, payload in data.items():
@@ -152,36 +168,42 @@ def _arrival_inset(ax, data: Dict[str, dict], key: str):
         series[method] = hist
         if method in UNNORMALIZED:
             continue
-        plateaus.append(sorted(hist[int(len(hist) * 0.8):])[len(hist[int(len(hist) * 0.8):]) // 2])
+        tail = sorted(hist[int(len(hist) * 0.8):])
+        plateaus.append(tail[len(tail) // 2])
         if rec.get("reached_target") and rec.get("iters_to_converge"):
             crossings.append(rec["iters_to_converge"])
-    if len(plateaus) < 2 or not crossings:
+    settled = [p for p in plateaus if p > 0]
+    if len(settled) < 2 or not crossings:
         return None
 
-    lo = min(p for p in plateaus if p > 0) / 1.5
-    hi = lo * 90.0
-    x_hi = min(max(len(h) for h in series.values()), int(1.35 * max(crossings)))
+    # The criterion is a crossing of this line, so the loss window has to hold
+    # it. The gradient-norm panel has no counterpart and is bounded by the
+    # plateaus alone.
+    target = next(iter(data.values()))["problem"].get("target_loss")
+    ceiling = max(settled)
+    if key == "loss_history" and target:
+        ceiling = max(ceiling, target)
+    lo, hi = min(settled) / INSET_FLOORROOM, ceiling * INSET_HEADROOM
+    x_hi = min(max(len(h) for h in series.values()),
+               int(INSET_TAIL * max(crossings)))
     # Start where the fastest curve first drops under the top of the window, so
     # the near-vertical opening plunge is left to the main panel.
     entries = [next((t for t, y in enumerate(ys) if y <= hi), None)
                for m, ys in series.items() if m not in UNNORMALIZED]
-    x_lo = max(0, min(t for t in entries if t is not None) - 10)
+    x_lo = max(0, min(t for t in entries if t is not None) - 5)
 
-    axins = ax.inset_axes([0.42, 0.55, 0.56, 0.40], zorder=5)
+    axins = ax.inset_axes(list(INSET_RECT), zorder=7)
     style_axes(axins, logy=True)
     # style_axes makes a panel transparent so a neighbour's labels can sit in
     # the gutter. An inset is the opposite case: it lies on top of the curves it
-    # magnifies, and has to hide them to be legible.
+    # magnifies, and has to hide them to be legible. Its spines stay in the
+    # house style -- left and bottom only. The frame around the whole thing is
+    # the card's, drawn in _inset_card; boxing the axes as well would put a box
+    # inside a box.
     axins.patch.set_alpha(1.0)
     axins.set_facecolor(SURFACE)
-    for side, spine in axins.spines.items():
-        spine.set_visible(True)
-        spine.set_color(AXIS)
-        spine.set_linewidth(0.5)
-    # The criterion is a crossing of this line, so draw it: the order in which
-    # the curves cut it is the column the table reports. Only on the loss panel
-    # -- the target is on F, and there is no counterpart for the gradient norm.
-    target = next(iter(data.values()))["problem"].get("target_loss")
+    for side in ("left", "bottom"):
+        axins.spines[side].set_linewidth(0.5)
     if key == "loss_history" and target and lo < target < hi:
         axins.axhline(target, color=MUTED, linewidth=0.7, linestyle=(0, (3, 2)),
                       zorder=2)
@@ -190,27 +212,53 @@ def _arrival_inset(ax, data: Dict[str, dict], key: str):
                    zorder=3)
     axins.set_ylim(lo, hi)
     axins.set_xlim(x_lo, x_hi)
-    axins.tick_params(axis="x", labelsize=FS_ANNOT - 2.0, pad=1.0, length=2.0)
     axins.xaxis.set_major_locator(ticker.MaxNLocator(4, integer=True))
     # Label the powers-of-ten subdivisions only when the window is under a
     # decade, where the decade ticks would label it once or not at all. Over a
     # wider window they are clutter: eight labels per decade on a two-inch axis.
     if hi / lo < 12.0:
         axins.yaxis.set_minor_locator(
-            ticker.LogLocator(base=10.0, subs=tuple(range(2, 10)), numticks=12))
+            ticker.LogLocator(base=10.0, subs=(2, 3, 5), numticks=12))
         axins.yaxis.set_minor_formatter(
             ticker.LogFormatterSciNotation(minor_thresholds=(4.0, 0.4)))
     else:
         axins.minorticks_off()
     axins.tick_params(which="both", labelsize=FS_ANNOT - 2.0, pad=1.0,
                       length=2.0, colors=MUTED)
-    # The tick labels sit outside the inset's own patch, over whatever the main
-    # panel has drawn there -- in the loss panel, straight across the plateau
-    # band. Give each its own opaque backing.
-    for label in axins.get_xticklabels() + axins.get_yticklabels():
-        label.set_bbox(dict(facecolor=SURFACE, edgecolor="none", pad=0.4))
-    ax.indicate_inset_zoom(axins, edgecolor=MUTED, linewidth=0.6, alpha=0.5)
+    indicator = ax.indicate_inset_zoom(axins, edgecolor=MUTED, linewidth=0.6,
+                                       alpha=0.5)
+    # Matplotlib 3.10 returns an indicator object where 3.9 returns the
+    # (rectangle, connectors) pair; both spell the parts the same way.
+    rect = getattr(indicator, "rectangle", None) or indicator[0]
+    connectors = getattr(indicator, "connectors", None) or indicator[1]
+    rect.set_zorder(6)                    # over the curves it encloses
+    for line in connectors:
+        # Under the card, so each connector is occluded from the card's border
+        # inward and appears to terminate on it. Run over the top instead and
+        # two grey lines cross the magnified plot to reach its far corners.
+        line.set_zorder(4)
     return axins
+
+
+def _inset_card(fig, ax, axins, pad: float = 0.016) -> None:
+    """The framed card an inset and its tick labels sit on.
+
+    Two things have to happen at once. The tick labels fall outside the inset's
+    own patch, so without a backing they land on whatever the main panel drew
+    underneath; and a backing painted white and left unbordered reads as a hole
+    torn in the panel, because the grid runs into it and stops. Bordering it
+    turns the same rectangle into a card laid over the panel, which is what a
+    reader should see. Sized from the drawn extent -- the only thing that knows
+    how wide a 5.5 pt ``10^-3`` is -- hence a figure already laid out.
+    """
+    fig.canvas.draw()
+    bbox = (axins.get_tightbbox(fig.canvas.get_renderer())
+            .transformed(ax.transAxes.inverted()))
+    ax.add_patch(Rectangle((bbox.x0 - pad, bbox.y0 - pad),
+                           bbox.width + 2 * pad, bbox.height + 2 * pad,
+                           transform=ax.transAxes, facecolor=SURFACE,
+                           edgecolor=AXIS, linewidth=0.5, zorder=5,
+                           clip_on=False))
 
 
 def fig_trajectory(plt, data: Dict[str, dict], key: str, ylabel: str):
@@ -249,18 +297,24 @@ def fig_trajectories(plt, data: Dict[str, dict]):
                              squeeze=False)
     specs = [("loss_history", "$F(X_t)$"),
              ("grad_norm_history", r"$\|\nabla F(X_t)\|_F$")]
+    insets = []
     for ax, (key, ylabel) in zip(axes[0], specs):
         style_axes(ax, logy=True)
         if not _draw_trajectory(ax, data, key, ylabel):
             plt.close(fig)
             return None
-        _arrival_inset(ax, data, key)
+        insets.append((ax, _arrival_inset(ax, data, key)))
     handles, labels = axes[0][0].get_legend_handles_labels()
     rows = 1 + (len(labels) - 1) // MAX_LEGEND_COLS
     ncol = -(-len(labels) // rows)          # balance the rows, don't fill-then-spill
     figure_legend(fig, handles, labels, ncol=ncol)
     fig.subplots_adjust(left=0.08, right=0.99, top=0.965, wspace=0.20,
                         bottom=_bottom_fraction(TRAJECTORY_HEIGHT, rows))
+    # After the layout is final: the card is sized from where the inset's tick
+    # labels actually landed, and subplots_adjust moves them.
+    for ax, axins in insets:
+        if axins is not None:
+            _inset_card(fig, ax, axins)
     return fig
 
 
@@ -318,7 +372,7 @@ def _curve(ax, method: str, xs, ys) -> None:
 
 
 def _panel_floor(ax, data: Dict[str, dict]) -> int:
-    """``||grad F||_inf`` against ``eta``: the accuracy floor of a constant step.
+    """``g_infty`` against ``eta``: the accuracy floor of a constant step.
 
     A normalized step of fixed length cannot converge at a constant rate; the
     gradient plateaus at a level linear in ``eta``, so slope 1 is the
@@ -332,7 +386,11 @@ def _panel_floor(ax, data: Dict[str, dict]) -> int:
         _curve(ax, method, [r["lr"] for r in rows], [r["g_inf"] for r in rows])
         drawn += 1
     ax.set_xlabel(r"step size $\eta$", color=INK_2, fontsize=FS_LABEL)
-    ax.set_ylabel(r"floor $\|\nabla F\|_\infty$", color=INK_2, fontsize=FS_LABEL)
+    # The infinity in ``g_inf`` is the settling, not a norm: the quantity is the
+    # plateau of the *Frobenius* norm, which is how the appendix defines
+    # g_infty and how Table 7 heads its column. The label used to read
+    # ``floor ||grad F||_inf``, where the subscript reads as the max norm.
+    ax.set_ylabel(r"$g_\infty$", color=INK_2, fontsize=FS_LABEL)
     return drawn
 
 
@@ -344,7 +402,7 @@ def _panel_horizon(ax, data: Dict[str, dict]) -> int:
     the ``p`` in the table. Retuning per budget is the point: imposing one
     schedule on every budget measures the schedule, not the method.
     """
-    drawn, series = 0, {}
+    drawn, series, dual = 0, {}, True
     for method, payload in data.items():
         rec = payload["result"]
         rows = rec.get("rows") or []
@@ -359,8 +417,9 @@ def _panel_horizon(ax, data: Dict[str, dict]) -> int:
         series[method] = ys
         drawn += 1
     _focus_ylim(ax, series)
-    ax.set_xlabel("budget $T$ (iterations)", color=INK_2, fontsize=FS_LABEL)
-    ax.set_ylabel(r"$\min_{t\leq T}\|\nabla F\|_*^2$",
+    ax.set_xlabel("horizon $T$", color=INK_2, fontsize=FS_LABEL)
+    ax.set_ylabel(r"$\min_{t\leq T}\|\nabla F(X_t)\|_*^2$" if dual
+                  else r"$\min_{t\leq T}\|\nabla F(X_t)\|_F$",
                   color=INK_2, fontsize=FS_LABEL)
     return drawn
 
@@ -377,8 +436,10 @@ def _panel_kappa(ax, data: Dict[str, dict]) -> int:
         series[method] = ys
         drawn += 1
     _focus_ylim(ax, series)
-    ax.set_xlabel(r"condition number $L/\sigma$", color=INK_2, fontsize=FS_LABEL)
-    ax.set_ylabel(r"best $\|\nabla F\|$", color=INK_2, fontsize=FS_LABEL)
+    ax.set_xlabel(r"condition number $\kappa = L/\sigma$", color=INK_2,
+                  fontsize=FS_LABEL)
+    ax.set_ylabel(r"$\min_{t\leq T}\|\nabla F(X_t)\|_F$", color=INK_2,
+                  fontsize=FS_LABEL)
     return drawn
 
 

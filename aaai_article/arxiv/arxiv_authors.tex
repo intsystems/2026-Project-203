@@ -1,0 +1,36 @@
+%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%
+%  AUTHOR BLOCK FOR THE arXiv EDITION.
+%
+%  The AAAI submission is anonymous, so this is the one piece of front matter
+%  that cannot be lifted from it. make_arxiv.py drops this file in place of
+%  the "Anonymous Submission" block of signmuon_preamble.tex; the title is
+%  still taken from the preamble automatically, so it lives in exactly one
+%  place. Edit here and rerun the build.
+%
+%  \equalcontrib attaches the shared footnote "These authors contributed
+%  equally." -- it is defined by aaai2027.sty, and one footnote is emitted
+%  however many authors carry the mark. \corresponding is the companion mark
+%  for a corresponding author, if you want one.
+%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%
+
+\author{
+    Maria Smirnova\textsuperscript{\rm 1}\equalcontrib,
+    Alexey Kravatskiy\textsuperscript{\rm 1}\equalcontrib
+}
+
+\affiliations{
+    \textsuperscript{\rm 1}MIRIAI\\
+    Moscow, Russia\\
+    smirnova.m@miriai.org, kravatskii.a@miriai.org
+}
+
+% Plain text, no markup: this goes into the PDF's /Author field and into the
+% metadata you paste into the arXiv submission form.
+\newcommand{\arxivpdfauthor}{Maria Smirnova, Alexey Kravatskiy}
+
+% Public code repository. \arxivrepourl is the bare string (it also goes into
+% the PDF metadata); \arxivrepo typesets it as a link, and is what
+% arxiv_backmatter.tex uses. The \expandafter pair is what lets \url take a
+% macro rather than literal characters.
+\newcommand{\arxivrepourl}{https://github.com/intsystems/signmuon}
+\newcommand{\arxivrepo}{\expandafter\url\expandafter{\arxivrepourl}}

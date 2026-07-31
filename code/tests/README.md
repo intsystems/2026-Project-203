@@ -6,9 +6,15 @@ python3 -m tests.test_code      # ~1 min, no GPU, no downloads
 pytest tests/test_code.py       # or under pytest
 ```
 
-One file, [`test_code.py`](test_code.py). No GPU, no dataset, no network. Both
-`overnight.py` drivers run it as their first preflight step and refuse to start a
-night if it fails, printing the failing assertions rather than the test names.
+No GPU, no dataset, no network. Both `overnight.py` drivers run it as their first
+preflight step and refuse to start a night if it fails, printing the failing
+assertions rather than the test names.
+
+[`test_code.py`](test_code.py) is the suite. The anonymity checks sit beside it in
+`test_anonymize.py`, which `test_code.py` adopts when it is present, so one command
+still runs everything. They are separate because that file and the `anonymize.py`
+it imports are both withheld from the anonymous supplement — and a suite that a
+reviewer runs should have no import that cannot resolve.
 
 ## What it is for
 

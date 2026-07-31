@@ -155,6 +155,21 @@ python3 -m federated.main --dataset cifar10 --model cnn2 --algorithm ef21muonsig
 **[`code/REPRODUCE.md`](code/REPRODUCE.md) has the exact command for every table and
 figure in the paper**, with the published hyperparameters filled in.
 
+## Packaging the code for double-blind review
+
+```bash
+cd code
+python3 -m anonymize --check --build-dir ../anonymous_code   # or --build ../supplement.zip
+```
+
+[`code/ANONYMIZATION.md`](code/ANONYMIZATION.md) is the procedure: what the scan
+looks for, what it deliberately keeps, and what to check by hand before
+submitting. **That file, `anonymize.py` and `tests/test_anonymize.py` are withheld
+from the bundle itself** — between them they hold the list of names to hide and an
+account of what once leaked, which is the last thing to hand a reviewer. This
+pointer lives here, in the repository README, for the same reason: nothing under
+`code/` should advertise a file the supplement does not contain.
+
 ## Repository layout
 
 ```

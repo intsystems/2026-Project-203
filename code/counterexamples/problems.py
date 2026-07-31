@@ -297,8 +297,8 @@ def ef21_signmuon_counterexample(mu=0.0, nesterov=False):
         if mu == 0.0:
             M1, M2, M3 = _S1, _S2, _MBAR_M
         else:
-            T = (140 * (1 + mu) ** 2 / (1 + 2 * mu) - 44) * (1 + mu) / (117 * mu)
-            H1 = np.diag([1.0, 1.0 + T])
+            tau = (140 * (1 + mu) ** 2 / (1 + 2 * mu) - 44) * (1 + mu) / (117 * mu)
+            H1 = np.diag([1.0, 1.0 + tau])
             M1 = _S1 @ H1 / (1 + mu)
             M2 = (_S2 + mu * M1) / (1 + mu)
             M3 = np.array([[0.0, -nu], [-nu, -_GAMMA]])

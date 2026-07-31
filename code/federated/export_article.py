@@ -286,7 +286,48 @@ def scan(root: Path) -> Tuple[List[Run], List[Tuple[Path, str]]]:
         primary = max(tally, key=lambda k: (tally[k], k == "unit-gain"))
         for run in runs:
             run.phase = phase_of(run.config, primary)
-    return runs, bad
+
+    runs, stale = _drop_foreign_conventions(runs)
+    return runs, bad + stale
+
+
+def _sign_convention(config: Dict[str, Any]) -> Tuple[str, str]:
+    """How this run mapped an exact zero, on the uplink and in the vote."""
+    return (str(config.get("uplink_zeros") or "keep"),
+            str(config.get("mv_ties") or "zero"))
+
+
+def _drop_foreign_conventions(runs: List[Run]) -> Tuple[List[Run], List[Tuple[Path, str]]]:
+    """Keep only the sign convention the reported runs were made under.
+
+    A results tree accumulates: a night that re-runs a study leaves the previous
+    night's jobs beside the new ones, and if the convention changed in between,
+    the two are not comparable. They are also not distinguishable by name, so
+    they land in the same tuning table under the same nominal configuration, at
+    two different accuracies, which reads as a selection failure rather than as
+    the two experiments it is. The convention the ``final`` runs used is the one
+    the bundle reports; anything else is a leftover and is excluded here rather
+    than listed beside a run it cannot be compared with.
+    """
+    tally: Dict[Tuple[str, str], int] = {}
+    for run in runs:
+        if run.phase == "final":
+            key = _sign_convention(run.config)
+            tally[key] = tally.get(key, 0) + 1
+    if not tally:                    # no reported runs: nothing to be foreign to
+        return runs, []
+    primary = max(tally, key=lambda k: tally[k])
+
+    kept, stale = [], []
+    for run in runs:
+        found = _sign_convention(run.config)
+        if found == primary:
+            kept.append(run)
+        else:
+            stale.append((run.path, f"sign convention uplink_zeros={found[0]}, "
+                                    f"mv_ties={found[1]}; the reported runs used "
+                                    f"{primary[0]}/{primary[1]}"))
+    return kept, stale
 
 
 # --------------------------------------------------------------------------

@@ -26,7 +26,7 @@ multiplies every size and line width by ``k`` so the *printed* result is
 unchanged.
 
 Nothing here writes into ``aaai_article/``. The paper's figures are copied over
-deliberately; a plotting run must never silently replace one. (The two
+deliberately; a plotting run must never silently replace one. (The
 counterexample scripts are the exception, and say so.)
 """
 

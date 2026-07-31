@@ -10,6 +10,25 @@
 
 \subsection{Proof of Theorem~\ref{th:ef_div} (Divergence of EF21-SignMuon)}\label{app:proof_th4}
 
+% The statement is repeated here for the reader. The counter is set by hand so
+% that the restatement carries the main text's number 4 and does not consume a
+% new one; ef21_musign_reduction.tex sets it again for Theorem 5. No \label is
+% attached: th:ef_div stays the main-text statement.
+\setcounter{theorem}{3}
+\begin{theorem}[Divergence of EF21-SignMuon]
+For every $L>0$, step size $\eta>0$, momentum coefficient $\mu\in[0,1)$, and
+either momentum variant, there is an $L$-smooth (Assumption~\ref{as:2}),
+bounded-below (Assumption~\ref{as:1}) function
+$f:\mathbb{R}^{2\times2}\!\to\mathbb{R}$ on which EF21-SignMuon started at
+$\mathbf{X}_0=\mathbf{0}$ diverges: for an explicit constant $c=c(f)>0$,
+\begin{equation}\label{eq:exact_rate_app}
+f(\mathbf{X}_{t+2})-f(\mathbf{X}_t)=c\,L\eta^2>0\qquad(t\ge3),
+\end{equation}
+so $f(\mathbf{X}_t)\to+\infty$. In particular, no step-size rule
+$\eta=\eta(L,\mu)$ using only the smoothness and momentum constants can make
+the method convergent.
+\end{theorem}
+
 Recall from the main text that EF21-SignMuon (Algorithm~\ref{ef21_signmuon})
 does not descend along the LMO output
 $\mathbf D_t=\operatorname{polar}(\tilde{\mathbf M}_t)$ itself, but along the
@@ -21,52 +40,61 @@ Theorem~\ref{th:ef_div}.
 
 \subsubsection*{Proof idea}
 
-\emph{The mechanism, in one dimension.} Suppose a scalar EF21 estimator must
-track a target that alternates between $+1$ and $-1$ while a \emph{second}
-coordinate, sharing the same magnitude $\alpha_t$, must track a small constant
-$-\varepsilon$. The alternating coordinate never permits the residual to shrink, so
-$\alpha_t$ remains at $\Theta(1)$; the small coordinate is then moved by
+\emph{The mechanism.} The error-feedback update \eqref{eq:efsm_est} moves
+\emph{every} entry of $\mathbf d_t^{\mathrm{est}}$ by the same magnitude
+$\alpha_t$; only the signs are individual. Suppose then that one entry must
+track a target alternating
+between $+1$ and $-1$ while another must track a small constant
+$-\varepsilon$. The alternating entry keeps its residual, and with it
+$\alpha_t$, at $\Theta(1)$; the constant entry is therefore displaced by
 $\pm\Theta(1)$ at every step and can only oscillate about its target, never
-settle on it. Which side of the target it spends more time on is decided by the
-\emph{phase} of that oscillation, and a one-bit sign carries no information
-by which a phase could be corrected. If the phase is unfavourable, the time-average of
-the estimate has the sign \emph{opposite} to $-\varepsilon$, and the iterate it
-drives runs off to infinity.
+settle on it. Which side of the target the oscillation favours is decided by
+its \emph{phase}, and a one-bit sign carries no information by which a phase
+could be corrected. In the unfavourable phase the estimate of the constant
+entry has a time average of the sign \emph{opposite} to $-\varepsilon$, and
+the iterate driven by that estimate moves the wrong way forever.
 
-The construction below realizes exactly this with a $2\times2$ LMO target: the
-off-diagonal is large and flips sign every step, the diagonal is a small
-constant, and the shared $\alpha_t$ couples them. The result is a period-two
-limit cycle in the estimator whose $(2,2)$-average is positive while every
-target value is negative, so $(\mathbf X_t)_{22}$ increases without bound
-(Figure~\ref{fig:divergence_plot}, right). The mechanism is not degeneracy: the
-momentum matrices driving the divergent tail have condition number
+\emph{From the sketch to an instance.} The sketch is not yet a counterexample:
+in EF21-SignMuon the quantity tracked is the LMO output
+$\mathbf D_t=\operatorname{polar}(\tilde{\mathbf M}_t)$, a polar factor of
+unit spectral norm, and the gradients behind it must all come from one smooth
+function. Both constraints are met at size $2\times2$ by the reflections
+$\bar{\mathbf D}^{\pm}=\smat{a}{\pm b}{\pm b}{-a}$ with $a^2+b^2=1$: one
+matrix the oracle can emit carries both roles of the sketch at once, the
+large alternating entries on the off-diagonal ($b=\tfrac{24}{25}$) and the
+small constant ones on the diagonal ($a=\tfrac7{25}$), coupled by the shared
+$\alpha_t$. On these targets the estimate enters a period-two cycle in which
+the time average of the $(2,2)$-entry is positive although every target value
+is $-\tfrac7{25}$, so $(\mathbf X_t)_{22}$ travels to $-\infty$, the direction
+in which the objective increases (Figure~\ref{fig:divergence_plot}, right). Nor does the mechanism rest on
+degeneracy: the momentum matrices of the divergent tail have condition number
 $\tfrac{16}{9}$ throughout.
 
-\emph{Why the phase has to be set.} The unfavourable phase is not the one the
-method falls into by itself. Started from $\mathbf d_0^{\mathrm{est}}=\mathbf 0$,
-the alternating targets alone drive the estimator to a \emph{different}
-period-two cycle, one whose diagonal average has the \emph{correct} sign
-(Lemma~\ref{lem:efsm_twocycles}). The recursion \eqref{eq:efsm_est} is piecewise
-affine, the pieces indexed by the sign pattern of the residual, and these two
-cycles reside in different pieces. The two-step preamble in the target sequence
-below serves a single purpose: it moves the estimator into the piece that
-contains the divergent cycle. That is why the counterexample requires a preamble
-at all, and it serves no other end.
+\emph{The role of the preamble.} The unfavourable phase must be arranged.
+From $\mathbf d_0^{\mathrm{est}}=\mathbf 0$, the alternating targets alone
+lock the estimate into a period-two cycle whose diagonal average has the
+\emph{correct} sign. The recursion \eqref{eq:efsm_est} is piecewise affine,
+the pieces indexed by the sign pattern of the residual, and the harmless
+cycle and the wrong-sign one lie in different pieces, which the dynamics
+cannot join. The target sequence of Part~2 therefore opens with two preamble
+steps, whose sole purpose is to place the estimate in the piece containing
+the wrong-sign cycle.
 
-\emph{Why the parameters drop out.} The step size and the smoothness constant
-only rescale the orbit, so we may fix $\eta=1$ and one value of $L$
-(Part~1). And the divergence depends on the estimator's response to a fixed
-sequence of \emph{targets}; momentum affects only how the gradients that
-produce those targets are sourced. Inverting the momentum filter therefore
-settles every $(\mu,\text{variant})$ at once.
+\emph{Eliminating the parameters.} The step size and the smoothness constant
+only rescale the trajectory, so $\eta=1$ and one value of $L$ suffice
+(Part~1). Momentum determines only which gradients produce a given target
+sequence, not how the recursion \eqref{eq:efsm_est} responds to it; solving
+the momentum recursion for the gradients therefore settles every
+$(\mu,\text{variant})$ at once (Part~3).
 
 Accordingly the proof has three parts, and they are independent. Part~1
-rescales the problem to remove $L$ and $\eta$. Part~2 is the dynamical core and
-is finite arithmetic: for one fixed sequence of LMO targets, the estimator
-enters a limit cycle whose diagonal has the wrong sign. Part~3 is an existence
-argument only: it exhibits a smooth function whose gradients generate that
-target sequence for every $\mu$ and either momentum variant. A reader willing to
-grant that some smooth objective produces the targets can stop after Part~2.
+removes $L$ and $\eta$ by rescaling. Part~2 carries the dynamics, and is a
+finite computation in exact rational arithmetic: on one fixed sequence of LMO
+targets, the estimate enters a limit cycle whose diagonal has the wrong sign.
+Part~3 is an existence argument only: it exhibits a smooth function whose
+gradients generate that target sequence for every $\mu$ and either momentum
+variant. A reader willing to grant that some smooth objective produces the
+targets can stop after Part~2.
 
 \subsubsection*{Proof}
 
@@ -87,15 +115,16 @@ which $\mathbf M_t$ and $\tilde{\mathbf M}_t$ (positive combinations of past
 gradients) inherit and $\operatorname{polar}$ discards. Hence $\mathbf D_t$ and
 $\mathbf d_t^{\mathrm{est}}$ match the normalized run, and
 $\mathbf X_t=\eta\tilde{\mathbf X}_t$. $\blacksquare$
-\noindent
-So it suffices to exhibit, for each $(\mu,\text{variant})$, a $C^\infty$
+
+\medskip\noindent
+It therefore suffices to exhibit, for each $(\mu,\text{variant})$, a $C^\infty$
 $\tilde L$-smooth $\tilde f$ on which the \emph{normalized} run ($\eta=1$) obeys
-\eqref{eq:exact_rate}; that $\tilde f$ may be taken bounded below
+\eqref{eq:exact_rate_app}; that $\tilde f$ may be taken bounded below
 (Assumption~\ref{as:1}) is shown afterwards (Remark~\ref{rem:efsm_bdd}). We fix
 $\eta=1$ from now on.
 
-\paragraph{Part 2: the estimator's limit cycle.}
-The dynamical core of the proof is the behavior of the estimator
+\paragraph{Part 2: the limit cycle of the estimate.}
+The dynamical core of the proof is the behavior of the recursion
 \eqref{eq:efsm_est} on the fixed target sequence
 \begin{equation}\label{eq:target_seq}
 \mathbf D_1=\mathbf S_1,\quad \mathbf D_2=\mathbf S_2,\quad
@@ -112,22 +141,25 @@ The divergence originates in the tail ($t\ge3$): the reflections
 $\bar{\mathbf D}^{\pm}$ share the diagonal $(\tfrac7{25},-\tfrac7{25})$, while
 their off-diagonal $\pm\tfrac{24}{25}$ reverses sign at every step. The rotation
 $\mathbf S_1$ and the rank-one $\mathbf S_2$ form a two-step preamble. Only
-$\mathbf S_2$ needs a word: at a rank-deficient argument the spectral-ball LMO
-is not unique, and $\mathbf S_2$ is the value returned by the rank-$r$
-convention of the main text, which is also what our implementation computes.
-The next lemma says what the preamble is for, and that something like it is
-unavoidable.
+$\mathbf S_2$ requires comment: at a rank-deficient argument the spectral-ball
+LMO is not unique, and Section~\ref{sec:proState} resolves it through the thin
+SVD that retains only the nonzero singular directions,
+$\operatorname{polar}(\mathbf M)=\mathbf U\mathbf V^\top$ with one column of
+$\mathbf U,\mathbf V$ per nonzero singular value of $\mathbf M$; under that
+convention a rank-one matrix of unit spectral norm, such as $\mathbf S_2$, is
+its own polar factor, and this is also what the implementation computes. The next lemma says
+what the preamble is for, and that something like it is unavoidable.
 
-\begin{lemma}[Two cycles, and only one diverges]\label{lem:efsm_twocycles}
+\begin{lemma}[The cycle reached without the preamble]\label{lem:efsm_twocycles}
 Write $\bar{\mathbf D}^{\pm}=\smat{a}{\pm b}{\pm b}{-a}$ with $a^2+b^2=1$ and
 $0<a<b$. On the purely alternating targets
 $\mathbf D_t=\bar{\mathbf D}^{(-1)^t}$ ($t\ge1$), the recursion
 \eqref{eq:efsm_est} started from $\mathbf d_0^{\mathrm{est}}=\mathbf 0$ enters a
 period-two cycle immediately, namely
 $\mathbf d_t^{\mathrm{est}}=\tfrac{a+b}{2}\smat{1}{-1}{-1}{-1}$ for odd $t$ and
-$\tfrac{b-a}{2}\smat{-1}{1}{1}{1}$ for even $t$. Its $(2,2)$-average is
-$-\tfrac a2$: the \emph{same} sign as every target value $-a$, at half the
-magnitude. That cycle is harmless.
+$\tfrac{b-a}{2}\smat{-1}{1}{1}{1}$ for even $t$. Over a period its
+$(2,2)$-entry averages $-\tfrac a2$: the \emph{same} sign as every target
+value $-a$, at half the magnitude.
 \end{lemma}
 \paragraph{Proof.}
 Put $m=\tfrac{a+b}2$. The residual $\bar{\mathbf D}^{-}-\mathbf 0$ has signs
@@ -140,14 +172,15 @@ Repeating once returns $\mathbf d_1^{\mathrm{est}}$. The average of the two
 $(2,2)$-entries is $\tfrac12\bigl(-m+\tfrac{b-a}2\bigr)=-\tfrac a2$.
 $\blacksquare$
 
-So the alternation by itself does not diverge, and no choice of $(a,b)$ makes it
-do so. The divergent orbit is a \emph{second} period-two cycle of the same
-recursion, distinguished by its residuals having a \emph{uniform} sign pattern
-($\smat{+}{+}{+}{+}$ and $\smat{-}{-}{-}{-}$) where the harmless cycle's are
-mixed. Since \eqref{eq:efsm_est} is affine on each sign-pattern cell, the two
-cycles cannot be joined by the dynamics; the preamble exists solely to place
-$\mathbf d_2^{\mathrm{est}}$ in the cell of the divergent one, which is what
-Lemma~\ref{lem:efsm_cycle} verifies.
+That cycle is harmless: the alternation by itself does not diverge, and no
+choice of $(a,b)$ makes it do so. The divergence comes from a \emph{second}
+period-two cycle of the same recursion, whose residuals carry a \emph{uniform}
+sign pattern
+($\smat{+}{+}{+}{+}$ and $\smat{-}{-}{-}{-}$) where those of the harmless
+cycle are mixed. Since \eqref{eq:efsm_est} is affine on each sign-pattern
+cell, the dynamics cannot pass from one cycle to the other; the preamble
+exists solely to place $\mathbf d_2^{\mathrm{est}}$ in the cell of the
+wrong-sign cycle, which is what Lemma~\ref{lem:efsm_cycle} verifies.
 
 \begin{lemma}[Wrong-sign limit cycle]\label{lem:efsm_cycle}
 On the targets \eqref{eq:target_seq}, the recursion \eqref{eq:efsm_est} from
@@ -158,7 +191,8 @@ where
 \mathbf d_B=\tfrac1{200}\smat{-61}{-201}{-61}{-61},\qquad
 \mathbf d_A=\tfrac1{200}\smat{131}{-9}{131}{131}.
 \end{equation}
-Its $(2,2)$-entry averages $\tfrac12\bigl((\mathbf d_A)_{22}+(\mathbf d_B)_{22}\bigr)
+Over a period its $(2,2)$-entry averages
+$\tfrac12\bigl((\mathbf d_A)_{22}+(\mathbf d_B)_{22}\bigr)
 =+\tfrac7{40}$, opposite in sign to every target value
 $(\mathbf D_t)_{22}=-\tfrac7{25}$.
 \end{lemma}
@@ -218,10 +252,36 @@ $[\rho_i^{-}\!-\delta,\rho_i^{-}\!+\delta]$ (mod $p_i$), where
 \rho_1^{+}=\tfrac{131}{200},\ \rho_1^{-}=\tfrac{140}{200};\qquad
 \rho_2^{+}=\tfrac{61}{200},\ \rho_2^{-}=0.
 \]
-The two bands are disjoint mod $p_i$ (their centers are $\tfrac9{200}>2\delta$
-apart), so such a $\psi_i$ exists; the zero-mean condition, met by balancing the
-rest of the period, makes $\Phi_i$ periodic (hence bounded). On each band
-$\Phi_i'=\psi_i=\pm1$ exactly.
+The two intervals are disjoint mod $p_i$ (their centers are
+$\tfrac9{200}>2\delta$ apart), so such a $\psi_i$ exists; the zero-mean
+condition, met by balancing the rest of the period, makes $\Phi_i$ periodic
+(hence bounded). On each of the two intervals $\Phi_i'=\psi_i=\pm1$ exactly.
+Figure~\ref{fig:ef21_construction} draws both ramps, together with the
+remaining components of $\tilde f$.
+
+\begin{figure*}[t]
+\centering
+\includegraphics[width=\textwidth]{images/counterexamples/ef21_construction.pdf}
+\caption{The components of the objective $\tilde f=g+\sum_k b_k$ of Part~3, as
+implemented. \emph{First two panels:} the periodic ramps $\psi_1,\psi_2$ and
+their bounded antiderivatives $\Phi_1,\Phi_2$ over two periods; the marked
+residues $\rho_i^{+}$ (kept at odd iterates) and $\rho_i^{-}$ (even iterates)
+lie on the plateaus where $\psi_i=\pm1$ exactly, so from $t\ge4$ the
+off-diagonal gradient entries alternate between $+A$ and $-A$. The drawn
+$\psi_i$ is the implementation's ramp; the trajectory samples only the
+plateaus, on which any $C^\infty$ choice agrees with it. \emph{Third panel:}
+the divergence term $-\gamma W_{22}$ and its bounded replacement
+$\gamma\,h(W_{22})$ of Remark~\ref{rem:efsm_bdd}; the two agree on the visited
+region $\{W_{22}\le\tfrac7{10}\}$ (shaded), so the floor changes no iterate
+while restoring Assumption~\ref{as:1}. \emph{Fourth panel:} the correction
+$b_k$ of \eqref{eq:bump} along the ray
+$\mathbf Z_k+s\,\mathbf C_k/\|\mathbf C_k\|_F$, normalized by
+$\|\mathbf C_k\|_F\,r$, with the cutoff $\phi$: $b_k$ vanishes at $\mathbf Z_k$
+while $\nabla b_k(\mathbf Z_k)=\mathbf C_k$, and its support, the ball
+$\{\|\mathbf W-\mathbf Z_k\|_F\le r\}$, contains no iterate other than its own
+center.}
+\label{fig:ef21_construction}
+\end{figure*}
 
 \emph{The corrections} pin the first three gradients. Fix once a $C^\infty$
 cutoff $\phi\colon\mathbb R\to[0,1]$ with $\phi\equiv1$ on $[0,\tfrac12]$ and
@@ -251,9 +311,12 @@ For every $\mu\in[0,1)$ and either variant, EF21-SignMuon on this $\tilde f$
 \eqref{eq:target_seq}.
 \end{lemma}
 \paragraph{Proof.}
-\emph{The required gradients.} Momentum is a causal, positive-weight linear
-filter of the gradients, and we invert it. Define the \emph{transient
-gradients}
+\emph{The required gradients.} The buffer recursion
+$\mathbf M_t=\mu\mathbf M_{t-1}+(1-\mu)\mathbf G_t$ of \eqref{eq:signa_general}
+can be solved for the gradients: prescribing the buffers $(\mathbf M_t)_{t\ge1}$
+forces $\mathbf G_t=(\mathbf M_t-\mu\mathbf M_{t-1})/(1-\mu)$, and these are
+the gradients the function must deliver. Define accordingly the
+\emph{transient gradients}
 \begin{equation}\label{eq:transient}
 \hat{\mathbf G}_t=\frac{\mathbf M_t-\mu\mathbf M_{t-1}}{1-\mu}\quad(t=1,2,3;\ \mathbf M_0=\mathbf 0)
 \end{equation}
@@ -269,8 +332,8 @@ $\bar{\mathbf M}^{\pm}=\smat{0}{\pm1}{\pm1}{-\gamma}$, the factorization
 \end{gathered}
 \end{equation}
 shows $\operatorname{polar}(\bar{\mathbf M}^{\pm})=\bar{\mathbf D}^{\pm}$, with
-singular values $\tfrac34,\tfrac43$ (the condition number $\tfrac{16}9$ of the
-idea).
+singular values $\tfrac34$ and $\tfrac43$; this is the condition number
+$\tfrac{16}9$ cited in the proof idea.
 
 \emph{Standard momentum} ($\tilde{\mathbf M}_t=\mathbf M_t$). Take
 $\mathbf M_1=\mathbf S_1$, $\mathbf M_2=\mathbf S_2$,
@@ -283,31 +346,33 @@ as in \eqref{eq:Amu}. As $\operatorname{polar}(\mathbf S_1)=\mathbf S_1$
 \eqref{eq:polarM} yields the targets \eqref{eq:target_seq}.
 
 \emph{Nesterov momentum} ($\tilde{\mathbf M}_t=(1+\mu)\mathbf M_t-\mu\mathbf M_{t-1}$).
-Here the choice of an \emph{orthogonal} $\mathbf S_1$ earns its keep. Nesterov is a
-two-tap filter, so prescribing the tail fixes $\mathbf M_3$ and leaves only the
-preamble to absorb the mismatch at $t=3$; and the set of matrices with a given
-polar factor $\mathbf D$ is $\{\mathbf D\mathbf H:\mathbf H\succ0\}$, which is
+It is here that the orthogonality of $\mathbf S_1$ is needed. The Nesterov
+direction involves two consecutive buffers, so prescribing the tail $t\ge4$
+already fixes $\mathbf M_3$, and only the preamble remains to absorb the
+mismatch at $t=3$; and the set of matrices with a given polar factor
+$\mathbf D$ is $\{\mathbf D\mathbf H:\mathbf H\succ0\}$, which is
 three-dimensional when $\mathbf D$ is orthogonal but only one-dimensional (a
 positive scalar) when $\mathbf D$ has rank one. A preamble of two rank-one
-targets leaves too little freedom: we checked that it admits no realization
-once $\mu\gtrsim0.3$. One orthogonal target suffices, and the single scalar $T$
-below is the freedom being spent.
+targets leaves too little freedom: a symbolic check shows that it admits no
+realization once $\mu\gtrsim0.3$. One orthogonal target supplies enough
+freedom, of which the construction uses a single scalar, the $\tau$ below.
 Take $\mathbf M_1=\tfrac1{1+\mu}\mathbf S_1\mathbf H_1$,
 $\mathbf M_2=\tfrac1{1+\mu}(\mathbf S_2+\mu\mathbf M_1)$,
 $\mathbf M_3=\bar{\mathbf M}'^{-}$ and $\mathbf M_t=\bar{\mathbf M}'^{(-1)^t}$
 ($t\ge4$), where $\bar{\mathbf M}'^{\pm}=\smat{0}{\pm\nu}{\pm\nu}{-\gamma}$,
-$\mathbf H_1=\operatorname{diag}(1,1+T)$, and, for $\mu>0$,
+$\mathbf H_1=\operatorname{diag}(1,1+\tau)$, and, for $\mu>0$,
 \[
-T=\Bigl(\tfrac{140(1+\mu)^2}{1+2\mu}-44\Bigr)\tfrac{1+\mu}{117\mu}>0 .
+\tau=\Bigl(\tfrac{140(1+\mu)^2}{1+2\mu}-44\Bigr)\tfrac{1+\mu}{117\mu}>0 .
 \]
 (At $\mu=0$ the Nesterov rule reads $\tilde{\mathbf M}_t=\mathbf M_t$ and is the standard case already treated, so nothing is left to prove there.)
 Then $\tilde{\mathbf M}_1=\mathbf S_1\mathbf H_1$ and
 $\tilde{\mathbf M}_2=\mathbf S_2$ have polar factors $\mathbf S_1,\mathbf S_2$,
 and $\tilde{\mathbf M}_t=\bar{\mathbf M}^{(-1)^t}$ for $t\ge4$ (since
-$\nu(1+2\mu)=1$). The one nontrivial step is $t=3$: with
-$\mathbf H_3:=\bar{\mathbf D}^{-}\tilde{\mathbf M}_3$ (so
-$\tilde{\mathbf M}_3=\bar{\mathbf D}^{-}\mathbf H_3$, the reflection being an
-involution), the stated $T$ is exactly the value making $\mathbf H_3$ symmetric,
+$\nu(1+2\mu)=1$). The one nontrivial step is $t=3$. Set
+$\mathbf H_3:=\bar{\mathbf D}^{-}\tilde{\mathbf M}_3$; since
+$(\bar{\mathbf D}^{-})^2=\mathbf I$, this is the same as
+$\tilde{\mathbf M}_3=\bar{\mathbf D}^{-}\mathbf H_3$. The stated $\tau$ is
+exactly the value making $\mathbf H_3$ symmetric,
 and $\mathbf H_3\succ0$ for all $\mu\in(0,1)$: under $\mu=\tfrac{s}{1+s}$ ($s>0$)
 the numerators of its two leading minors are polynomials in $s$ with
 nonnegative coefficients. Hence
@@ -316,7 +381,10 @@ $\operatorname{polar}(\tilde{\mathbf M}_3)=\bar{\mathbf D}^{-}$, completing
 
 \emph{The function delivers these gradients.} It remains to verify
 $\nabla\tilde f(\tilde{\mathbf X}_{t-1})=\hat{\mathbf G}_t$ for $t\le3$ and
-$=\mathbf G^{(-1)^t}$ for $t\ge4$. By Lemma~\ref{lem:efsm_cycle} the iterates
+$=\mathbf G^{(-1)^t}$ for $t\ge4$, by induction along the run: as long as the
+gradients match this prescription, the iterates are those computed in
+Part~2, and the prescription need only be checked at those points. By
+Lemma~\ref{lem:efsm_cycle} the iterates
 $\tilde{\mathbf X}_0,\tilde{\mathbf X}_1,\tilde{\mathbf X}_2$ are exactly the
 centers $\mathbf Z_1,\mathbf Z_2,\mathbf Z_3$, where
 $\nabla\tilde f=\hat{\mathbf G}_{1,2,3}$ by construction. The three balls are
@@ -328,20 +396,21 @@ where
 \nabla g(\mathbf W)=\begin{pmatrix}0 & A\psi_1(W_{12})\\ A\psi_2(W_{21}) & -\gamma\end{pmatrix}.
 \]
 The period shift $\tilde{\mathbf X}_{t+2}-\tilde{\mathbf X}_t
-=-(\mathbf d_A+\mathbf d_B)$ advances $W_{12}$ by $+p_1$ and $W_{21}$ by $-p_2$
-(one full period each), so the off-diagonal coordinates keep the residues
-$\rho_i^{+}$ at odd indices and $\rho_i^{-}$ at even indices; there
-$\psi_i=\pm1$, giving $\nabla g=\mathbf G^{(-1)^t}$. $\blacksquare$
+=-(\mathbf d_A+\mathbf d_B)$ advances $W_{12}$ by exactly $+p_1$ and $W_{21}$
+by exactly $-p_2$ per period, so the two coordinates travel to $+\infty$ and
+$-\infty$ respectively while, mod $p_i$, they hold the residues $\rho_i^{+}$
+at odd indices and $\rho_i^{-}$ at even ones; there $\psi_i=\pm1$, giving
+$\nabla g=\mathbf G^{(-1)^t}$. $\blacksquare$
 
 \paragraph{Proof of Theorem~\ref{th:ef_div}.}
 By Lemma~\ref{lem:efsm_realize} the normalized run produces the targets
-\eqref{eq:target_seq}, so by Lemma~\ref{lem:efsm_cycle} its estimator locks onto
+\eqref{eq:target_seq}, so by Lemma~\ref{lem:efsm_cycle} its estimate locks onto
 the wrong-sign cycle and $\tilde{\mathbf X}_{t+2}-\tilde{\mathbf X}_t$ is a
 constant shift. Along it $\Phi_1,\Phi_2$ return to their values and the
 corrections $b_k$ vanish, so only the linear term acts:
 $\tilde f(\tilde{\mathbf X}_{t+2})-\tilde f(\tilde{\mathbf X}_t)
 =-\gamma(-\tfrac7{20})=\tfrac{49}{240}>0$. By Lemma~\ref{lem:efsm_reduction},
-$f$ then obeys \eqref{eq:exact_rate} with $c=\tfrac{49}{240\tilde L}$. As
+$f$ then obeys \eqref{eq:exact_rate_app} with $c=\tfrac{49}{240\tilde L}$. As
 $(L,\eta,\mu,\text{variant})$ were arbitrary, no rule $\eta=\eta(L,\mu)$ can
 prevent divergence. $\blacksquare$
 
@@ -351,7 +420,7 @@ as $W_{22}\to+\infty$, a region the iterates never enter, since
 $(\tilde{\mathbf X}_t)_{22}\le\tfrac7{10}$ throughout (it decreases after the
 transient). Replacing $-\gamma W_{22}$ by any $C^\infty$ function that agrees
 with it on $\{W_{22}\le1\}$ and is constant on $\{W_{22}\ge2\}$ therefore leaves
-the whole trajectory, and \eqref{eq:exact_rate} with it, unchanged while rendering
+the whole trajectory, and \eqref{eq:exact_rate_app} with it, unchanged while rendering
 $\tilde f$ bounded below (Assumption~\ref{as:1}); the theorem is stated with
 this modification in force.
 \end{remark}
@@ -369,6 +438,24 @@ scales a bounded periodic term); what remains is a bounded transient, largest as
 $\mu\to1$, on top of the shared linear divergence.}
 \label{fig:ef21_momentum}
 \end{figure*}
+
+\begin{remark}[The construction is not convex]\label{rem:efsm_nonconvex}
+Theorems~\ref{th:1}--\ref{th:3} run on a linear, hence convex, objective;
+$\tilde f$ is nonconvex, through the periodic terms $A\Phi_i$ and the
+corrections $b_k$. The nonconvexity is forced by the run rather than chosen by
+the realization: along the divergent trajectory,
+\[
+\bigl\langle\nabla\tilde f(\tilde{\mathbf X}_6)-\nabla\tilde f(\tilde{\mathbf X}_3),\
+\tilde{\mathbf X}_6-\tilde{\mathbf X}_3\bigr\rangle=-\tfrac{9A}{50}<0,
+\]
+violating the gradient monotonicity that every convex function obeys, so
+\emph{no} convex function generates these iterates and gradients. The theorem
+is stated under Assumptions~\ref{as:1}--\ref{as:2} because that is where it is
+needed: EF21-MuonUSign and EF21-MuonSign converge under exactly these
+hypotheses (Theorem~\ref{thm:conv}), so the divergence and the guarantees
+concern one problem class. Whether some convex instance, necessarily through a
+different trajectory, also defeats EF21-SignMuon we leave open.
+\end{remark}
 
 \begin{remark}[Verification]\label{rem:efsm_scope}
 The construction is checked in two independent ways: symbolically, in exact

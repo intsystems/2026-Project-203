@@ -243,9 +243,11 @@ def preflight(args, state: Dict) -> Optional[float]:
             elif line.strip():
                 emit = False
         if not args.force:
-            print("      (re-run with --force to train anyway; for an anonymity "
-                  "hit try `python3 -m anonymize --check`, which prints file:line "
-                  "-- untracked logs and scratch files under code/ are scanned)")
+            # No hint about the anonymity scan here: the test that fails on one
+            # prints the command itself, and that test ships only where the scanner
+            # does. Naming it here would point the anonymous bundle at a module it
+            # deliberately does not carry.
+            print("      (re-run with --force to train anyway)")
             return None
         print("      --force given, continuing anyway")
 

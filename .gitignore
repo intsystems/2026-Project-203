@@ -226,3 +226,11 @@ code/nanogpt/data/
 
 # Cygwin/MSYS crash dumps
 *.stackdump
+
+# The anonymous supplement, in either spelling. A copy of code/ with the run
+# output and the identifier list taken out; `python3 -m anonymize --build-dir`
+# rebuilds it in seconds, and committing it would put a second, silently stale
+# copy of every source file in the repository.
+anonymous_code/
+anonymous_code.zip
+supplement.zip

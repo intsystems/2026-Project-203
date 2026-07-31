@@ -5,46 +5,44 @@ Reallocating 'name_of_file' (item size: 1) to 9 items.
 The style file: aaai2027.bst
 Reallocating 'name_of_file' (item size: 1) to 11 items.
 Database file #1: references.bib
-Warning--empty journal in krizhevsky2009cifar
-You've used 37 entries,
+You've used 38 entries,
             2840 wiz_defined-function locations,
-            774 strings with 12720 characters,
-and the built_in function-call counts, 28167 in all, are:
-= -- 2116
-> -- 1944
-< -- 7
-+ -- 713
-- -- 672
-* -- 2222
-:= -- 4667
-add.period$ -- 154
-call.type$ -- 37
-change.case$ -- 372
-chr.to.int$ -- 38
+            775 strings with 12872 characters,
+and the built_in function-call counts, 29167 in all, are:
+= -- 2235
+> -- 1946
+< -- 9
++ -- 717
+- -- 675
+* -- 2257
+:= -- 4786
+add.period$ -- 165
+call.type$ -- 38
+change.case$ -- 382
+chr.to.int$ -- 39
 cite$ -- 38
-duplicate$ -- 1770
-empty$ -- 1578
+duplicate$ -- 1844
+empty$ -- 1656
 format.name$ -- 782
-if$ -- 5331
+if$ -- 5561
 int.to.chr$ -- 2
 int.to.str$ -- 1
-missing$ -- 410
-newline$ -- 188
-num.names$ -- 154
-pop$ -- 958
+missing$ -- 422
+newline$ -- 200
+num.names$ -- 152
+pop$ -- 975
 preamble$ -- 1
-purify$ -- 343
+purify$ -- 351
 quote$ -- 0
-skip$ -- 822
+skip$ -- 881
 stack$ -- 0
-substring$ -- 846
-swap$ -- 1005
-text.length$ -- 7
+substring$ -- 959
+swap$ -- 1049
+text.length$ -- 9
 text.prefix$ -- 0
 top$ -- 0
-type$ -- 333
-warning$ -- 1
-while$ -- 183
+type$ -- 342
+warning$ -- 0
+while$ -- 191
 width$ -- 0
-write$ -- 472
-(There was 1 warning)
+write$ -- 502

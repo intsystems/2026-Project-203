@@ -11,8 +11,7 @@ Amsel, N.; Persson, D.; Musco, C.; and Gower, R.~M. 2025.
 Bernstein, J. 2025.
 \newblock Deriving {M}uon.
 \newblock \url{https://jeremybernste.in/writing/deriving-muon}.
-\newblock Blog. Explains the theoretical derivation and intuition behind the
-  Muon optimizer.
+\newblock Blog post.
 
 \bibitem[{Bernstein and Newhouse(2024)}]{bernstein2024old}
 Bernstein, J.; and Newhouse, L. 2024.
@@ -34,20 +33,23 @@ Bernstein, J.; Zhao, J.; Azizzadenesheli, K.; and Anandkumar, A. 2019.
   Tolerant.
 \newblock In \emph{International Conference on Learning Representations
   (ICLR)}.
+\newblock {arXiv:1810.05291}.
 
 \bibitem[{Cesista(2025)}]{cesista2025schattenp}
 Cesista, F.~L. 2025.
 \newblock Steepest Descent Under {S}chatten-$p$ Norms.
+\newblock \url{https://leloykun.github.io/ponder/steepest-descent-schatten-p/}.
+\newblock Blog post.
 
 \bibitem[{Grishina, Smirnov, and Rakhuba(2025)}]{grishina2025chebyshev}
 Grishina, E.; Smirnov, M.; and Rakhuba, M. 2025.
 \newblock Accelerating {Newton--Schulz} Iteration for Orthogonalization via
   {Chebyshev}-type Polynomials.
-\newblock \emph{arXiv preprint arXiv:2506.10935}.
+\newblock arXiv:2506.10935.
 
 \bibitem[{Gruntkowska et~al.(2025)Gruntkowska, Gaponov, Tovmasyan, and
-  Richtárik}]{gruntkowska2025error}
-Gruntkowska, K.; Gaponov, A.; Tovmasyan, Z.; and Richtárik, P. 2025.
+  Richt{\'a}rik}]{gruntkowska2025error}
+Gruntkowska, K.; Gaponov, A.; Tovmasyan, Z.; and Richt{\'a}rik, P. 2025.
 \newblock Error Feedback for {M}uon and Friends.
 \newblock arXiv:2510.00643.
 
@@ -56,15 +58,16 @@ Gruntkowska, K.; Gaponov, A.; Tovmasyan, Z.; and Richtárik, P. 2025.
 Jordan, K.; Jin, Y.; Boza, V.; You, J.; Cesista, F.; Newhouse, L.; and
   Bernstein, J. 2024.
 \newblock Muon: An optimizer for hidden layers in neural networks.
+\newblock \url{https://kellerjordan.github.io/posts/muon/}.
 
 \bibitem[{Karimireddy et~al.(2019)Karimireddy, Rebjock, Stich, and
   Jaggi}]{karimireddy2019efsign}
 Karimireddy, S.~P.; Rebjock, Q.; Stich, S.; and Jaggi, M. 2019.
 \newblock Error Feedback Fixes {S}ign{SGD} and other Gradient Compression
   Schemes.
-\newblock In Chaudhuri, K.; and Salakhutdinov, R., eds., \emph{Proceedings of
-  the 36th International Conference on Machine Learning}, volume~97 of
-  \emph{Proceedings of Machine Learning Research}, 3252--3261. PMLR.
+\newblock In \emph{Proceedings of the 36th International Conference on Machine
+  Learning}, volume~97 of \emph{Proceedings of Machine Learning Research},
+  3252--3261. PMLR.
 
 \bibitem[{Kovalev(2025)}]{kovalev2025understanding}
 Kovalev, D. 2025.
@@ -80,9 +83,12 @@ Kravatskiy, A.; Kozyrev, I.; Kozlov, N.; Vinogradov, A.; Merkulov, D.; and
   Optimization.
 \newblock arXiv:2512.09678.
 
-\bibitem[{Krizhevsky and Hinton(2009)}]{krizhevsky2009cifar}
-Krizhevsky, A.; and Hinton, G. 2009.
-\newblock Learning multiple layers of features from tiny images.
+\bibitem[{Krizhevsky(2009)}]{krizhevsky2009cifar}
+Krizhevsky, A. 2009.
+\newblock Learning Multiple Layers of Features from Tiny Images.
+\newblock Technical report, University of Toronto.
+\newblock
+  {\url{https://www.cs.toronto.edu/~kriz/learning-features-2009-TR.pdf}}.
 
 \bibitem[{Large et~al.(2024)Large, Liu, Huh, Bahng, Isola, and
   Bernstein}]{large2024modular}
@@ -90,7 +96,7 @@ Large, T.; Liu, Y.; Huh, M.; Bahng, H.; Isola, P.; and Bernstein, J. 2024.
 \newblock Scalable Optimization in the Modular Norm.
 \newblock In \emph{Advances in Neural Information Processing Systems
   (NeurIPS)}.
-\newblock ArXiv:2405.14813.
+\newblock {arXiv:2405.14813}.
 
 \bibitem[{Li and Hong(2025)}]{li2025note}
 Li, J.; and Hong, M. 2025.
@@ -112,14 +118,15 @@ Mishra, N.; Trivedi, K.; and Kumar, P. 2026.
 \newblock Sign{M}uon: Communication-Efficient Distributed {M}uon Optimization.
 \newblock arXiv:2605.16311.
 
-\bibitem[{Penedo et~al.(2024)Penedo, Kydl{\'i}{\v{c}}ek, Allal, Lozhkov,
-  Mitchell, Raffel, Werra, and Wolf}]{penedo2024fineweb}
-Penedo, G.; Kydl{\'i}{\v{c}}ek, H.; Allal, L.~B.; Lozhkov, A.; Mitchell, M.;
-  Raffel, C.; Werra, L.~V.; and Wolf, T. 2024.
+\bibitem[{Penedo et~al.(2024)Penedo, Kydl{\'i}{\v{c}}ek, {Ben Allal}, Lozhkov,
+  Mitchell, Raffel, {Von Werra}, and Wolf}]{penedo2024fineweb}
+Penedo, G.; Kydl{\'i}{\v{c}}ek, H.; {Ben Allal}, L.; Lozhkov, A.; Mitchell, M.;
+  Raffel, C.; {Von Werra}, L.; and Wolf, T. 2024.
 \newblock The {FineWeb} Datasets: Decanting the Web for the Finest Text Data at
   Scale.
 \newblock In \emph{Advances in Neural Information Processing Systems (NeurIPS),
   Datasets and Benchmarks Track}.
+\newblock {arXiv:2406.17557}.
 
 \bibitem[{Pethick et~al.(2025{\natexlab{a}})Pethick, Xie, Antonakopoulos, Zhu,
   Silveti-Falls, and Cevher}]{pethick2025training}
@@ -138,21 +145,21 @@ Pethick, T.; Xie, W.; Erdogan, M.; Antonakopoulos, K.; Silveti-Falls, A.; and
   {$(L_0,L_1)$}-Smoothness.
 \newblock In \emph{Advances in Neural Information Processing Systems
   (NeurIPS)}.
-\newblock ArXiv:2506.01913.
+\newblock {arXiv:2506.01913}.
 
 \bibitem[{Riabinin et~al.(2025)Riabinin, Shulgin, Gruntkowska, and
-  Richtárik}]{riabinin2025gluon}
-Riabinin, A.; Shulgin, E.; Gruntkowska, K.; and Richtárik, P. 2025.
+  Richt{\'a}rik}]{riabinin2025gluon}
+Riabinin, A.; Shulgin, E.; Gruntkowska, K.; and Richt{\'a}rik, P. 2025.
 \newblock {G}luon: Making {M}uon \& {S}cion Great Again! ({B}ridging Theory and
   Practice of {LMO}-based Optimizers for {LLMs}).
 \newblock arXiv:2505.13416.
 
 \bibitem[{Richt{\'a}rik, Sokolov, and Fatkhullin(2021)}]{richtarik2021ef21}
 Richt{\'a}rik, P.; Sokolov, I.; and Fatkhullin, I. 2021.
-\newblock {EF21}: A new, simpler, theoretically better, and practically faster
-  error feedback.
-\newblock In \emph{Advances in Neural Information Processing Systems},
-  volume~34, 4384--4396.
+\newblock {EF21}: A New, Simpler, Theoretically Better, and Practically Faster
+  Error Feedback.
+\newblock In \emph{Advances in Neural Information Processing Systems
+  (NeurIPS)}, volume~34, 4384--4396.
 
 \bibitem[{Shah et~al.(2025)Shah, Polloreno, Stratos, Monk, Chaluvaraju, Hojel,
   Ma, Thomas, Tanwer, Shah, Nguyen, Smith, Callahan, Pust, Parmar, Rushton,
@@ -171,7 +178,7 @@ Shulgin, E.; AlRashed, S.; Orabona, F.; and Richt{\'a}rik, P. 2026.
 \newblock Beyond the Ideal: Analyzing the Inexact {M}uon Update.
 \newblock In \emph{Proceedings of the 29th International Conference on
   Artificial Intelligence and Statistics (AISTATS)}.
-\newblock ArXiv:2510.19933.
+\newblock {arXiv:2510.19933}.
 
 \bibitem[{Yang et~al.(2021)Yang, Hu, Babuschkin, Sidor, Liu, Farhi, Ryder,
   Pachocki, Chen, and Gao}]{yang2021tuning}
@@ -179,7 +186,8 @@ Yang, G.; Hu, E.~J.; Babuschkin, I.; Sidor, S.; Liu, X.; Farhi, D.; Ryder, N.;
   Pachocki, J.; Chen, W.; and Gao, J. 2021.
 \newblock Tuning Large Neural Networks via Zero-Shot Hyperparameter Transfer.
 \newblock In \emph{Advances in Neural Information Processing Systems
-  (NeurIPS)}.
+  (NeurIPS)}, volume~34, 17084--17097.
+\newblock {arXiv:2203.03466}.
 
 \bibitem[{Yang, Simon, and Bernstein(2023)}]{yang2023spectral}
 Yang, G.; Simon, J.~B.; and Bernstein, J. 2023.

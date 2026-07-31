@@ -1,0 +1,5 @@
+# Everything make_arxiv.py produces. Regenerate with:  python make_arxiv.py
+build/
+.build-work/
+signmuon_arxiv.pdf
+signmuon_arxiv.tar.gz

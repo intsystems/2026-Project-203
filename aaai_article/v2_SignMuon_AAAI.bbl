@@ -1,4 +1,4 @@
-\begin{thebibliography}{37}
+\begin{thebibliography}{38}
 \providecommand{\natexlab}[1]{#1}
 
 \bibitem[{Ahn et~al.(2025)Ahn, Xu, Abreu, Fan, Magakyan, Sharma, Zhan, and
@@ -36,6 +36,7 @@ Bernstein, J.; Zhao, J.; Azizzadenesheli, K.; and Anandkumar, A. 2019.
   Tolerant.
 \newblock In \emph{International Conference on Learning Representations
   (ICLR)}.
+\newblock {arXiv:1810.05291}.
 
 \bibitem[{Beznosikov et~al.(2023)Beznosikov, Horv{\'a}th, Richt{\'a}rik, and
   Safaryan}]{beznosikov2020biased}
@@ -44,21 +45,20 @@ Beznosikov, A.; Horv{\'a}th, S.; Richt{\'a}rik, P.; and Safaryan, M. 2023.
 \newblock \emph{Journal of Machine Learning Research}, 24(276): 1--50.
 
 \bibitem[{Bolatov et~al.(2026)Bolatov, Riabinin, Kornilov, Veprikov,
-  Horv\'{a}th, Tak\'{a}\v{c}, and Beznosikov}]{bolatov2026lionmuon}
-Bolatov, A.; Riabinin, A.; Kornilov, N.; Veprikov, A.; Horv\'{a}th, S.;
-  Tak\'{a}\v{c}, M.; and Beznosikov, A. 2026.
+  Horv{\'a}th, Tak{\'a}{\v{c}}, and Beznosikov}]{bolatov2026lionmuon}
+Bolatov, A.; Riabinin, A.; Kornilov, N.; Veprikov, A.; Horv{\'a}th, S.;
+  Tak{\'a}{\v{c}}, M.; and Beznosikov, A. 2026.
 \newblock {L}ion{M}uon: Alternating Spectral and Sign Descent for Efficient
   Training.
 \newblock arXiv:2605.19811.
 
 \bibitem[{Chen et~al.(2020)Chen, Chen, Sun, Wu, and Hong}]{chen2020median}
 Chen, X.; Chen, T.; Sun, H.; Wu, Z.~S.; and Hong, M. 2020.
-\newblock Distributed training with heterogeneous data: bridging median- and
-  mean-based algorithms.
-\newblock In \emph{Proceedings of the 34th International Conference on Neural
-  Information Processing Systems}, NIPS '20. Red Hook, NY, USA: Curran
-  Associates Inc.
-\newblock ISBN 9781713829546.
+\newblock Distributed Training with Heterogeneous Data: Bridging Median- and
+  Mean-Based Algorithms.
+\newblock In \emph{Advances in Neural Information Processing Systems
+  (NeurIPS)}.
+\newblock {arXiv:1906.01736}.
 
 \bibitem[{Cutkosky and Mehta(2020)}]{cutkosky2020momentum}
 Cutkosky, A.; and Mehta, H. 2020.
@@ -67,17 +67,17 @@ Cutkosky, A.; and Mehta, H. 2020.
   Learning}, volume 119 of \emph{Proceedings of Machine Learning Research},
   2260--2268. PMLR.
 
-\bibitem[{Douillard et~al.(2024)Douillard, Feng, Rusu, Chhaparia, Donchev,
+\bibitem[{Douillard et~al.(2023)Douillard, Feng, Rusu, Chhaparia, Donchev,
   Kuncoro, Ranzato, Szlam, and Shen}]{douillard2024diloco}
 Douillard, A.; Feng, Q.; Rusu, A.~A.; Chhaparia, R.; Donchev, Y.; Kuncoro, A.;
-  Ranzato, M.; Szlam, A.; and Shen, J. 2024.
+  Ranzato, M.; Szlam, A.; and Shen, J. 2023.
 \newblock {D}i{L}o{C}o: Distributed Low-Communication Training of Language
   Models.
 \newblock arXiv:2311.08105.
 
 \bibitem[{Gruntkowska et~al.(2025)Gruntkowska, Gaponov, Tovmasyan, and
-  Richtárik}]{gruntkowska2025error}
-Gruntkowska, K.; Gaponov, A.; Tovmasyan, Z.; and Richtárik, P. 2025.
+  Richt{\'a}rik}]{gruntkowska2025error}
+Gruntkowska, K.; Gaponov, A.; Tovmasyan, Z.; and Richt{\'a}rik, P. 2025.
 \newblock Error Feedback for {M}uon and Friends.
 \newblock arXiv:2510.00643.
 
@@ -109,21 +109,23 @@ Jin, R.; Liu, Y.; Huang, Y.; He, X.; Wu, T.; and Dai, H. 2025.
 Jordan, K.; Bernstein, J.; Rappazzo, B.; {@fernbear.bsky.social}; Boza, V.;
   You, J.; Cesista, F.; Koszarsky, B.; and {@Grad62304977}. 2024{\natexlab{a}}.
 \newblock modded-nanogpt: Speedrunning the {NanoGPT} baseline.
+\newblock \url{https://github.com/KellerJordan/modded-nanogpt}.
 
 \bibitem[{Jordan et~al.(2024{\natexlab{b}})Jordan, Jin, Boza, You, Cesista,
   Newhouse, and Bernstein}]{jordan2024muon}
 Jordan, K.; Jin, Y.; Boza, V.; You, J.; Cesista, F.; Newhouse, L.; and
   Bernstein, J. 2024{\natexlab{b}}.
 \newblock Muon: An optimizer for hidden layers in neural networks.
+\newblock \url{https://kellerjordan.github.io/posts/muon/}.
 
 \bibitem[{Karimireddy et~al.(2019)Karimireddy, Rebjock, Stich, and
   Jaggi}]{karimireddy2019efsign}
 Karimireddy, S.~P.; Rebjock, Q.; Stich, S.; and Jaggi, M. 2019.
 \newblock Error Feedback Fixes {S}ign{SGD} and other Gradient Compression
   Schemes.
-\newblock In Chaudhuri, K.; and Salakhutdinov, R., eds., \emph{Proceedings of
-  the 36th International Conference on Machine Learning}, volume~97 of
-  \emph{Proceedings of Machine Learning Research}, 3252--3261. PMLR.
+\newblock In \emph{Proceedings of the 36th International Conference on Machine
+  Learning}, volume~97 of \emph{Proceedings of Machine Learning Research},
+  3252--3261. PMLR.
 
 \bibitem[{Kovalev(2025)}]{kovalev2025understanding}
 Kovalev, D. 2025.
@@ -139,9 +141,12 @@ Kravatskiy, A.; Kozyrev, I.; Kozlov, N.; Vinogradov, A.; Merkulov, D.; and
   Optimization.
 \newblock arXiv:2512.09678.
 
-\bibitem[{Krizhevsky and Hinton(2009)}]{krizhevsky2009cifar}
-Krizhevsky, A.; and Hinton, G. 2009.
-\newblock Learning multiple layers of features from tiny images.
+\bibitem[{Krizhevsky(2009)}]{krizhevsky2009cifar}
+Krizhevsky, A. 2009.
+\newblock Learning Multiple Layers of Features from Tiny Images.
+\newblock Technical report, University of Toronto.
+\newblock
+  {\url{https://www.cs.toronto.edu/~kriz/learning-features-2009-TR.pdf}}.
 
 \bibitem[{Large et~al.(2024)Large, Liu, Huh, Bahng, Isola, and
   Bernstein}]{large2024modular}
@@ -149,7 +154,7 @@ Large, T.; Liu, Y.; Huh, M.; Bahng, H.; Isola, P.; and Bernstein, J. 2024.
 \newblock Scalable Optimization in the Modular Norm.
 \newblock In \emph{Advances in Neural Information Processing Systems
   (NeurIPS)}.
-\newblock ArXiv:2405.14813.
+\newblock {arXiv:2405.14813}.
 
 \bibitem[{Li and Hong(2025)}]{li2025note}
 Li, J.; and Hong, M. 2025.
@@ -177,31 +182,31 @@ Pethick, T.; Xie, W.; Antonakopoulos, K.; Zhu, Z.; Silveti-Falls, A.; and
   49069--49104. PMLR.
 
 \bibitem[{Qian et~al.(2026)Qian, Gaponov, Malinovsky, and
-  Richtárik}]{qian2026communicationefficientgluon}
-Qian, X.; Gaponov, A.; Malinovsky, G.; and Richtárik, P. 2026.
+  Richt{\'a}rik}]{qian2026communicationefficientgluon}
+Qian, X.; Gaponov, A.; Malinovsky, G.; and Richt{\'a}rik, P. 2026.
 \newblock Communication-Efficient {G}luon in Federated Learning.
 \newblock arXiv:2604.10689.
 
 \bibitem[{Riabinin et~al.(2025)Riabinin, Shulgin, Gruntkowska, and
-  Richtárik}]{riabinin2025gluon}
-Riabinin, A.; Shulgin, E.; Gruntkowska, K.; and Richtárik, P. 2025.
+  Richt{\'a}rik}]{riabinin2025gluon}
+Riabinin, A.; Shulgin, E.; Gruntkowska, K.; and Richt{\'a}rik, P. 2025.
 \newblock {G}luon: Making {M}uon \& {S}cion Great Again! ({B}ridging Theory and
   Practice of {LMO}-based Optimizers for {LLMs}).
 \newblock arXiv:2505.13416.
 
 \bibitem[{Richt{\'a}rik, Sokolov, and Fatkhullin(2021)}]{richtarik2021ef21}
 Richt{\'a}rik, P.; Sokolov, I.; and Fatkhullin, I. 2021.
-\newblock {EF21}: A new, simpler, theoretically better, and practically faster
-  error feedback.
-\newblock In \emph{Advances in Neural Information Processing Systems},
-  volume~34, 4384--4396.
+\newblock {EF21}: A New, Simpler, Theoretically Better, and Practically Faster
+  Error Feedback.
+\newblock In \emph{Advances in Neural Information Processing Systems
+  (NeurIPS)}, volume~34, 4384--4396.
 
-\bibitem[{Safaryan and Richtarik(2021)}]{safaryan2021ssdm}
-Safaryan, M.; and Richtarik, P. 2021.
+\bibitem[{Safaryan and Richt{\'a}rik(2021)}]{safaryan2021ssdm}
+Safaryan, M.; and Richt{\'a}rik, P. 2021.
 \newblock Stochastic Sign Descent Methods: New Algorithms and Better Theory.
-\newblock In Meila, M.; and Zhang, T., eds., \emph{Proceedings of the 38th
-  International Conference on Machine Learning}, volume 139 of
-  \emph{Proceedings of Machine Learning Research}, 9224--9234. PMLR.
+\newblock In \emph{Proceedings of the 38th International Conference on Machine
+  Learning}, volume 139 of \emph{Proceedings of Machine Learning Research},
+  9224--9234. PMLR.
 
 \bibitem[{Seide et~al.(2014)Seide, Fu, Droppo, Li, and Yu}]{seide20141bit}
 Seide, F.; Fu, H.; Droppo, J.; Li, G.; and Yu, D. 2014.
@@ -223,10 +228,9 @@ Shah, I.; Polloreno, A.~M.; Stratos, K.; Monk, P.; Chaluvaraju, A.; Hojel, A.;
 \bibitem[{Sun et~al.(2023)Sun, Wang, Li, and Wang}]{sun2023signmomentum}
 Sun, T.; Wang, Q.; Li, D.; and Wang, B. 2023.
 \newblock Momentum Ensures Convergence of {SIGNSGD} under Weaker Assumptions.
-\newblock In Krause, A.; Brunskill, E.; Cho, K.; Engelhardt, B.; Sabato, S.;
-  and Scarlett, J., eds., \emph{Proceedings of the 40th International
-  Conference on Machine Learning}, volume 202 of \emph{Proceedings of Machine
-  Learning Research}, 33077--33099. PMLR.
+\newblock In \emph{Proceedings of the 40th International Conference on Machine
+  Learning}, volume 202 of \emph{Proceedings of Machine Learning Research},
+  33077--33099. PMLR.
 
 \bibitem[{Takezawa et~al.(2026)Takezawa, Koloskova, Jiang, and
   Stich}]{takezawa2025fedmuonfederatedlearningbiascorrected}
@@ -235,10 +239,20 @@ Takezawa, Y.; Koloskova, A.; Jiang, X.; and Stich, S.~U. 2026.
   Optimization.
 \newblock In \emph{International Conference on Learning Representations
   (ICLR)}.
+\newblock {arXiv:2509.26337}.
 
-\bibitem[{Th\'{e}rien et~al.(2025)Th\'{e}rien, Huang, Defazio, Rish, and
+\bibitem[{Tang et~al.(2019)Tang, Yu, Lian, Zhang, and
+  Liu}]{tang2019doublesqueeze}
+Tang, H.; Yu, C.; Lian, X.; Zhang, T.; and Liu, J. 2019.
+\newblock {D}ouble{S}queeze: Parallel Stochastic Gradient Descent with
+  Double-Pass Error-Compensated Compression.
+\newblock In \emph{Proceedings of the 36th International Conference on Machine
+  Learning}, volume~97 of \emph{Proceedings of Machine Learning Research},
+  6155--6165. PMLR.
+
+\bibitem[{Th{\'e}rien et~al.(2025)Th{\'e}rien, Huang, Defazio, Rish, and
   Belilovsky}]{therien2025muloco}
-Th\'{e}rien, B.; Huang, X.; Defazio, A.; Rish, I.; and Belilovsky, E. 2025.
+Th{\'e}rien, B.; Huang, X.; Defazio, A.; Rish, I.; and Belilovsky, E. 2025.
 \newblock {M}u{L}o{C}o: {M}uon is a practical inner optimizer for {D}i{L}o{C}o.
 \newblock arXiv:2505.23725.
 
@@ -248,7 +262,8 @@ Yang, G.; Hu, E.~J.; Babuschkin, I.; Sidor, S.; Liu, X.; Farhi, D.; Ryder, N.;
   Pachocki, J.; Chen, W.; and Gao, J. 2021.
 \newblock Tuning Large Neural Networks via Zero-Shot Hyperparameter Transfer.
 \newblock In \emph{Advances in Neural Information Processing Systems
-  (NeurIPS)}.
+  (NeurIPS)}, volume~34, 17084--17097.
+\newblock {arXiv:2203.03466}.
 
 \bibitem[{Yang, Simon, and Bernstein(2023)}]{yang2023spectral}
 Yang, G.; Simon, J.~B.; and Bernstein, J. 2023.

@@ -24,14 +24,11 @@ python3 -m tests.test_code          # CPU only, no downloads, ~1 min
 | see the convex-benchmark modes | [`synthetic/`](synthetic/README.md) |
 | run the language-modelling arm | [`nanogpt/`](nanogpt/README.md) |
 | know what the tests pin | [`tests/`](tests/README.md) |
-| package this for double-blind review | [ANONYMIZATION.md](ANONYMIZATION.md) |
 
 ```
 code/
 ├── REPRODUCE.md          exact command per paper table/figure
-├── ANONYMIZATION.md      preparing the anonymous supplement
 ├── aggregate.py          multi-seed mean ± std
-├── anonymize.py          the anonymity scan and bundler
 ├── common/               optimizers, per-layer LR rules, models, plotting, paths, hardware
 ├── centralized/          ResNet-18 / CIFAR-10  (main, train, tune, overnight, data, export, plot)
 ├── federated/            eleven methods, one driver  (algorithms, main, tune, overnight, grid, data, export, plot)
@@ -43,9 +40,13 @@ code/
 │   ├── article_export/   the centralized bundle, and analysis/ the figures drawn from it
 │   ├── federated/        per-run metrics.json, one directory per config × seed
 │   ├── synthetic/        per-method JSON, figures, SUMMARY.md, MANIFEST.json
-│   └── nanogpt/          the eight speedrun logs, CSVs, figures, SUMMARY.md
+│   ├── nanogpt/          the eight speedrun logs, CSVs, figures, SUMMARY.md
+│   └── *.zip, *.tar.gz   one export archive per arm — what REPRODUCE.md plots from
 └── results_old/          superseded runs; nothing reads it
 ```
+
+In the anonymous supplement `results/` holds the three archives and `nanogpt/`;
+`MANIFEST.md` there lists what was left out and why.
 
 Each experiment has the same shape, **compute on the GPU box → one archive to
 download → unpack and plot anywhere**, and is one or two commands:
@@ -208,7 +209,6 @@ python3 -m tests.test_code                    # torch, CPU only, ~1 min
 python3 -m counterexamples.problems           # the Theorem 1-4 constants
 python3 -m counterexamples.verify_ns_oracle   # exact vs Newton-Schulz LMO
 python3 -m common.lr_scaling --measure        # the sign-step operator norm
-python3 -m anonymize --check                  # no identifying material
 ```
 
 The central check is that the federated driver with one client reproduces the

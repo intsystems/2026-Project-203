@@ -8,16 +8,18 @@ instances of Theorems 1–3 and on the universal 2×2 instance of Theorem 4
 cd code                                          # the package root
 python3 -m counterexamples.problems              # the exact constants        (~2 s)
 python3 -m counterexamples.run_counterexamples   # fig:divergence_plot        (~5 s)
+python3 -m counterexamples.plot_ef21_construction # fig:ef21_construction     (~2 s)
 python3 -m counterexamples.verify_ns_oracle      # exact vs Newton-Schulz     (~1 s)
 python3 -m counterexamples.enumerate_minimality  # the Thm 2-3 minimality claims (~70 s;
                                                  #   --full is ~10 min)
 ```
 
 `problems`, `enumerate_minimality` and `verify_ns_oracle` need numpy alone; the
-two plotting scripts also need matplotlib. `run_counterexamples` and
-`plot_ef21_momentum` are the only scripts in the repository that write into
-`aaai_article/`: each figure goes to `figures/` as PNG + PDF and to
-`aaai_article/images/counterexamples/` as the PDF LaTeX includes.
+plotting scripts also need matplotlib. `run_counterexamples`,
+`plot_ef21_momentum` and `plot_ef21_construction` are the only scripts in the
+repository that write into `aaai_article/`: each figure goes to `figures/` as
+PNG + PDF and to `aaai_article/images/counterexamples/` as the PDF LaTeX
+includes.
 
 ## Files
 
@@ -27,6 +29,7 @@ two plotting scripts also need matplotlib. `run_counterexamples` and
 | [`problems.py`](problems.py) | the 4×4 and 5×5 linear instances, the universal 2×2 EF21-SignMuon instance built per `(mu, variant)`, and a `_self_check` reproducing the paper's constants |
 | [`run_counterexamples.py`](run_counterexamples.py) | every method on all three problems: verdict tables and `counterexamples_main` |
 | [`plot_ef21_momentum.py`](plot_ef21_momentum.py) | EF21-SignMuon at `mu ∈ {0, 0.5, 0.9, 0.95, 0.99}`, both variants, against the common slope `49/480` |
+| [`plot_ef21_construction.py`](plot_ef21_construction.py) | the helper functions of the Theorem 4 objective: ramps `ψᵢ, Φᵢ`, the floored slope, the correction profile |
 | [`enumerate_minimality.py`](enumerate_minimality.py) | which shapes admit a sign/polar mismatch at all |
 | [`verify_ns_oracle.py`](verify_ns_oracle.py) | the same instances under the *implemented* Newton–Schulz oracle, over step counts and dtypes |
 

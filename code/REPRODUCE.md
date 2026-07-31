@@ -45,6 +45,13 @@ currently reports:
 Superseded runs live in `results_old/`, which nothing reads. Both trees are
 gitignored, apart from `results/nanogpt/`.
 
+> **In the anonymous supplement, `results/` holds the three archives, plus
+> `nanogpt/`.** Unpack an archive where its section says to and every table and
+> figure of that arm redraws without a GPU. The *unpacked* trees are not shipped,
+> and neither are the raw per-run trees: an archive is the curated run set its
+> exporter chose, while `results/federated/` also holds 66 runs from an earlier
+> session under a superseded sign convention. `MANIFEST.md` lists the omissions.
+
 ## The two overnight drivers
 
 Sections 4 and 5 are each one command:

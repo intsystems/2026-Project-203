@@ -1040,68 +1040,6 @@ def test_budget_rebalancing_keeps_every_requested_phase_or_says_it_did_not():
             "a proxy horizon must re-enable the check that catches a bad proxy"
 
 
-def test_the_export_bundle_carries_no_home_path():
-    """A bundle exported from a home-rooted tree must be anonymous.
-
-    This matters more now that `results/` ships with the code: the bundle is no
-    longer only a file you download, it is a file reviewers read. The exporter runs
-    on the GPU box, where the tree is `/home/<user>/SignMuon/code/results/...`, and
-    that string reached `runs.csv` (the `path` column) and `MANIFEST.json` (`argv`
-    records whatever --root was given) even after `configs.json` and the driver
-    state had been scrubbed.
-
-    Checked with `anonymize`'s own rules rather than a local regex, so the test and
-    the scanner cannot drift apart.
-
-    The home path is written with forward slashes rather than built from the temp
-    directory. Built from it, this test passed on Windows and failed on Linux: the
-    fixture came out `C:\\...\\home\\someuser\\...`, which the home-path rule cannot
-    match, so the `datadir` leak it was meant to catch was invisible on the machine
-    the test was written on and stopped the GPU box's preflight instead.
-    """
-    import json
-    import tempfile
-    from pathlib import Path
-
-    import anonymize
-    from federated import export_article
-
-    with tempfile.TemporaryDirectory() as td:
-        root = Path(td) / "home" / "someuser" / "SignMuon" / "code" / "results" / "federated"
-        for seed in range(2):
-            d = root / "final_signmuon_unit-gain_e2000_f" / f"seed{seed}"
-            d.mkdir(parents=True)
-            cfg = {"algorithm": "signmuon", "lr": 0.05, "seed": seed, "rounds": 200,
-                   "split": "full", "weight_decay": 0.0, "last_k": 2,
-                   "target_acc": 80.0, "dataset": "cifar10", "model": "cnn2",
-                   "lr_scaling": "unit-gain", "scale_baselines": False,
-                   "run_name": "final_signmuon_unit-gain_e2000_f",
-                   # An absolute --data, as `--data /home/<name>/datasets` gives.
-                   # POSIX-style on purpose (see the docstring), and silenced with
-                   # the line pragma rather than by adding it to `anonymize.ALLOW`:
-                   # ALLOW is substring-based, so allowing it globally would make
-                   # the scan below skip the very leak this test exists to catch.
-                   "datadir": "/home/someuser/SignMuon/code/data_federated",  # anonymize: allow
-                   "device": "cuda:0"}
-            hist = {"steps": [0, 100, 200], "test_acc": [10.0, 80.0, 85.0]}
-            (d / "metrics.json").write_text(json.dumps({"config": cfg, "history": hist}))
-
-        out = Path(td) / "bundle"
-        assert export_article.main(["--root", str(root), "--out", str(out),
-                                    "--overnight", str(Path(td) / "none"),
-                                    "--no-archive"]) == 0
-
-        findings = []
-        for path in sorted(out.rglob("*")):
-            if not path.is_file() or not anonymize._scannable(path):
-                continue
-            findings += anonymize.scan_text(
-                path.relative_to(out).as_posix(),
-                path.read_text(encoding="utf-8", errors="replace"))
-        assert not findings, ("the export bundle is not anonymous:\n  "
-                             + "\n  ".join(str(f) for f in findings[:10]))
-
-
 def test_the_export_keeps_a_baseline_and_its_scaled_ablation_apart():
     """`adam` and `adam --scale-baselines` are two rows, not one.
 
@@ -1177,6 +1115,64 @@ def test_the_rule_ablation_stays_out_of_the_reported_table():
     for r in rows:
         per_rule.setdefault(r["rule"], []).append((r["acc_mean"], r["algorithm"]))
     assert len(per_rule) == 2 and all(len(v) == 3 for v in per_rule.values())
+
+
+def test_the_export_drops_runs_made_under_a_superseded_sign_convention():
+    """A night's leftovers under the old zero convention are not comparable.
+
+    The tree on the GPU box accumulates. When the 2026-07-31 federated study
+    re-ran under `--uplink-zeros random --mv-ties random`, the previous night's
+    tuning jobs, made under `keep`/`zero`, were still sitting beside it at the
+    same nominal `(method, eta_0, rounds)`. They landed in the bundle's tuning
+    table as duplicate rows at a different accuracy, one of them above the rate
+    the finals actually used, which reads as a selection failure rather than as
+    the two experiments it is.
+    """
+    import json
+    import tempfile
+    from pathlib import Path
+
+    from federated.export_article import scan
+
+    def write(root, name, uplink, ties, split, lr):
+        d = root / name / "seed0"
+        d.mkdir(parents=True)
+        cfg = {"algorithm": "signmuon", "lr": lr, "seed": 0, "rounds": 200,
+               "split": split, "weight_decay": 0.0, "last_k": 2, "run_name": name,
+               "target_acc": 80.0, "dataset": "cifar10", "model": "cnn2",
+               "lr_scaling": "unit-gain", "scale_baselines": False,
+               "uplink_zeros": uplink, "mv_ties": ties}
+        hist = {"steps": [0, 100, 200], "test_acc": [10.0, 80.0, 85.0]}
+        (d / "metrics.json").write_text(json.dumps({"config": cfg, "history": hist}))
+
+    with tempfile.TemporaryDirectory() as td:
+        root = Path(td) / "federated"
+        write(root, "final_signmuon_e200_f", "random", "random", "full", 0.1)
+        write(root, "tune_lr_signmuon_0.1_e200_t", "random", "random", "tune", 0.1)
+        write(root, "tune_verify_signmuon_0.05_e200_t", "keep", "zero", "tune", 0.05)
+
+        runs, bad = scan(root)
+        assert [r.config["run_name"] for r in runs] == [
+            "final_signmuon_e200_f", "tune_lr_signmuon_0.1_e200_t"], \
+            "the leftover run must not reach the tuning table"
+        assert len(bad) == 1 and "sign convention" in bad[0][1]
+
+    # A tree that predates the convention fields entirely is one experiment, not a
+    # tree of leftovers: nothing is dropped when every run agrees by default.
+    with tempfile.TemporaryDirectory() as td:
+        root = Path(td) / "federated"
+        for name, split in (("final_signmuon_e200_f", "full"),
+                            ("tune_lr_signmuon_0.1_e200_t", "tune")):
+            d = root / name / "seed0"
+            d.mkdir(parents=True)
+            cfg = {"algorithm": "signmuon", "lr": 0.1, "seed": 0, "rounds": 200,
+                   "split": split, "weight_decay": 0.0, "last_k": 2, "run_name": name,
+                   "target_acc": 80.0, "dataset": "cifar10", "model": "cnn2",
+                   "lr_scaling": "unit-gain", "scale_baselines": False}
+            hist = {"steps": [0, 100, 200], "test_acc": [10.0, 80.0, 85.0]}
+            (d / "metrics.json").write_text(json.dumps({"config": cfg, "history": hist}))
+        runs, bad = scan(root)
+        assert len(runs) == 2 and not bad
 
 
 def test_the_export_bundle_round_trips_to_a_plottable_tree():
@@ -2148,6 +2144,35 @@ def test_the_counterexample_constants_do_not_depend_on_the_sign_convention():
     assert np.array_equal(sign_pm1(G2, rng), np.sign(G2))         # no ties -> identical
 
 
+def test_the_ef21_counterexample_rate_and_nonconvexity_witness():
+    """Pins the two constants the Theorem 4 appendix quotes against the code.
+
+    (i) On the assembled ``f`` the loss gains exactly ``49/240`` per period
+    from ``t = 3`` on (the published per-step rate ``49/480``), for every
+    momentum and both variants.  (ii) The nonconvexity remark claims the run
+    itself is incompatible with convexity, through the exact monotonicity
+    violation ``<grad f(X6) - grad f(X3), X6 - X3> = -9A/50``.  Pinned so the
+    remark's constant cannot drift from the construction that prints it.
+    """
+    import numpy as np
+    from counterexamples.optimizers import EF21SignMuon
+    from counterexamples.problems import ef21_signmuon_counterexample
+
+    for mu, nesterov in ((0.0, False), (0.5, False), (0.5, True), (0.9, True)):
+        grad_fn, loss_fn, shape, info = ef21_signmuon_counterexample(
+            mu=mu, nesterov=nesterov)
+        opt = EF21SignMuon(shape, eta=1.0, mu=mu, nesterov=nesterov)
+        Xs = [opt.X.copy()]
+        for _ in range(9):
+            opt.step(grad_fn(opt.grad_point()))
+            Xs.append(opt.X.copy())
+        for t in (3, 4, 5, 6, 7):                       # exact tail ascent
+            assert abs((loss_fn(Xs[t + 2]) - loss_fn(Xs[t])) - 49 / 240) < 1e-9
+        ip = float(np.vdot(grad_fn(Xs[6]) - grad_fn(Xs[3]), Xs[6] - Xs[3]))
+        assert abs(ip + 9 * info["A"] / 50) < 1e-9      # = -9A/50 exactly
+        assert ip < 0                                   # no convex f does this
+
+
 def test_capture_direction_records_the_step_actually_taken():
     """``alignment`` mode is only meaningful if ``d_t`` is the realized step."""
     torch.manual_seed(0)
@@ -2385,21 +2410,6 @@ def test_sign_step_floor_scales_linearly_in_eta():
 # --------------------------------------------------------------------------
 
 
-def test_no_identifying_material():
-    """`code/` must stay anonymous, checked here rather than remembered.
-
-    Author names and absolute paths arrive one docstring at a time, so the scan
-    belongs in the suite that runs before every night, not in a pre-submission
-    checklist that gets read once.
-    """
-    import anonymize
-
-    findings, _ = anonymize.scan_tree()
-    assert not findings, (
-        "identifying material in code/ -- run `python3 -m anonymize --check`:\n  "
-        + "\n  ".join(str(f) for f in findings[:20]))
-
-
 def test_export_bundles_carry_no_absolute_path():
     """`repo_relative` must strip the writing machine's prefix, and nothing else.
 
@@ -2461,90 +2471,45 @@ def test_export_bundles_carry_no_absolute_path():
                        + ", ".join(dirty[:10]))
 
 
-def test_unpacked_result_bundles_are_excluded_from_scan_and_bundle():
-    """A downloaded bundle unpacked next to the code is run output, not source.
+def test_the_shipped_federated_archive_holds_one_sign_convention():
+    """The archive that ships must be the run set the appendix describes.
 
-    Both workflows say to unpack the archive beside `code/`, and the bundles carry
-    the absolute paths of the box that wrote them -- so an unpacked one trips the
-    anonymity scan and, worse, would ship inside the anonymous bundle. `article_export`
-    was already excluded; a copy parked as `article_export.stale_2026-07-29` was not,
-    and neither was the federated bundle, which did not exist when the rule was
-    written.
+    `app:repro` states that the released tree carries 66 runs from an earlier
+    session, that they predate the sign convention of the theory section, and that
+    the exporter excludes them from every table and figure. An archive built before
+    `_drop_foreign_conventions` existed satisfies none of that: it holds 241 runs
+    under two conventions, and its tuning table lists each learning rate twice, at
+    two accuracies, which reads as a selection failure.
+
+    Nothing regenerates the archive automatically, so this is the thing that
+    notices. Skipped where the archive is absent -- a source checkout has no
+    `results/`.
     """
-    import anonymize
-
-    for rel in ("article_export/runs.csv",
-                "article_export.stale_2026-07-29/overnight/state.json",
-                "centralized/article_export.stale_2026-07-29/MANIFEST.md",
-                "federated_export/SUMMARY.md",
-                "federated_export_results.zip",
-                "results/federated/run/seed0/metrics.json",
-                "results_old/synthetic_prefix_grid/SUMMARY.md"):
-        assert anonymize._excluded(rel), f"{rel} should be excluded"
-
-    # ...without swallowing the source that lives beside them.
-    for rel in ("federated/export_article.py", "federated/README.md",
-                "REPRODUCE.md", "results/nanogpt/log.txt"):
-        assert not anonymize._excluded(rel), f"{rel} must still be scanned"
-
-
-def test_anonymity_scan_actually_catches_things():
-    """A scan that cannot fail is not a check.
-
-    Feeds the scanner one line per rule and requires a hit, so that a botched regex
-    (or an over-broad ALLOW entry) shows up here rather than as a clean bill of
-    health on a leaky bundle.
-    """
-    import anonymize
-
-    # Each fixture is a leak the scanner must catch, so each line would trip the
-    # scan on this very file. The `anonymize: allow` pragma exempts them
-    # individually -- visibly, and without exempting the rest of the file.
-    for text, rule in [
-        ("# thanks to Alexey for the CNN2 baseline", "project-identifier"),   # anonymize: allow
-        ("contact: someone@example.org", "email"),                           # anonymize: allow
-        ('DATA = "/home/jdoe/project/data"', "home-path"),                    # anonymize: allow
-        ("see https://github.com/intsystems/some-repo", "project-repo"),      # anonymize: allow
-        ("ORCID 0000-0002-1825-0097", "orcid"),                               # anonymize: allow
-    ]:
-        hits = anonymize.scan_text("fake.py", text)
-        assert hits, f"rule {rule!r} failed to fire on: {text}"
-
-    # A name inside a FILENAME is the shape a `\b...\b` rule misses, because `\b`
-    # counts `_` as a word character. This is the leak that got past the first
-    # version of the scanner, so it is pinned explicitly.
-    for text in ("from lesha_nanogpt import Model",          # anonymize: allow
-                 "| `lesha_nanogpt.py` | superseded |",      # anonymize: allow
-                 "smirnova_2026.tex",                        # anonymize: allow
-                 "handle: alexey1"):                         # anonymize: allow
-        assert anonymize.scan_text("fake.py", text), \
-            f"a name joined by _ . or a digit must still be caught: {text}"
-
-    # ... and upstream citations must NOT fire, or the fix would be to delete them.
-    for text in ("from https://github.com/KellerJordan/modded-nanogpt",
-                 "adapted from https://github.com/NoahAmsel/PolarExpress by @varunneal",
-                 "    @torch.compile",
-                 "the polar factor is released under a permissive licence"):
-        assert not anonymize.scan_text("fake.py", text), f"false positive on: {text}"
-
-
-def test_notebook_stripping_removes_outputs_not_source():
-    """The bundler must clear outputs and leave the code intact."""
     import json
+    import zipfile
+    from pathlib import Path
 
-    import anonymize
+    archive = Path(__file__).resolve().parents[1] / "results/federated_export_results.zip"
+    if not archive.exists():
+        return
 
-    leak = "/home/" + "jdoe"          # assembled, so this file stays scannable
-    nb = {"cells": [{"cell_type": "code", "source": [f"print('{leak}')\n"],
-                     "execution_count": 7,
-                     "outputs": [{"output_type": "stream", "text": [leak + "\n"]}]},
-                    {"cell_type": "markdown", "source": ["# title\n"]}],
-          "metadata": {}, "nbformat": 4, "nbformat_minor": 5}
-    out = json.loads(anonymize.strip_notebook(json.dumps(nb)))
-    assert out["cells"][0]["outputs"] == []
-    assert out["cells"][0]["execution_count"] is None
-    assert out["cells"][0]["source"] == [f"print('{leak}')\n"], "source must survive"
-    assert out["cells"][1] == nb["cells"][1], "markdown cells are untouched"
+    with zipfile.ZipFile(archive) as z:
+        conventions = set()
+        for name in z.namelist():
+            if name.endswith("metrics.json"):
+                config = json.loads(z.read(name))["config"]
+                conventions.add((config.get("uplink_zeros") or "keep",
+                                 config.get("mv_ties") or "zero"))
+
+    # Not `"excluded" in MANIFEST.json`: that key predates the filter -- it also
+    # lists runs dropped for being unreadable -- so it is present in an archive
+    # built before the filter existed and proves nothing. The conventions actually
+    # inside the archive are the thing to look at.
+    assert len(conventions) == 1, (
+        f"{archive.name} mixes sign conventions {sorted(conventions)}, so its tuning "
+        f"table compares two experiments. Re-export it with "
+        f"`python3 -m federated.export_article` on a machine with torch (torch is "
+        f"needed only for the communication columns), then rebuild the supplement")
 
 
 def test_every_code_section_has_a_readme():
@@ -2562,7 +2527,9 @@ def test_every_code_section_has_a_readme():
     missing = sorted(name for name in sections
                      if (root / name).is_dir() and not (root / name / "README.md").exists())
     assert not missing, f"no README.md in: {missing}"
-    for doc in ("README.md", "REPRODUCE.md", "ANONYMIZATION.md"):
+    # Not ANONYMIZATION.md: it is withheld from the bundle, and this test runs
+    # there. `test_anonymize.py` asserts it exists in a working tree.
+    for doc in ("README.md", "REPRODUCE.md"):
         assert (root / doc).exists(), f"code/{doc} is missing"
 
 
@@ -2571,8 +2538,8 @@ def test_every_code_section_has_a_readme():
 # --------------------------------------------------------------------------
 
 
-#: Third-party modules that only some tests need and no experiment does. A GPU
-#: box provisioned for sweeps has torch but often not these, and counting their
+#: Modules that only some tests need and no experiment does. A GPU box
+#: provisioned for sweeps has torch but often not these, and counting their
 #: absence as a failure takes the whole suite down with it -- which matters
 #: because ``synthetic.run_gpu`` and both ``overnight.py`` drivers run this
 #: suite as a preflight and refuse to start when it exits non-zero. Skipping
@@ -2581,6 +2548,21 @@ def test_every_code_section_has_a_readme():
 #: -- torch above all -- still fails, because its absence means the run itself
 #: cannot be trusted.
 OPTIONAL_MODULES = frozenset({"matplotlib", "pandas", "scipy", "seaborn"})
+
+
+# The anonymity checks live in `test_anonymize.py`, which is withheld from the
+# anonymous bundle along with the `anonymize.py` it imports. Adopting them here
+# keeps one command -- `python3 -m tests.test_code`, what both overnight drivers
+# run as a preflight -- and keeps the scan running on every night rather than only
+# when someone remembers it. A tree without the module is the bundle, where there
+# is nothing for them to check and no import that fails to resolve.
+try:
+    from tests import test_anonymize as _anonymity
+except ModuleNotFoundError:
+    pass
+else:
+    globals().update({name: value for name, value in vars(_anonymity).items()
+                      if name.startswith("test_")})
 
 
 def main() -> int:
@@ -2600,7 +2582,7 @@ def main() -> int:
                 print(f"ERROR {name}\n      ModuleNotFoundError: {exc}")
                 continue
             skipped.append((name, root))
-            print(f"skip  {name}\n      needs {root}, which is not installed")
+            print(f"skip  {name}\n      needs {root}, which this tree does not have")
         except Exception as exc:                       # noqa: BLE001
             failed.append((name, f"{type(exc).__name__}: {exc}"))
             print(f"ERROR {name}\n      {type(exc).__name__}: {exc}")
@@ -2653,29 +2635,6 @@ def test_transmitted_signs_are_strictly_one_bit():
         opt.step()
         d = opt.state[p]["last_direction"]
         assert torch.equal(d.abs(), torch.ones_like(d)), cls.__name__
-
-
-def test_hardware_record_is_anonymous_and_ascii():
-    """The machine record goes into the paper, so it must leak nothing.
-
-    Hostname, username and absolute paths are deliberately not collected: a
-    double-blind submission is exactly where "Experiments were run on
-    gpu-node-07.lab.university.edu" gets noticed. ASCII-only matters for a
-    different reason -- vendor strings carry trademark signs and non-breaking
-    spaces, which fail a LaTeX run much later than they are introduced.
-    """
-    import anonymize
-    from common.hardware import as_latex_row, as_sentence, describe
-
-    info = describe("cuda:0")
-    rendered = as_sentence(info) + "\n" + as_latex_row("Synthetic quadratic", info)
-
-    assert not anonymize.scan_text("hardware.txt", rendered), (
-        "the hardware record trips the anonymity scan:\n  "
-        + "\n  ".join(str(f) for f in anonymize.scan_text("hardware.txt", rendered)))
-    assert rendered.isascii(), "non-ASCII in the hardware record would break LaTeX"
-    for banned in ("hostname", "/home/", "/Users/", "C:" + chr(92) + "Users"):
-        assert banned.lower() not in rendered.lower(), f"{banned} leaked into the record"
 
 
 def test_hardware_scan_groups_by_experiment_and_machine():

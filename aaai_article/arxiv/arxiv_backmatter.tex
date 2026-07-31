@@ -1,0 +1,42 @@
+%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%
+%  BACK MATTER FOR THE arXiv EDITION -- acknowledgments, author
+%  contributions, code availability.
+%
+%  make_arxiv.py splices this in after the Conclusion and before the single
+%  reference list. None of it exists in the anonymous AAAI sources, so all of
+%  it is authored here.
+%
+%  The sections are unnumbered (\section*) so that the numbering of the body
+%  is the same as in the AAAI PDF. \arxivrepo is defined in
+%  arxiv_authors.tex.
+%
+%  DRAFT: the text below is a starting point, not a record of what happened.
+%  make_arxiv.py prints a warning for every TODO left in this file.
+%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%
+
+\section*{Acknowledgments}
+
+The authors thank their colleagues for discussions of early versions of this
+work and for comments on the manuscript.
+% VERIFY: name the people you want to thank, and state the funding and the
+% compute provider for the nanoGPT runs. Delete the bracketed slot below once
+% filled in -- an empty acknowledgment is better than a wrong one.
+[TODO: funding and compute acknowledgment.]
+
+\section*{Author Contributions}
+
+M.\,Smirnova and A.\,Kravatskiy contributed equally to this work. Both authors
+conceived the study, wrote the manuscript, and approved the final version.
+% VERIFY: replace the sentence below with the actual split. The pieces of work
+% the paper reports are: the three divergence counterexamples and their
+% minimality analyses; the EF21 divergence theorem; the EF21-MuonUSign /
+% EF21-MuonSign convergence analysis; the optimizer implementations; and the
+% synthetic, centralized CIFAR-10, federated CIFAR-10 and nanoGPT experiments.
+[TODO: who did which of those.]
+
+\section*{Code Availability}
+
+The optimizers, the counterexample constructions and the scripts that produce
+every figure and table in this paper are available at
+\arxivrepo. The repository documents the exact commands and random seeds
+behind each reported number.
