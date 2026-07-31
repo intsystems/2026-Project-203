@@ -302,6 +302,23 @@ def title_of(title_cmd: str) -> str:
     return " ".join(inner.split())
 
 
+def title_override() -> str | None:
+    """The arXiv-only title, if arxiv_authors.tex defines \\arxivtitle.
+
+    The AAAI submission is stuck with the title registered on OpenReview;
+    arXiv is not. Absent the macro, the preamble's \\title carries over.
+    """
+    text = AUTHORS.read_text(encoding="utf-8")
+    for hit in re.finditer(r"\\newcommand\s*\{\s*\\arxivtitle\s*\}", text):
+        line_start = text.rfind("\n", 0, hit.start()) + 1
+        if _COMMENT.search(text[line_start:hit.start()]):
+            continue
+        open_brace = text.index("{", hit.end())
+        end = match_brace(text, open_brace)
+        return " ".join(text[open_brace + 1: end - 1].split())
+    return None
+
+
 # --------------------------------------------------------------------------
 # Assembly.
 # --------------------------------------------------------------------------
@@ -330,6 +347,9 @@ def build_preamble() -> tuple[str, str]:
     text = text.replace("\\usepackage{cleveref}", LINK_LAYER.rstrip("\n"), 1)
 
     head, title_cmd, _drop = split_preamble(text)
+    override = title_override()
+    if override is not None:
+        title_cmd = "\\title{" + override + "}"
     title = title_of(title_cmd)
 
     authors = AUTHORS.read_text(encoding="utf-8").rstrip()

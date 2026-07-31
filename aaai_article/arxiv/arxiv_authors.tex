@@ -3,15 +3,21 @@
 %
 %  The AAAI submission is anonymous, so this is the one piece of front matter
 %  that cannot be lifted from it. make_arxiv.py drops this file in place of
-%  the "Anonymous Submission" block of signmuon_preamble.tex; the title is
-%  still taken from the preamble automatically, so it lives in exactly one
-%  place. Edit here and rerun the build.
+%  the "Anonymous Submission" block of signmuon_preamble.tex. The title comes
+%  from the preamble too, unless \arxivtitle below overrides it. Edit here and
+%  rerun the build.
 %
 %  \equalcontrib attaches the shared footnote "These authors contributed
 %  equally." -- it is defined by aaai2027.sty, and one footnote is emitted
 %  however many authors carry the mark. \corresponding is the companion mark
 %  for a corresponding author, if you want one.
 %%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%
+
+% arXiv-only title. The AAAI submission must keep the title registered on
+% OpenReview, which cannot be changed after the deadline, so the preamble
+% carries that one and this supersedes it here alone -- in the typeset title
+% and in the PDF metadata both. Delete this line to inherit the AAAI title.
+\newcommand{\arxivtitle}{Sign compression for Muon: SignMuon, MuonSign, and the Limits of Error Feedback}
 
 \author{
     Maria Smirnova\equalcontrib,
