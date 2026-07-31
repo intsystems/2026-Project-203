@@ -78,7 +78,7 @@ that no batch size reduces. The $\mathcal{O}(1/\sqrt{T})$ rate accordingly
 attaches to the gradient-sign update, and to SignMuon their analysis offers
 only \eqref{eq:mishra_generic} with $R_T$ unestimated.
 
-\paragraph{What the generic bound can and cannot assert.}
+\paragraph{Scope of the generic bound.}
 Inequality \eqref{eq:mishra_generic} is valid for every sign oracle, and for
 that reason asserts nothing until $R_T$ is estimated. By
 \eqref{eq:mishra_identity}, the summand of $R_T$ at time $t$ exceeds the
@@ -130,8 +130,7 @@ unbounded below only on a half-space the iterates never enter, where a smooth
 bounded replacement restores the assumption without moving the trajectory or
 any quantity above.
 
-\paragraph{Consequence.}
-Restated in their terms, Theorem~\ref{th:1} exhibits a smooth instance on
+In their terms, Theorem~\ref{th:1} exhibits a smooth instance on
 which the sign-error probabilities $q_{ij,t}$ of the SignMuon oracle, averaged
 over the entries with weights $\bigl|[\nabla f(\mathbf{X}_t)]_{ij}\bigr|$,
 exceed $\tfrac12$ at every iteration. Any rate extracted from

@@ -52,6 +52,7 @@ import shutil
 import subprocess
 import sys
 import tarfile
+import zipfile
 from pathlib import Path
 
 HERE = Path(__file__).resolve().parent      # aaai_article/arxiv
@@ -507,6 +508,16 @@ def pack(build: Path) -> Path:
     return tarball
 
 
+def pack_zip(build: Path) -> Path:
+    """arXiv accepts either archive; the zip is the one most browsers upload."""
+    archive = HERE / "signmuon_arxiv.zip"
+    with zipfile.ZipFile(archive, "w", zipfile.ZIP_DEFLATED) as zf:
+        for path in sorted(build.rglob("*")):
+            if path.is_file():
+                zf.write(path, arcname=str(path.relative_to(build)).replace("\\", "/"))
+    return archive
+
+
 # --------------------------------------------------------------------------
 
 def main() -> int:
@@ -550,9 +561,9 @@ def main() -> int:
         print(f"  preview        : {pdf}")
 
     if not args.no_tar:
-        tarball = pack(build)
-        size = tarball.stat().st_size / 1e6
-        print(f"  tarball        : {tarball} ({size:.1f} MB)")
+        for archive in (pack(build), pack_zip(build)):
+            size = archive.stat().st_size / 1e6
+            print(f"  {archive.suffix.lstrip('.'):<14} : {archive} ({size:.1f} MB)")
 
     left = todos()
     if left:

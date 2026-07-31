@@ -10,33 +10,27 @@
 %  is the same as in the AAAI PDF. \arxivrepo is defined in
 %  arxiv_authors.tex.
 %
-%  DRAFT: the text below is a starting point, not a record of what happened.
-%  make_arxiv.py prints a warning for every TODO left in this file.
+%  The acknowledgment and the contribution split below are the real ones. If
+%  funding or a compute provider has to be credited, the acknowledgment is
+%  where it goes. make_arxiv.py prints a warning for every TODO left here.
 %%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%
 
 \section*{Acknowledgments}
 
-The authors thank their colleagues for discussions of early versions of this
-work and for comments on the manuscript.
-% VERIFY: name the people you want to thank, and state the funding and the
-% compute provider for the nanoGPT runs. Delete the bracketed slot below once
-% filled in -- an empty acknowledgment is better than a wrong one.
-[TODO: funding and compute acknowledgment.]
+We thank Alexander Tyurin for drawing our attention in June 2026 to the concurrent
+SignMuon work of \citet{mishra2026signmuon}.
 
 \section*{Author Contributions}
 
-M.\,Smirnova and A.\,Kravatskiy contributed equally to this work. Both authors
-conceived the study, wrote the manuscript, and approved the final version.
-% VERIFY: replace the sentence below with the actual split. The pieces of work
-% the paper reports are: the three divergence counterexamples and their
-% minimality analyses; the EF21 divergence theorem; the EF21-MuonUSign /
-% EF21-MuonSign convergence analysis; the optimizer implementations; and the
-% synthetic, centralized CIFAR-10, federated CIFAR-10 and nanoGPT experiments.
-[TODO: who did which of those.]
+A.\,Kravatskiy proposed compressing Muon with a sign compressor in February
+2026 and led the project. M.\,Smirnova ran the preliminary experiments and
+wrote the first draft of the paper. The divergence counterexamples are due to
+A.\,Kravatskiy; the reduction of EF21-MuonUSign and EF21-MuonSign to the
+EF21-Muon framework of \citet{gruntkowska2025error} was carried out jointly.
+Both authors ran the experiments reported here and expanded and edited the
+manuscript into its present form.
 
 \section*{Code Availability}
 
-The optimizers, the counterexample constructions and the scripts that produce
-every figure and table in this paper are available at
-\arxivrepo. The repository documents the exact commands and random seeds
-behind each reported number.
+Code for this paper is available at \arxivrepo. The repository records the exact command and the
+hyperparameters behind each reported number.

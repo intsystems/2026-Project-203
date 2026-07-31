@@ -30,7 +30,7 @@ the method convergent.
 \end{theorem}
 
 Recall from the main text that EF21-SignMuon (Algorithm~\ref{ef21_signmuon})
-does not descend along the LMO output
+does not step along the polar factor
 $\mathbf D_t=\operatorname{polar}(\tilde{\mathbf M}_t)$ itself, but along the
 error-feedback estimate $\mathbf d_t^{\mathrm{est}}$ of \eqref{eq:efsm_est},
 followed by $\mathbf X_t=\mathbf X_{t-1}-\eta\,\mathbf d_t^{\mathrm{est}}$. A
@@ -55,9 +55,9 @@ entry has a time average of the sign \emph{opposite} to $-\varepsilon$, and
 the iterate driven by that estimate moves the wrong way forever.
 
 \emph{From the sketch to an instance.} The sketch is not yet a counterexample:
-in EF21-SignMuon the quantity tracked is the LMO output
-$\mathbf D_t=\operatorname{polar}(\tilde{\mathbf M}_t)$, a polar factor of
-unit spectral norm, and the gradients behind it must all come from one smooth
+in EF21-SignMuon the quantity tracked is the polar factor
+$\mathbf D_t=\operatorname{polar}(\tilde{\mathbf M}_t)$, of unit spectral
+norm, and the gradients behind it must all come from one smooth
 function. Both constraints are met at size $2\times2$ by the reflections
 $\bar{\mathbf D}^{\pm}=\smat{a}{\pm b}{\pm b}{-a}$ with $a^2+b^2=1$: one
 matrix the oracle can emit carries both roles of the sketch at once, the
