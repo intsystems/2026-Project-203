@@ -446,6 +446,21 @@ def test_the_bundle_references_nothing_it_withholds():
                 if name in withheld_modules or root in withheld_modules:
                     problems.append(f"{rel}: imports withheld module {name!r}")
 
+            # `from tests import test_anonymize` names a withheld module in the
+            # half the pattern above does not reach: it captures `tests`, which
+            # ships. That is not a nitpick -- it is the exact line that took the
+            # bundle's `python3 -m tests.test_code` down at import, past a guard
+            # written for a `ModuleNotFoundError` that a missing *submodule* does
+            # not raise. So resolve each imported name as a submodule too.
+            package = re.match(r"^\s*from\s+([\w.]+)\s+import\s+(.+)$", line)
+            if package:
+                for item in package.group(2).split(","):
+                    item = item.strip().split(" as ")[0].strip().strip("()")
+                    candidate = f"{package.group(1)}.{item}"
+                    if item.isidentifier() and candidate in withheld_modules:
+                        problems.append(f"{rel}: imports withheld module "
+                                        f"{candidate!r}")
+
         # Markdown only: `[x](args)` is ordinary prose in a docstring, not a link.
         if rel.endswith(".md"):
             for target in re.findall(r"\]\(([^)#\s:]+)(?:#[^)]*)?\)", body):
