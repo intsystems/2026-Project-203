@@ -1,0 +1,537 @@
+% =====================================================================
+%  Bibliography for the AAAI SignMuon paper.
+%
+%  Conventions, so that entries stay uniform (BibTeX parses an "at" sign
+%  even inside a comment, so entry types are spelled out below):
+%    * sorted alphabetically by citation key;
+%    * author names in "Last, First" order, accents as LaTeX macros;
+%    * arXiv-only work is a misc entry with eprint/archivePrefix --
+%      aaai2027.bst prints that as "arXiv:NNNN.NNNNN";
+%    * published work is an inproceedings/article entry with the venue,
+%      and the arXiv id in note = {arXiv:...}, since aaai2027.bst reads
+%      eprint only for misc entries;
+%    * web-only work (blogs, repositories) puts its link in howpublished,
+%      not url -- aaai2027.bst prints howpublished and drops url.
+%
+%  Entries not cited by the current build are collected at the end.
+% =====================================================================
+
+@misc{ahn2025dion,
+  title         = {Dion: Distributed Orthonormalized Updates},
+  author        = {Ahn, Kwangjun and Xu, Byron and Abreu, Natalie and Fan, Ying and Magakyan, Gagik and Sharma, Pratyusha and Zhan, Zheng and Langford, John},
+  year          = {2025},
+  eprint        = {2504.05295},
+  archivePrefix = {arXiv},
+  primaryClass  = {cs.LG},
+  url           = {https://arxiv.org/abs/2504.05295}
+}
+
+@inproceedings{alistarh2017qsgd,
+  title     = {{QSGD}: Communication-Efficient {SGD} via Gradient Quantization and Encoding},
+  author    = {Alistarh, Dan and Grubic, Demjan and Li, Jerry and Tomioka, Ryota and Vojnovic, Milan},
+  booktitle = {Advances in Neural Information Processing Systems (NeurIPS)},
+  pages     = {1709--1720},
+  year      = {2017}
+}
+
+@misc{amsel2025polar,
+  title         = {The {P}olar {E}xpress: Optimal Matrix Sign Methods and Their Application to the {M}uon Algorithm},
+  author        = {Amsel, Noah and Persson, David and Musco, Christopher and Gower, Robert M.},
+  year          = {2025},
+  eprint        = {2505.16932},
+  archivePrefix = {arXiv},
+  primaryClass  = {cs.LG},
+  url           = {https://arxiv.org/abs/2505.16932}
+}
+
+@inproceedings{bernstein2018signsgd,
+  title     = {sign{SGD}: Compressed Optimisation for Non-Convex Problems},
+  author    = {Bernstein, Jeremy and Wang, Yu-Xiang and Azizzadenesheli, Kamyar and Anandkumar, Anima},
+  booktitle = {Proceedings of the 35th International Conference on Machine Learning},
+  pages     = {560--569},
+  year      = {2018},
+  volume    = {80},
+  series    = {Proceedings of Machine Learning Research},
+  publisher = {PMLR},
+  url       = {https://proceedings.mlr.press/v80/bernstein18a.html}
+}
+
+@inproceedings{bernstein2019signsgdmajority,
+  title     = {sign{SGD} with Majority Vote is Communication Efficient and Fault Tolerant},
+  author    = {Bernstein, Jeremy and Zhao, Jiawei and Azizzadenesheli, Kamyar and Anandkumar, Anima},
+  booktitle = {International Conference on Learning Representations (ICLR)},
+  year      = {2019},
+  note      = {{arXiv:1810.05291}},
+  url       = {https://openreview.net/forum?id=BJxhijAcY7}
+}
+
+@misc{bernstein2024old,
+  title         = {Old Optimizer, New Norm: An Anthology},
+  author        = {Bernstein, Jeremy and Newhouse, Laker},
+  year          = {2024},
+  eprint        = {2409.20325},
+  archivePrefix = {arXiv},
+  primaryClass  = {cs.LG},
+  url           = {https://arxiv.org/abs/2409.20325}
+}
+
+@misc{bernstein2025deriving,
+  title        = {Deriving {M}uon},
+  author       = {Bernstein, Jeremy},
+  year         = {2025},
+  howpublished = {\url{https://jeremybernste.in/writing/deriving-muon}},
+  note         = {Blog post}
+}
+
+@article{beznosikov2020biased,
+  title   = {On Biased Compression for Distributed Learning},
+  author  = {Beznosikov, Aleksandr and Horv{\'a}th, Samuel and Richt{\'a}rik, Peter and Safaryan, Mher},
+  journal = {Journal of Machine Learning Research},
+  volume  = {24},
+  number  = {276},
+  pages   = {1--50},
+  year    = {2023},
+  url     = {https://www.jmlr.org/papers/v24/21-1548.html}
+}
+
+@misc{bolatov2026lionmuon,
+  title         = {{L}ion{M}uon: Alternating Spectral and Sign Descent for Efficient Training},
+  author        = {Bolatov, Arman and Riabinin, Artem and Kornilov, Nikita and Veprikov, Andrey and Horv{\'a}th, Samuel and Tak{\'a}{\v{c}}, Martin and Beznosikov, Aleksandr},
+  year          = {2026},
+  eprint        = {2605.19811},
+  archivePrefix = {arXiv},
+  primaryClass  = {cs.LG},
+  url           = {https://arxiv.org/abs/2605.19811}
+}
+
+@misc{cesista2025schattenp,
+  title        = {Steepest Descent Under {S}chatten-$p$ Norms},
+  author       = {Cesista, Franz Louis},
+  year         = {2025},
+  howpublished = {\url{https://leloykun.github.io/ponder/steepest-descent-schatten-p/}},
+  note         = {Blog post}
+}
+
+@inproceedings{chen2020median,
+  title     = {Distributed Training with Heterogeneous Data: Bridging Median- and Mean-Based Algorithms},
+  author    = {Chen, Xiangyi and Chen, Tiancong and Sun, Haoran and Wu, Zhiwei Steven and Hong, Mingyi},
+  booktitle = {Advances in Neural Information Processing Systems (NeurIPS)},
+  year      = {2020},
+  note      = {{arXiv:1906.01736}}
+}
+
+@inproceedings{cutkosky2020momentum,
+  title     = {Momentum Improves Normalized {SGD}},
+  author    = {Cutkosky, Ashok and Mehta, Harsh},
+  booktitle = {Proceedings of the 37th International Conference on Machine Learning},
+  pages     = {2260--2268},
+  year      = {2020},
+  volume    = {119},
+  series    = {Proceedings of Machine Learning Research},
+  publisher = {PMLR},
+  url       = {https://proceedings.mlr.press/v119/cutkosky20b.html}
+}
+
+% arXiv v1 is November 2023; later presented at the ICML 2024 WANT workshop.
+@misc{douillard2024diloco,
+  title         = {{D}i{L}o{C}o: Distributed Low-Communication Training of Language Models},
+  author        = {Douillard, Arthur and Feng, Qixuan and Rusu, Andrei A. and Chhaparia, Rachita and Donchev, Yani and Kuncoro, Adhiguna and Ranzato, Marc'Aurelio and Szlam, Arthur and Shen, Jiajun},
+  year          = {2023},
+  eprint        = {2311.08105},
+  archivePrefix = {arXiv},
+  primaryClass  = {cs.LG},
+  url           = {https://arxiv.org/abs/2311.08105}
+}
+
+@misc{grishina2025chebyshev,
+  title         = {Accelerating {Newton--Schulz} Iteration for Orthogonalization via {Chebyshev}-type Polynomials},
+  author        = {Grishina, Ekaterina and Smirnov, Matvey and Rakhuba, Maxim},
+  year          = {2025},
+  eprint        = {2506.10935},
+  archivePrefix = {arXiv},
+  primaryClass  = {cs.LG},
+  url           = {https://arxiv.org/abs/2506.10935}
+}
+
+@misc{gruntkowska2025error,
+  title         = {Error Feedback for {M}uon and Friends},
+  author        = {Gruntkowska, Kaja and Gaponov, Alexander and Tovmasyan, Zhirayr and Richt{\'a}rik, Peter},
+  year          = {2025},
+  eprint        = {2510.00643},
+  archivePrefix = {arXiv},
+  primaryClass  = {cs.LG},
+  url           = {https://arxiv.org/abs/2510.00643}
+}
+
+@misc{gupta2025effective,
+  title         = {Effective Quantization of {M}uon Optimizer States},
+  author        = {Gupta, Aman and Celente, Rafael and Shivanna, Abhishek and Braithwaite, D. T. and Dexter, Gregory and Tang, Shao and Udagawa, Hiroto and Silva, Daniel and Ramanath, Rohan and Keerthi, S. Sathiya},
+  year          = {2025},
+  eprint        = {2509.23106},
+  archivePrefix = {arXiv},
+  primaryClass  = {cs.LG},
+  url           = {https://arxiv.org/abs/2509.23106}
+}
+
+@article{horvath2023stochastic,
+  title   = {Stochastic distributed learning with gradient quantization and double-variance reduction},
+  author  = {Horv{\'a}th, Samuel and Kovalev, Dmitry and Mishchenko, Konstantin and Richt{\'a}rik, Peter and Stich, Sebastian},
+  journal = {Optimization Methods and Software},
+  volume  = {38},
+  number  = {1},
+  pages   = {91--106},
+  year    = {2023},
+  doi     = {10.1080/10556788.2022.2117355}
+}
+
+@article{jin2024stosign,
+  title   = {Sign-Based Gradient Descent With Heterogeneous Data: Convergence and {B}yzantine Resilience},
+  author  = {Jin, Richeng and Liu, Yuding and Huang, Yufan and He, Xiaofan and Wu, Tianfu and Dai, Huaiyu},
+  journal = {IEEE Transactions on Neural Networks and Learning Systems},
+  volume  = {36},
+  number  = {2},
+  pages   = {3834--3846},
+  year    = {2025},
+  doi     = {10.1109/TNNLS.2023.3345367}
+}
+
+@misc{jordan2024moddednanogpt,
+  title        = {modded-nanogpt: Speedrunning the {NanoGPT} baseline},
+  author       = {Jordan, Keller and Bernstein, Jeremy and Rappazzo, Brendan and {@fernbear.bsky.social} and Boza, Vlado and You, Jiacheng and Cesista, Franz and Koszarsky, Braden and {@Grad62304977}},
+  year         = {2024},
+  howpublished = {\url{https://github.com/KellerJordan/modded-nanogpt}}
+}
+
+@misc{jordan2024muon,
+  title        = {Muon: An optimizer for hidden layers in neural networks},
+  author       = {Jordan, Keller and Jin, Yuchen and Boza, Vlado and You, Jiacheng and Cesista, Franz and Newhouse, Laker and Bernstein, Jeremy},
+  year         = {2024},
+  howpublished = {\url{https://kellerjordan.github.io/posts/muon/}}
+}
+
+@inproceedings{karimireddy2019efsign,
+  title     = {Error Feedback Fixes {S}ign{SGD} and other Gradient Compression Schemes},
+  author    = {Karimireddy, Sai Praneeth and Rebjock, Quentin and Stich, Sebastian and Jaggi, Martin},
+  booktitle = {Proceedings of the 36th International Conference on Machine Learning},
+  pages     = {3252--3261},
+  year      = {2019},
+  volume    = {97},
+  series    = {Proceedings of Machine Learning Research},
+  publisher = {PMLR},
+  url       = {https://proceedings.mlr.press/v97/karimireddy19a.html}
+}
+
+@misc{kovalev2025understanding,
+  title         = {Understanding Gradient Orthogonalization for Deep Learning via Non-{E}uclidean Trust-Region Optimization},
+  author        = {Kovalev, Dmitry},
+  year          = {2025},
+  eprint        = {2503.12645},
+  archivePrefix = {arXiv},
+  primaryClass  = {cs.LG},
+  url           = {https://arxiv.org/abs/2503.12645}
+}
+
+@misc{kravatskiy2025kyfannorms,
+  title         = {{K}y {F}an Norms and Beyond: Dual Norms and Combinations for Matrix Optimization},
+  author        = {Kravatskiy, Alexey and Kozyrev, Ivan and Kozlov, Nikolai and Vinogradov, Alexander and Merkulov, Daniil and Oseledets, Ivan},
+  year          = {2025},
+  eprint        = {2512.09678},
+  archivePrefix = {arXiv},
+  primaryClass  = {math.OC},
+  url           = {https://arxiv.org/abs/2512.09678}
+}
+
+@techreport{krizhevsky2009cifar,
+  title       = {Learning Multiple Layers of Features from Tiny Images},
+  author      = {Krizhevsky, Alex},
+  year        = {2009},
+  institution = {University of Toronto},
+  type        = {Technical report},
+  note        = {{\url{https://www.cs.toronto.edu/~kriz/learning-features-2009-TR.pdf}}}
+}
+
+@inproceedings{large2024modular,
+  title     = {Scalable Optimization in the Modular Norm},
+  author    = {Large, Tim and Liu, Yang and Huh, Minyoung and Bahng, Hyojin and Isola, Phillip and Bernstein, Jeremy},
+  booktitle = {Advances in Neural Information Processing Systems (NeurIPS)},
+  year      = {2024},
+  note      = {{arXiv:2405.14813}}
+}
+
+@misc{li2025note,
+  title         = {A Note on the Convergence of {M}uon},
+  author        = {Li, Jiaxiang and Hong, Mingyi},
+  year          = {2025},
+  eprint        = {2502.02900},
+  archivePrefix = {arXiv},
+  primaryClass  = {math.OC},
+  url           = {https://arxiv.org/abs/2502.02900}
+}
+
+@misc{liu2025muon,
+  title         = {Muon is Scalable for {LLM} Training},
+  author        = {Liu, Jingyuan and Su, Jianlin and Yao, Xingcheng and Jiang, Zhejun and Lai, Guokun and Du, Yulun and Qin, Yidao and Xu, Weixin and Lu, Enzhe and Yan, Junjie and Chen, Yanru and Zheng, Huabin and Liu, Yibo and Liu, Shaowei and Yin, Bohong and He, Weiran and Zhu, Han and Wang, Yuzhi and Wang, Jianzhou and Dong, Mengnan and Zhang, Zheng and Kang, Yongsheng and Zhang, Hao and Xu, Xinran and Zhang, Yutao and Wu, Yuxin and Zhou, Xinyu and Yang, Zhilin},
+  year          = {2025},
+  eprint        = {2502.16982},
+  archivePrefix = {arXiv},
+  primaryClass  = {cs.LG},
+  url           = {https://arxiv.org/abs/2502.16982}
+}
+
+@misc{mishra2026signmuon,
+  title         = {Sign{M}uon: Communication-Efficient Distributed {M}uon Optimization},
+  author        = {Mishra, Neel and Trivedi, Kushagara and Kumar, Pawan},
+  year          = {2026},
+  eprint        = {2605.16311},
+  archivePrefix = {arXiv},
+  primaryClass  = {cs.LG},
+  url           = {https://arxiv.org/abs/2605.16311}
+}
+
+@misc{parshakova2026muondoesconvergeconvex,
+  title         = {Muon Does Not Converge on Convex {L}ipschitz Functions},
+  author        = {Parshakova, Tetiana and Khaled, Ahmed and Crawshaw, Michael and Garrigos, Guillaume and Gower, Robert M.},
+  year          = {2026},
+  eprint        = {2605.08980},
+  archivePrefix = {arXiv},
+  primaryClass  = {cs.LG},
+  url           = {https://arxiv.org/abs/2605.08980}
+}
+
+@inproceedings{penedo2024fineweb,
+  title     = {The {FineWeb} Datasets: Decanting the Web for the Finest Text Data at Scale},
+  author    = {Penedo, Guilherme and Kydl{\'i}{\v{c}}ek, Hynek and {Ben Allal}, Loubna and Lozhkov, Anton and Mitchell, Margaret and Raffel, Colin and {Von Werra}, Leandro and Wolf, Thomas},
+  booktitle = {Advances in Neural Information Processing Systems (NeurIPS), Datasets and Benchmarks Track},
+  year      = {2024},
+  note      = {{arXiv:2406.17557}}
+}
+
+@inproceedings{pethick2025generalized,
+  title     = {Generalized Gradient Norm Clipping \& Non-{E}uclidean {$(L_0,L_1)$}-Smoothness},
+  author    = {Pethick, Thomas and Xie, Wanyun and Erdogan, Mete and Antonakopoulos, Kimon and Silveti-Falls, Antonio and Cevher, Volkan},
+  booktitle = {Advances in Neural Information Processing Systems (NeurIPS)},
+  year      = {2025},
+  note      = {{arXiv:2506.01913}}
+}
+
+@inproceedings{pethick2025training,
+  title     = {Training Deep Learning Models with Norm-Constrained {LMO}s},
+  author    = {Pethick, Thomas and Xie, Wanyun and Antonakopoulos, Kimon and Zhu, Zhenyu and Silveti-Falls, Antonio and Cevher, Volkan},
+  booktitle = {Proceedings of the 42nd International Conference on Machine Learning},
+  pages     = {49069--49104},
+  year      = {2025},
+  volume    = {267},
+  series    = {Proceedings of Machine Learning Research},
+  publisher = {PMLR},
+  url       = {https://proceedings.mlr.press/v267/pethick25a.html}
+}
+
+@misc{qian2026communicationefficientgluon,
+  title         = {Communication-Efficient {G}luon in Federated Learning},
+  author        = {Qian, Xun and Gaponov, Alexander and Malinovsky, Grigory and Richt{\'a}rik, Peter},
+  year          = {2026},
+  eprint        = {2604.10689},
+  archivePrefix = {arXiv},
+  primaryClass  = {cs.LG},
+  url           = {https://arxiv.org/abs/2604.10689}
+}
+
+@misc{riabinin2025gluon,
+  title         = {{G}luon: Making {M}uon \& {S}cion Great Again! ({B}ridging Theory and Practice of {LMO}-based Optimizers for {LLMs})},
+  author        = {Riabinin, Artem and Shulgin, Egor and Gruntkowska, Kaja and Richt{\'a}rik, Peter},
+  year          = {2025},
+  eprint        = {2505.13416},
+  archivePrefix = {arXiv},
+  primaryClass  = {cs.LG},
+  url           = {https://arxiv.org/abs/2505.13416}
+}
+
+@inproceedings{richtarik2021ef21,
+  title     = {{EF21}: A New, Simpler, Theoretically Better, and Practically Faster Error Feedback},
+  author    = {Richt{\'a}rik, Peter and Sokolov, Igor and Fatkhullin, Ilyas},
+  booktitle = {Advances in Neural Information Processing Systems (NeurIPS)},
+  volume    = {34},
+  pages     = {4384--4396},
+  year      = {2021}
+}
+
+@inproceedings{safaryan2021ssdm,
+  title     = {Stochastic Sign Descent Methods: New Algorithms and Better Theory},
+  author    = {Safaryan, Mher and Richt{\'a}rik, Peter},
+  booktitle = {Proceedings of the 38th International Conference on Machine Learning},
+  pages     = {9224--9234},
+  year      = {2021},
+  volume    = {139},
+  series    = {Proceedings of Machine Learning Research},
+  publisher = {PMLR},
+  url       = {https://proceedings.mlr.press/v139/safaryan21a.html}
+}
+
+@inproceedings{seide20141bit,
+  title     = {1-bit stochastic gradient descent and its application to data-parallel distributed training of speech {DNN}s},
+  author    = {Seide, Frank and Fu, Hao and Droppo, Jasha and Li, Gang and Yu, Dong},
+  booktitle = {Interspeech 2014},
+  pages     = {1058--1062},
+  year      = {2014},
+  doi       = {10.21437/Interspeech.2014-274}
+}
+
+@misc{shah2025practical,
+  title         = {Practical Efficiency of {M}uon for Pretraining},
+  author        = {Shah, Ishaan and Polloreno, Anthony M. and Stratos, Karl and Monk, Philip and Chaluvaraju, Adarsh and Hojel, Andrew and Ma, Andrew and Thomas, Anil and Tanwer, Ashish and Shah, Darsh J. and Nguyen, Khoi and Smith, Kurt and Callahan, Michael and Pust, Michael and Parmar, Mohit and Rushton, Peter and Mazarakis, Platon and Kapila, Ritvik and Srivastava, Saurabh and Singla, Somanshu and Romanski, Tim and Vanjani, Yash and Vaswani, Ashish},
+  year          = {2025},
+  eprint        = {2505.02222},
+  archivePrefix = {arXiv},
+  primaryClass  = {cs.LG},
+  url           = {https://arxiv.org/abs/2505.02222}
+}
+
+@inproceedings{shulgin2025inexactmuon,
+  title     = {Beyond the Ideal: Analyzing the Inexact {M}uon Update},
+  author    = {Shulgin, Egor and AlRashed, Sultan and Orabona, Francesco and Richt{\'a}rik, Peter},
+  booktitle = {Proceedings of the 29th International Conference on Artificial Intelligence and Statistics (AISTATS)},
+  year      = {2026},
+  note      = {{arXiv:2510.19933}}
+}
+
+@inproceedings{sun2023signmomentum,
+  title     = {Momentum Ensures Convergence of {SIGNSGD} under Weaker Assumptions},
+  author    = {Sun, Tao and Wang, Qingsong and Li, Dongsheng and Wang, Bao},
+  booktitle = {Proceedings of the 40th International Conference on Machine Learning},
+  pages     = {33077--33099},
+  year      = {2023},
+  volume    = {202},
+  series    = {Proceedings of Machine Learning Research},
+  publisher = {PMLR},
+  url       = {https://proceedings.mlr.press/v202/sun23l.html}
+}
+
+@inproceedings{takezawa2025fedmuonfederatedlearningbiascorrected,
+  title     = {Fed{M}uon: Federated Learning with Bias-corrected {LMO}-based Optimization},
+  author    = {Takezawa, Yuki and Koloskova, Anastasia and Jiang, Xiaowen and Stich, Sebastian U.},
+  booktitle = {International Conference on Learning Representations (ICLR)},
+  year      = {2026},
+  note      = {{arXiv:2509.26337}},
+  url       = {https://openreview.net/forum?id=9k7bvBVenZ}
+}
+
+@inproceedings{tang2019doublesqueeze,
+  title     = {{D}ouble{S}queeze: Parallel Stochastic Gradient Descent with Double-Pass Error-Compensated Compression},
+  author    = {Tang, Hanlin and Yu, Chen and Lian, Xiangru and Zhang, Tong and Liu, Ji},
+  booktitle = {Proceedings of the 36th International Conference on Machine Learning},
+  pages     = {6155--6165},
+  year      = {2019},
+  volume    = {97},
+  series    = {Proceedings of Machine Learning Research},
+  publisher = {PMLR},
+  url       = {https://proceedings.mlr.press/v97/tang19d.html}
+}
+
+@misc{therien2025muloco,
+  title         = {{M}u{L}o{C}o: {M}uon is a practical inner optimizer for {D}i{L}o{C}o},
+  author        = {Th{\'e}rien, Benjamin and Huang, Xiaolong and Defazio, Aaron and Rish, Irina and Belilovsky, Eugene},
+  year          = {2025},
+  eprint        = {2505.23725},
+  archivePrefix = {arXiv},
+  primaryClass  = {cs.LG},
+  url           = {https://arxiv.org/abs/2505.23725}
+}
+
+@inproceedings{yang2021tuning,
+  title     = {Tuning Large Neural Networks via Zero-Shot Hyperparameter Transfer},
+  author    = {Yang, Greg and Hu, Edward J. and Babuschkin, Igor and Sidor, Szymon and
+               Liu, Xiaodong and Farhi, David and Ryder, Nick and Pachocki, Jakub and
+               Chen, Weizhu and Gao, Jianfeng},
+  booktitle = {Advances in Neural Information Processing Systems (NeurIPS)},
+  volume    = {34},
+  pages     = {17084--17097},
+  year      = {2021},
+  note      = {{arXiv:2203.03466}}
+}
+
+@misc{yang2023spectral,
+  title         = {A Spectral Condition for Feature Learning},
+  author        = {Yang, Greg and Simon, James B. and Bernstein, Jeremy},
+  year          = {2023},
+  eprint        = {2310.17813},
+  archivePrefix = {arXiv},
+  primaryClass  = {cs.LG},
+  url           = {https://arxiv.org/abs/2310.17813}
+}
+
+@misc{zhang2025fedmuon,
+  title         = {On Provable Benefits of {M}uon in Federated Learning},
+  author        = {Zhang, Xinwen and Gao, Hongchang},
+  year          = {2025},
+  eprint        = {2510.03866},
+  archivePrefix = {arXiv},
+  primaryClass  = {cs.LG},
+  url           = {https://arxiv.org/abs/2510.03866}
+}
+
+% =====================================================================
+%  Not cited by the current build. Kept because they were cited by
+%  earlier drafts; delete or re-cite as the paper settles.
+% =====================================================================
+
+@misc{crawshaw2025exploration,
+  title         = {An Exploration of Non-{E}uclidean Gradient Descent: {M}uon and its Many Variants},
+  author        = {Crawshaw, Michael and Modi, Chirag and Liu, Mingrui and Gower, Robert M.},
+  year          = {2025},
+  eprint        = {2510.09827},
+  archivePrefix = {arXiv},
+  primaryClass  = {cs.LG},
+  url           = {https://arxiv.org/abs/2510.09827}
+}
+
+@inproceedings{gruntkowska2023ef21,
+  title     = {{EF21-P} and Friends: Improved Theoretical Communication Complexity for Distributed Optimization with Bidirectional Compression},
+  author    = {Gruntkowska, Kaja and Tyurin, Alexander and Richt{\'a}rik, Peter},
+  booktitle = {Proceedings of the 40th International Conference on Machine Learning},
+  pages     = {11761--11807},
+  year      = {2023},
+  volume    = {202},
+  series    = {Proceedings of Machine Learning Research},
+  publisher = {PMLR},
+  url       = {https://proceedings.mlr.press/v202/gruntkowska23a.html}
+}
+
+% Repository created 20 March 2024; the companion paper is arXiv:2404.00498,
+% "94% on CIFAR-10 in 3.29 Seconds on a Single GPU". Key says 2023.
+@misc{jordan2023cifar10,
+  title        = {{CIFAR-10} airbench},
+  author       = {Jordan, Keller},
+  year         = {2024},
+  howpublished = {\url{https://github.com/KellerJordan/cifar10-airbench}},
+  note         = {{arXiv:2404.00498}}
+}
+
+% Conventional citation for the MNIST web page; there is no dated primary
+% document behind the 2010, so treat the year as the usual convention.
+@misc{lecun2010mnist,
+  title        = {{MNIST} handwritten digit database},
+  author       = {LeCun, Yann and Cortes, Corinna and Burges, Christopher J. C.},
+  year         = {2010},
+  howpublished = {\url{http://yann.lecun.com/exdb/mnist/}}
+}
+
+@article{li1995relative,
+  title     = {Relative perturbation bounds for the unitary polar factor},
+  author    = {Li, Ren-Cang},
+  journal   = {BIT Numerical Mathematics},
+  volume    = {37},
+  number    = {1},
+  pages     = {67--75},
+  year      = {1997},
+  doi       = {10.1007/BF02510173}
+}
+
+@misc{petrov2025leveraging,
+  title         = {Leveraging Coordinate Momentum in {S}ign{SGD} and {M}uon: Memory-Optimized Zero-Order},
+  author        = {Petrov, Egor and Evseev, Grigoriy and Antonov, Aleksey and Veprikov, Andrey and Bushkov, Nikolay and Moiseev, Stanislav and Beznosikov, Aleksandr},
+  year          = {2025},
+  eprint        = {2506.04430},
+  archivePrefix = {arXiv},
+  primaryClass  = {cs.LG},
+  url           = {https://arxiv.org/abs/2506.04430}
+}
