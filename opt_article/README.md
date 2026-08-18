@@ -10,8 +10,8 @@ cd opt_article
 python make_opt.py
 ```
 
-That writes `build/` — main.tex, the three class files, `references.bib`,
-`main.bbl` and the thirteen images the document uses — plus
+That writes `build/`: main.tex, the three class files, `references.bib`,
+`main.bbl`, and the thirteen images the document uses. Beside it go
 `signmuon_opt.pdf`, the compiled preview, and `signmuon_opt.zip`.
 
 ## The venue
@@ -19,7 +19,7 @@ That writes `build/` — main.tex, the three class files, `references.bib`,
 | | |
 | --- | --- |
 | Style | `opt2026.cls`, from <https://opt-ml.org/opt2026_style.zip>, unpacked into `style/` |
-| Class it derives from | `jmlr.cls` — single column, `article`-based |
+| Class it derives from | `jmlr.cls`: single column, `article`-based |
 | Length | 5 pages at submission (soft), 6 for the camera-ready (hard), references and appendix excluded |
 | Review | double-blind |
 | Deadline | 4 September 2026 (AoE); notification 29 September; camera-ready 27 November |
@@ -40,12 +40,12 @@ The limit the build compares against is 5 for `anon` and `named` and 6 for
 | --- | --- |
 | two columns | one |
 | `aaai2027.sty` | `opt2026.cls` |
-| author-year citations, `aaai2027.bst` | numeric, `plainnat` — `[7]`, not `(Author 2026)` |
+| author-year citations, `aaai2027.bst` | numeric, `plainnat`: `[7]`, not `(Author 2026)` |
 | main paper + separate supplementary PDF | one document, appendix after the references |
 | `xr` cross-document references | ordinary `\ref` |
 | Anonymous Submission / Anonymous Institution | the class's own "author names withheld" |
-| `figure*`, `table*` | `figure`, `table` — 24 of them |
-| `\columnwidth` = 3.35in, one column of two | `\aaaicolumnwidth`, the same 3.35in — not the 6.02in single-column measure |
+| `figure*`, `table*` | `figure`, `table`; 24 of them |
+| `\columnwidth` = 3.35in, one column of two | `\aaaicolumnwidth`, the same 3.35in, not the 6.02in single-column measure |
 | acknowledgments, contributions, code availability | none, in any mode |
 | 12-page body, 3 figures and 3 tables | `opt_body.tex`, 6 pages, 3 figures |
 
@@ -55,22 +55,22 @@ to "Theorem 4" means the same thing in all three.
 
 ## The files you edit
 
-- **`opt_body.tex`** — the forked body. Its header lists what was cut and where
+- **`opt_body.tex`**, the forked body. Its header lists what was cut and where
   each piece went, and which labels must survive because the appendix points at
   them.
-- **`opt_appendix_extra.tex`** — what the cut displaced and the AAAI appendix
-  had no home for: the full related work, the Sign A iteration, the federated
+- **`opt_appendix_extra.tex`**, holding what the cut displaced and the AAAI
+  appendix had no home for: the full related work, the Sign A iteration, the federated
   setting with its table, and the CIFAR-10 and nanoGPT tables. Spliced in
   immediately after `\section{Appendix}`, ahead of the AAAI appendix's own
   subsections.
-- **`opt_authors.tex`** — `\optauthor`, the running head, the PDF author
-  string, the repository URL. Read only in the `named` and `final` builds.
-  `\opttitle` and `\optshorttitle` are read in every mode, the author block
-  only in `named` and `final`. `\opttitle` carries the arXiv edition's title —
+- **`opt_authors.tex`**, holding `\optauthor`, the running head, the PDF author
+  string and the repository URL. `\opttitle` and `\optshorttitle` are read in
+  every mode; the author block only in `named` and `final`. `\opttitle` carries
+  the arXiv edition's title,
   *Sign compression for Muon: SignMuon, MuonSign, and the Limits of Error
-  Feedback* — so the two agree word for word; the AAAI one, locked to its
+  Feedback*, so the two agree word for word; the AAAI one, locked to its
   OpenReview record, is no longer used here.
-- **`style/`** — the OPT style file as shipped. Replace wholesale if OPT
+- **`style/`**, the OPT style file as shipped. Replace wholesale if OPT
   reissues it.
 
 There is deliberately **no back matter**. Acknowledgments, author contributions
@@ -98,17 +98,17 @@ home in the AAAI appendix, so the body lost a block and gained a pointer.
 The two experiment figures came the other way, out of the appendix and into
 §4.1 and §4.2: at five pages a curve earns its space and the digits behind it
 do not. What remained was then cut by about a third again, sentence by
-sentence. The body keeps three figures and no tables — the counterexample
-trajectories, the CIFAR-10 curves and the nanoGPT curves — and the Theory
-section now opens at "Three placements of the sign", the generic Sign A
-iteration having gone to `app:opt:signa`.
+sentence. The body keeps three figures and no tables: the counterexample trajectories,
+the CIFAR-10 curves and the nanoGPT curves. The Theory section now opens at
+"Three placements of the sign", the generic Sign A iteration having gone to
+`app:opt:signa`.
 
 The AAAI appendix is trimmed too, by `APPENDIX_CUTS`: 458 words of the
-reproducibility section, which is written to a conference checklist. What a
-workshop reader needs from it — infrastructure, seeds, schedules, the tuning
-protocol, the conventions with numerical consequences — stays; the case for the
+reproducibility section, which is written to a conference checklist. It keeps what a
+workshop reader needs: infrastructure, seeds, schedules, the tuning protocol,
+the conventions with numerical consequences. Out go the case for the
 benchmarks, the federated selection margins and the argument for reporting a
-threshold column go.
+threshold column.
 
 ## The fork, and keeping it honest
 
@@ -126,7 +126,7 @@ FORK DRIFT
 Port what belongs in the OPT edition, then `python make_opt.py --reconciled` to
 record the new state.
 
-**Lost labels.** The appendix refers to nineteen labels the body defines —
+**Lost labels.** The appendix refers to nineteen labels the body defines,
 `tab:exp_3` alone thirteen times. If the cut drops what defines one, the build
 stops before compiling and names it, instead of leaving an undefined reference
 twenty minutes of reading later.
@@ -167,7 +167,7 @@ silently rather than loudly.
 
 **algorithm2e owns the pseudocode vocabulary.** `\For`, `\While`, `\If`,
 `\Else`, `\Return` and two dozen more are algorithm2e's, and algorithmicx
-declines to redefine a command that already exists — so `\For` would open an
+declines to redefine a command that already exists, so `\For` would open an
 algorithm2e block that `\EndFor` cannot close, and all nine algorithms would
 fail with *Missing number, treated as zero*. The class's algorithm2e goes
 unused here, so the generated preamble releases those names before algorithmicx
@@ -217,7 +217,7 @@ rebuilt around `\ref*` for the same reason.
 ## The narrower measure
 
 The AAAI appendix was set one column wide at 7in; `jmlr.cls` gives it 6.02in,
-14% less, and that difference arrived as eighteen overfull boxes — theorem
+14% less. That difference arrived as eighteen overfull boxes: theorem
 statements whose inline formulas offer no break point, two wide tables, and one
 2.4-inch typewriter string. Four of them protruded by more than 30pt, which is
 half an inch of text in the margin.
@@ -238,7 +238,7 @@ lines are ordinary in justified text; text in the margin is not.
 
 `\algnarrow` narrows an algorithm float to 0.72 of the text width, and takes
 effect only for the algorithms whose `Input:`/`Output:` lines sit inside
-`algorithmic`; the others come out full width. This is inherited — the arXiv PDF
+`algorithmic`; the others come out full width. This is inherited: the arXiv PDF
 prints them the same way.
 
 The class prints an empty copyright line, "©", at the foot of the first page of
