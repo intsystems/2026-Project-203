@@ -1,0 +1,42 @@
+%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%
+%  AUTHOR BLOCK FOR THE OPT 2026 EDITION.
+%
+%  OPT reviews double-blind, so the default build never reads this file:
+%  opt2026.cls's [anon] option prints "author names withheld" and defines
+%  \optauthor to swallow its argument.  It is read by
+%
+%      python make_opt.py --mode named     % names shown
+%      python make_opt.py --mode final     % camera-ready
+%
+%  \Name, \Email and \addr are jmlr.cls's.  Braces around a surname keep a
+%  multi-word one together, e.g. \Name{Jane {de Winter}}; a diacritic that
+%  opens a forename is braced too, \Name{{\'E}louise Smith}.  Authors at one
+%  address share a single \addr; separate addresses are divided by \AND.
+%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%
+
+% OPT-only title.  Without it the title would come from signmuon_preamble.tex,
+% which carries the one registered on AAAI's OpenReview; this is the arXiv
+% edition's title instead, kept character-for-character in step with
+% \arxivtitle in aaai_article/arxiv/arxiv_authors.tex.  Whatever is set at
+% submission is what OpenReview keeps.
+\newcommand{\opttitle}{Sign compression for Muon: SignMuon, MuonSign, and the Limits of Error Feedback}
+
+% Running head, and the PDF outline's name for the document.  opt2026.cls does
+% print a header, the short title centred above every page but the first.
+\newcommand{\optshorttitle}{Sign Compression for Muon}
+
+\optauthor{%
+  \Name{Maria Smirnova} \Email{smirnova.m@miriai.org}\\
+  \Name{Alexey Kravatskiy} \Email{kravatskii.a@miriai.org}\\
+  \addr MIRIAI, Moscow, Russia%
+}
+
+% Plain text, no markup: this becomes the PDF's /Author field in the named and
+% final builds.  The anonymous build writes no /Author at all.
+\newcommand{\optpdfauthor}{Maria Smirnova, Alexey Kravatskiy}
+
+% Public code repository, used by opt_backmatter.tex.  \optrepourl is the bare
+% string; \optrepo typesets it as a link.  The \expandafter pair is what lets
+% \url take a macro rather than literal characters.
+\newcommand{\optrepourl}{https://github.com/intsystems/signmuon}
+\newcommand{\optrepo}{\expandafter\url\expandafter{\optrepourl}}

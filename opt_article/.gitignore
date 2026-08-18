@@ -1,0 +1,14 @@
+# Everything make_opt.py produces. Regenerate with:  python make_opt.py
+build/
+.build-work/
+signmuon_opt.pdf
+signmuon_opt.zip
+signmuon_opt_named.pdf
+signmuon_opt_named.zip
+signmuon_opt_final.pdf
+signmuon_opt_final.zip
+
+# make_opt.py records the AAAI body's hash here; it is tracked deliberately,
+# so the fork-drift check works on a fresh clone.
+!opt_body.origin
+__pycache__/

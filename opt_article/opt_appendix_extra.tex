@@ -1,0 +1,155 @@
+%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%
+%  WHAT THE FIVE-PAGE LIMIT DISPLACED.
+%
+%  make_opt.py splices this in immediately after \section{Appendix}, ahead of
+%  the AAAI appendix's own subsections.  It holds the material opt_body.tex
+%  drops that had no home in the AAAI appendix already -- chiefly three floats
+%  the appendix still refers to (Table \ref{tab:exp_3} is cited there thirteen
+%  times), which would otherwise leave a dozen undefined references behind
+%  them.
+%
+%  Prose here is the AAAI body's, moved rather than rewritten, so that the two
+%  editions say the same thing about the same experiment.  Where the AAAI
+%  appendix already covers a topic in more depth the section below points at
+%  it rather than repeating it.
+%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%
+
+\subsection{Related Work}\label{app:opt:related}
+
+\paragraph{Sign compression.} The sign is the most widely used compressor in this literature \citep{alistarh2017qsgd,horvath2023stochastic,beznosikov2020biased}: one bit per coordinate, no index set or scale sent beside it, and a majority vote of signs that is again a sign, so both directions stay at one bit \citep{bernstein2019signsgdmajority}. Its theory is correspondingly well developed. SignSGD \citep{bernstein2018signsgd} needs growing batches to converge; its bias is otherwise repaired by error feedback \citep{seide20141bit,karimireddy2019efsign}, sharpened into EF21 \citep{richtarik2021ef21}, by momentum \citep{cutkosky2020momentum,sun2023signmomentum}, or by randomizing the sign operator \citep{chen2020median,safaryan2021ssdm,jin2024stosign}.
+
+\paragraph{LMO optimizers.} Muon \citep{jordan2024muon} is the spectral-norm instance of a norm-constrained LMO step \citep{bernstein2024old,pethick2025training}, analysed by \citet{li2025note} and \citet{kovalev2025understanding}, then generalized to arbitrary layer norms by Gluon \citep{riabinin2025gluon}.
+
+\paragraph{Compressed and federated Muon.} \citet{gruntkowska2025error} give the error-feedback framework for bidirectionally compressed Muon/Gluon that EF21-MuonUSign and EF21-MuonSign instantiate. Around it: \citet{qian2026communicationefficientgluon} compress Gluon with SARAH-type variance reduction; \citet{takezawa2025fedmuonfederatedlearningbiascorrected} and \citet{zhang2025fedmuon} study federated LMO steps without compression; \citet{ahn2025dion} make the orthonormalization low-rank with error feedback, \citet{gupta2025effective} quantize Muon's optimizer states, \citet{therien2025muloco} quantize the delta of DiLoCo's Muon inner loop \citep{douillard2024diloco} to two bits at next to no loss. Concurrently, \citet{mishra2026signmuon} proposed plain SignMuon with an $\mathcal{O}(1/\sqrt{T})$ guarantee, which Appendix~\ref{app:mishra} shows to be a guarantee for a different method: the rate is proved only for the gradient-sign oracle, which is SignSGD's update and invokes no polar factor, while the one bound covering the polar-sign update carries an unestimated residual that exceeds the bounded quantity exactly where the expected step ascends, as it does throughout the instance of Theorem~\ref{th:1}. Two further methods relate sign descent to Muon differently. \citet{bolatov2026lionmuon} \emph{alternate} spectral and sign steps rather than composing them; \citet{kravatskiy2025kyfannorms} mix the geometries \emph{inside} the oracle, so S-Muon stays an LMO for an explicit norm, with the attendant theory. Our placements put the sign \emph{around} the oracle, where it is a compressor and not a geometry, so the counterexamples bear on neither (Appendix~\ref{app:smuon}).
+
+% \texorpdfstring: a section title is also a PDF bookmark, where a thin space
+% is not a thing hyperref can write.  The page keeps the thin space, the
+% bookmark gets an ordinary one.
+\subsection{The \texorpdfstring{Sign\,A}{Sign A} Family}\label{app:opt:signa}
+
+The three placements of \eqref{eq:three_placements} are instances of one iteration, stated here for any optimizer A built on LMO directions. A Sign\,A method initializes $\mathbf{M}_0 = \mathbf{0}$ and at each iteration $t \ge 1$ performs
+\begin{equation}
+\label{eq:signa_general}
+\begin{aligned}
+\mathbf{M}_t &= \mu \mathbf{M}_{t-1} + (1-\mu)\,\mathbf{G}_t,
+\qquad
+\tilde{\mathbf{M}}_t = \mathbf{M}_t
+   \ \ \text{or}\ \ (1-\mu)\mathbf{G}_t + \mu \mathbf{M}_t\ \ \text{(Nesterov)},\\
+\mathbf{D}_t &= -A(\tilde{\mathbf{M}}_t),
+   \qquad \mathbf{s}_t = \operatorname{sign}(\mathbf{D}_t) \in \{\pm 1\}^{m \times n},
+   \qquad \mathbf{X}_{t} = \mathbf{X}_{t-1} - \eta_t \mathbf{s}_t,
+\end{aligned}
+\end{equation}
+with $\mathbf{G}_t = \nabla f(\mathbf{X}_{t-1};\xi_t)$ the stochastic gradient, $\mu \in [0, 1)$ the momentum coefficient and $\operatorname{sign}(0)$ resolved to an independent random $\pm1$. Momentum is in exponential-moving-average form throughout; the heavy-ball form differs by the positive factor $1/(1-\mu)$, which $\operatorname{sign}(\cdot)$ and the LMO both absorb.
+
+\subsection{Federated Learning}\label{app:opt:fed}
+
+In the federated setting the data are split across clients, and the training problem becomes
+\begin{equation}
+\min_{\mathbf{X} \in \mathcal{X}} \Bigl\{ f(\mathbf{X}) := \tfrac{1}{N}\textstyle\sum_{j=1}^N f_j(\mathbf{X})\Bigr\},
+\label{eq:opt:fed}
+\end{equation}
+where $N \ge 1$ is the number of clients and $f_j(\mathbf{X})=\mathbb{E}_{\xi_j\sim\mathcal{D}_j}[f_j(\mathbf{X};\xi_j)]$ is the loss on the data $\mathcal{D}_j$ held by client $j \in [N] := \{1, \dots, N\}$.
+
+\paragraph{Where the oracle runs.} The placement decides this: with the sign \emph{after} it each client orthogonalizes its own momentum and uploads the sign of the result, which the server aggregates by majority vote as SignSGD does \citep{bernstein2019signsgdmajority}; with the sign \emph{before}, clients upload $\operatorname{sign}(\tilde{\mathbf{M}}_t^{(j)})$ and the server votes and then applies a single LMO. Error feedback changes the uplink message rather than where the oracle runs, and its estimator is dense, so the vote argument lapses and the model must be broadcast at full precision unless a second loop compresses it, as EF21-MuonSign's does --- the obstruction error feedback meets for SignSGD as well, where it is analysed for a single worker only \citep{karimireddy2019efsign} and its distributed forms compress the return path with a second loop of their own \citep{tang2019doublesqueeze}. Appendix~\ref{app:alg} gives all of this in full, with the two templates and the reason each aggregation is forced, and Algorithms~\ref{alg:fed_workerlmo}--\ref{alg:fed_serverlmo} are the procedures.
+
+\paragraph{The two models of EF21-MuonSign.} Its downlink loop splits the method into two iterates,
+\begin{equation}\label{eq:two_models}
+\begin{aligned}
+  \mathbf{X}_{t}&=\mathbf{X}_{t-1}-\eta_t\mathbf{D}_t &&\text{(server model)},\\
+  \mathbf{W}_{t}&=\mathbf{W}_{t-1}+\alpha_t^{\downarrow}\operatorname{sign}(\mathbf{X}_{t}-\mathbf{W}_{t-1}) &&\text{(broadcast model)},
+\end{aligned}
+\end{equation}
+with $\mathbf{D}_t=-A(\mathbf{g}_{t}^{\mathrm{est}})$ and $\alpha_t^{\downarrow}=\operatorname{mean}|\mathbf{X}_t-\mathbf{W}_{t-1}|$. The server model takes the exact LMO step and never leaves the server; what crosses the downlink is the one-bit update of $\mathbf{W}$, the only model the rest of the method observes, since gradients, momentum and the uplink residual are all computed there, whereas the guarantee bounds the gradient at $\mathbf{X}$. Section~\ref{sec:exp_nanogpt} is where the two separate.
+
+Memory is the other cost of error feedback, one model-sized buffer per compressed channel: EF21-MuonUSign holds the gradient estimator on each client, and EF21-MuonSign holds that estimator and, on the server, the broadcast model $\mathbf{W}$. Of these, only the client-side buffer is a practical constraint, the server being the better-provisioned side.
+
+\begin{table}[!tb]
+\centering
+\footnotesize
+\setlength{\tabcolsep}{3pt}
+\renewcommand{\arraystretch}{1.1}
+\begin{tabular}{@{}lccccc@{}}
+\toprule
+\textbf{Optimizer} & $\boldsymbol{\eta_0}$ & \textbf{Up} & \textbf{Down} &
+\begin{tabular}[b]{@{}c@{}}\textbf{Rds.\ to}\\$\mathbf{80\%}$\end{tabular} &
+\begin{tabular}[b]{@{}c@{}}\textbf{Test acc}\\\textbf{(\%)}\end{tabular} \\
+\midrule
+Muon & $0.1$ & $32$ & $32$ & $260$ & $85.98 \pm 0.26$ \\
+SignMuon & $0.1$ & $\mathbf{1.09}$ & $\mathbf{1.09}$ & $540$ & $85.72 \pm 0.24$ \\
+EF21-SignMuon & $0.02$ & $\mathbf{1.09}$ & $32$ & $640$ & $84.71 \pm 0.15$ \\
+MuonUSign & $0.05$ & $\mathbf{1.09}$ & $32$ & $500$ & $84.56 \pm 0.35$ \\
+EF21-MuonSign & $0.05$ & $\mathbf{1.09}$ & $\mathbf{1.09}$ & $980$ & $83.99 \pm 0.28$ \\
+EF21-MuonUSign & $0.01$ & $\mathbf{1.09}$ & $32$ & $900$ & $83.56 \pm 0.41$ \\
+MuonSign & $0.02$ & $\mathbf{1.09}$ & $\mathbf{1.09}$ & $860$ & $82.94 \pm 0.19$ \\
+SGD & $0.05$ & $32$ & $32$ & $1240$ & $81.69 \pm 0.37$ \\
+SignSGD & $0.01$ & $\mathbf{1.09}$ & $\mathbf{1.09}$ & $1140$ & $81.44 \pm 0.15$ \\
+Adam & $0.001$ & $32$ & $32$ & --- & $77.12 \pm 1.04$ \\
+\bottomrule
+\end{tabular}
+\caption{CIFAR-10 federated learning on CNN2, ordered by accuracy: $N=11$ clients, homogeneous split, $2000$ rounds at batch $192$, momentum $0.9$. Test accuracy is the mean of the final five evaluations over five seeds, $\pm$ one s.d.\ \emph{across} seeds; Up and Down are bits per parameter per round each way (Appendix~\ref{app:commacct}). Every method but Adam reached $80\%$ on all five seeds, Adam on none.}
+\label{tab:exp_3}
+\end{table}
+
+\paragraph{Results.} We compare the ten methods of Figure~\ref{fig:cifar_results} on CNN2 (two convolutional blocks with BatchNorm and an MLP classifier), with CIFAR-10 split homogeneously across $N=11$ clients and no local steps; $N$ is odd, so the majority vote cannot tie. Rates are tuned per method at the reporting horizon on a split held out \emph{before} the client partition; two schemes cover all six, worker- and server-side LMO (Algorithms~\ref{alg:fed_workerlmo}--\ref{alg:fed_serverlmo}, Table~\ref{tab:fed_master}).
+
+Federation separates the methods far more than centralized training does. At one bit per parameter in \emph{both} directions SignMuon reaches $85.72\%$ against Muon's $85.98\%$, about one seed standard deviation apart, and exceeds SignSGD by $4.3$ points, far more than centrally. Five seeds resolve the three placements: they span $2.8$ points in the order after, before, both sides, all three clearing SignSGD, the last by $1.5$ points where centrally it was level. The second error-feedback loop is not the source of the cost: EF21-MuonSign, compressed in both directions, stands marginally ahead of the uplink-only EF21-MuonUSign.
+
+Less favourably for the theory, the two methods carrying an unconditional guarantee trail SignMuon by several seed spreads, as they do centrally, so what the guarantee costs here is charged to the placement. EF21-MuonSign is scored at its server model $\mathbf{X}_t$, not the model its clients hold~\eqref{eq:two_models}; the two track each other here, and Section~\ref{sec:exp_nanogpt} shows that they need not (Remark~\ref{rem:dimension}). Appendix~\ref{app:results_fed:3} adds the learning curves and the two orderings the table does not show.
+
+\subsection{Centralized Learning: the Numbers}\label{app:opt:cen}
+
+\begin{table}[!ht]
+\centering
+\footnotesize
+\renewcommand{\arraystretch}{1.05}
+\begin{tabular}{@{}lccc@{}}
+\toprule
+\textbf{Method} & $\boldsymbol{\eta_0}$ & \textbf{Test acc (\%)} & \textbf{Ep.\ to $\mathbf{90\%}$} \\
+\midrule
+SignMuon & $0.02$ & $94.60 \pm 0.15$ & $7.7$ \\
+Muon & $0.1$ & $94.35 \pm 0.27$ & $7.7$ \\
+EF21-SignMuon & $0.02$ & $94.31 \pm 0.11$ & $9.0$ \\
+EF21-MuonUSign & $0.05$ & $94.14 \pm 0.07$ & $10.3$ \\
+EF21-MuonSign & $0.005$ & $94.04 \pm 0.10$ & $11.0$ \\
+MuonUSign & $0.02$ & $93.98 \pm 0.12$ & $10.3$ \\
+Adam & $0.001$ & $93.37 \pm 0.27$ & $20.0$ \\
+SignSGD & $0.002$ & $93.37 \pm 0.26$ & $19.0$ \\
+MuonSign & $0.1$ & $93.31 \pm 0.21$ & $17.7$ \\
+SGD & $0.02$ & $93.04 \pm 0.14$ & $21.3$ \\
+\bottomrule
+\end{tabular}
+\caption{Centralized ResNet-18 / CIFAR-10, $75$ epochs. Test accuracy is the mean $\pm$ s.d.\ over three seeds of the last five epochs; ``Ep.\ to $90\%$'' is the mean epoch at which it first reaches $90\%$.}
+\label{tab:cifar_main}
+\end{table}
+
+
+Table~\ref{tab:cifar_main} gives the numbers behind Figure~\ref{fig:cifar_results}, including the epochs each method takes to reach $90\%$, which the curves do not read off cleanly. Appendix~\ref{app:images_cen} adds the training loss, the full $75$-epoch curves and the learning-rate sensitivity.
+
+\subsection{Language Modelling: the Numbers}\label{app:opt:nanogpt}
+
+\begin{table}[!tb]
+\centering\footnotesize
+\setlength{\tabcolsep}{4pt}
+\begin{tabular}{@{}llccc@{}}
+\toprule
+\textbf{Method} & \textbf{Step} & $\boldsymbol{\eta_0}$ & \textbf{Val.\ loss} & \textbf{Steps to $3.35$} \\
+\midrule
+Muon (record \#40)   & \textsc{lmo}  & 0.06 & \textbf{3.2785} & $1.00\times$ \\
+EF21-SignMuon        & \textsc{lmo}  & 0.06 & 3.2860 & $1.02\times$ \\
+SignMuon             & \textsc{sign} & 0.03 & 3.2881 & $1.02\times$ \\
+MuonUSign            & \textsc{lmo}  & 0.06 & 3.2959 & $1.05\times$ \\
+EF21-MuonUSign       & \textsc{lmo}  & 0.06 & 3.3203 & $1.13\times$ \\
+EF21-MuonSign ($\mathbf{W}$) & \textsc{lmo} & 0.06 & 3.3213 & $1.14\times$ \\
+MuonSign             & \textsc{sign} & 0.03 & 3.3249 & $1.14\times$ \\
+SignSGD              & \textsc{sign} & 0.03 & 3.4049 & -- \\
+\midrule
+EF21-MuonSign ($\mathbf{X}$) & \textsc{lmo} & 0.06 & 5.5198 & -- \\
+\bottomrule
+\end{tabular}
+\caption{NanoGPT after $2330$ steps ($611$M tokens), one run per method. Record \#40 reports $3.2780\pm0.0009$ over five seeds, so differences below ${\sim}0.003$ are noise; ``Steps to $3.35$'' is relative to Muon. The last row is the server model $\mathbf{X}$ of the same run as the $\mathbf{W}$ row.}
+\label{tab:nanogpt}
+\end{table}
+
+
+Table~\ref{tab:nanogpt} gives the numbers behind Figure~\ref{fig:nanogpt}, whose differences are too small to read off the curves. Appendix~\ref{app:nanogpt} gives the grouping, the compressor diagnostics and the layer-type localization of the $\mathbf{X}$/$\mathbf{W}$ gap.
