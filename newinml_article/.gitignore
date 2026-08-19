@@ -1,0 +1,9 @@
+# Everything make_newinml.py produces. Regenerate with:
+#   python make_newinml.py --source opt
+#   python make_newinml.py --source icomp
+build/
+.build-work/
+.source-work/
+*_newinml.pdf
+*_newinml.zip
+__pycache__/
