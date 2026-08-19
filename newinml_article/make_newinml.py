@@ -122,7 +122,10 @@ SOURCES = {
         "retire": ["jmlrutils", "algorithm2e"],
     },
     "icomp": {
-        "label": "the ICOMP 2026 article",
+        # Not this repository's icomp_article_v2/, which is the SignMuon
+        # paper in ICOMP dress.  This is the active-dimension paper, which
+        # lives in another repository entirely.
+        "label": "the active-dimension article (EDMGrokking/icomp_v2)",
         "assemble": None,
         "main": str(Path.home() / "Documents" / "GitHub" / "EDMGrokking"
                     / "icomp_v2" / "report.tex"),

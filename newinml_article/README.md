@@ -7,8 +7,13 @@ path.
 ```sh
 cd newinml_article
 python make_newinml.py                  # the OPT edition of the SignMuon paper
-python make_newinml.py --source icomp   # the ICOMP article, from EDMGrokking
+python make_newinml.py --source icomp   # the active-dimension paper
 ```
+
+`--source icomp` is the active-dimension article in
+`EDMGrokking/icomp_v2/report.tex`, a different paper in a different repository.
+This repository's own `icomp_article_v2/` is the SignMuon paper in ICOMP dress
+and is not a source here.
 
 Each writes `build/<source>/`, a compiled `<source>_newinml.pdf` and a
 `<source>_newinml.zip` that compiles on its own in an empty directory.

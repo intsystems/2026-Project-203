@@ -32,14 +32,14 @@ sign. There are two obvious places to put the sign, and one obvious question:
 | **MuonSign** | `sign(LMO(sign(·)))` | sign on **both** sides |
 
 **Neither placement converges.** We exhibit an *L*-smooth function on which each of
-the three provably ascends — and momentum cannot save them, since every one of these
+the three provably ascends, and momentum cannot save them: every one of these
 step maps is positively homogeneous of degree zero. Error feedback is what restores
 the guarantee: EF21-MuonSign attains the standard `O(T^{-1/2})` rate for smooth
 nonconvex problems, at one bit per parameter on both channels.
 
 The catch is that error feedback is not uniformly free. Compressing the *uplink*
 costs almost nothing. Compressing the *downlink* costs whatever the layer's rank
-makes it cost — on nanoGPT the broadcast model `W` is indistinguishable from the
+makes it cost. On nanoGPT the broadcast model `W` is indistinguishable from the
 uncompressed method while the exact server model `X`, the iterate the theory bounds,
 diverges. We localize that to a single layer type and explain the mechanism.
 
@@ -48,8 +48,9 @@ diverges. We localize that to a single layer type and explain the mechanism.
 | | |
 | :--- | :--- |
 | 📄 **Paper (AAAI)** | [`aaai_article/v2_SignMuon_AAAI.pdf`](aaai_article/v2_SignMuon_AAAI.pdf) |
+| 📄 Paper (arXiv, OPT, NewInML) | one command each, see [Editions](#editions) |
 | 📄 Paper (RU) | [`paper/main_ru.pdf`](paper/main_ru.pdf) |
-| 💻 **Code** | [`code/`](code) — start at [`code/REPRODUCE.md`](code/REPRODUCE.md) |
+| 💻 **Code** | [`code/`](code), starting at [`code/REPRODUCE.md`](code/REPRODUCE.md) |
 | 📊 Slides | [`slides/Final_talk_Smirnova.pdf`](slides/Final_talk_Smirnova.pdf) |
 | 🖼️ Poster | [`slides/Poster_SignMuon.pdf`](slides/Poster_SignMuon.pdf) |
 | 🔗 Literature review | [`LINKREVIEW.md`](LINKREVIEW.md) |
@@ -57,7 +58,7 @@ diverges. We localize that to a single layer type and explain the mechanism.
 
 ## Abstract
 
-SignMuon — sign compression of the Muon update to one bit per parameter — is the
+SignMuon, sign compression of the Muon update to one bit per parameter, is the
 most straightforward adaptation of Muon to an extremely low communication budget.
 It outperforms SignSGD in practice, yet it can diverge on a linear function. The
 natural conjecture is that the order of operations is to blame, and that signing
@@ -68,7 +69,7 @@ feedback repairs one of them: **EF21-MuonUSign** attains the standard `O(T^{-1/2
 rate for smooth nonconvex optimization and decisively outperforms SignSGD, and
 compressing the downlink as well costs little beyond that. What the guarantee
 costs is the placement. Across centralized, federated and language-modelling
-experiments the best placement is consistently sign-*after*-the-LMO — precisely
+experiments the best placement is consistently sign-*after*-the-LMO: precisely
 the one our counterexamples break and error feedback fails to repair.
 
 ## The eight methods
@@ -125,7 +126,7 @@ python3 -m counterexamples.run_counterexamples  # Figure 1
 ```
 
 Run the full centralized or federated protocol as one resumable, budget-aware
-command — it self-checks, times your GPU, prints a schedule, writes a report you can
+command. It self-checks, times your GPU, prints a schedule, writes a report you can
 read mid-run, and finishes by packing the results into one small archive:
 
 ```bash
@@ -165,15 +166,45 @@ python3 -m anonymize --check --build-dir ../anonymous_code   # or --build ../sup
 [`code/ANONYMIZATION.md`](code/ANONYMIZATION.md) is the procedure: what the scan
 looks for, what it deliberately keeps, and what to check by hand before
 submitting. **That file, `anonymize.py` and `tests/test_anonymize.py` are withheld
-from the bundle itself** — between them they hold the list of names to hide and an
+from the bundle itself**: between them they hold the list of names to hide and an
 account of what once leaked, which is the last thing to hand a reviewer. This
 pointer lives here, in the repository README, for the same reason: nothing under
 `code/` should advertise a file the supplement does not contain.
 
+## Editions
+
+The AAAI sources in `aaai_article/` are the one place the paper is written.
+Every other version is derived from them by a script that reads those sources
+and never writes to them, so a change made once reaches all four.
+
+| Edition | Build | Length |
+| :--- | :--- | :--- |
+| AAAI 2027 | `aaai_article/`, compiled directly | 7 pages + supplement |
+| arXiv | `python aaai_article/arxiv/make_arxiv.py` | one document, named authors |
+| OPT 2026 | `python opt_article/make_opt.py` | 6 pages + appendix |
+| NewInML @ NeurIPS 2026 | `python newinml_article/make_newinml.py` | 6 pages + appendix |
+
+The chain is linear: the arXiv and OPT builds read the AAAI sources, and the
+NewInML converter reads whatever the OPT build assembles. Each script reports
+undefined references, undefined citations, duplicate PDF destinations, overfull
+boxes and the length of the main text against its venue's limit, and refuses to
+ship a document that fails its own checks.
+
+The OPT body is a fork rather than a derivation, because twelve pages of main
+text do not become six by rule; `opt_article/opt_body.origin` records the hash
+of the AAAI body it was cut from, and every build says so when that hash moves.
+`newinml_article/` also converts an unrelated paper of its own, which is what
+its `--source` flag selects.
+
 ## Repository layout
 
 ```
-├── aaai_article/     the AAAI submission (LaTeX + figures)
+├── aaai_article/     the AAAI submission, and the source of every edition
+│   └── arxiv/          make_arxiv.py  ->  the arXiv version
+├── opt_article/      OPT 2026 workshop      (make_opt.py)
+├── newinml_article/  NewInML @ NeurIPS 2026 (make_newinml.py)
+├── icomp_article/    ICOMP, first version
+├── icomp_article_v2/ ICOMP, current
 ├── paper/            the Russian-language version
 ├── slides/           talk and poster
 ├── code/             everything runnable  ->  code/README.md
@@ -202,5 +233,5 @@ pointer lives here, in the repository README, for the same reason: nothing under
 * **BatchNorm statistics never update in the federated setting.** Local models are
   discarded each round and BatchNorm runs in inference mode during accumulation, so
   the running statistics stay at their initialization for the whole run. This is
-  self-consistent — no train/test mismatch — but it is why the federated CNN2
+  self-consistent, with no train/test mismatch, but it is why the federated CNN2
   accuracies sit where they do.
