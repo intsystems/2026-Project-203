@@ -1,9 +1,10 @@
-# Everything make_newinml.py produces. Regenerate with:
+# What make_newinml.py produces. Regenerate with:
 #   python make_newinml.py --source opt
 #   python make_newinml.py --source icomp
+#
+# The compiled PDFs are tracked; the zips and the build directories are not.
 build/
 .build-work/
 .source-work/
-*_newinml.pdf
 *_newinml.zip
 __pycache__/

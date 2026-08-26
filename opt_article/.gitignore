@@ -1,14 +1,11 @@
-# Everything make_opt.py produces. Regenerate with:  python make_opt.py
+# What make_opt.py produces. Regenerate with:  python make_opt.py
+#
+# The compiled PDFs are tracked: they are the thing anyone reading the
+# repository wants to look at, and the sources that make them are here beside
+# them. The zips and the build directory are not, being one command away.
 build/
 .build-work/
-signmuon_opt.pdf
 signmuon_opt.zip
-signmuon_opt_named.pdf
 signmuon_opt_named.zip
-signmuon_opt_final.pdf
 signmuon_opt_final.zip
-
-# make_opt.py records the AAAI body's hash here; it is tracked deliberately,
-# so the fork-drift check works on a fresh clone.
-!opt_body.origin
 __pycache__/

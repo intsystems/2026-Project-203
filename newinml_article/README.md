@@ -42,7 +42,7 @@ lives in one `SOURCES` entry:
 
 ```python
 "icomp": {
-    "label":    "the ICOMP 2026 article",
+    "label":    "the active-dimension article",
     "assemble": None,                       # already standalone
     "main":     ".../icomp_v2/report.tex",
     "assets":   ".../icomp_v2",
@@ -54,8 +54,20 @@ lives in one `SOURCES` entry:
 
 The OPT edition is not standalone, so its entry runs
 `opt_article/make_opt.py --no-compile` first and converts what that assembles.
-That is the whole coupling: **edit the OPT edition, rerun one line here, and
-the NewInML version follows.**
+That is the whole coupling: **edit the AAAI sources or the OPT edition, rerun
+one line here, and the NewInML version follows.**
+
+Because that inner build is where the AAAI sources are read, anything it warns
+about is repeated here rather than swallowed:
+
+```
+From the source build, and still true of this one:
+  FORK DRIFT
+    signmuon_body.tex has changed since opt_body.tex was last reconciled with it:
+```
+
+`--source-main <path>` points a source at another copy of its article, which is
+what to reach for when a repository moves; assets are looked for beside it.
 
 To add a third source, add an entry. `styles` is the old venue's style file,
 `provides` is what that style file loaded on the document's behalf, and

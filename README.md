@@ -190,11 +190,39 @@ undefined references, undefined citations, duplicate PDF destinations, overfull
 boxes and the length of the main text against its venue's limit, and refuses to
 ship a document that fails its own checks.
 
-The OPT body is a fork rather than a derivation, because twelve pages of main
-text do not become six by rule; `opt_article/opt_body.origin` records the hash
-of the AAAI body it was cut from, and every build says so when that hash moves.
-`newinml_article/` also converts an unrelated paper of its own, which is what
-its `--source` flag selects.
+### After editing the AAAI sources
+
+```sh
+python aaai_article/arxiv/make_arxiv.py      # arXiv
+python opt_article/make_opt.py               # OPT
+python newinml_article/make_newinml.py       # NewInML, via the OPT build
+```
+
+What follows automatically, and what does not:
+
+| Edited | arXiv | OPT | NewInML |
+| :--- | :---: | :---: | :---: |
+| `signmuon_appendix.tex` | automatic | automatic | automatic |
+| `signmuon_preamble.tex` | automatic | automatic, and reported | automatic |
+| `references.bib`, `images/` | automatic | automatic | automatic |
+| `signmuon_body.tex` | automatic | **hand-ported** | follows the OPT body |
+
+The body is the one exception, and it is deliberate: the OPT edition's six
+pages are a cut of the AAAI twelve, which no rule reproduces. So the OPT build
+watches the AAAI body instead of reading it. When it moves, every build that
+depends on it says so, including the NewInML one:
+
+```
+FORK DRIFT
+  signmuon_body.tex has changed since opt_body.tex was last reconciled with it:
+  1 hunk(s), +2 -0 lines.
+  Read them with   python make_opt.py --drift
+```
+
+`--drift` prints the diff, so porting is a matter of reading a few hunks and
+deciding which belong in a six-page paper. `--reconciled` records the new state
+once you have. `newinml_article/` also converts an unrelated paper of its own,
+which is what its `--source` flag selects.
 
 ## Repository layout
 

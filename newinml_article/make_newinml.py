@@ -208,9 +208,16 @@ SHIMS = r"""%%% ---- what the old style file used to define (inserted by make_ne
 # Reading the source.
 # --------------------------------------------------------------------------
 
-def obtain_source(source: str, scratch: Path) -> tuple[str, Path]:
-    """Return the standalone article's text, and the directory its assets sit in."""
+def obtain_source(source: str, scratch: Path,
+                  root: Path | None = None) -> tuple[str, Path, list[str]]:
+    """The standalone article's text, its asset directory, and any warning.
+
+    A source that has to be assembled first is assembled by its own script,
+    and whatever that script warns about has to reach this build's output:
+    running make_newinml.py alone must not hide make_opt.py's FORK DRIFT.
+    """
     spec = SOURCES[source]
+    notes = []
     if spec["assemble"]:
         out = scratch / "assembled"
         cmd = [a.format(out=str(out)) for a in spec["assemble"]]
@@ -218,13 +225,26 @@ def obtain_source(source: str, scratch: Path) -> tuple[str, Path]:
         if run.returncode != 0:
             raise SystemExit(f"assembling {spec['label']} failed:\n"
                              + (run.stdout or "") + (run.stderr or ""))
+        keep = False
+        for line in (run.stdout or "").splitlines():
+            if line.strip().startswith(("FORK DRIFT", "TODO", "Packages carried")):
+                keep = True
+            elif line.strip().startswith("Submit "):
+                keep = False
+            if keep and line.strip():
+                notes.append(line.rstrip())
         main = Path(spec["main"].format(out=str(out)))
         assets = Path(spec["assets"].format(out=str(out)))
     else:
-        main, assets = Path(spec["main"]), Path(spec["assets"])
+        main = Path(root) if root else Path(spec["main"])
+        assets = Path(root).parent if root else Path(spec["assets"])
+        if root:
+            assets = Path(root).parent
     if not main.exists():
-        raise SystemExit(f"no such source document: {main}")
-    return flatten(main), assets
+        raise SystemExit(
+            f"no such source document: {main}\n"
+            "pass --source-main to point at it if the repository moved.")
+    return flatten(main), assets, notes
 
 
 def find_in_code(text: str, pat: re.Pattern) -> int | None:
@@ -478,10 +498,10 @@ def title_of(preamble: str) -> str:
 # Assembly.
 # --------------------------------------------------------------------------
 
-def build_document(source: str, mode: str, workshop: str,
-                   scratch: Path) -> tuple[str, str, Path, dict]:
+def build_document(source: str, mode: str, workshop: str, scratch: Path,
+                   root: Path | None = None) -> tuple[str, str, Path, dict]:
     spec = SOURCES[source]
-    text, assets = obtain_source(source, scratch)
+    text, assets, notes = obtain_source(source, scratch, root)
     preamble, body = split_document(text)
     preamble, pstats = convert_preamble(preamble, spec, mode, workshop)
     preamble, who = convert_authors(preamble, mode, source)
@@ -519,7 +539,7 @@ def build_document(source: str, mode: str, workshop: str,
         "",
     ])
     stats = {**pstats, **bstats, "author": who, "moved": moved,
-             "unwrapped": unwrapped}
+             "unwrapped": unwrapped, "notes": notes}
     return doc, title, assets, stats
 
 
@@ -678,6 +698,9 @@ def main() -> int:
                          "camera-ready, author names shown.")
     ap.add_argument("--workshop", default=WORKSHOP,
                     help=f"name for the footer line (default: {WORKSHOP})")
+    ap.add_argument("--source-main", type=Path, default=None,
+                    help="path to the source article, overriding the one in "
+                         "SOURCES; assets are looked for beside it")
     ap.add_argument("-o", "--build", type=Path, default=None,
                     help="output directory (default: build/<source>)")
     ap.add_argument("--no-compile", action="store_true")
@@ -694,7 +717,7 @@ def main() -> int:
     try:
         print(f"reading  {SOURCES[args.source]['label']}")
         doc, title, assets, stats = build_document(
-            args.source, args.mode, args.workshop, scratch)
+            args.source, args.mode, args.workshop, scratch, args.source_main)
         sanity_check(doc, args.mode, args.source)
 
         if build.exists():
@@ -743,6 +766,11 @@ def main() -> int:
         print("\nTODO left in the author block -- edit before submitting:")
         for item in todos:
             print(f"  {item}")
+
+    if stats["notes"]:
+        print("\nFrom the source build, and still true of this one:")
+        for line in stats["notes"]:
+            print(f"  {line}")
 
     print(f"\nSubmit {HERE / (args.source + '_newinml.pdf')} to OpenReview.")
     return 0

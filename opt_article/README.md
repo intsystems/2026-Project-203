@@ -116,15 +116,25 @@ Forking the body means the OPT edition no longer follows an AAAI revision by
 itself. Three mechanisms make that visible rather than silent.
 
 **Drift.** `opt_body.origin` records the AAAI body's SHA-256 as it stood when
-the fork was last reconciled. Every build compares, and prints
+the fork was last reconciled, and `opt_body.origin.tex` keeps the text that
+hash belongs to. Every build compares and, when they differ, sizes the change:
 
 ```
 FORK DRIFT
-  signmuon_body.tex has changed since opt_body.tex was last reconciled with it.
+  signmuon_body.tex has changed since opt_body.tex was last reconciled with it:
+  1 hunk(s), +2 -0 lines.
+  Read them with   python make_opt.py --drift
 ```
 
-Port what belongs in the OPT edition, then `python make_opt.py --reconciled` to
-record the new state.
+`python make_opt.py --drift` prints the diff between the AAAI body as it was at
+the fork and as it is now, which is the list of things to consider porting into
+`opt_body.tex`. Not all of them belong in a six-page paper; that is the point of
+the fork. When you have ported what does, `python make_opt.py --reconciled`
+records the new state and the warning stops.
+
+The warning also travels: `make_newinml.py` builds the OPT edition on its way to
+the workshop version, and repeats anything the OPT build warned about, so
+running only the NewInML build cannot hide it.
 
 **Lost labels.** The appendix refers to nineteen labels the body defines,
 `tab:exp_3` alone thirteen times. If the cut drops what defines one, the build

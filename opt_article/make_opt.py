@@ -86,7 +86,8 @@ BIB = "references.bib"
 # revision of the AAAI paper is reported rather than silently ignored.
 OPT_BODY = HERE / "opt_body.tex"
 OPT_APPENDIX_EXTRA = HERE / "opt_appendix_extra.tex"
-ORIGIN = HERE / "opt_body.origin"
+ORIGIN = HERE / "opt_body.origin"           # the hash
+ORIGIN_TEXT = HERE / "opt_body.origin.tex"  # and the text it hashes, to diff
 
 # The class files OPT ships, copied into the build so that it compiles
 # anywhere, including on OpenReview's side and on a machine without them.
@@ -687,25 +688,51 @@ def splice_extra(text: str) -> str:
         "would leave undefined references behind them.")
 
 
+def record_origin() -> None:
+    """Record the AAAI body as it stands: its hash, and a copy to diff against."""
+    import hashlib
+    raw = (SRC / BODY).read_bytes()
+    ORIGIN.write_text(hashlib.sha256(raw).hexdigest() + "\n", encoding="utf-8")
+    with open(ORIGIN_TEXT, "wb") as fh:
+        fh.write(raw)
+
+
+def body_diff() -> list[str]:
+    """The AAAI body's changes since the fork was last reconciled."""
+    import difflib
+    if not ORIGIN_TEXT.exists():
+        return []
+    then = ORIGIN_TEXT.read_text(encoding="utf-8", errors="replace").splitlines()
+    now = (SRC / BODY).read_text(encoding="utf-8", errors="replace").splitlines()
+    return list(difflib.unified_diff(then, now, fromfile=f"{BODY} (at fork)",
+                                     tofile=f"{BODY} (now)", lineterm="", n=1))
+
+
 def body_drift() -> str | None:
     """Whether the AAAI body has moved since the fork was last reconciled.
 
     The appendix is derived from the AAAI source and follows it automatically;
-    the body is a fork and does not.  This is the whole cost of forking, so it
-    is reported at every build rather than left to be remembered.
+    the body is a fork and does not.  That is the whole cost of forking, so the
+    build reports it, and reports it in a form that can be acted on: the number
+    of changed hunks now, the diff itself under --drift.
     """
     import hashlib
     current = hashlib.sha256((SRC / BODY).read_bytes()).hexdigest()
-    if not ORIGIN.exists():
-        ORIGIN.write_text(current + "\n", encoding="utf-8")
+    if not ORIGIN.exists() or not ORIGIN_TEXT.exists():
+        record_origin()
         return None
-    recorded = ORIGIN.read_text(encoding="utf-8").strip()
-    if recorded == current:
+    if ORIGIN.read_text(encoding="utf-8").strip() == current:
         return None
-    return (f"{BODY} has changed since opt_body.tex was last reconciled with "
-            f"it.\n  Compare them, port what belongs in the OPT edition, then "
-            f"rerun with --reconciled\n  to record the new state "
-            f"({recorded[:12]} -> {current[:12]}).")
+
+    diff = body_diff()
+    hunks = sum(1 for line in diff if line.startswith("@@"))
+    added = sum(1 for line in diff if line.startswith("+") and not line.startswith("+++"))
+    removed = sum(1 for line in diff if line.startswith("-") and not line.startswith("---"))
+    return (f"{BODY} has changed since opt_body.tex was last reconciled with it:\n"
+            f"  {hunks} hunk(s), +{added} -{removed} lines.\n"
+            f"  Read them with   python make_opt.py --drift\n"
+            f"  Port what belongs in the OPT edition into {OPT_BODY.name}, then\n"
+            f"  rerun with --reconciled to record the new state.")
 
 
 def build_document(mode: str) -> tuple[str, str, dict]:
@@ -953,6 +980,9 @@ def main() -> int:
     ap.add_argument("--no-bib", action="store_true",
                     help="omit references.bib; the shipped main.bbl is enough")
     ap.add_argument("--no-zip", action="store_true", help="skip the archive")
+    ap.add_argument("--drift", action="store_true",
+                    help="print what has changed in the AAAI body since the "
+                         "fork was last reconciled, then stop")
     ap.add_argument("--reconciled", action="store_true",
                     help="record the AAAI body as reconciled with opt_body.tex; "
                          "pass it once you have ported an AAAI revision into "
@@ -960,6 +990,15 @@ def main() -> int:
     ap.add_argument("--keep-work", action="store_true",
                     help="keep the scratch compile directory for debugging")
     args = ap.parse_args()
+
+    if args.drift:
+        diff = body_diff()
+        if diff:
+            print("\n".join(diff))
+        else:
+            print(f"{BODY} is unchanged since opt_body.tex was reconciled "
+                  "with it.")
+        return 0
 
     build: Path = args.build.resolve()
     print(f"reading  {SRC}")
@@ -1010,10 +1049,7 @@ def main() -> int:
             print(f"  {item}")
 
     if args.reconciled:
-        import hashlib
-        ORIGIN.write_text(
-            hashlib.sha256((SRC / BODY).read_bytes()).hexdigest() + "\n",
-            encoding="utf-8")
+        record_origin()
         print(f"\nrecorded {BODY} as reconciled with {OPT_BODY.name}.")
     elif drift is not None:
         print(f"\nFORK DRIFT\n  {drift}")
