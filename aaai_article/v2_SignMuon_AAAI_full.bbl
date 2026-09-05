@@ -134,6 +134,7 @@ Jordan, K.; Bernstein, J.; Rappazzo, B.; {@fernbear.bsky.social}; Boza, V.;
   You, J.; Cesista, F.; Koszarsky, B.; and {@Grad62304977}. 2024{\natexlab{a}}.
 \newblock modded-nanogpt: Speedrunning the {NanoGPT} baseline.
 \newblock \url{https://github.com/KellerJordan/modded-nanogpt}.
+\newblock Code repository.
 
 \bibitem[{Jordan et~al.(2024{\natexlab{b}})Jordan, Jin, Boza, You, Cesista,
   Newhouse, and Bernstein}]{jordan2024muon}
@@ -141,6 +142,7 @@ Jordan, K.; Jin, Y.; Boza, V.; You, J.; Cesista, F.; Newhouse, L.; and
   Bernstein, J. 2024{\natexlab{b}}.
 \newblock Muon: An optimizer for hidden layers in neural networks.
 \newblock \url{https://kellerjordan.github.io/posts/muon/}.
+\newblock Blog post.
 
 \bibitem[{Karimireddy et~al.(2019)Karimireddy, Rebjock, Stich, and
   Jaggi}]{karimireddy2019efsign}

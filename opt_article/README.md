@@ -159,6 +159,7 @@ or leaving a dangling reference. Each build prints what it cut:
 python make_opt.py                 # anon  (default) -- what you submit
 python make_opt.py --mode named    # author names shown
 python make_opt.py --mode final    # camera-ready: [final], editor line cleared
+python make_opt.py --claude blue   # the same paper, drafted text coloured
 ```
 
 `anon` writes `signmuon_opt.pdf`; the other two add their name to it
@@ -167,6 +168,33 @@ anonymous one. In `anon` the class prints "author names withheld", swallows
 `\optauthor` and `\acks`, and the script writes no `/Author` into the PDF
 metadata. Nothing of `opt_authors.tex` reaches an anonymous build but the two
 titles.
+
+## Drafted text is marked
+
+`\cl{...}` marks a phrase and the `claude` environment a block. Both are
+declared in `../aaai_article/signmuon_preamble.tex`, which every edition
+shares, so the AAAI, arXiv, OPT and NewInML builds all agree on *which*
+passages are marked and differ only in how they print them.
+
+```sh
+python make_opt.py                 # signmuon_opt.pdf       black: what you submit
+python make_opt.py --claude blue   # signmuon_opt_blue.pdf  blue: the review copy
+```
+
+The preamble picks the colour on `\ifdefined\claudedraft`, and `--claude blue`
+puts `\def\claudedraft{}` in front of it in `build/main.tex`. It never writes
+to the preamble, which is why the two builds cannot drift apart, and the blue
+build takes its own file names, so a review copy cannot overwrite the
+submission. The AAAI edition uses the same switch through its own driver,
+`../aaai_article/v2_SignMuon_AAAI_full_blue.tex`, which is
+`v2_SignMuon_AAAI_full.tex` plus that one `\def`.
+
+To accept the drafted text, delete the markup; there is no third colour.
+Change the colour, not the macros, if you ever need to: a float that sets
+`\color{claudecolor}` directly would not follow a redefinition of `\cl`.
+
+Unmarked prose in `opt_body.tex` is the fork's own, most recently Maria
+Smirnova's pass of 2026-09-03 (`54fac7c`).
 
 ## The three collisions between the paper and the class
 

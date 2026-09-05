@@ -98,6 +98,34 @@
 \crefname{remark}{Remark}{Remarks}
 \crefname{hypothesis}{Hypothesis}{Hypotheses}
 
+% --- text drafted by Claude -------------------------------------------------
+% \cl{...} marks a phrase, the claude environment a block.  The markup stays
+% in the source; only the colour is a switch, so that a float which sets
+% \color{claudecolor} directly follows it too.
+%
+% A REVIEW BUILD defines \claudedraft before loading this file and the marked
+% text comes out blue:
+%     v2_SignMuon_AAAI_full_blue.tex   the AAAI edition, body and appendix
+%     python make_opt.py --claude blue the OPT edition
+% Every other build prints it as ordinary text, which is what you submit.  The
+% switch is a definition rather than an edit to this file, so no edition can
+% disagree with another about which passages are marked.
+%
+% To accept the drafted text for good, delete the markup; there is no third
+% colour.  xcolor is already loaded by aaai2027.sty here and by jmlr.cls in the
+% OPT edition, but not by the NeurIPS workshop style the NewInML edition uses,
+% which is why the line below is not redundant.  Both classes fix xcolor's
+% options through \PassOptionsToPackage before loading it, so asking for it
+% again with none cannot clash.
+\usepackage{xcolor}
+\ifdefined\claudedraft
+  \definecolor{claudecolor}{RGB}{25,90,160}  % drafting: the marked text is blue
+\else
+  \definecolor{claudecolor}{RGB}{0,0,0}      % accepted: ordinary text
+\fi
+\newcommand{\cl}[1]{\textcolor{claudecolor}{#1}}
+\newenvironment{claude}{\color{claudecolor}}{}
+
 %
 % Keep the \pdfinfo as shown here. There's no need
 % for you to add the /Title and /Author tags.

@@ -1,0 +1,31 @@
+%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%
+%  REVIEW BUILD -- the self-contained AAAI document with the drafting
+%  markup printed in blue.
+%
+%  Identical to v2_SignMuon_AAAI_full.tex but for the \def below, so the
+%  two PDFs differ in colour and in nothing else. \cl{...} marks a phrase
+%  and the claude environment a block; both are declared in
+%  signmuon_preamble.tex, which every edition shares.
+%
+%  Body and appendix in one PDF, so a reader sees every marked passage
+%  without the cross-document dance v2_SignMuon_AAAI.tex needs. The OPT
+%  edition's counterpart is  python make_opt.py --claude blue.
+%
+%  This file is never submitted: submit v2_SignMuon_AAAI.pdf plus
+%  v2_SignMuon_AAAI_supp.pdf, or v2_SignMuon_AAAI_full.pdf for arXiv.
+%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%
+\def\claudedraft{}
+
+\input{signmuon_preamble}
+
+\begin{document}
+
+\input{signmuon_body}
+
+% \bibliographystyle{unsrtnat}  % aaai2027.sty sets the style automatically
+\bibliography{references}
+
+\onecolumn
+\input{signmuon_appendix}
+
+\end{document}

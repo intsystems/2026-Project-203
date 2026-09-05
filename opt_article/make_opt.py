@@ -223,7 +223,10 @@ CLASS_PROVIDES = ["url", "graphicx", "natbib", "amsmath", "amssymb", "caption"]
 
 # Packages this script knows the paper needs and has checked under opt2026.
 KNOWN_KEEP = ["algorithm", "algorithmicx", "algpseudocode", "booktabs",
-              "multirow", "subcaption", "cleveref"]
+              "multirow", "subcaption", "cleveref",
+              # opt2026.cls loads xcolor itself; the preamble asks for it
+              # anyway, for the sake of the editions whose style does not.
+              "xcolor"]
 
 DROP_LINE = [
     (r"^\s*\\documentclass", "the OPT class line replaces it"),
@@ -735,10 +738,33 @@ def body_drift() -> str | None:
             f"  rerun with --reconciled to record the new state.")
 
 
-def build_document(mode: str) -> tuple[str, str, dict]:
+CLAUDE_SWITCH = "\\def\\claudedraft{}"
+
+
+def set_claude_colour(preamble: str, colour: str) -> str:
+    r"""Print the \cl{} and {claude} markup black or blue.
+
+    signmuon_preamble.tex picks the colour on \ifdefined\claudedraft, so a
+    review build is one definition in front of it and this function never
+    rewrites the shared file.  The AAAI edition uses the same switch through
+    its own _blue driver.
+    """
+    if colour == "black":
+        return preamble
+    if "claudedraft" not in preamble:
+        raise SystemExit(
+            r"the AAAI preamble does not test \claudedraft, so --claude blue "
+            "has nothing to switch on.  Check make_opt.py against the "
+            "preamble.")
+    return (CLAUDE_SWITCH + "   % --claude blue: colour the drafting markup\n"
+            + preamble)
+
+
+def build_document(mode: str, claude: str = "black") -> tuple[str, str, dict]:
     aaai_preamble = (SRC / PREAMBLE).read_text(encoding="utf-8")
     head, _title_cmd, _tail = split_preamble(aaai_preamble)
     preamble, dropped, passed = transform_preamble(head)
+    preamble = set_claude_colour(preamble, claude)
     titles, title = front_matter(aaai_preamble, mode)
 
     pdf_author = None
@@ -898,7 +924,8 @@ def copy_assets(doc: str, build: Path, keep_bib: bool) -> list[str]:
     return copied
 
 
-def compile_pdf(build: Path, keep_work: bool, mode: str) -> Path:
+def compile_pdf(build: Path, keep_work: bool, mode: str,
+                claude: str = "black") -> Path:
     """Compile a throwaway copy, so `build` holds only the sources."""
     if shutil.which("latexmk") is None:
         raise SystemExit("latexmk not on PATH; rerun with --no-compile")
@@ -922,7 +949,7 @@ def compile_pdf(build: Path, keep_work: bool, mode: str) -> Path:
         raise SystemExit(f"no {JOBNAME}.bbl was produced; the bibliography did not run")
     shutil.copy2(bbl, build / f"{JOBNAME}.bbl")
 
-    pdf = HERE / preview_name(mode, ".pdf")
+    pdf = HERE / preview_name(mode, ".pdf", claude)
     shutil.copy2(WORKDIR / f"{JOBNAME}.pdf", pdf)
     report_log(log)
     report_length(WORKDIR / f"{JOBNAME}.aux", mode)
@@ -951,13 +978,20 @@ def report_length(aux: Path, mode: str) -> None:
     print(f"  main text      : {pages} pages, limit {limit}{over}")
 
 
-def preview_name(mode: str, suffix: str) -> str:
-    """The anonymous build is the submission, so it keeps the plain name."""
-    return "signmuon_opt" + ("" if mode == "anon" else f"_{mode}") + suffix
+def preview_name(mode: str, suffix: str, claude: str = "black") -> str:
+    """The anonymous build is the submission, so it keeps the plain name.
+
+    A drafting build adds ``_blue``, so that the review copy and the copy you
+    submit are two files and not one file twice.
+    """
+    return ("signmuon_opt"
+            + ("" if mode == "anon" else f"_{mode}")
+            + ("_blue" if claude == "blue" else "")
+            + suffix)
 
 
-def pack_zip(build: Path, mode: str) -> Path:
-    archive = HERE / preview_name(mode, ".zip")
+def pack_zip(build: Path, mode: str, claude: str = "black") -> Path:
+    archive = HERE / preview_name(mode, ".zip", claude)
     with zipfile.ZipFile(archive, "w", zipfile.ZIP_DEFLATED) as zf:
         for path in sorted(build.rglob("*")):
             if path.is_file():
@@ -987,6 +1021,12 @@ def main() -> int:
                     help="record the AAAI body as reconciled with opt_body.tex; "
                          "pass it once you have ported an AAAI revision into "
                          "the fork, to clear the drift warning")
+    ap.add_argument("--claude", choices=["black", "blue"], default="black",
+                    help="how to print the drafting markup.  black "
+                         "(default): as ordinary text, which is what you "
+                         "submit.  blue: the drafted passages are coloured "
+                         "for review and the outputs are named "
+                         "signmuon_opt_blue.*")
     ap.add_argument("--keep-work", action="store_true",
                     help="keep the scratch compile directory for debugging")
     args = ap.parse_args()
@@ -1003,7 +1043,7 @@ def main() -> int:
     build: Path = args.build.resolve()
     print(f"reading  {SRC}")
     drift = body_drift()
-    doc, title, stats = build_document(args.mode)
+    doc, title, stats = build_document(args.mode, args.claude)
     sanity_check(doc, args.mode)
 
     if build.exists():
@@ -1016,6 +1056,8 @@ def main() -> int:
     print(f"writing  {build}")
     print(f"  title          : {title}")
     print(f"  mode           : {args.mode}")
+    print(f"  claude markup  : {args.claude}"
+          + ("" if args.claude == "black" else "   (review copy)"))
     print(f"  {JOBNAME}.tex       : {len(doc.splitlines())} lines")
     print(f"  images         : {len(images)}")
     print(f"  preamble       : {len(stats['dropped'])} lines dropped, "
@@ -1027,11 +1069,11 @@ def main() -> int:
         print(f"  appendix cut   : {item}")
 
     if not args.no_compile:
-        pdf = compile_pdf(build, args.keep_work, args.mode)
+        pdf = compile_pdf(build, args.keep_work, args.mode, args.claude)
         print(f"  preview        : {pdf}")
 
     if not args.no_zip:
-        archive = pack_zip(build, args.mode)
+        archive = pack_zip(build, args.mode, args.claude)
         print(f"  zip            : {archive} ({archive.stat().st_size / 1e6:.1f} MB)")
 
     unknown = sorted({p for p in stats["passed"]})
@@ -1054,7 +1096,8 @@ def main() -> int:
     elif drift is not None:
         print(f"\nFORK DRIFT\n  {drift}")
 
-    print(f"\nSubmit {HERE / preview_name(args.mode, '.pdf')} to OpenReview; "
+    print(f"\nSubmit {HERE / preview_name(args.mode, '.pdf', args.claude)} to "
+          f"OpenReview; "
           f"the sources are in {build}.")
     return 0
 

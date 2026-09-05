@@ -1457,22 +1457,31 @@ def test_the_uplink_rule_turns_the_compressor_zeros_into_one_bit():
     as a diagnostic; the raw zero rate is still recorded either way, which is what
     the last assertion here pins. `communication_bits` is what covers `keep`.
     """
+    torch.manual_seed(3)
     M = torch.randn(6, 8)
     M[2] = 0.0                                    # a dead unit's gradient row
     s = torch.sign(muon_lmo(M, ns_steps=5, dtype=torch.float32, scale_aspect=False))
     assert int((s == 0).sum()) >= 8, "a zero row of M must give zeros in sign(polar(M))"
 
-    # ... and the driver measures it rather than assuming it away.
+    # ... and the driver measures it rather than assuming it away.  Every run
+    # below is seeded identically: the zero rate is a property of the gradients,
+    # so three unseeded TinyNet initialisations would give three different rates
+    # and the comparison at the end of this test would compare nothing.
     loaders = [tiny_loader(seed=s) for s in range(5)]        # ODD client count
+    torch.manual_seed(3)
     h = run_federated("signmuon", TinyNet(), loaders, [tiny_loader()],
                       rounds=2, n_steps=1, lr=0.01, eval_freq=1, device="cpu",
                       lmo_dtype=torch.float32, verbose=False)
     assert len(h.values("uplink_zero_frac")) == 2
     assert all(0.0 <= z <= 1.0 for z in h.values("uplink_zero_frac"))
+    assert max(h.values("uplink_zero_frac")) > 0.0, \
+        "seed 3 is chosen because the compressor really does emit zeros there; " \
+        "at a seed with none, the last assertion below would hold vacuously"
 
     # Forcing the zeros to +-1 makes the channel a genuine one bit, and then an
     # odd count really cannot tie.
     for rule in ("random", "positive"):
+        torch.manual_seed(3)
         h2 = run_federated("signmuon", TinyNet(), loaders, [tiny_loader()],
                            rounds=2, n_steps=1, lr=0.01, eval_freq=1, device="cpu",
                            lmo_dtype=torch.float32, uplink_zeros=rule, verbose=False)

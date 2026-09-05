@@ -8,27 +8,27 @@ Database file #1: references.bib
 You've used 26 entries,
             2840 wiz_defined-function locations,
             713 strings with 10544 characters,
-and the built_in function-call counts, 19656 in all, are:
-= -- 1448
+and the built_in function-call counts, 19683 in all, are:
+= -- 1452
 > -- 1422
 < -- 5
 + -- 531
 - -- 497
-* -- 1527
-:= -- 3306
-add.period$ -- 116
+* -- 1528
+:= -- 3308
+add.period$ -- 117
 call.type$ -- 26
-change.case$ -- 275
+change.case$ -- 276
 chr.to.int$ -- 27
 cite$ -- 26
-duplicate$ -- 1217
-empty$ -- 1055
+duplicate$ -- 1220
+empty$ -- 1056
 format.name$ -- 562
-if$ -- 3676
+if$ -- 3682
 int.to.chr$ -- 2
 int.to.str$ -- 1
-missing$ -- 289
-newline$ -- 143
+missing$ -- 290
+newline$ -- 144
 num.names$ -- 104
 pop$ -- 677
 preamble$ -- 1
@@ -36,8 +36,8 @@ purify$ -- 252
 quote$ -- 0
 skip$ -- 573
 stack$ -- 0
-substring$ -- 520
-swap$ -- 673
+substring$ -- 522
+swap$ -- 675
 text.length$ -- 5
 text.prefix$ -- 0
 top$ -- 0
@@ -45,4 +45,4 @@ type$ -- 234
 warning$ -- 0
 while$ -- 119
 width$ -- 0
-write$ -- 347
+write$ -- 349
