@@ -236,13 +236,9 @@ anonymous_code/
 anonymous_code.zip
 supplement.zip
 
-# LaTeX build output. Every article directory here is compiled in place at
-# least sometimes, and latexmk leaves a dozen files behind each time; the three
-# that showed up untracked in icomp_article_v2/ are what prompted this. Adding
-# the patterns does not untrack what is already committed: the .aux files of
-# the AAAI build are tracked deliberately, because \externaldocument reads the
-# other document's .aux and a fresh clone cannot compile either half without
-# them.
+# LaTeX build output. Logs and caches remain local.
+# The tracked AAAI .aux files support cross-document references via
+# \externaldocument and are retained for builds from a fresh clone.
 *.aux
 *.bbl
 *.blg
