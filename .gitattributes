@@ -1,0 +1,10 @@
+# Preserve compiled documents and source bundles byte for byte.
+*.pdf binary
+*.zip binary
+*.gz binary
+
+# Keep proof sources, frozen statements, and dependency hashes stable on every OS.
+/lean_proofs/** text eol=lf
+# The frozen reference has a recorded byte hash; preserve its original bytes.
+/lean_proofs/comparator/Reference.lean.in -text !eol
+/.github/workflows/*.yml text eol=lf

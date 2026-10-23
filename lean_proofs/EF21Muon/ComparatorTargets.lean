@@ -1,0 +1,797 @@
+import EF21Muon.Experiments.FreshTrajectory
+import EF21Muon.Experiments.BlockTrajectory
+import EF21Muon.Experiments.Schedules
+import EF21Muon.Experiments.FixedMomentum
+import EF21Muon.Theorems.WorkerAveraged
+import EF21Muon.LongTails.Comparisons
+import EF21Muon.Theorems.Optimized
+import EF21Muon.Theorems.DeterministicMuonSign
+import EF21Muon.Theorems.DeterministicMuonUSign
+import EF21Muon.Distributed.GeneralizedPaper
+import EF21Muon.Nesterov.SmoothPaper
+import EF21Muon.Nesterov.GeneralizedPaper
+import EF21Muon.Theorems.StochasticEMA
+import EF21Muon.Theorems.StochasticNesterov
+
+noncomputable section
+
+open scoped BigOperators MeasureTheory
+set_option autoImplicit false
+set_option linter.unusedVariables false
+
+/-! Fixed public aliases audited against comparator/Reference.lean.in. -/
+
+theorem EF21Muon.ComparatorTargets.deterministicMuonSign :
+    ∀ (m n : ℕ),
+      OracleTemplate.Convergence (EF21Muon.Setups.Deterministic.spec m n Bool.true) fun p x =>
+        EF21Muon.Theorems.DeterministicMuonSign.budget m n p :=
+  @EF21Muon.Theorems.DeterministicMuonSign.result
+
+theorem EF21Muon.ComparatorTargets.deterministicMuonUSign :
+    ∀ (m n : ℕ),
+      OracleTemplate.Convergence (EF21Muon.Setups.Deterministic.spec m n Bool.false) fun p x =>
+        EF21Muon.Theorems.DeterministicMuonUSign.budget m n p :=
+  @EF21Muon.Theorems.DeterministicMuonUSign.result
+
+theorem EF21Muon.ComparatorTargets.emaSmooth.{u_1} :
+    ∀ {N p : ℕ} {m n : Fin p → ℕ} {Ω : Type u_1} [inst : MeasurableSpace Ω]
+      {μ : MeasureTheory.Measure Ω} [MeasureTheory.IsProbabilityMeasure μ]
+      {c : Fin p → EF21Muon.Stochastic.Parameters} (P : EF21Muon.Distributed.Problem N m n μ c)
+      (A : EF21Muon.Distributed.Scheme N m n c) {g : ℝ},
+      0 < g →
+        ∀ (T : ℕ),
+          0 < T →
+            (∀ (i : Fin p), (c i).β = 1 / √↑T) →
+              (∀ (i : Fin p), (c i).γ = g * (c i).β) →
+                (∀ (i : Fin p),
+                    g *
+                        (2 * (c i).L +
+                          2 * √(EF21Muon.Distributed.rateEnvelope (c i) (P.ell2 i) (A.τ i))) ≤
+                      1) →
+                  ∀ (x : EF21Muon.Distributed.Model m n),
+                    P.stationarity A (g / √↑T) (EF21Muon.Distributed.start x) T ≤
+                      (4 * P.rateInitial g x / g + 4 * P.noiseScaleTotal) / √↑T :=
+  @EF21Muon.Distributed.Problem.smooth_rate.{u_1}
+
+theorem EF21Muon.ComparatorTargets.nesterovSmooth.{u_1} :
+    ∀ {N p : ℕ} {m n : Fin p → ℕ} {Ω : Type u_1} [inst : MeasurableSpace Ω]
+      {μ : MeasureTheory.Measure Ω} {c : Fin p → EF21Muon.Stochastic.Parameters}
+      [MeasureTheory.IsProbabilityMeasure μ] (P : EF21Muon.Distributed.Problem N m n μ c)
+      (A : EF21Muon.Distributed.Scheme N m n c),
+      (∀ (i : Fin p), A.CP i 0 = 0) →
+        ∀ {g : ℝ},
+          0 < g →
+            ∀ (T : ℕ),
+              0 < T →
+                (∀ (i : Fin p), (c i).β = 1 / √↑T) →
+                  (∀ (i : Fin p), (c i).γ = g * (c i).β) →
+                    (∀ (i : Fin p),
+                        g *
+                            (2 * (c i).L +
+                              2 * √(EF21Muon.Nesterov.rateEnvelope (c i) (P.ell2 i) (A.τ i))) ≤
+                          1) →
+                      ∀ (x : EF21Muon.Distributed.Model m n),
+                        EF21Muon.Nesterov.paperSmoothAverage P A (g / √↑T) x T ≤
+                          (4 * EF21Muon.Nesterov.rateInitial P g x / g +
+                              8 * EF21Muon.Nesterov.noiseTotalScale P) /
+                            √↑T :=
+  @EF21Muon.Nesterov.smooth_paper_rate.{u_1}
+
+theorem EF21Muon.ComparatorTargets.emaGeneralized.{u_1} :
+    ∀ {N p : ℕ} {m n : Fin p → ℕ} {Ω : Type u_1} [inst : MeasurableSpace Ω]
+      {μ : MeasureTheory.Measure Ω} [MeasureTheory.IsProbabilityMeasure μ]
+      (P : EF21Muon.Distributed.GeneralizedProblem N m n μ),
+      0 < p →
+        ∀ (hm : ∀ (i : Fin p), 0 < m i) (hn : ∀ (i : Fin p), 0 < n i) (η : Fin p → ℝ)
+          (hη : ∀ (i : Fin p), 0 < η i) (x : EF21Muon.Distributed.Model m n),
+          (fun T =>
+              P.paperRadiusMinimum (EF21Muon.Distributed.generalizedMatrixScheme hm hn η hη T)
+                (fun i => η i / EF21Muon.Probability.average η) x T) =O[Filter.atTop]
+            fun T : ℕ => (T : ℝ) ^ (-1 / 4 : ℝ) :=
+  @EF21Muon.Distributed.matrix_generalized_paper_rate.{u_1}
+
+theorem EF21Muon.ComparatorTargets.nesterovGeneralized.{u_1} :
+    ∀ {N p : ℕ} {m n : Fin p → ℕ} {Ω : Type u_1} [inst : MeasurableSpace Ω]
+      {μ : MeasureTheory.Measure Ω} [MeasureTheory.IsProbabilityMeasure μ]
+      (P : EF21Muon.Distributed.GeneralizedProblem N m n μ),
+      0 < p →
+        ∀ (hm : ∀ (i : Fin p), 0 < m i) (hn : ∀ (i : Fin p), 0 < n i) (η : Fin p → ℝ)
+          (hη : ∀ (i : Fin p), 0 < η i) (x : EF21Muon.Distributed.Model m n),
+          (fun T =>
+              EF21Muon.Nesterov.paperRadiusMinimum P
+                (EF21Muon.Distributed.generalizedMatrixScheme hm hn η hη T)
+                (fun i => η i / EF21Muon.Probability.average η) x T) =O[Filter.atTop]
+            fun T : ℕ => (T : ℝ) ^ (-1 / 4 : ℝ) :=
+  @EF21Muon.Nesterov.matrix_generalized_paper_rate.{u_1}
+
+theorem EF21Muon.ComparatorTargets.emaAccuracyQueries :
+    ∀ {N p : ℕ} {m n : Fin p → ℕ} {Ω : Type} [inst : MeasurableSpace Ω] {μ : MeasureTheory.Measure Ω}
+      [inst_1 : MeasureTheory.IsProbabilityMeasure μ] {c : Fin p → EF21Muon.Stochastic.Parameters}
+      (P : EF21Muon.Distributed.Problem N m n μ c) (A : EF21Muon.Distributed.Scheme N m n c) {g ε : ℝ},
+      0 < g →
+        0 < ε →
+          (∀ (i : Fin p), (c i).β = EF21Muon.LongTails.accuracyBeta P.noiseScaleTotal ε) →
+            (∀ (i : Fin p), (c i).γ = g * (c i).β) →
+              (∀ (i : Fin p),
+                  g *
+                      (2 * (c i).L +
+                        2 * √(EF21Muon.Distributed.rateEnvelope (c i) (P.ell2 i) (A.τ i))) ≤
+                    1) →
+                ∀ (x : EF21Muon.Distributed.Model m n),
+                  let T := EF21Muon.LongTails.accuracyBudget (P.rateInitial g x) g P.noiseScaleTotal ε;
+                  ∫ (ξ : EF21Muon.Stochastic.Samples Ω T),
+                        EF21Muon.LongTails.trajectoryScore P.grad
+                          (OracleTemplate.execute (EF21Muon.LongTails.sampledOracle P.reply)
+                            (EF21Muon.LongTails.emaProtocol μ A T x) (fun x => T) ξ fun x =>
+                            ()) ∂EF21Muon.Probability.pathMeasure μ T ≤
+                      ε ^ 2 ∧
+                    ∀ (ξ : EF21Muon.Stochastic.Samples Ω T),
+                      (OracleTemplate.executeWithTrace (EF21Muon.LongTails.sampledOracle P.reply)
+                                (EF21Muon.LongTails.emaProtocol μ A T x) (fun x => T) ξ fun x =>
+                                ()).2.length =
+                          T ∧
+                        N *
+                            (OracleTemplate.executeWithTrace (EF21Muon.LongTails.sampledOracle P.reply)
+                                  (EF21Muon.LongTails.emaProtocol μ A T x) (fun x => T) ξ fun x =>
+                                  ()).2.length =
+                          N * T :=
+  @EF21Muon.Theorems.StochasticEMA.result
+
+theorem EF21Muon.ComparatorTargets.nesterovAccuracyQueries :
+    ∀ {N p : ℕ} {m n : Fin p → ℕ} {Ω : Type} [inst : MeasurableSpace Ω] {μ : MeasureTheory.Measure Ω}
+      [inst_1 : MeasureTheory.IsProbabilityMeasure μ] {c : Fin p → EF21Muon.Stochastic.Parameters}
+      (P : EF21Muon.Distributed.Problem N m n μ c) (A : EF21Muon.Distributed.Scheme N m n c) {g ε : ℝ},
+      0 < g →
+        0 < ε →
+          (∀ (i : Fin p),
+              (c i).β = EF21Muon.LongTails.accuracyBeta (EF21Muon.Nesterov.noiseTotalScale P) ε) →
+            (∀ (i : Fin p), (c i).γ = g * (c i).β) →
+              (∀ (i : Fin p),
+                  g * (2 * (c i).L + 2 * √(EF21Muon.Nesterov.rateEnvelope (c i) (P.ell2 i) (A.τ i))) ≤
+                    1) →
+                ∀ (x : EF21Muon.Distributed.Model m n),
+                  let T :=
+                    EF21Muon.LongTails.accuracyBudget (EF21Muon.Nesterov.rateInitial P g x) g
+                      (EF21Muon.Nesterov.noiseTotalScale P) ε;
+                  ∫ (ξ : EF21Muon.Stochastic.Samples Ω T),
+                        EF21Muon.LongTails.trajectoryScore P.grad
+                          (OracleTemplate.execute (EF21Muon.LongTails.sampledOracle P.reply)
+                            (EF21Muon.LongTails.nesterovProtocol μ A T x) (fun x => T) ξ fun x =>
+                            ()) ∂EF21Muon.Probability.pathMeasure μ T ≤
+                      ε ^ 2 ∧
+                    ∀ (ξ : EF21Muon.Stochastic.Samples Ω T),
+                      (OracleTemplate.executeWithTrace (EF21Muon.LongTails.sampledOracle P.reply)
+                                (EF21Muon.LongTails.nesterovProtocol μ A T x) (fun x => T) ξ fun x =>
+                                ()).2.length =
+                          T ∧
+                        N *
+                            (OracleTemplate.executeWithTrace (EF21Muon.LongTails.sampledOracle P.reply)
+                                  (EF21Muon.LongTails.nesterovProtocol μ A T x) (fun x => T) ξ fun x =>
+                                  ()).2.length =
+                          N * T :=
+  @EF21Muon.Theorems.StochasticNesterov.result
+
+theorem EF21Muon.ComparatorTargets.budgetFormula :
+    ∀ (B g S ε : ℝ),
+      EF21Muon.LongTails.accuracyBudget B g S ε =
+        Max.max 1 ⌈8 * B / (g * ε ^ 2) + 64 * B * S / (g * ε ^ 4)⌉₊ :=
+  @EF21Muon.LongTails.accuracyBudget_formula
+
+theorem EF21Muon.ComparatorTargets.zeroNoiseMomentum :
+    ∀ {ε : ℝ}, 0 < ε → EF21Muon.LongTails.accuracyBeta 0 ε = 1 :=
+  @EF21Muon.LongTails.accuracyBeta_zero
+
+theorem EF21Muon.ComparatorTargets.zeroNoiseBudget :
+    ∀ (B g ε : ℝ), EF21Muon.LongTails.accuracyBudget B g 0 ε = Max.max 1 ⌈8 * B / (g * ε ^ 2)⌉₊ :=
+  @EF21Muon.LongTails.accuracyBudget_zero
+
+theorem EF21Muon.ComparatorTargets.emaPolynomial.{u_1} :
+    ∀ {N p : ℕ} {m n : Fin p → ℕ} {Ω : Type u_1} [inst : MeasurableSpace Ω]
+      {μ : MeasureTheory.Measure Ω} [MeasureTheory.IsProbabilityMeasure μ]
+      {c : Fin p → EF21Muon.Stochastic.Parameters} (P : EF21Muon.Distributed.Problem N m n μ c)
+      (A : EF21Muon.Distributed.Scheme N m n c) {g β : ℝ} (hg : 0 < g),
+      0 < β →
+        (∀ (i : Fin p), (c i).β = β) →
+          (∀ (i : Fin p), (c i).γ = g * β) →
+            (∀ (i : Fin p),
+                g * (2 * (c i).L + 2 * √(EF21Muon.Distributed.rateEnvelope (c i) (P.ell2 i) (A.τ i))) ≤
+                  1) →
+              ∀ (x : EF21Muon.Distributed.Model m n) (T : ℕ),
+                0 < T →
+                  P.stationarity A (g * β) (EF21Muon.Distributed.start x) T ≤
+                    (EF21Muon.LongTails.emaProfile P hg x).bound T β :=
+  @EF21Muon.LongTails.ema_polynomial_bound.{u_1}
+
+theorem EF21Muon.ComparatorTargets.nesterovPolynomial.{u_1} :
+    ∀ {N p : ℕ} {m n : Fin p → ℕ} {Ω : Type u_1} [inst : MeasurableSpace Ω]
+      {μ : MeasureTheory.Measure Ω} [MeasureTheory.IsProbabilityMeasure μ]
+      {c : Fin p → EF21Muon.Stochastic.Parameters} (P : EF21Muon.Distributed.Problem N m n μ c)
+      (A : EF21Muon.Distributed.Scheme N m n c) {g β : ℝ} (hg : 0 < g),
+      0 < β →
+        (∀ (i : Fin p), (c i).β = β) →
+          (∀ (i : Fin p), (c i).γ = g * β) →
+            (∀ (i : Fin p),
+                g * (2 * (c i).L + 2 * √(EF21Muon.Nesterov.rateEnvelope (c i) (P.ell2 i) (A.τ i))) ≤
+                  1) →
+              ∀ (x : EF21Muon.Distributed.Model m n) (T : ℕ),
+                0 < T →
+                  EF21Muon.Nesterov.smoothStationarity P A (g * β) (EF21Muon.Nesterov.initial x) T ≤
+                    (EF21Muon.LongTails.nesterovProfile P hg x).bound T β :=
+  @EF21Muon.LongTails.nesterov_polynomial_bound.{u_1}
+
+theorem EF21Muon.ComparatorTargets.nesterovPaperPolynomial.{u_1} :
+    ∀ {N p : ℕ} {m n : Fin p → ℕ} {Ω : Type u_1} [inst : MeasurableSpace Ω]
+      {μ : MeasureTheory.Measure Ω} [MeasureTheory.IsProbabilityMeasure μ]
+      {c : Fin p → EF21Muon.Stochastic.Parameters} (P : EF21Muon.Distributed.Problem N m n μ c)
+      (A : EF21Muon.Distributed.Scheme N m n c),
+      (∀ (i : Fin p), A.CP i 0 = 0) →
+        ∀ {g β : ℝ} (hg : 0 < g),
+          0 < β →
+            (∀ (i : Fin p), (c i).β = β) →
+              (∀ (i : Fin p), (c i).γ = g * β) →
+                (∀ (i : Fin p),
+                    g * (2 * (c i).L + 2 * √(EF21Muon.Nesterov.rateEnvelope (c i) (P.ell2 i) (A.τ i))) ≤
+                      1) →
+                  ∀ (x : EF21Muon.Distributed.Model m n) (T : ℕ),
+                    0 < T →
+                      EF21Muon.Nesterov.paperSmoothAverage P A (g * β) x T ≤
+                        (EF21Muon.LongTails.nesterovProfile P hg x).doubleNoise.bound T β :=
+  @EF21Muon.LongTails.nesterov_paper_polynomial_bound.{u_1}
+
+theorem EF21Muon.ComparatorTargets.optimalMomentum :
+    ∀ (P : EF21Muon.LongTails.Profile) {T : ℕ},
+      0 < T → 0 < P.a → ∀ {β : ℝ}, 0 < β → β ≤ 1 → P.bound T (P.optimalBeta T) ≤ P.bound T β :=
+  @EF21Muon.LongTails.Profile.optimalBeta_minimizes
+
+theorem EF21Muon.ComparatorTargets.minimalHorizon :
+    ∀ (P : EF21Muon.LongTails.Profile),
+      0 < P.a →
+        ∀ {ε : ℝ},
+          0 < ε →
+            ∀ {T : ℕ}, 0 < T → ∀ {β : ℝ}, 0 < β → β ≤ 1 → P.bound T β ≤ ε ^ 2 → P.optimalBudget ε ≤ T :=
+  @EF21Muon.LongTails.Profile.optimalBudget_minimal
+
+theorem EF21Muon.ComparatorTargets.oldBudgetDominance :
+    ∀ (P : EF21Muon.LongTails.Profile),
+      0 < P.a → ∀ {ε : ℝ}, 0 < ε → P.optimalBudget ε ≤ P.collapsedBudget ε :=
+  @EF21Muon.LongTails.Profile.optimalBudget_le_collapsed
+
+theorem EF21Muon.ComparatorTargets.balancedBudget :
+    ∀ (P : EF21Muon.LongTails.Profile) {ε : ℝ},
+      0 < ε → P.bound (P.balancedBudget ε) (P.balancedBeta ε) ≤ ε ^ 2 :=
+  @EF21Muon.LongTails.Profile.bound_at_balancedBudget
+
+theorem EF21Muon.ComparatorTargets.certificateBarrier :
+    ∀ (P : EF21Muon.LongTails.Profile) {T : ℕ},
+      0 < T → ∀ {β ε : ℝ}, 0 < β → P.bound T β ≤ ε ^ 2 → 64 * P.a * P.s₁ ≤ ε ^ 4 * ↑T :=
+  @EF21Muon.LongTails.Profile.certificate_barrier
+
+theorem EF21Muon.ComparatorTargets.optimalEMAExecution :
+    ∀ {N p : ℕ} {m n : Fin p → ℕ} {Ω : Type} [inst : MeasurableSpace Ω] {μ : MeasureTheory.Measure Ω}
+      [inst_1 : MeasureTheory.IsProbabilityMeasure μ] {c : Fin p → EF21Muon.Stochastic.Parameters}
+      (P : EF21Muon.Distributed.Problem N m n μ c) (A : EF21Muon.Distributed.Scheme N m n c) {g ε : ℝ}
+      (hg : 0 < g),
+      0 < ε →
+        ∀ (x : EF21Muon.Distributed.Model m n),
+          0 < (EF21Muon.LongTails.emaProfile P hg x).a →
+            (∀ (i : Fin p),
+                (c i).β =
+                  (EF21Muon.LongTails.emaProfile P hg x).optimalBeta
+                    ((EF21Muon.LongTails.emaProfile P hg x).optimalBudget ε)) →
+              (∀ (i : Fin p), (c i).γ = g * (c i).β) →
+                (∀ (i : Fin p),
+                    g *
+                        (2 * (c i).L +
+                          2 * √(EF21Muon.Distributed.rateEnvelope (c i) (P.ell2 i) (A.τ i))) ≤
+                      1) →
+                  have q := EF21Muon.LongTails.emaProfile P hg x;
+                  let T := q.optimalBudget ε;
+                  ∫ (ξ : EF21Muon.Stochastic.Samples Ω T),
+                        EF21Muon.LongTails.trajectoryScore P.grad
+                          (OracleTemplate.execute (EF21Muon.LongTails.sampledOracle P.reply)
+                            (EF21Muon.LongTails.emaProtocol μ A T x) (fun x => T) ξ fun x =>
+                            ()) ∂EF21Muon.Probability.pathMeasure μ T ≤
+                      ε ^ 2 ∧
+                    (∀ (ξ : EF21Muon.Stochastic.Samples Ω T),
+                        (OracleTemplate.executeWithTrace (EF21Muon.LongTails.sampledOracle P.reply)
+                                  (EF21Muon.LongTails.emaProtocol μ A T x) (fun x => T) ξ fun x =>
+                                  ()).2.length =
+                            T ∧
+                          N *
+                              (OracleTemplate.executeWithTrace
+                                    (EF21Muon.LongTails.sampledOracle P.reply)
+                                    (EF21Muon.LongTails.emaProtocol μ A T x) (fun x => T) ξ fun x =>
+                                    ()).2.length =
+                            N * T) ∧
+                      T ≤ q.collapsedBudget ε ∧
+                        T ≤ q.balancedBudget ε ∧
+                          ∀ (t : ℕ), 0 < t → ∀ (β : ℝ), 0 < β → β ≤ 1 → q.bound t β ≤ ε ^ 2 → T ≤ t :=
+  @EF21Muon.Theorems.Optimized.ema
+
+theorem EF21Muon.ComparatorTargets.optimalNesterovExecution :
+    ∀ {N p : ℕ} {m n : Fin p → ℕ} {Ω : Type} [inst : MeasurableSpace Ω] {μ : MeasureTheory.Measure Ω}
+      [inst_1 : MeasureTheory.IsProbabilityMeasure μ] {c : Fin p → EF21Muon.Stochastic.Parameters}
+      (P : EF21Muon.Distributed.Problem N m n μ c) (A : EF21Muon.Distributed.Scheme N m n c) {g ε : ℝ}
+      (hg : 0 < g),
+      0 < ε →
+        ∀ (x : EF21Muon.Distributed.Model m n),
+          0 < (EF21Muon.LongTails.nesterovProfile P hg x).a →
+            (∀ (i : Fin p),
+                (c i).β =
+                  (EF21Muon.LongTails.nesterovProfile P hg x).optimalBeta
+                    ((EF21Muon.LongTails.nesterovProfile P hg x).optimalBudget ε)) →
+              (∀ (i : Fin p), (c i).γ = g * (c i).β) →
+                (∀ (i : Fin p),
+                    g * (2 * (c i).L + 2 * √(EF21Muon.Nesterov.rateEnvelope (c i) (P.ell2 i) (A.τ i))) ≤
+                      1) →
+                  have q := EF21Muon.LongTails.nesterovProfile P hg x;
+                  let T := q.optimalBudget ε;
+                  ∫ (ξ : EF21Muon.Stochastic.Samples Ω T),
+                        EF21Muon.LongTails.trajectoryScore P.grad
+                          (OracleTemplate.execute (EF21Muon.LongTails.sampledOracle P.reply)
+                            (EF21Muon.LongTails.nesterovProtocol μ A T x) (fun x => T) ξ fun x =>
+                            ()) ∂EF21Muon.Probability.pathMeasure μ T ≤
+                      ε ^ 2 ∧
+                    (∀ (ξ : EF21Muon.Stochastic.Samples Ω T),
+                        (OracleTemplate.executeWithTrace (EF21Muon.LongTails.sampledOracle P.reply)
+                                  (EF21Muon.LongTails.nesterovProtocol μ A T x) (fun x => T) ξ fun x =>
+                                  ()).2.length =
+                            T ∧
+                          N *
+                              (OracleTemplate.executeWithTrace
+                                    (EF21Muon.LongTails.sampledOracle P.reply)
+                                    (EF21Muon.LongTails.nesterovProtocol μ A T x) (fun x => T) ξ
+                                    fun x => ()).2.length =
+                            N * T) ∧
+                      T ≤ q.collapsedBudget ε ∧
+                        T ≤ q.balancedBudget ε ∧
+                          ∀ (t : ℕ), 0 < t → ∀ (β : ℝ), 0 < β → β ≤ 1 → q.bound t β ≤ ε ^ 2 → T ≤ t :=
+  @EF21Muon.Theorems.Optimized.nesterov
+
+theorem EF21Muon.ComparatorTargets.optimalNesterovPaper :
+    ∀ {N p : ℕ} {m n : Fin p → ℕ} {Ω : Type} [inst : MeasurableSpace Ω] {μ : MeasureTheory.Measure Ω}
+      [MeasureTheory.IsProbabilityMeasure μ] {c : Fin p → EF21Muon.Stochastic.Parameters}
+      (P : EF21Muon.Distributed.Problem N m n μ c) (A : EF21Muon.Distributed.Scheme N m n c),
+      (∀ (i : Fin p), A.CP i 0 = 0) →
+        ∀ {g ε : ℝ} (hg : 0 < g),
+          0 < ε →
+            ∀ (x : EF21Muon.Distributed.Model m n),
+              0 < (EF21Muon.LongTails.nesterovProfile P hg x).a →
+                (∀ (i : Fin p),
+                    (c i).β =
+                      (EF21Muon.LongTails.nesterovProfile P hg x).doubleNoise.optimalBeta
+                        ((EF21Muon.LongTails.nesterovProfile P hg x).doubleNoise.optimalBudget ε)) →
+                  (∀ (i : Fin p), (c i).γ = g * (c i).β) →
+                    (∀ (i : Fin p),
+                        g *
+                            (2 * (c i).L +
+                              2 * √(EF21Muon.Nesterov.rateEnvelope (c i) (P.ell2 i) (A.τ i))) ≤
+                          1) →
+                      have q := (EF21Muon.LongTails.nesterovProfile P hg x).doubleNoise;
+                      have T := q.optimalBudget ε;
+                      EF21Muon.Nesterov.paperSmoothAverage P A (g * q.optimalBeta T) x T ≤ ε ^ 2 ∧
+                        T ≤ q.collapsedBudget ε ∧ T ≤ q.balancedBudget ε :=
+  @EF21Muon.Theorems.Optimized.nesterov_paper
+
+theorem EF21Muon.ComparatorTargets.emaPreviousBudget.{u_1} :
+    ∀ {N p : ℕ} {m n : Fin p → ℕ} {Ω : Type u_1} [inst : MeasurableSpace Ω]
+      {μ : MeasureTheory.Measure Ω} [MeasureTheory.IsProbabilityMeasure μ]
+      {c : Fin p → EF21Muon.Stochastic.Parameters} (P : EF21Muon.Distributed.Problem N m n μ c)
+      {g ε : ℝ} (hg : 0 < g),
+      0 < ε →
+        ∀ (x : EF21Muon.Distributed.Model m n),
+          0 < (EF21Muon.LongTails.emaProfile P hg x).a →
+            (EF21Muon.LongTails.emaProfile P hg x).optimalBudget ε ≤
+              EF21Muon.LongTails.accuracyBudget (P.rateInitial g x) g P.noiseScaleTotal ε :=
+  @EF21Muon.LongTails.ema_optimalBudget_le_previous.{u_1}
+
+theorem EF21Muon.ComparatorTargets.nesterovPreviousBudget.{u_1} :
+    ∀ {N p : ℕ} {m n : Fin p → ℕ} {Ω : Type u_1} [inst : MeasurableSpace Ω]
+      {μ : MeasureTheory.Measure Ω} [MeasureTheory.IsProbabilityMeasure μ]
+      {c : Fin p → EF21Muon.Stochastic.Parameters} (P : EF21Muon.Distributed.Problem N m n μ c)
+      {g ε : ℝ} (hg : 0 < g),
+      0 < ε →
+        ∀ (x : EF21Muon.Distributed.Model m n),
+          0 < (EF21Muon.LongTails.nesterovProfile P hg x).a →
+            (EF21Muon.LongTails.nesterovProfile P hg x).optimalBudget ε ≤
+              EF21Muon.LongTails.accuracyBudget (EF21Muon.Nesterov.rateInitial P g x) g
+                (EF21Muon.Nesterov.noiseTotalScale P) ε :=
+  @EF21Muon.LongTails.nesterov_optimalBudget_le_previous.{u_1}
+
+theorem EF21Muon.ComparatorTargets.averagedNesterovFiniteTime.{u_1} :
+    ∀ {N p : ℕ} {m n : Fin p → ℕ} {Ω : Type u_1} [inst : MeasurableSpace Ω]
+      {μ : MeasureTheory.Measure Ω} [MeasureTheory.IsProbabilityMeasure μ]
+      {c : Fin p → EF21Muon.Stochastic.Parameters} (P : EF21Muon.Distributed.Problem N m n μ c)
+      (A : EF21Muon.Distributed.Scheme N m n c),
+      (∀ (i : Fin p),
+          2 * (c i).L * (c i).γ + 4 * EF21Muon.Nesterov.zeta (c i) (P.ell2 i) (A.τ i) * (c i).γ ^ 2 ≤
+            1) →
+        ∀ (T : ℕ) (s : EF21Muon.Nesterov.States N m n),
+          MeasureTheory.Integrable
+              (fun ξ =>
+                (List.map (EF21Muon.Nesterov.smoothCost P)
+                    (EF21Muon.Stochastic.run (EF21Muon.Nesterov.next A P.reply) T s ξ)).sum)
+              (EF21Muon.Probability.pathMeasure μ T) ∧
+            ∫ (ξ : EF21Muon.Stochastic.Samples Ω T),
+                (List.map (EF21Muon.Nesterov.smoothCost P)
+                    (EF21Muon.Stochastic.run (EF21Muon.Nesterov.next A P.reply) T s
+                      ξ)).sum ∂EF21Muon.Probability.pathMeasure μ T ≤
+              EF21Muon.Nesterov.Averaged.smoothPotential P s +
+                ↑T * EF21Muon.Nesterov.Averaged.smoothNoise P :=
+  @EF21Muon.Nesterov.Averaged.smooth_finite_time.{u_1}
+
+theorem EF21Muon.ComparatorTargets.averagedNesterovPolynomial.{u_1} :
+    ∀ {N p : ℕ} {m n : Fin p → ℕ} {Ω : Type u_1} [inst : MeasurableSpace Ω]
+      {μ : MeasureTheory.Measure Ω} [MeasureTheory.IsProbabilityMeasure μ]
+      {c : Fin p → EF21Muon.Stochastic.Parameters} (P : EF21Muon.Distributed.Problem N m n μ c)
+      (A : EF21Muon.Distributed.Scheme N m n c) {g β : ℝ} (hg : 0 < g),
+      0 < β →
+        (∀ (i : Fin p), (c i).β = β) →
+          (∀ (i : Fin p), (c i).γ = g * β) →
+            (∀ (i : Fin p),
+                g * (2 * (c i).L + 2 * √(EF21Muon.Nesterov.rateEnvelope (c i) (P.ell2 i) (A.τ i))) ≤
+                  1) →
+              ∀ (x : EF21Muon.Distributed.Model m n) (T : ℕ),
+                0 < T →
+                  EF21Muon.Nesterov.smoothStationarity P A (g * β) (EF21Muon.Nesterov.initial x) T ≤
+                    (EF21Muon.LongTails.averagedNesterovProfile P hg x).bound T β :=
+  @EF21Muon.LongTails.averaged_nesterov_polynomial_bound.{u_1}
+
+theorem EF21Muon.ComparatorTargets.averagedNesterovPaperPolynomial.{u_1} :
+    ∀ {N p : ℕ} {m n : Fin p → ℕ} {Ω : Type u_1} [inst : MeasurableSpace Ω]
+      {μ : MeasureTheory.Measure Ω} [MeasureTheory.IsProbabilityMeasure μ]
+      {c : Fin p → EF21Muon.Stochastic.Parameters} (P : EF21Muon.Distributed.Problem N m n μ c)
+      (A : EF21Muon.Distributed.Scheme N m n c),
+      (∀ (i : Fin p), A.CP i 0 = 0) →
+        ∀ {g β : ℝ} (hg : 0 < g),
+          0 < β →
+            (∀ (i : Fin p), (c i).β = β) →
+              (∀ (i : Fin p), (c i).γ = g * β) →
+                (∀ (i : Fin p),
+                    g * (2 * (c i).L + 2 * √(EF21Muon.Nesterov.rateEnvelope (c i) (P.ell2 i) (A.τ i))) ≤
+                      1) →
+                  ∀ (x : EF21Muon.Distributed.Model m n) (T : ℕ),
+                    0 < T →
+                      EF21Muon.Nesterov.paperSmoothAverage P A (g * β) x T ≤
+                        (EF21Muon.LongTails.averagedNesterovProfile P hg x).doubleNoise.bound T β :=
+  @EF21Muon.LongTails.averaged_nesterov_paper_polynomial_bound.{u_1}
+
+theorem EF21Muon.ComparatorTargets.averagedNesterovCoefficients.{u_1} :
+    ∀ {N p : ℕ} {m n : Fin p → ℕ} {Ω : Type u_1} [inst : MeasurableSpace Ω]
+      {μ : MeasureTheory.Measure Ω} [MeasureTheory.IsProbabilityMeasure μ]
+      {c : Fin p → EF21Muon.Stochastic.Parameters} (P : EF21Muon.Distributed.Problem N m n μ c) {g : ℝ}
+      (hg : 0 < g) (x : EF21Muon.Distributed.Model m n),
+      have q := EF21Muon.LongTails.averagedNesterovProfile P hg x;
+      have old := EF21Muon.LongTails.nesterovProfile P hg x;
+      q.a ≤ old.a ∧ q.h ≤ old.h ∧ q.s₁ ≤ old.s₁ ∧ q.s₂ ≤ old.s₂ ∧ q.s₃ ≤ old.s₃ :=
+  @EF21Muon.LongTails.averaged_nesterov_coefficients_le.{u_1}
+
+theorem EF21Muon.ComparatorTargets.averagedNesterovLeadingVariance.{u_1} :
+    ∀ {N p : ℕ} {m n : Fin p → ℕ} {Ω : Type u_1} [inst : MeasurableSpace Ω]
+      {μ : MeasureTheory.Measure Ω} [MeasureTheory.IsProbabilityMeasure μ]
+      {c : Fin p → EF21Muon.Stochastic.Parameters} (P : EF21Muon.Distributed.Problem N m n μ c) {g : ℝ}
+      (hg : 0 < g) (x : EF21Muon.Distributed.Model m n),
+      (EF21Muon.LongTails.averagedNesterovProfile P hg x).s₁ =
+        (EF21Muon.LongTails.nesterovProfile P hg x).s₁ / ↑N :=
+  @EF21Muon.LongTails.averaged_nesterov_leading_variance.{u_1}
+
+theorem EF21Muon.ComparatorTargets.averagedNesterovBudget.{u_1} :
+    ∀ {N p : ℕ} {m n : Fin p → ℕ} {Ω : Type u_1} [inst : MeasurableSpace Ω]
+      {μ : MeasureTheory.Measure Ω} [MeasureTheory.IsProbabilityMeasure μ]
+      {c : Fin p → EF21Muon.Stochastic.Parameters} (P : EF21Muon.Distributed.Problem N m n μ c)
+      {g ε : ℝ} (hg : 0 < g),
+      0 < ε →
+        ∀ (x : EF21Muon.Distributed.Model m n),
+          0 < (EF21Muon.LongTails.averagedNesterovProfile P hg x).a →
+            (EF21Muon.LongTails.averagedNesterovProfile P hg x).optimalBudget ε ≤
+              (EF21Muon.LongTails.nesterovProfile P hg x).optimalBudget ε :=
+  @EF21Muon.LongTails.averaged_nesterov_optimalBudget_le.{u_1}
+
+theorem EF21Muon.ComparatorTargets.averagedNesterovExecution :
+    ∀ {N p : ℕ} {m n : Fin p → ℕ} {Ω : Type} [inst : MeasurableSpace Ω] {μ : MeasureTheory.Measure Ω}
+      [inst_1 : MeasureTheory.IsProbabilityMeasure μ] {c : Fin p → EF21Muon.Stochastic.Parameters}
+      (P : EF21Muon.Distributed.Problem N m n μ c) (A : EF21Muon.Distributed.Scheme N m n c) {g ε : ℝ}
+      (hg : 0 < g),
+      0 < ε →
+        ∀ (x : EF21Muon.Distributed.Model m n),
+          0 < (EF21Muon.LongTails.averagedNesterovProfile P hg x).a →
+            (∀ (i : Fin p),
+                (c i).β =
+                  (EF21Muon.LongTails.averagedNesterovProfile P hg x).optimalBeta
+                    ((EF21Muon.LongTails.averagedNesterovProfile P hg x).optimalBudget ε)) →
+              (∀ (i : Fin p), (c i).γ = g * (c i).β) →
+                (∀ (i : Fin p),
+                    g * (2 * (c i).L + 2 * √(EF21Muon.Nesterov.rateEnvelope (c i) (P.ell2 i) (A.τ i))) ≤
+                      1) →
+                  have q := EF21Muon.LongTails.averagedNesterovProfile P hg x;
+                  let T := q.optimalBudget ε;
+                  ∫ (ξ : EF21Muon.Stochastic.Samples Ω T),
+                        EF21Muon.LongTails.trajectoryScore P.grad
+                          (OracleTemplate.execute (EF21Muon.LongTails.sampledOracle P.reply)
+                            (EF21Muon.LongTails.nesterovProtocol μ A T x) (fun x => T) ξ fun x =>
+                            ()) ∂EF21Muon.Probability.pathMeasure μ T ≤
+                      ε ^ 2 ∧
+                    (∀ (ξ : EF21Muon.Stochastic.Samples Ω T),
+                        (OracleTemplate.executeWithTrace (EF21Muon.LongTails.sampledOracle P.reply)
+                                  (EF21Muon.LongTails.nesterovProtocol μ A T x) (fun x => T) ξ fun x =>
+                                  ()).2.length =
+                            T ∧
+                          N *
+                              (OracleTemplate.executeWithTrace
+                                    (EF21Muon.LongTails.sampledOracle P.reply)
+                                    (EF21Muon.LongTails.nesterovProtocol μ A T x) (fun x => T) ξ
+                                    fun x => ()).2.length =
+                            N * T) ∧
+                      T ≤ q.collapsedBudget ε ∧
+                        T ≤ q.balancedBudget ε ∧
+                          ∀ (t : ℕ), 0 < t → ∀ (β : ℝ), 0 < β → β ≤ 1 → q.bound t β ≤ ε ^ 2 → T ≤ t :=
+  @EF21Muon.Theorems.WorkerAveraged.nesterov
+
+theorem EF21Muon.ComparatorTargets.averagedNesterovPaper :
+    ∀ {N p : ℕ} {m n : Fin p → ℕ} {Ω : Type} [inst : MeasurableSpace Ω] {μ : MeasureTheory.Measure Ω}
+      [MeasureTheory.IsProbabilityMeasure μ] {c : Fin p → EF21Muon.Stochastic.Parameters}
+      (P : EF21Muon.Distributed.Problem N m n μ c) (A : EF21Muon.Distributed.Scheme N m n c),
+      (∀ (i : Fin p), A.CP i 0 = 0) →
+        ∀ {g ε : ℝ} (hg : 0 < g),
+          0 < ε →
+            ∀ (x : EF21Muon.Distributed.Model m n),
+              0 < (EF21Muon.LongTails.averagedNesterovProfile P hg x).a →
+                (∀ (i : Fin p),
+                    (c i).β =
+                      (EF21Muon.LongTails.averagedNesterovProfile P hg x).doubleNoise.optimalBeta
+                        ((EF21Muon.LongTails.averagedNesterovProfile P hg x).doubleNoise.optimalBudget
+                          ε)) →
+                  (∀ (i : Fin p), (c i).γ = g * (c i).β) →
+                    (∀ (i : Fin p),
+                        g *
+                            (2 * (c i).L +
+                              2 * √(EF21Muon.Nesterov.rateEnvelope (c i) (P.ell2 i) (A.τ i))) ≤
+                          1) →
+                      have q := (EF21Muon.LongTails.averagedNesterovProfile P hg x).doubleNoise;
+                      have T := q.optimalBudget ε;
+                      EF21Muon.Nesterov.paperSmoothAverage P A (g * q.optimalBeta T) x T ≤ ε ^ 2 ∧
+                        T ≤ q.collapsedBudget ε ∧ T ≤ q.balancedBudget ε :=
+  @EF21Muon.Theorems.WorkerAveraged.nesterov_paper
+
+theorem EF21Muon.ComparatorTargets.experimentalRadiusDescent :
+    ∀ {m n : ℕ} (g h D : LongTails.Algorithms.MatrixPolar.Space m n) {r δ η F F' L : ℝ},
+      0 ≤ η →
+        LongTails.Algorithms.MatrixPolar.spectralNorm D ≤ r →
+          LongTails.Algorithms.MatrixPolar.nuclearNorm h - δ ≤ Inner.inner ℝ h D →
+            F' ≤ F - η * Inner.inner ℝ g D + L / 2 * η ^ 2 →
+              F' ≤
+                F - η * LongTails.Algorithms.MatrixPolar.nuclearNorm g +
+                    η * ((1 + r) * LongTails.Algorithms.MatrixPolar.nuclearNorm (g - h) + δ) +
+                  L / 2 * η ^ 2 :=
+  @EF21Muon.Experiments.radius_descent
+
+theorem EF21Muon.ComparatorTargets.experimentalSchedule :
+    ∀ (F η S e : ℕ → ℝ) (fmin L : ℝ) (T : ℕ),
+      0 < ∑ t ∈ Finset.range T, η t →
+        fmin ≤ F T →
+          (∀ t < T, F (t + 1) ≤ F t - η t * S t + η t * e t + L / 2 * η t ^ 2) →
+            (∑ t ∈ Finset.range T, η t * S t) / ∑ t ∈ Finset.range T, η t ≤
+              (F 0 - fmin + ∑ t ∈ Finset.range T, η t * e t + L / 2 * ∑ t ∈ Finset.range T, η t ^ 2) /
+                ∑ t ∈ Finset.range T, η t :=
+  @EF21Muon.Experiments.scheduled_stationarity
+
+theorem EF21Muon.ComparatorTargets.experimentalResidual :
+    ∀ (F η S e : ℕ → ℝ) (fmin L ε : ℝ) (T : ℕ),
+      (∀ t < T, 0 ≤ η t) →
+        0 < ∑ t ∈ Finset.range T, η t →
+          fmin ≤ F T →
+            (∀ t < T, e t ≤ ε) →
+              (∀ t < T, F (t + 1) ≤ F t - η t * S t + η t * e t + L / 2 * η t ^ 2) →
+                (∑ t ∈ Finset.range T, η t * S t) / ∑ t ∈ Finset.range T, η t ≤
+                  (F 0 - fmin) / ∑ t ∈ Finset.range T, η t + ε +
+                    (L / 2 * ∑ t ∈ Finset.range T, η t ^ 2) / ∑ t ∈ Finset.range T, η t :=
+  @EF21Muon.Experiments.scheduled_residual
+
+theorem EF21Muon.ComparatorTargets.experimentalTracking :
+    ∀ (gap q movement : ℕ → ℝ) (T : ℕ),
+      (∀ t < T, 0 ≤ q t) →
+        (∀ t < T, gap (t + 1) ≤ q t * (gap t + movement t)) →
+          gap T ≤ EF21Muon.Experiments.trackingEnvelope q movement (gap 0) T :=
+  @EF21Muon.Experiments.tracking_envelope
+
+theorem EF21Muon.ComparatorTargets.fixedMomentumError :
+    ∀ (η u e : ℕ → ℝ) {β θ q G H J ε U A peak : ℝ},
+      0 < β →
+        β ≤ 1 →
+          0 ≤ θ →
+            θ ≤ 1 →
+              0 ≤ q →
+                q < 1 →
+                  0 ≤ G →
+                    0 ≤ H →
+                      0 ≤ peak →
+                        (∀ (t : ℕ), 0 ≤ η t) →
+                          (∀ (t : ℕ), η t ≤ peak) →
+                            0 ≤ U →
+                              (1 - q) * U = q * J + ε →
+                                u 0 = 0 →
+                                  (∀ (t : ℕ),
+                                      u (t + 1) ≤
+                                        q * (u t + J + EF21Muon.Experiments.initialImpulse β θ H t) +
+                                          ε) →
+                                    (∀ (t : ℕ), e t ≤ u (t + 1) + (1 - θ) * (1 - β) ^ (t + 1) * G + A) →
+                                      ∀ (T : ℕ),
+                                        ∑ t ∈ Finset.range T, η t * e t ≤
+                                          peak * ((1 - θ) * (1 - β) * G / β + q / (1 - q) * H) +
+                                            (∑ t ∈ Finset.range T, η t) * (A + U) :=
+  @EF21Muon.Experiments.fixed_momentum_error_sum
+
+theorem EF21Muon.ComparatorTargets.fixedMomentumStationarity :
+    ∀ (F η S e u δ : ℕ → ℝ) {β θ q G H J ε U A peak K fmin C : ℝ},
+      0 < β →
+        β ≤ 1 →
+          0 ≤ θ →
+            θ ≤ 1 →
+              0 ≤ q →
+                q < 1 →
+                  0 ≤ G →
+                    0 ≤ H →
+                      0 ≤ peak →
+                        (∀ (t : ℕ), 0 ≤ η t) →
+                          (∀ (t : ℕ), η t ≤ peak) →
+                            0 ≤ U →
+                              (1 - q) * U = q * J + ε →
+                                u 0 = 0 →
+                                  (∀ (t : ℕ),
+                                      u (t + 1) ≤
+                                        q * (u t + J + EF21Muon.Experiments.initialImpulse β θ H t) +
+                                          ε) →
+                                    (∀ (t : ℕ), e t ≤ u (t + 1) + (1 - θ) * (1 - β) ^ (t + 1) * G + A) →
+                                      0 ≤ K →
+                                        ∀ (T : ℕ),
+                                          0 < ∑ t ∈ Finset.range T, η t →
+                                            fmin ≤ F T →
+                                              (∀ t < T,
+                                                  F (t + 1) ≤
+                                                    F t - η t * S t + η t * (K * e t + δ t) +
+                                                      C / 2 * η t ^ 2) →
+                                                (∑ t ∈ Finset.range T, η t * S t) /
+                                                    ∑ t ∈ Finset.range T, η t ≤
+                                                  (F 0 - fmin +
+                                                          K *
+                                                            (peak *
+                                                                ((1 - θ) * (1 - β) * G / β +
+                                                                  q / (1 - q) * H) +
+                                                              (∑ t ∈ Finset.range T, η t) * (A + U)) +
+                                                        ∑ t ∈ Finset.range T, η t * δ t +
+                                                      C / 2 * ∑ t ∈ Finset.range T, η t ^ 2) /
+                                                    ∑ t ∈ Finset.range T, η t :=
+  @EF21Muon.Experiments.fixed_momentum_stationarity
+
+theorem EF21Muon.ComparatorTargets.fixedMomentumNoise.{u_1, u_2} :
+    ∀ {Ω : Type u_1} {E : Type u_2} [inst : MeasurableSpace Ω] [inst_1 : NormedAddCommGroup E]
+      [inst_2 : InnerProductSpace ℝ E] {μ : MeasureTheory.Measure Ω}
+      [MeasureTheory.IsProbabilityMeasure μ] {β θ σ : ℝ},
+      0 < β →
+        β ≤ 1 →
+          0 ≤ σ →
+            ∀ {Z ξ : Ω → E},
+              MeasureTheory.MemLp Z 2 μ →
+                MeasureTheory.MemLp ξ 2 μ →
+                  ∫ (ω : Ω), Inner.inner ℝ (Z ω) (ξ ω) ∂μ = 0 →
+                    ∫ (ω : Ω), ‖Z ω‖ ^ 2 ∂μ ≤ σ ^ 2 * β / (2 - β) →
+                      ∫ (ω : Ω), ‖ξ ω‖ ^ 2 ∂μ ≤ σ ^ 2 →
+                        ∫ (ω : Ω), ‖((1 - θ) * (1 - β)) • Z ω + (β + (1 - β) * θ) • ξ ω‖ ∂μ ≤
+                          σ * √(EF21Muon.Experiments.filterGain β θ) :=
+  @EF21Muon.Experiments.filtered_noise_bound.{u_1, u_2}
+
+theorem EF21Muon.ComparatorTargets.fixedRadiusOracleGain :
+    ∀ {m n : ℕ} (g h D : LongTails.Algorithms.MatrixPolar.Space m n) {r δ gain : ℝ},
+      0 ≤ gain →
+        LongTails.Algorithms.MatrixPolar.spectralNorm D ≤ r →
+          gain * LongTails.Algorithms.MatrixPolar.nuclearNorm h - δ ≤ Inner.inner ℝ h D →
+            gain * LongTails.Algorithms.MatrixPolar.nuclearNorm g -
+                  (gain + r) * LongTails.Algorithms.MatrixPolar.nuclearNorm (g - h) -
+                δ ≤
+              Inner.inner ℝ g D :=
+  @EF21Muon.Experiments.radius_direction_gain
+
+
+theorem EF21Muon.ComparatorTargets.trajectoryTracking.{u_1} :
+    ∀ {N m n : ℕ} {Ω : Type u_1} [inst : MeasurableSpace Ω] {μ : MeasureTheory.Measure Ω}
+      [MeasureTheory.IsProbabilityMeasure μ] (g : EF21Muon.Experiments.Trajectory.Gradients N m n)
+      (c : EF21Muon.Experiments.Trajectory.Controls m n)
+      (O : EF21Muon.Experiments.Trajectory.Innovations N m n μ)
+      (R : EF21Muon.Experiments.Trajectory.Roundoff N m n Ω)
+      (x₀ : EF21Muon.Experiments.Trajectory.E m n) (T : ℕ),
+      ∑ t ∈ Finset.range T, c.η t * EF21Muon.Experiments.Trajectory.estimatorError g c O R x₀ t ≤
+        EF21Muon.Experiments.Trajectory.trackingBudget g c O R x₀ T :=
+  @EF21Muon.Experiments.Trajectory.tracking.{u_1}
+
+
+theorem EF21Muon.ComparatorTargets.trajectoryStationarity.{u_1} :
+    ∀ {N m n : ℕ} {Ω : Type u_1} [inst : MeasurableSpace Ω] {μ : MeasureTheory.Measure Ω}
+      [MeasureTheory.IsProbabilityMeasure μ] (g : EF21Muon.Experiments.Trajectory.Gradients N m n)
+      (c : EF21Muon.Experiments.Trajectory.Controls m n)
+      (O : EF21Muon.Experiments.Trajectory.Innovations N m n μ)
+      (R : EF21Muon.Experiments.Trajectory.Roundoff N m n Ω)
+      (f : EF21Muon.Experiments.Trajectory.Objective g c) (x₀ : EF21Muon.Experiments.Trajectory.E m n)
+      (T : ℕ),
+      0 < ∑ t ∈ Finset.range T, c.η t →
+        ∫ (ω : Ω),
+            (∑ t ∈ Finset.range T,
+                c.η t *
+                  LongTails.Algorithms.MatrixPolar.nuclearNorm
+                    (g.mean (EF21Muon.Experiments.Trajectory.run g c O R x₀ t ω).x)) /
+              ∑ t ∈ Finset.range T, c.η t ∂μ ≤
+          (f.f x₀ - f.floor +
+                  (f.gain + f.r) * f.ρ * EF21Muon.Experiments.Trajectory.trackingBudget g c O R x₀ T +
+                ∑ t ∈ Finset.range T, c.η t * f.δ t +
+              f.Lf * c.B ^ 2 / 2 * ∑ t ∈ Finset.range T, c.η t ^ 2) /
+            (f.gain * ∑ t ∈ Finset.range T, c.η t) :=
+  @EF21Muon.Experiments.Trajectory.expected_stationarity.{u_1}
+
+
+theorem EF21Muon.ComparatorTargets.freshTrajectoryStationarity.{u_1} :
+    ∀ {N m n : ℕ} {Ω : Type u_1} [inst : MeasurableSpace Ω] {μ : MeasureTheory.Measure Ω}
+      [inst_1 : MeasureTheory.IsProbabilityMeasure μ]
+      (g : EF21Muon.Experiments.Trajectory.Gradients N m n)
+      (c : EF21Muon.Experiments.Trajectory.Controls m n)
+      (O : EF21Muon.Experiments.Trajectory.MartingaleInnovations N m n μ)
+      (R : EF21Muon.Experiments.Trajectory.Roundoff N m n Ω)
+      (f : EF21Muon.Experiments.Trajectory.Objective g c),
+      (∀ (t : ℕ) (j : Fin N), Measurable[O.filtration (t+1)] (R.uplink t j)) →
+        (∀ (t : ℕ), Measurable[O.filtration (t+1)] (R.downlink t)) →
+          ∀ (x₀ : EF21Muon.Experiments.Trajectory.E m n) (T : ℕ),
+            0 < ∑ t ∈ Finset.range T, c.η t →
+              (∀ (t : ℕ), Measurable[O.filtration t] (EF21Muon.Experiments.Trajectory.run g c O.innovations R x₀ t)) ∧
+                ∫ (ω : Ω),
+                    (∑ t ∈ Finset.range T,
+                        c.η t *
+                          LongTails.Algorithms.MatrixPolar.nuclearNorm
+                            (g.mean
+                              (EF21Muon.Experiments.Trajectory.run g c O.innovations R x₀ t ω).x)) /
+                      ∑ t ∈ Finset.range T, c.η t ∂μ ≤
+                  (f.f x₀ - f.floor +
+                          (f.gain + f.r) * f.ρ *
+                            EF21Muon.Experiments.Trajectory.trackingBudget g c O.innovations R x₀ T +
+                        ∑ t ∈ Finset.range T, c.η t * f.δ t +
+                      f.Lf * c.B ^ 2 / 2 * ∑ t ∈ Finset.range T, c.η t ^ 2) /
+                    (f.gain * ∑ t ∈ Finset.range T, c.η t) :=
+  @EF21Muon.Experiments.Trajectory.fresh_stationarity.{u_1}
+
+namespace EF21Muon.ComparatorTargets
+open EF21Muon.Experiments.BlockTrajectory
+open EF21Muon.Distributed (Model points)
+
+theorem blockTrajectoryTracking.{u} :
+    ∀ {N p : ℕ} {m n : Fin p → ℕ} {Ω : Type u} [MeasurableSpace Ω]
+      {μ : MeasureTheory.Measure Ω} [MeasureTheory.IsProbabilityMeasure μ]
+      (P : Problem N m n)
+      (c : ∀ i, EF21Muon.Experiments.Trajectory.Controls (m i) (n i))
+      (O : Innovations N m n μ)
+      (R : ∀ i, EF21Muon.Experiments.Trajectory.Roundoff N (m i) (n i) Ω)
+      (x₀ : Model m n) (i : Fin p) (T : ℕ),
+      (∑ t ∈ Finset.range T, (c i).η t*error P c O R x₀ i t) ≤ budget P c O R x₀ i T :=
+  @EF21Muon.Experiments.BlockTrajectory.tracking.{u}
+
+theorem blockTrajectoryStationarity.{u} :
+    ∀ {N p : ℕ} {m n : Fin p → ℕ} {Ω : Type u} [MeasurableSpace Ω]
+      {μ : MeasureTheory.Measure Ω} [MeasureTheory.IsProbabilityMeasure μ]
+      (P : Problem N m n)
+      (c : ∀ i, EF21Muon.Experiments.Trajectory.Controls (m i) (n i))
+      (O : Innovations N m n μ)
+      (R : ∀ i, EF21Muon.Experiments.Trajectory.Roundoff N (m i) (n i) Ω)
+      (d : ∀ i, Oracle (c i)),
+      (∀ i t j, Measurable[O.filtration (t+1)] ((R i).uplink t j)) →
+      (∀ i t, Measurable[O.filtration (t+1)] ((R i).downlink t)) →
+      ∀ (x₀ : Model m n) (T : ℕ),
+      0 < (p : ℝ)⁻¹*(∑ t ∈ Finset.range T, ∑ i, (c i).η t*(d i).gain) →
+      (∀ t, Measurable[O.filtration t] (run P c O R x₀ t)) ∧
+      (∫ ω, (∑ t ∈ Finset.range T, ∑ i,
+        (c i).η t*((d i).gain*LongTails.Algorithms.MatrixPolar.nuclearNorm
+          (P.grad (points (run P c O R x₀ t ω)) i)))/
+            ((p : ℝ)⁻¹*(∑ t ∈ Finset.range T, ∑ i, (c i).η t*(d i).gain)) ∂μ) ≤
+        (P.f x₀-P.floor+
+          ∑ i, (((d i).gain+(d i).r)*(d i).ρ*budget P c O R x₀ i T+
+            (∑ t ∈ Finset.range T, (c i).η t*(d i).δ t)+
+              P.L i*(d i).r^2/2*(∑ t ∈ Finset.range T, ((c i).η t)^2)))/
+                ((p : ℝ)⁻¹*(∑ t ∈ Finset.range T, ∑ i, (c i).η t*(d i).gain)) :=
+  @EF21Muon.Experiments.BlockTrajectory.fresh_stationarity.{u}
+
+end EF21Muon.ComparatorTargets

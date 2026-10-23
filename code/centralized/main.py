@@ -156,6 +156,13 @@ def get_params() -> argparse.ArgumentParser:
     p.add_argument("--log-gain", action="store_true",
                    help="Record the realized gain of the accumulated update per layer "
                         "(the diagnostic that separates unit-gain from mup)")
+    p.add_argument("--compression-log", default="",
+                   help="New CSV sidecar for EF21-MuonSign downlink diagnostics")
+    p.add_argument("--compression-every", type=int, default=1,
+                   help="Measure every k optimizer steps; 1 enables full trace reconstruction")
+    p.add_argument("--compression-oracle", action="store_true",
+                   help="Also use exact SVD to audit the implemented LMO (expensive)")
+    p.add_argument("--compression-layers", default="", help="Regex selecting layers for compression diagnostics")
     p.add_argument("--nondeterministic", action="store_true",
                    help="Allow cuDNN autotuning: faster, but not bitwise reproducible")
 

@@ -398,10 +398,11 @@ def describe_lr_scaling(optimizer: "_DistributedMatrixOptimizer",
 # every non-owning rank contributes zero -- so the table is identical everywhere.
 #
 # These exist because the convergence threshold of the EF21 methods is governed
-# by the compressor's contraction constant ``alpha``, and the scaled sign's
-# ``alpha`` is NOT a constant: it is ``||r||_1^2 / (d ||r||_2^2)``, which equals
-# ``2/pi`` for an isotropic residual and decays toward ``1/d`` as the residual
-# becomes directionally coherent.  ``alpha_up`` / ``alpha_dn`` measure it.
+# by the compressor's contraction constant ``alpha``. The scaled sign's
+# achieved ``alpha`` is ``||r||_1^2 / (d ||r||_2^2)`` for nonzero r.
+# It approaches ``2/pi`` for large iid Gaussian blocks and reaches ``1/d``
+# for one nonzero entry. It measures magnitude concentration, not directional
+# coherence or matrix rank. ``alpha_up`` / ``alpha_dn`` are sampled summaries.
 # ---------------------------------------------------------------------------
 
 DIAG_SLOTS = (
@@ -532,9 +533,9 @@ class _DistributedMatrixOptimizer(Optimizer):
 
     def _record_alpha(self, p: Tensor, r: Tensor, slot: str) -> None:
         """``alpha_eff = ||r||_1^2 / (d ||r||_2^2)``: the contraction the scaled
-        sign ACTUALLY achieves on this round's residual -- ``2/pi`` for an
-        isotropic ``r``, decaying to ``1/d`` as ``r`` becomes coherent.  This is
-        the ``alpha`` of the convergence threshold, measured rather than assumed.
+        sign achieves on this round's nonzero residual. Small values indicate
+        magnitude concentration. Sampled means/medians do not establish the
+        uniform contraction lower bound required by a convergence theorem.
 
         ``r`` arrives already blocked for the merged attention weight, in which
         case we report the mean of the four blocks' values.  Accumulated in fp32
@@ -943,20 +944,42 @@ class EF21MuonSign(_DistributedMatrixOptimizer):
 
     ``X`` and ``W`` are NOT interchangeable in practice. The convergence corollary
     bounds ``||grad f(X_t)||``, but the EF21-P downlink's contraction constant is
-    only ``alpha ~ 1/d`` in the worst case, and on a coherent residual -- which is
-    what momentum plus a slowly-turning gradient produces -- it really does
-    collapse to that end of the range. ``X`` then runs many steps ahead of the
-    iterate every gradient was actually taken at. The ``lag_XW`` diagnostic
-    measures the gap, and the training script reports the loss at both models.
+    only ``alpha >= 1/d`` in the worst case. Magnitude concentration in the
+    residual can reduce the achieved contraction and permit a persistent gap;
+    directional coherence alone does not imply small alpha. ``lag_XW`` measures
+    the gap, and the training script reports the loss at both models.
     """
 
     family = FAMILY_LMO
+
+    def set_compression_recorder(self, recorder, names):
+        """Attach an optional raw per-block EF21-P CSV recorder.
+
+        The recorder is supplied by the caller; the standalone optimizer has
+        no dependency on the repository's analysis package. Write one file per
+        rank. Logging synchronizes with the host and changes measured timing.
+        """
+        self.compression_recorder = recorder
+        self.compression_names = names
+
+    def _compression_parts(self, p, value):
+        name = self.compression_names[id(p)]
+        if self._is_attn(p):
+            h, w = value.shape[-2:]
+            return [(name+":"+tag, block) for tag, block in
+                    zip(("Q", "K", "V", "O"), value.reshape(4, h, w//4))]
+        return [(name, value)]
 
     def update_param(self, p, group):
         state = self.state[p]
         if "exact_model" not in state:
             state["exact_model"] = p.detach().clone()   # X_0 = W_0 (broadcast model)
         X = state["exact_model"]
+        recorder = getattr(self, "compression_recorder", None)
+        if recorder is not None:
+            for (name, xb), (_, wb) in zip(self._compression_parts(p, X), self._compression_parts(p, p)):
+                recorder.begin(name, xb, wb, self._eff_lr(p, group), 1-group["momentum"],
+                               True, step=getattr(self, "compression_step", None))
         self._decoupled_weight_decay(X, p, group)       # decay the exact server model
 
         m = self._effective_grad(p, group, state)  # gradient was taken at W = p
@@ -969,10 +992,20 @@ class EF21MuonSign(_DistributedMatrixOptimizer):
             self._record_lag(p, "lag_est", m - g_est, m)
 
         d = self._lmo(g_est, p)
+        if recorder is not None:
+            for (name, mb), (_, gb), (_, db) in zip(self._compression_parts(p, m),
+                    self._compression_parts(p, g_est), self._compression_parts(p, d)):
+                # begin() has already incremented this block's counter.
+                recorder.measure_direction(name, mb, gb, db,
+                    step=getattr(self, "compression_step", recorder.counts.get(name, 0)))
         X.add_(d, alpha=-self._eff_lr(p, group))        # exact server step: X <- X - eta * PE(g_est)
 
         delta_dn = X - p                                # downlink EF21-P on the model increment
         p.add_(self._scaled_sign(delta_dn, p, slot="alpha_dn"))
+        if recorder is not None:
+            for (name, xb), (_, wb), (_, rb) in zip(self._compression_parts(p, X),
+                    self._compression_parts(p, p), self._compression_parts(p, delta_dn)):
+                recorder.end(name, xb, wb, rb)
         if self.diagnostics:                            # server/broadcast gap after the round
             self._record_lag(p, "lag_XW", X - p, p)
 

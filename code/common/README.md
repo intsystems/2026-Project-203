@@ -4,6 +4,10 @@ Everything more than one experiment needs. Nothing here trains anything; all fiv
 experiment packages import from it, which is what stops them describing different
 algorithms under the same name.
 
+[compression_diagnostics.py](compression_diagnostics.py) provides opt-in raw
+EF21-P trace recording for the experiment drivers. See
+[analysis/README.md](../analysis/README.md) for the schema, usage, and scope.
+
 | File | What it holds |
 | :--- | :--- |
 | [`optimizers.py`](optimizers.py) | The eight methods as `torch.optim.Optimizer` subclasses, plus `muon_lmo` and the Newton–Schulz iteration |

@@ -1,0 +1,16 @@
+name = "SignMuonProofs"
+version = "0.1.0"
+defaultTargets = ["EF21Muon"]
+
+[[require]]
+name = "LongTails"
+git = "https://github.com/k3nfalt/longtails"
+rev = "f9079117032f800d5b836550291edf33c706ae19"
+
+[[lean_lib]]
+name = "EF21Muon"
+
+[[lean_lib]]
+name = "ComparatorChallenge"
+srcDir = ".comparator"
+globs = ["ComparatorChallenge.*"]

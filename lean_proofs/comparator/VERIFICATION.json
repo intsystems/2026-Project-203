@@ -1,0 +1,200 @@
+{
+  "passed": true,
+  "verified_at_utc": "2026-10-23T08:21:07.827270+00:00",
+  "checked_statements": 45,
+  "targets": [
+    {
+      "name": "EF21Muon.ComparatorTargets.deterministicMuonSign",
+      "source": "EF21Muon.Theorems.DeterministicMuonSign.result"
+    },
+    {
+      "name": "EF21Muon.ComparatorTargets.deterministicMuonUSign",
+      "source": "EF21Muon.Theorems.DeterministicMuonUSign.result"
+    },
+    {
+      "name": "EF21Muon.ComparatorTargets.emaSmooth",
+      "source": "EF21Muon.Distributed.Problem.smooth_rate"
+    },
+    {
+      "name": "EF21Muon.ComparatorTargets.nesterovSmooth",
+      "source": "EF21Muon.Nesterov.smooth_paper_rate"
+    },
+    {
+      "name": "EF21Muon.ComparatorTargets.emaGeneralized",
+      "source": "EF21Muon.Distributed.matrix_generalized_paper_rate"
+    },
+    {
+      "name": "EF21Muon.ComparatorTargets.nesterovGeneralized",
+      "source": "EF21Muon.Nesterov.matrix_generalized_paper_rate"
+    },
+    {
+      "name": "EF21Muon.ComparatorTargets.emaAccuracyQueries",
+      "source": "EF21Muon.Theorems.StochasticEMA.result"
+    },
+    {
+      "name": "EF21Muon.ComparatorTargets.nesterovAccuracyQueries",
+      "source": "EF21Muon.Theorems.StochasticNesterov.result"
+    },
+    {
+      "name": "EF21Muon.ComparatorTargets.budgetFormula",
+      "source": "EF21Muon.LongTails.accuracyBudget_formula"
+    },
+    {
+      "name": "EF21Muon.ComparatorTargets.zeroNoiseMomentum",
+      "source": "EF21Muon.LongTails.accuracyBeta_zero"
+    },
+    {
+      "name": "EF21Muon.ComparatorTargets.zeroNoiseBudget",
+      "source": "EF21Muon.LongTails.accuracyBudget_zero"
+    },
+    {
+      "name": "EF21Muon.ComparatorTargets.emaPolynomial",
+      "source": "EF21Muon.LongTails.ema_polynomial_bound"
+    },
+    {
+      "name": "EF21Muon.ComparatorTargets.nesterovPolynomial",
+      "source": "EF21Muon.LongTails.nesterov_polynomial_bound"
+    },
+    {
+      "name": "EF21Muon.ComparatorTargets.nesterovPaperPolynomial",
+      "source": "EF21Muon.LongTails.nesterov_paper_polynomial_bound"
+    },
+    {
+      "name": "EF21Muon.ComparatorTargets.optimalMomentum",
+      "source": "EF21Muon.LongTails.Profile.optimalBeta_minimizes"
+    },
+    {
+      "name": "EF21Muon.ComparatorTargets.minimalHorizon",
+      "source": "EF21Muon.LongTails.Profile.optimalBudget_minimal"
+    },
+    {
+      "name": "EF21Muon.ComparatorTargets.oldBudgetDominance",
+      "source": "EF21Muon.LongTails.Profile.optimalBudget_le_collapsed"
+    },
+    {
+      "name": "EF21Muon.ComparatorTargets.balancedBudget",
+      "source": "EF21Muon.LongTails.Profile.bound_at_balancedBudget"
+    },
+    {
+      "name": "EF21Muon.ComparatorTargets.certificateBarrier",
+      "source": "EF21Muon.LongTails.Profile.certificate_barrier"
+    },
+    {
+      "name": "EF21Muon.ComparatorTargets.optimalEMAExecution",
+      "source": "EF21Muon.Theorems.Optimized.ema"
+    },
+    {
+      "name": "EF21Muon.ComparatorTargets.optimalNesterovExecution",
+      "source": "EF21Muon.Theorems.Optimized.nesterov"
+    },
+    {
+      "name": "EF21Muon.ComparatorTargets.optimalNesterovPaper",
+      "source": "EF21Muon.Theorems.Optimized.nesterov_paper"
+    },
+    {
+      "name": "EF21Muon.ComparatorTargets.emaPreviousBudget",
+      "source": "EF21Muon.LongTails.ema_optimalBudget_le_previous"
+    },
+    {
+      "name": "EF21Muon.ComparatorTargets.nesterovPreviousBudget",
+      "source": "EF21Muon.LongTails.nesterov_optimalBudget_le_previous"
+    },
+    {
+      "name": "EF21Muon.ComparatorTargets.averagedNesterovFiniteTime",
+      "source": "EF21Muon.Nesterov.Averaged.smooth_finite_time"
+    },
+    {
+      "name": "EF21Muon.ComparatorTargets.averagedNesterovPolynomial",
+      "source": "EF21Muon.LongTails.averaged_nesterov_polynomial_bound"
+    },
+    {
+      "name": "EF21Muon.ComparatorTargets.averagedNesterovPaperPolynomial",
+      "source": "EF21Muon.LongTails.averaged_nesterov_paper_polynomial_bound"
+    },
+    {
+      "name": "EF21Muon.ComparatorTargets.averagedNesterovCoefficients",
+      "source": "EF21Muon.LongTails.averaged_nesterov_coefficients_le"
+    },
+    {
+      "name": "EF21Muon.ComparatorTargets.averagedNesterovLeadingVariance",
+      "source": "EF21Muon.LongTails.averaged_nesterov_leading_variance"
+    },
+    {
+      "name": "EF21Muon.ComparatorTargets.averagedNesterovBudget",
+      "source": "EF21Muon.LongTails.averaged_nesterov_optimalBudget_le"
+    },
+    {
+      "name": "EF21Muon.ComparatorTargets.averagedNesterovExecution",
+      "source": "EF21Muon.Theorems.WorkerAveraged.nesterov"
+    },
+    {
+      "name": "EF21Muon.ComparatorTargets.averagedNesterovPaper",
+      "source": "EF21Muon.Theorems.WorkerAveraged.nesterov_paper"
+    },
+    {
+      "name": "EF21Muon.ComparatorTargets.experimentalRadiusDescent",
+      "source": "EF21Muon.Experiments.radius_descent"
+    },
+    {
+      "name": "EF21Muon.ComparatorTargets.experimentalSchedule",
+      "source": "EF21Muon.Experiments.scheduled_stationarity"
+    },
+    {
+      "name": "EF21Muon.ComparatorTargets.experimentalResidual",
+      "source": "EF21Muon.Experiments.scheduled_residual"
+    },
+    {
+      "name": "EF21Muon.ComparatorTargets.experimentalTracking",
+      "source": "EF21Muon.Experiments.tracking_envelope"
+    },
+    {
+      "name": "EF21Muon.ComparatorTargets.fixedMomentumError",
+      "source": "EF21Muon.Experiments.fixed_momentum_error_sum"
+    },
+    {
+      "name": "EF21Muon.ComparatorTargets.fixedMomentumStationarity",
+      "source": "EF21Muon.Experiments.fixed_momentum_stationarity"
+    },
+    {
+      "name": "EF21Muon.ComparatorTargets.fixedMomentumNoise",
+      "source": "EF21Muon.Experiments.filtered_noise_bound"
+    },
+    {
+      "name": "EF21Muon.ComparatorTargets.fixedRadiusOracleGain",
+      "source": "EF21Muon.Experiments.radius_direction_gain"
+    },
+    {
+      "name": "EF21Muon.ComparatorTargets.trajectoryTracking",
+      "source": "EF21Muon.Experiments.Trajectory.tracking"
+    },
+    {
+      "name": "EF21Muon.ComparatorTargets.trajectoryStationarity",
+      "source": "EF21Muon.Experiments.Trajectory.expected_stationarity"
+    },
+    {
+      "name": "EF21Muon.ComparatorTargets.freshTrajectoryStationarity",
+      "source": "EF21Muon.Experiments.Trajectory.fresh_stationarity"
+    },
+    {
+      "name": "EF21Muon.ComparatorTargets.blockTrajectoryTracking",
+      "source": "EF21Muon.Experiments.BlockTrajectory.tracking"
+    },
+    {
+      "name": "EF21Muon.ComparatorTargets.blockTrajectoryStationarity",
+      "source": "EF21Muon.Experiments.BlockTrajectory.fresh_stationarity"
+    }
+  ],
+  "permitted_axioms": [
+    "propext",
+    "Classical.choice",
+    "Quot.sound"
+  ],
+  "reference_sha256": "27eb16374037ada110253b690c8076cc67ce581c248090e54e52ec59f308b5f8",
+  "dependency_pins_sha256": {
+    "lean-toolchain": "8dc8d6f560141069d9073e370611716ef77ada0da8ffa37e2149f44b2e63ac7a",
+    "lakefile.toml": "acbb91f427f512327bd408daa3623602506028621696809a55102604b5f282e0",
+    "lake-manifest.json": "7aacf4d4cb05e5ce8aef08b6160cb124206a10f0d6aa411ad585d9e806f7cf4a"
+  },
+  "mode": "Comparator comparison and kernel replay of trusted, prebuilt sources",
+  "hostile_source_sandbox": false
+}

@@ -446,3 +446,13 @@ would degrade results. **Record #40 is the principled cut**: the last record
 while keeping a separable Muon, tuned for plain Muon, whose LMO the variants
 slot into unchanged. Porting onto a later record is a separate, larger effort
 with real degradation risk (see the project notes).
+# Raw EF21-P traces
+
+For EF21-MuonSign, the full repository's `train_gpt.py` supports
+`SIGNMUON_COMPRESSION_LOG=traces/cproj`,
+`SIGNMUON_COMPRESSION_LAYERS=c_proj`, and `SIGNMUON_COMPRESSION_EVERY=1`.
+It writes a new CSV per rank after warmup, keeping individual layers and
+Q/K/V/O blocks separate. `SIGNMUON_COMPRESSION_ORACLE=1` adds an expensive
+SVD audit of the implemented LMO. These opt-in diagnostics synchronize with
+the host and affect timing. See [analysis/README.md](../analysis/README.md)
+for analysis and mathematical scope.

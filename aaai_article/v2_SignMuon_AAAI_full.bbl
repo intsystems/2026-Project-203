@@ -1,4 +1,4 @@
-\begin{thebibliography}{46}
+\begin{thebibliography}{43}
 \providecommand{\natexlab}[1]{#1}
 
 \bibitem[{Ahn et~al.(2025)Ahn, Xu, Abreu, Fan, Magakyan, Sharma, Zhan, and
@@ -15,12 +15,6 @@ Alistarh, D.; Grubic, D.; Li, J.; Tomioka, R.; and Vojnovic, M. 2017.
   Encoding.
 \newblock In \emph{Advances in Neural Information Processing Systems
   (NeurIPS)}, 1709--1720.
-
-\bibitem[{Amsel et~al.(2025)Amsel, Persson, Musco, and Gower}]{amsel2025polar}
-Amsel, N.; Persson, D.; Musco, C.; and Gower, R.~M. 2025.
-\newblock The {P}olar {E}xpress: Optimal Matrix Sign Methods and Their
-  Application to the {M}uon Algorithm.
-\newblock arXiv:2505.16932.
 
 \bibitem[{Bernstein(2025)}]{bernstein2025deriving}
 Bernstein, J. 2025.
@@ -92,12 +86,6 @@ Douillard, A.; Feng, Q.; Rusu, A.~A.; Chhaparia, R.; Donchev, Y.; Kuncoro, A.;
 \newblock {D}i{L}o{C}o: Distributed Low-Communication Training of Language
   Models.
 \newblock arXiv:2311.08105.
-
-\bibitem[{Grishina, Smirnov, and Rakhuba(2025)}]{grishina2025chebyshev}
-Grishina, E.; Smirnov, M.; and Rakhuba, M. 2025.
-\newblock Accelerating {Newton--Schulz} Iteration for Orthogonalization via
-  {Chebyshev}-type Polynomials.
-\newblock arXiv:2506.10935.
 
 \bibitem[{Gruntkowska et~al.(2025)Gruntkowska, Gaponov, Tovmasyan, and
   Richt{\'a}rik}]{gruntkowska2025error}
@@ -280,14 +268,6 @@ Shah, I.; Polloreno, A.~M.; Stratos, K.; Monk, P.; Chaluvaraju, A.; Hojel, A.;
   S.; Singla, S.; Romanski, T.; Vanjani, Y.; and Vaswani, A. 2025.
 \newblock Practical Efficiency of {M}uon for Pretraining.
 \newblock arXiv:2505.02222.
-
-\bibitem[{Shulgin et~al.(2026)Shulgin, AlRashed, Orabona, and
-  Richt{\'a}rik}]{shulgin2025inexactmuon}
-Shulgin, E.; AlRashed, S.; Orabona, F.; and Richt{\'a}rik, P. 2026.
-\newblock Beyond the Ideal: Analyzing the Inexact {M}uon Update.
-\newblock In \emph{Proceedings of the 29th International Conference on
-  Artificial Intelligence and Statistics (AISTATS)}.
-\newblock {arXiv:2510.19933}.
 
 \bibitem[{Sun et~al.(2023)Sun, Wang, Li, and Wang}]{sun2023signmomentum}
 Sun, T.; Wang, Q.; Li, D.; and Wang, B. 2023.

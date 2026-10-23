@@ -1,0 +1,15 @@
+% Clickable references in the anonymous review PDF. Publication drivers do not
+% load this file. The same compatibility fixes are used by the arXiv builder.
+\usepackage[hidelinks,bookmarksnumbered=true]{hyperref}
+\edef\restoreReviewLinksCatcode{\catcode64=\the\catcode64\relax}
+\makeatletter
+\providecommand{\theHALG@line}{}
+\renewcommand{\theHALG@line}{alg.\thealgorithm.\arabic{ALG@line}}
+\AtBeginDocument{\renewcommand{\theHtheorem}{\thesection.\arabic{theorem}}}
+\DeclareRobustCommand{\eqref}[1]{\hyperref[#1]{\textup{\tagform@{\ref*{#1}}}}}
+\pdfstringdefDisableCommands{\def\hyperref[#1]#2{#2}}
+% AAAI's package check reads this flag at begin-document. Clear it only after
+% cleveref has detected hyperref; both packages remain active in the review.
+\AddToHook{package/cleveref/after}{%
+  \expandafter\let\csname ver@hyperref.sty\endcsname\relax}
+\restoreReviewLinksCatcode

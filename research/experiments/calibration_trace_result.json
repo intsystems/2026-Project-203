@@ -1,0 +1,21 @@
+[
+  {
+    "schedule": "cosine",
+    "nesterov": true,
+    "downlink": "sign",
+    "initialization": "zero",
+    "steps": 40,
+    "seed": 17,
+    "noise_frobenius_std": 0.1,
+    "server_weighted_nuclear_gradient": 0.28477282736726056,
+    "broadcast_weighted_nuclear_gradient": 0.3035042843573043,
+    "initial_gap_term": 0.16492683169803,
+    "measured_error_term": 0.5224324030358154,
+    "smoothness_term": 0.06702321659966533,
+    "server_bound": 0.7543824513335108,
+    "query_transfer_term": 0.2579546817468592,
+    "broadcast_bound": 1.0123371330803699,
+    "checked": true,
+    "scope": "known quadratic, actual CPU EF21 implementation; retrospective pathwise inequality, not an ex-ante stochastic rate"
+  }
+]

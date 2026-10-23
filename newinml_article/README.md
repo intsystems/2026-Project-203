@@ -112,6 +112,17 @@ python make_newinml.py --source opt                 # anon (default)
 python make_newinml.py --source opt --mode final    # camera-ready
 ```
 
+The SignMuon edition inherits the corrected OPT body and shared AAAI appendix.
+Codex review markup is teal (**#007F73**) only when explicitly enabled:
+
+```sh
+python make_newinml.py --source opt --codex teal -o build/opt-codex
+python make_newinml.py --source opt -o build/opt-publication
+```
+
+These produce `opt_newinml_codex.pdf` and the clean `opt_newinml.pdf`,
+respectively, with separately named source archives. Default builds are clean.
+
 Under `anon` the style file prints "Anonymous Author(s)", numbers the lines for
 reviewers, and hides `\ack`. The footer reads "Submitted to 40th Conference on
 Neural Information Processing Systems (NeurIPS 2026). Do not distribute." That

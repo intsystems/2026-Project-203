@@ -265,6 +265,7 @@ class _BaseMethod(Optimizer):
             with torch.enable_grad():
                 loss = closure()
 
+        recorder = getattr(self, "compression_recorder", None)
         for group in self.param_groups:
             lr = group["lr"]
             mu = group["momentum"]
@@ -297,6 +298,8 @@ class _BaseMethod(Optimizer):
 
                 # 2) method-specific step direction
                 d_t = self._direction(m_tilde, state, group)
+                if recorder is not None:
+                    self._observe_direction(p, m_tilde, d_t, state)
                 if self.capture_direction:
                     state["last_direction"] = d_t.clone()
 
@@ -465,11 +468,33 @@ class EF21MuonSign(_BaseMethod, _EF21Mixin):
     method_name = "ef21muonsign"
     family = FAMILY_LMO
 
+    def enable_compression_diagnostics(self, path, every=1, audit_oracle=False, layers=""):
+        """Write EF21-P measurements to a new CSV; opt-in host synchronization."""
+        from common.compression_diagnostics import CompressionRecorder
+        self.compression_recorder = CompressionRecorder(path, every, audit_oracle, layers)
+        self._compression_groups = {}
+        for gi, group in enumerate(self.param_groups):
+            for pi, parameter in enumerate(group["params"]):
+                name = group.get("name", f"group-{gi}")
+                if len(group["params"]) > 1:
+                    name += f":{pi}"
+                self._compression_groups[id(parameter)] = (name, group)
+
+    def _observe_direction(self, p, target, direction, state):
+        self.compression_recorder.measure_direction(self._compression_groups[id(p)][0],
+                                                    target, state["grad_estimator"], direction)
+
     def _weight_decay_target(self, p, state):
         return self._exact(p)
 
     def _step_target(self, p, state):
-        return self._exact(p)
+        exact = self._exact(p)
+        recorder = getattr(self, "compression_recorder", None)
+        if recorder is not None:
+            name, group = self._compression_groups[id(p)]
+            recorder.begin(name, exact, p.data, group["lr"]*group["lambda_mult"],
+                           1-group["momentum"], group["nesterov"])
+        return exact
 
     def _exact(self, p) -> Tensor:
         state = self.state[p]
@@ -485,6 +510,10 @@ class EF21MuonSign(_BaseMethod, _EF21Mixin):
         # Downlink EF21-P: broadcast a scaled sign of the model shift X - W.
         delta = state["exact_model"] - p.data
         p.data.add_(delta.abs().mean() * sign_pm1(delta))
+        recorder = getattr(self, "compression_recorder", None)
+        if recorder is not None:
+            recorder.end(self._compression_groups[id(p)][0],
+                         state["exact_model"], p.data, delta)
 
     # -- exposing the exact model ----------------------------------------
     @torch.no_grad()

@@ -322,6 +322,13 @@ def train(args) -> Tuple[nn.Module, History]:
 
     model = build_model(args.dataset, args.model).to(device)
     opt_main, opt_aux, info = build_optimizers(model, args)
+    if getattr(args, "compression_log", ""):
+        if not hasattr(opt_main, "enable_compression_diagnostics"):
+            raise ValueError("--compression-log requires EF21-MuonSign")
+        opt_main.enable_compression_diagnostics(args.compression_log,
+                                               getattr(args, "compression_every", 1),
+                                               getattr(args, "compression_oracle", False),
+                                               getattr(args, "compression_layers", ""))
 
     rule = resolve_rule(getattr(args, "lr_scaling", "unit-gain"))
     if info["family"] and info["shapes"]:

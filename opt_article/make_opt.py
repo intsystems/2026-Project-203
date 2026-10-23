@@ -159,30 +159,11 @@ APPENDIX_PATCHES = [
      "\\footnotesize\n\\begin{tabular}{@{}lrrrrrl@{}}",
      "the seven-column alignment table is 9pt wider than jmlr's measure at "
      "\\small"),
-    # A 2.4-inch unbreakable word in a 6-inch measure: the line before it has
-    # to stretch to the margin whatever else is on it.  One break point, at the
-    # module boundary the reader would break it at anyway, settles the
-    # paragraph.
-    (r"\texttt{federated.algorithms.communication\_bits}",
-     r"\texttt{federated.algorithms.\allowbreak communication\_bits}",
-     "the longest typewriter string in the appendix has no break point"),
 ]
 
-# Spans of the AAAI appendix that the OPT edition drops: from the start of the
-# first anchor to the start of the second, which is kept.  Each anchor must
-# occur exactly once, so a reworded appendix stops the build instead of losing
-# a paragraph nobody meant to lose.  The reproducibility section is written for
-# a conference submission's checklist; what a workshop reader needs from it is
-# the protocol, not the case for the protocol.
-APPENDIX_CUTS = [
-    (r"\paragraph{Choice of benchmarks.}",
-     r"\paragraph{Computing infrastructure.}",
-     "why these three benchmarks: a justification, not a reproduction detail"),
-    ("One selection margin requires comment.",
-     r"\paragraph{Conventions with numerical consequences.}",
-     "federated selection margins, the spread of selected rates, and the case "
-     "for reporting a threshold column"),
-]
+# Optional OPT-specific appendix cuts. The compact reproducibility section is
+# shared unchanged with AAAI.
+APPENDIX_CUTS = []
 
 
 BANNER = r"""%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%
@@ -670,15 +651,15 @@ def patch_appendix(text: str) -> tuple[str, list[str]]:
 
 
 def splice_extra(text: str) -> str:
-    r"""Insert opt_appendix_extra.tex just after the appendix's \section line.
+    r"""Insert opt_appendix_extra.tex just after the \appendix command.
 
-    It goes first, ahead of the AAAI appendix's own subsections, because what
+    It goes first, ahead of the AAAI appendix's own sections, because what
     it holds is main-text material: a reader looking for the federated results
     the five-page limit displaced should not have to pass the proofs first.
     """
     extra = OPT_APPENDIX_EXTRA.read_text(encoding="utf-8").rstrip()
     for lineno, line in enumerate(text.splitlines()):
-        if re.search(r"\\section\s*\{", code_of(line)):
+        if re.fullmatch(r"\s*\\appendix\s*", code_of(line)):
             lines = text.splitlines()
             return "\n".join(
                 lines[: lineno + 1]
@@ -686,7 +667,7 @@ def splice_extra(text: str) -> str:
                    f"%%% <<< end {OPT_APPENDIX_EXTRA.name}", ""]
                 + lines[lineno + 1:])
     raise SystemExit(
-        r"no \section in the appendix, so opt_appendix_extra.tex has nowhere "
+        r"no \appendix command, so opt_appendix_extra.tex has nowhere "
         "to go; the floats it carries are referenced from the appendix and "
         "would leave undefined references behind them.")
 
@@ -760,11 +741,13 @@ def set_claude_colour(preamble: str, colour: str) -> str:
             + preamble)
 
 
-def build_document(mode: str, claude: str = "black") -> tuple[str, str, dict]:
+def build_document(mode: str, claude: str = "black",
+                   codex: str = "black") -> tuple[str, str, dict]:
     aaai_preamble = (SRC / PREAMBLE).read_text(encoding="utf-8")
     head, _title_cmd, _tail = split_preamble(aaai_preamble)
     preamble, dropped, passed = transform_preamble(head)
     preamble = set_claude_colour(preamble, claude)
+    preamble = _ax.set_codex_colour(preamble, codex)
     titles, title = front_matter(aaai_preamble, mode)
 
     pdf_author = None
@@ -925,7 +908,7 @@ def copy_assets(doc: str, build: Path, keep_bib: bool) -> list[str]:
 
 
 def compile_pdf(build: Path, keep_work: bool, mode: str,
-                claude: str = "black") -> Path:
+                claude: str = "black", codex: str = "black") -> Path:
     """Compile a throwaway copy, so `build` holds only the sources."""
     if shutil.which("latexmk") is None:
         raise SystemExit("latexmk not on PATH; rerun with --no-compile")
@@ -949,7 +932,7 @@ def compile_pdf(build: Path, keep_work: bool, mode: str,
         raise SystemExit(f"no {JOBNAME}.bbl was produced; the bibliography did not run")
     shutil.copy2(bbl, build / f"{JOBNAME}.bbl")
 
-    pdf = HERE / preview_name(mode, ".pdf", claude)
+    pdf = HERE / preview_name(mode, ".pdf", claude, codex)
     shutil.copy2(WORKDIR / f"{JOBNAME}.pdf", pdf)
     report_log(log)
     report_length(WORKDIR / f"{JOBNAME}.aux", mode)
@@ -978,7 +961,8 @@ def report_length(aux: Path, mode: str) -> None:
     print(f"  main text      : {pages} pages, limit {limit}{over}")
 
 
-def preview_name(mode: str, suffix: str, claude: str = "black") -> str:
+def preview_name(mode: str, suffix: str, claude: str = "black",
+                 codex: str = "black") -> str:
     """The anonymous build is the submission, so it keeps the plain name.
 
     A drafting build adds ``_blue``, so that the review copy and the copy you
@@ -987,11 +971,13 @@ def preview_name(mode: str, suffix: str, claude: str = "black") -> str:
     return ("signmuon_opt"
             + ("" if mode == "anon" else f"_{mode}")
             + ("_blue" if claude == "blue" else "")
+            + ("_codex" if codex == "teal" else "")
             + suffix)
 
 
-def pack_zip(build: Path, mode: str, claude: str = "black") -> Path:
-    archive = HERE / preview_name(mode, ".zip", claude)
+def pack_zip(build: Path, mode: str, claude: str = "black",
+             codex: str = "black") -> Path:
+    archive = HERE / preview_name(mode, ".zip", claude, codex)
     with zipfile.ZipFile(archive, "w", zipfile.ZIP_DEFLATED) as zf:
         for path in sorted(build.rglob("*")):
             if path.is_file():
@@ -1029,6 +1015,9 @@ def main() -> int:
                          "signmuon_opt_blue.*")
     ap.add_argument("--keep-work", action="store_true",
                     help="keep the scratch compile directory for debugging")
+    ap.add_argument("--codex", choices=["black", "teal"], default="black",
+                    help="Codex corrections: black for publication (default), "
+                         "teal for a separate *_codex review copy")
     args = ap.parse_args()
 
     if args.drift:
@@ -1043,7 +1032,7 @@ def main() -> int:
     build: Path = args.build.resolve()
     print(f"reading  {SRC}")
     drift = body_drift()
-    doc, title, stats = build_document(args.mode, args.claude)
+    doc, title, stats = build_document(args.mode, args.claude, args.codex)
     sanity_check(doc, args.mode)
 
     if build.exists():
@@ -1058,6 +1047,7 @@ def main() -> int:
     print(f"  mode           : {args.mode}")
     print(f"  claude markup  : {args.claude}"
           + ("" if args.claude == "black" else "   (review copy)"))
+    print(f"  codex markup   : {args.codex}")
     print(f"  {JOBNAME}.tex       : {len(doc.splitlines())} lines")
     print(f"  images         : {len(images)}")
     print(f"  preamble       : {len(stats['dropped'])} lines dropped, "
@@ -1069,11 +1059,11 @@ def main() -> int:
         print(f"  appendix cut   : {item}")
 
     if not args.no_compile:
-        pdf = compile_pdf(build, args.keep_work, args.mode, args.claude)
+        pdf = compile_pdf(build, args.keep_work, args.mode, args.claude, args.codex)
         print(f"  preview        : {pdf}")
 
     if not args.no_zip:
-        archive = pack_zip(build, args.mode, args.claude)
+        archive = pack_zip(build, args.mode, args.claude, args.codex)
         print(f"  zip            : {archive} ({archive.stat().st_size / 1e6:.1f} MB)")
 
     unknown = sorted({p for p in stats["passed"]})
@@ -1096,8 +1086,7 @@ def main() -> int:
     elif drift is not None:
         print(f"\nFORK DRIFT\n  {drift}")
 
-    print(f"\nSubmit {HERE / preview_name(args.mode, '.pdf', args.claude)} to "
-          f"OpenReview; "
+    print(f"\nOutput: {HERE / preview_name(args.mode, '.pdf', args.claude, args.codex)}; "
           f"the sources are in {build}.")
     return 0
 

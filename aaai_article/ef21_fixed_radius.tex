@@ -1,0 +1,210 @@
+% Exact-arithmetic specialization of Experiments/BlockTrajectory.lean.
+\begin{codex}
+\subsection{Fixed momentum and learning-rate schedules}
+\label{app:fixed_radius}
+
+We now bound the gradient norm for deterministic learning rates, including
+the constant and cosine schedules used in experiments. The argument has
+two steps: bound the tracking error, then sum the resulting descent
+inequality. Throughout this section the polar directions are exact and
+momentum is fixed within a run.
+Use $0<\beta\le1$, $\mu=1-\beta$, and $\theta=0$ for EMA or
+$\theta=\beta$ for Nesterov, with the Frobenius noise bounds $\sigma_i$
+defined above. A round queries
+$a_{t,i}^{(j)}=\nabla_i f_j(W_t)+\xi_{t,i}^{(j)}$ and performs
+\begin{align*}
+ M_{t+1,i}^{(j)}&=\mu M_{t,i}^{(j)}+\beta a_{t,i}^{(j)},\\
+ V_{t,i}^{(j)}&=(1-\theta)M_{t+1,i}^{(j)}+\theta a_{t,i}^{(j)},\\
+ g_{t+1,i}^{(j)}&=g_{t,i}^{(j)}
+       +C_i^\uparrow(V_{t,i}^{(j)}-g_{t,i}^{(j)}),\\
+ h_{t,i}&=N^{-1}\sum_jg_{t+1,i}^{(j)},\qquad
+ X_{t+1,i}=X_{t,i}-\eta_{t,i}\operatorname{polar}(h_{t,i}),\\
+ W_{t+1,i}&=W_{t,i}+C_i^\downarrow(X_{t+1,i}-W_{t,i}).
+\end{align*}
+Initialize $X_0=W_0$ and all momentum and gradient memories at zero.
+The indexing starts immediately before the gradient query.
+Put $\rho_i=\sqrt{r_i}$ and $\Delta=f(X_0)-f_*$.
+For $0\le\eta_{t,i}\le\bar\eta_i$, write
+$S_i=\sum_{t<T}\eta_{t,i}$ and $Q_i=\sum_{t<T}\eta_{t,i}^2$.
+Let $q_{Ui},q_{Pi}\in[0,1)$ satisfy, for every compressor input,
+\[
+ \|R-C_i^\uparrow(R)\|_F\le q_{Ui}\|R\|_F,\qquad
+ \|R-C_i^\downarrow(R)\|_F\le q_{Pi}\|R\|_F.
+\]
+These hold for scaled sign with $q=\sqrt{1-\alpha}$ and
+$\alpha=1/d_i$, and for the exact downlink with $q_{Pi}=0$.
+
+\begin{theorem}[\textbf{Convergence with deterministic learning rates}]\label{thm:fixed_radius}
+Under Assumptions~\ref{as:1}--\ref{as:3} with ordinary smoothness,
+the updates above, for either momentum rule and either downlink, satisfy
+\begin{equation}\label{eq:radius_stationarity}
+ \sum_{t<T}\sum_i\eta_{t,i}\mathbb E\|\nabla_i f(X_t)\|_*
+ \le\Delta+\sum_i\left(2\rho_i\mathcal B_{i,T}
+                         +\frac{L_iQ_i}{2}\right),
+\end{equation}
+where the tracking budget separates into initialization, movement, and noise:
+\[
+ \mathcal B_{i,T}=\bar\eta_i I_{i,\beta}
+                   +S_i(\bar\eta_i D_{i,\beta}+R_{i,\beta}).
+\]
+The nonnegative coefficients $I_{i,\beta},D_{i,\beta},R_{i,\beta}$ are
+independent of $T$ and the learning-rate schedule. Their explicit values
+are given in the proof of Lemma~\ref{lem:radius_tracking}.
+\end{theorem}
+
+\begin{lemma}[\textbf{Tracking with fixed momentum}]\label{lem:radius_tracking}
+Under the assumptions of Theorem~\ref{thm:fixed_radius},
+\begin{equation}\label{eq:radius_tracking}
+ \sum_{t<T}\sum_i\eta_{t,i}\mathbb E\|h_{t,i}-\nabla_i f(X_t)\|_F
+ \le\sum_i\mathcal B_{i,T}.
+\end{equation}
+For fixed problem and compressor constants, as $\beta\downarrow0$,
+$I_{i,\beta},D_{i,\beta}=\mathcal O(\beta^{-1})$, and
+\[
+ R_{i,\beta}\le4\sigma_i
+       \left[\sqrt{\beta/N}+\kappa_{Ui}\beta\right],\qquad
+ \kappa_{Ui}=q_{Ui}/(1-q_{Ui}).
+\]
+\end{lemma}
+\begin{paperproof}
+We bound the downlink gap, momentum bias, and momentum noise separately.
+Put $\widehat L_i=\max_jL_{i,j}$, $B_i=\rho_i$,
+$\kappa_{Pi}=q_{Pi}/(1-q_{Pi})$,
+$g_i^0=\|\nabla_i f(X_0)\|_F$ and
+$h_i^0=N^{-1}\sum_j\|\nabla_i f_j(X_0)\|_F$. The needed coefficients are
+\begin{align*}
+ k&=\beta+\mu\theta,\qquad v=\frac{\beta}{2-\beta},\qquad
+ v_\theta=k^2+(1-\theta)^2\mu^2v,\\
+ I_{i,\beta}&=(1-\theta)\mu g_i^0/\beta+\kappa_{Ui}h_i^0,\\
+ D_{i,\beta}&=\widehat L_iB_i
+   [\kappa_{Pi}+(1-\theta)\mu/\beta
+                        +\kappa_{Ui}(1+2k\kappa_{Pi})],\\
+ R_{i,\beta}&=\sigma_i
+   [\sqrt{v_\theta/N}
+      +\kappa_{Ui}((1-\theta)\beta(1+\sqrt v)+2\theta)].
+\end{align*}
+For either momentum rule, $v\le\beta$, $v_\theta\le5\beta$ and
+$(1-\theta)\beta(1+\sqrt v)+2\theta\le4\beta$.
+These inequalities give the stated bounds on the coefficients.
+
+To verify the tracking budget, first note that
+\[
+ \|X_{t+1,i}-W_{t+1,i}\|_F
+ \le q_{Pi}(\|X_{t,i}-W_{t,i}\|_F+B_i\eta_{t,i}).
+\]
+Thus the downlink gap is at most
+$P_i=\kappa_{Pi}B_i\bar\eta_i$.
+Separate the noise EMA
+$Z_{t+1,i}^{(j)}=\mu Z_{t,i}^{(j)}+\beta\xi_{t,i}^{(j)}$
+from the momentum bias. Conditional centering gives
+$\mathbb E\|Z_{t,i}^{(j)}\|_F^2\le\sigma_i^2v$;
+averaging workers first gives $\sigma_i^2v/N$.
+The remaining bias, measured against $\nabla_i f_j(X_t)$, is at most
+$\mu^t\|\nabla_i f_j(X_0)\|_F+
+ \widehat L_iP_i+\widehat L_iB_i\bar\eta_i/\beta$.
+The momentum target's centered noise is
+$(1-\theta)\mu Z_{t,i}^{(j)}+k\xi_{t,i}^{(j)}$.
+Its two terms are orthogonal in expectation, giving the exact variance
+factor $v_\theta$. Consequently the averaged target bias and noise obey
+\[
+ \mathbb E\left\|N^{-1}\sum_jV_{t,i}^{(j)}-\nabla_i f(X_t)\right\|_F
+ \le(1-\theta)\mu^{t+1}g_i^0+A_i,
+\]
+where $A_i=\widehat L_iP_i+
+(1-\theta)\mu\widehat L_iB_i\bar\eta_i/\beta
++\sigma_i\sqrt{v_\theta/N}$.
+
+For $t\ge1$, the target increment is
+\[
+ V_{t,i}^{(j)}-V_{t-1,i}^{(j)}
+ =(1-\theta)\beta(a_{t,i}^{(j)}-M_{t,i}^{(j)})
+       +\theta(a_{t,i}^{(j)}-a_{t-1,i}^{(j)}).
+\]
+The preceding bias and noise bounds show its expected norm is at most
+$(1-\theta)\beta\mu^t\|\nabla_i f_j(X_0)\|_F+J_i$, where
+\[
+ J_i=\widehat L_iB_i\bar\eta_i+2k\widehat L_iP_i
+       +\sigma_i[(1-\theta)\beta(1+\sqrt v)+2\theta].
+\]
+Contractivity propagates the uplink error with multiplier $q_{Ui}$.
+Sum the geometric initialization terms and use
+$\eta_{t,i}\le\bar\eta_i$ to obtain
+$\sum_t\eta_{t,i}\mathbb E\|h_{t,i}-\nabla_i f(X_t)\|_F
+ \le\bar\eta_i I_{i,\beta}+S_i(A_i+\kappa_{Ui}J_i)$ for each block.
+Here $A_i+\kappa_{Ui}J_i=\bar\eta_iD_{i,\beta}+R_{i,\beta}$,
+which gives $\mathcal B_{i,T}$.
+For simultaneous blocks, Assumption~\ref{as:2} implies each local
+gradient block depends only on its own parameter block, as explained in
+Appendix~\ref{app:prelim}; therefore these estimates apply to the common
+full-model query.
+\end{paperproof}
+
+\begin{paperproof}[{Proof of Theorem~\ref{thm:fixed_radius}}]
+Combine Lemma~\ref{lem:radius_tracking} with the polar pairing inequality
+\[
+ \langle\nabla_i f(X_t),\operatorname{polar}(h_{t,i})\rangle
+ \ge\|\nabla_i f(X_t)\|_*
+       -2\rho_i\|h_{t,i}-\nabla_i f(X_t)\|_F.
+\]
+Apply smooth descent with remainder $\sum_iL_i\eta_{t,i}^2/2$,
+take expectations, and telescope the single global objective gap
+$\Delta$. This gives \eqref{eq:radius_stationarity}.
+\end{paperproof}
+
+\begin{corollary}[\textbf{Constant and cosine schedules}]\label{cor:radius_schedules}
+For common learning rates $\eta_{t,i}=\eta_t$, put
+$S=\sum_{t<T}\eta_t>0$, $\bar\eta=\max_{t<T}\eta_t$ and
+\[
+ \mathcal G_T=S^{-1}\sum_{t<T}\eta_t
+                \mathbb E\sum_i\|\nabla_i f(X_t)\|_*.
+\]
+With $I_\beta=2\sum_i\rho_i I_{i,\beta}$,
+$D_\beta=\tfrac12\sum_iL_i+2\sum_i\rho_iD_{i,\beta}$ and
+$R_\beta=2\sum_i\rho_iR_{i,\beta}$, one has
+\begin{equation}\label{eq:radius_takeaway}
+ \mathcal G_T\le\frac{\Delta+\bar\eta I_\beta}{S}
+                       +\bar\eta D_\beta+R_\beta.
+\end{equation}
+For constant $\eta_t=\bar\eta$ and cosine
+$\eta_t=\bar\eta[1+\cos(\pi t/T)]/2$, this gives:
+\begin{itemize}
+\item[\emph{(i)}] With fixed momentum and fixed peak, an
+$\mathcal O(T^{-1})$ transient plus the explicit upper-bound residual
+$\bar\eta D_\beta+R_\beta$.
+\item[\emph{(ii)}] With fixed momentum and peak $\bar\eta\asymp T^{-1/2}$,
+$\mathcal G_T\le\mathcal O(T^{-1/2})+R_\beta$.
+\item[\emph{(iii)}] With $\beta\asymp T^{-1/2}$ and $\bar\eta\asymp T^{-3/4}$,
+$\mathcal G_T=\mathcal O(T^{-1/4})$ for either momentum and downlink.
+\end{itemize}
+For both momentum rules, the noise residual satisfies
+\[
+ R_\beta\le8\sum_i\rho_i\sigma_i
+       [\sqrt{\beta/N}+\kappa_{Ui}\beta].
+\]
+Fixed positive layer multipliers can be absorbed into $\eta_{t,i}$;
+the same conclusions then concern the corresponding weighted block norm.
+\end{corollary}
+\begin{paperproof}
+Substitute the common schedule into \eqref{eq:radius_stationarity}
+and use $\sum_t\eta_t^2\le\bar\eta S$.
+For the constant schedule $S=T\bar\eta$, so the transient is
+$\Delta/(T\bar\eta)+I_\beta/T$.
+For cosine, $S=\bar\eta(T+1)/2$, so it is at most twice this quantity.
+For fixed problem and compressor constants, as $\beta\downarrow0$
+both momentum rules have $I_\beta,D_\beta=\mathcal O(\beta^{-1})$,
+$v_\theta=\mathcal O(\beta)$ and $R_\beta=\mathcal O(\sqrt\beta)$.
+These estimates give the stated rates. The noise bound follows from
+Lemma~\ref{lem:radius_tracking}.
+\end{paperproof}
+
+Smaller $\beta$ reduces this noise budget but increases the drift bound
+$\bar\eta D_\beta=\mathcal O(\bar\eta/\beta)$.
+The averaged noise retains $1/\sqrt N$; the local compression term remains.
+For $q_{Pi}=\sqrt{1-\alpha_P}$ and small $\alpha_P$,
+$\kappa_{Pi}\sim2/\alpha_P$;
+thus poor downlink contraction increases $D_\beta$ and the gap bound
+$P_i=\kappa_{Pi}B_i\bar\eta_i$. The exact downlink sets these terms
+to zero. The guarantee controls the learning-rate-weighted first moment
+$\mathcal G_T$ under the layerwise smoothness of Assumption~\ref{as:2}
+and fixed momentum.
+\end{codex}

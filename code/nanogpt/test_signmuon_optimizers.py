@@ -252,13 +252,51 @@ def test_compressor_unchanged_for_single_layer_parameters():
     print("  OK   single-layer parameters bit-identical to the pre-fix rule")
 
 
+def test_raw_compression_records_each_attention_block():
+    """Raw logging preserves the update and measures Q/K/V/O independently."""
+    import csv
+    import tempfile
+    from common.compression_diagnostics import CompressionRecorder
+    from analysis.ef21_report import analyze_rows
+    with tempfile.TemporaryDirectory() as tmp:
+        def drive(logged, layers=""):
+            torch.manual_seed(43)
+            p = _tagged((4, 16), "attn")
+            opt = smo.EF21MuonSign([p], lr=0.02, momentum=0.95,
+                                   weight_decay=0.0, lr_scaling="none")
+            if logged:
+                filename = "filtered.csv" if layers else "raw.csv"
+                opt.set_compression_recorder(CompressionRecorder(Path(tmp)/filename,
+                                             audit_oracle=True, layers=layers),
+                                             {id(p): "qkvo"})
+            for t in range(4):
+                opt.compression_step = t+1
+                p.grad = torch.randn_like(p)
+                opt.update_param(p, opt.param_groups[0])
+            return p.clone(), opt.state[p]["exact_model"].clone(), torch.get_rng_state()
+        plain = drive(False)
+        for a, b in zip(plain, drive(True)):
+            assert torch.equal(a, b)
+        with (Path(tmp)/"raw.csv").open() as f:
+            rows = list(csv.DictReader(f))
+        assert {r["layer"] for r in rows} == {"qkvo:"+s for s in ("Q", "K", "V", "O")}
+        assert all(int(r["dimension"]) == 16 for r in rows)
+        report = analyze_rows(rows)
+        assert all(r["complete_segment"] and r["max_direction_operator"] is not None for r in report)
+        for a, b in zip(plain, drive(True, layers=":Q$")):
+            assert torch.equal(a, b)
+        with (Path(tmp)/"filtered.csv").open() as f:
+            filtered = list(csv.DictReader(f))
+        assert len(filtered) == 4 and all(r["layer"] == "qkvo:Q" for r in filtered)
+
+
 def test_diagnostics_record_and_report():
     """The diagnostics path must run single-process and report a sane ``alpha``.
 
     For an isotropic residual the scaled sign's achieved contraction
     ``||r||_1^2 / (d ||r||_2^2)`` is ``2/pi = 0.6366``. That is where ``alpha_up``
-    should sit early in a run -- and its DECAY toward ``1/d`` as the residual
-    becomes directionally coherent is the whole reason the slot is logged.
+    should sit early in this Gaussian probe. Small alpha measures concentration
+    of entry magnitudes; it does not measure directional coherence.
     """
     torch.manual_seed(0)
     p = _tagged((32, 32), None)
@@ -377,6 +415,7 @@ if __name__ == "__main__":
     test_compressor_scale_is_per_block()
     test_compressor_unchanged_for_single_layer_parameters()
     test_diagnostics_record_and_report()
+    test_raw_compression_records_each_attention_block()
     print("\nVerifying per-layer LR scaling...\n")
     test_lmo_family_matches_record40_aspect_factor()
     test_unit_gain_equalizes_the_per_step_gain()

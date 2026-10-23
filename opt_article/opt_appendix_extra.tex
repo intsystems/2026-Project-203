@@ -14,7 +14,7 @@
 %  it rather than repeating it.
 %%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%
 
-\subsection{Related Work}\label{app:opt:related}
+\section{\cx{Related Work}}\label{app:opt:related}
 
 \paragraph{Sign compression.} The sign is the most widely used compressor in this literature \citep{alistarh2017qsgd,horvath2023stochastic,beznosikov2020biased}: one bit per coordinate, no index set or scale sent beside it, and a majority vote of signs that is again a sign, so both directions stay at one bit \citep{bernstein2019signsgdmajority}. Its theory is correspondingly well developed. SignSGD \citep{bernstein2018signsgd} needs growing batches to converge; its bias is otherwise repaired by error feedback \citep{seide20141bit,karimireddy2019efsign}, sharpened into EF21 \citep{richtarik2021ef21}, by momentum \citep{cutkosky2020momentum,sun2023signmomentum}, or by randomizing the sign operator \citep{chen2020median,safaryan2021ssdm,jin2024stosign}.
 
@@ -25,7 +25,7 @@
 % \texorpdfstring: a section title is also a PDF bookmark, where a thin space
 % is not a thing hyperref can write.  The page keeps the thin space, the
 % bookmark gets an ordinary one.
-\subsection{The \texorpdfstring{Sign\,A}{Sign A} Family}\label{app:opt:signa}
+\section{\cx{The \texorpdfstring{Sign\,A}{Sign A} Family}}\label{app:opt:signa}
 
 The three placements of \eqref{eq:three_placements} are instances of one iteration, stated here for any optimizer A built on LMO directions. A Sign\,A method initializes $\mathbf{M}_0 = \mathbf{0}$ and at each iteration $t \ge 1$ performs
 \begin{equation}
@@ -42,7 +42,7 @@ The three placements of \eqref{eq:three_placements} are instances of one iterati
 \end{equation}
 with $\mathbf{G}_t = \nabla f(\mathbf{X}_{t-1};\xi_t)$ the stochastic gradient, $\mu \in [0, 1)$ the momentum coefficient and $\operatorname{sign}(0)$ resolved to an independent random $\pm1$. Momentum is in exponential-moving-average form throughout; the heavy-ball form differs by the positive factor $1/(1-\mu)$, which $\operatorname{sign}(\cdot)$ and the LMO both absorb.
 
-\subsection{Federated Learning}\label{app:opt:fed}
+\section{\cx{Federated Learning}}\label{app:opt:fed}
 
 In the federated setting the data are split across clients. The training problem becomes
 \begin{equation}
@@ -87,7 +87,7 @@ SignSGD & $0.01$ & $\mathbf{1.09}$ & $\mathbf{1.09}$ & $1140$ & $81.44 \pm 0.15$
 Adam & $0.001$ & $32$ & $32$ & --- & $77.12 \pm 1.04$ \\
 \bottomrule
 \end{tabular}
-\caption{CIFAR-10 federated learning on CNN2, ordered by accuracy: $N=11$ clients, homogeneous split, $2000$ rounds at batch $192$, momentum $0.9$. Test accuracy is the mean of the final five evaluations over five seeds, $\pm$ one s.d.\ \emph{across} seeds; Up and Down are bits per parameter per round each way (Appendix~\ref{app:commacct}). Every method but Adam reached $80\%$ on all five seeds, Adam on none.}
+\caption{CIFAR-10 federated learning on CNN2: $N=11$ clients, $2000$ rounds. Test accuracy \cx{is averaged over the final five evaluations and reported as mean $\pm$ s.d.\ over five seeds}; Up and Down are bits per parameter per round \cx{in each direction} (Appendix~\ref{app:commacct}).}
 \label{tab:exp_3}
 \end{table}
 
@@ -97,7 +97,7 @@ Federation separates the methods far more than centralized training does. At one
 
 Less favourably for the theory, EF21-MuonUSign and EF21-MuonSign trail SignMuon by several seed spreads, as they do centrally. The guarantee's cost here is charged to the placement. EF21-MuonSign is scored at its server model $\mathbf{X}_t$, not the model its clients hold~\eqref{eq:two_models}; the two track each other here, and Section~\ref{sec:exp_nanogpt} shows that they need not (Remark~\ref{rem:dimension}). Appendix~\ref{app:results_fed:3} adds the learning curves and the two orderings the table does not show.
 
-\subsection{Centralized Learning: the Numbers}\label{app:opt:cen}
+\section{\cx{Centralized Learning: the Numbers}}\label{app:opt:cen}
 
 \begin{table}[!ht]
 \centering
@@ -119,14 +119,14 @@ MuonSign & $0.1$ & $93.31 \pm 0.21$ & $17.7$ \\
 SGD & $0.02$ & $93.04 \pm 0.14$ & $21.3$ \\
 \bottomrule
 \end{tabular}
-\caption{Centralized ResNet-18 / CIFAR-10, $75$ epochs. Test accuracy is the mean $\pm$ s.d.\ over three seeds of the last five epochs; ``Ep.\ to $90\%$'' is the mean epoch at which it first reaches $90\%$.}
+\caption{Centralized \cx{training of} ResNet-18 \cx{on} CIFAR-10, $75$ epochs. Test accuracy is the mean $\pm$ s.d.\ over three seeds of the last five epochs; ``Ep.\ to $90\%$'' is the mean epoch at which it first reaches $90\%$.}
 \label{tab:cifar_main}
 \end{table}
 
 
 Table~\ref{tab:cifar_main} gives the numbers behind Figure~\ref{fig:cifar_results}, including the epochs each method takes to reach $90\%$, \cl{which the curves do not show cleanly.} Appendix~\ref{app:images_cen} adds the training loss, the full $75$-epoch curves and the learning-rate sensitivity.
 
-\subsection{Language Modelling: the Numbers}\label{app:opt:nanogpt}
+\section{\cx{Language Modelling: the Numbers}}\label{app:opt:nanogpt}
 
 \begin{table}[!tb]
 \centering\footnotesize
@@ -147,7 +147,7 @@ SignSGD              & \textsc{sign} & 0.03 & 3.4049 & -- \\
 EF21-MuonSign ($\mathbf{X}$) & \textsc{lmo} & 0.06 & 5.5198 & -- \\
 \bottomrule
 \end{tabular}
-\caption{NanoGPT after $2330$ steps ($611$M tokens), one run per method. Record \#40 reports $3.2780\pm0.0009$ over five seeds, so differences below ${\sim}0.003$ are noise; ``Steps to $3.35$'' is relative to Muon. The last row is the server model $\mathbf{X}$ of the same run as the $\mathbf{W}$ row.}
+\caption{NanoGPT after $2330$ steps ($611$M tokens), one run per method. ``Steps to $3.35$'' is relative to Muon. The last row is the server model $\mathbf{X}$ of the same run as the $\mathbf{W}$ row.}
 \label{tab:nanogpt}
 \end{table}
 

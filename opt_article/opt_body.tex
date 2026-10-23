@@ -84,7 +84,7 @@ Throughout, $\operatorname{sign}(0)$ is resolved to an independent random $\pm1$
 \begin{figure}[!t]
     \centering
     \includegraphics[width=0.86\textwidth]{images/counterexamples/counterexamples_main.pdf}
-    \caption{All eight methods on the three counterexample instances; the ascending method is drawn heavy and named in each panel. \emph{Left:} SignMuon, $4\times4$ (Theorem~\ref{th:1}). \emph{Centre:} MuonUSign and MuonSign on their shared $5\times5$ instance (Theorems~\ref{th:2}--\ref{th:3}); both panels plot~\eqref{eq:lin_obj}. \emph{Right:} EF21-SignMuon, $2\times2$ (Theorem~\ref{th:ef_div}), normalized units at $\eta=1$. Trajectories are momentum-free without loss (Proposition~\ref{prop:reduction}; Lemma~\ref{lem:efsm_realize} for EF21-SignMuon).}
+    \caption{All eight methods on the three counterexample instances. \emph{Left:} SignMuon, $4\times4$ (Theorem~\ref{th:1}). \emph{Centre:} MuonUSign and MuonSign on their shared $5\times5$ instance (Theorems~\ref{th:2}--\ref{th:3}); both panels plot~\eqref{eq:lin_obj}. \emph{Right:} EF21-SignMuon, $2\times2$ (Theorem~\ref{th:ef_div}), normalized units at $\eta=1$. Trajectories are momentum-free without loss (Proposition~\ref{prop:reduction}; Lemma~\ref{lem:efsm_realize} for EF21-SignMuon).}
     \label{fig:divergence_plot}
 \end{figure}
 
@@ -107,7 +107,7 @@ A single $\mathbf{G}$ with $\langle\mathbf{G},\mathbf{s}(\mathbf{G})\rangle<0$ t
 There exists $\mathbf{G}\in\mathbb{R}^{4\times4}$ with $\langle\mathbf{G},\mathbf{s}(\mathbf{G})\rangle<0$ for SignMuon, and $\mathbf{G}\in\mathbb{R}^{5\times5}$ with $\langle\mathbf{G},\mathbf{s}(\mathbf{G})\rangle<0$ for MuonUSign and for MuonSign simultaneously. On the corresponding objective~\eqref{eq:lin_obj} each method ascends at every iteration, for every $\eta_t>0$, every $\mu\in[0,1)$ and either momentum rule, and $f(\mathbf{X}_t)\to+\infty$ whenever $\sum_t\eta_t=\infty$.
 \end{summarythm}
 
-Both instances are explicit, both inner products exact rationals. Appendices~\ref{app:proof_th1}--\ref{app:proof_th3} state the theorems and prove them; Figure~\ref{fig:divergence_plot} (left, centre) shows the ascents. Negative results of this kind exist for uncompressed Muon as well \citep{parshakova2026muondoesconvergeconvex}. Ours are due to the compressor rather than the geometry.
+Both instances are explicit, \cx{with exact algebraic pairings}. Appendices~\ref{app:proof_th1}--\ref{app:proof_th3} state the theorems and prove them; Figure~\ref{fig:divergence_plot} (left, centre) shows the ascents. Negative results of this kind exist for uncompressed Muon as well \citep{parshakova2026muondoesconvergeconvex}. Ours are due to the compressor rather than the geometry.
 
 %The counterexamples bound the theory from below in another sense as well. 
 On a deterministic convex quadratic the alignment $\rho_t=\langle\nabla f,\mathbf{D}_t\rangle/(\|\nabla f\|_F\|\mathbf{D}_t\|_F)$ between the gradient and the update direction actually taken can be measured directly. Theorems~\ref{th:1}--\ref{th:3} give instances with $\rho_t<0$; on random instances all three placements keep $\rho_t$ away from zero (Appendix~\ref{app:images_task}). The constructions therefore describe a worst case rather than a typical one. The experiments below run contrary to them.
@@ -135,7 +135,7 @@ The construction (Appendix~\ref{app:proof_th4}) turns the shared magnitude again
 \subsection{Error Feedback on the Gradient Works}
 The defect is the target, not the shared magnitude. Error feedback needs a target that varies with the step size; $\operatorname{polar}(\tilde{\mathbf{M}}_t)$ is not Lipschitz in its argument, so it can move by $\Theta(1)$ between consecutive rounds however small $\eta$ is. Compressing the \emph{gradient} in its place restores that dependence. \cl{The resulting method is EF21-Muon~\citep{gruntkowska2025error} with the scaled sign $\mathcal{C}(\mathbf{Y}) = \operatorname{mean}|\mathbf{Y}|\,\operatorname{sign}(\mathbf{Y})$ on every compressed link: one bit per parameter, plus one scalar per layer.} \textbf{EF21-MuonUSign} takes the pair $(\mathcal{C},I)$: a compressed uplink, a full-precision model back. It maintains a gradient estimator $\mathbf{g}_t^{\mathrm{est}}$ from the residual $\tilde{\mathbf{M}}_t-\mathbf{g}_{t-1}^{\mathrm{est}}$ exactly as in \eqref{eq:efsm_est}, then steps $\mathbf{X}_t=\mathbf{X}_{t-1}-\eta_t\mathbf{D}_t$ with $\mathbf{D}_t=-A(\mathbf{g}_{t}^{\mathrm{est}})$, the polar factor of the estimator rather than of $\nabla f$. \textbf{EF21-MuonSign} takes $(\mathcal{C},\mathcal{C})$, one bit each way. Its downlink is a second error-feedback loop, on the \emph{model} rather than the gradient\cl{, splitting the method into a server model $\mathbf{X}_t$, which the guarantee bounds, and a broadcast model $\mathbf{W}_t$, where every gradient is evaluated (Appendix~\ref{app:opt:fed}).}
 
-Both descend where the placements they repair ascend: Figure~\ref{fig:divergence_plot} (centre) has them on the $5\times5$ instance. Appendix~\ref{app:hyp} shows them to be \emph{exact instances} of the EF21-Muon framework; the one substantive check is that the scaled sign is contractive (Lemma~\ref{lem:signcontr})\cl{, so they inherit its guarantees}. Under Assumptions~\ref{as:1}--\ref{as:2} both reach $\min_{t\le T}\mathbb{E}\|\nabla f(\mathbf{X}_t)\|_*^2=\mathcal{O}(T^{-1/2})$, the rate uncompressed Muon attains: one bit changes the constant, not the rate. The second loop costs a step size smaller by \cl{a factor $\sqrt{r}$ in the layer rank. The factor arises because the scaled sign is contractive in the Euclidean norm and not in the layer norm the spectral geometry requires (Remark~\ref{rem:normmismatch}).}
+\cx{Under Assumptions~\ref{as:1}--\ref{as:3}, with the horizon-tuned sharp steps of Corollary~\ref{cor:smooth} or Theorem~\ref{thm:nesterov_conv}, both methods with EMA or Nesterov reach $\tfrac1T\sum_{t<T}\mathbb E\|\nabla f(\mathbf X_t)\|_*^2=\mathcal O(T^{-1/2})$. Corollary~\ref{cor:accuracy_budget} gives explicit momentum and query budgets with a $1/N$ leading variance term. For fixed momentum and constant/cosine learning rates, Corollary~\ref{cor:radius_schedules} bounds the weighted mean gradient norm by an $\mathcal O(T^{-1})$ transient plus explicit stepsize and noise residuals, under ordinary smoothness and exact polar updates. The scaled-sign downlink adds rank dependence (Remark~\ref{rem:normmismatch}).}
 
 \section{Experiments}\label{sec:exp}
 
@@ -148,7 +148,7 @@ We compare all six sign-based methods against Muon, SignSGD, SGD and Adam. Only 
 \qquad
 \lambda_\ell^{\textsc{sign}}=1/\sqrt{n},
 \end{equation}
-where $\mathbf{P}_\ell$ is the matrix the method applies, whose Frobenius norm is known exactly in either family. The criterion is that every layer receive the same root-mean-square input--output gain \citep{yang2023spectral,large2024modular}. Its \textsc{lmo} branch reproduces the aspect-ratio factor the reference Muon implementation applies \citep{jordan2024muon}\cl{; we apply} the same criterion \cl{to} the \textsc{sign} family, for which no convention exists (Appendix~\ref{app:lrscale}). 
+where $\mathbf{P}_\ell$ is \cx{the idealized family step (Appendix~\ref{app:lrscale})}. The criterion is that every layer receive the same root-mean-square input--output gain \citep{yang2023spectral,large2024modular}. Its \textsc{lmo} \cx{multiplier} reproduces the aspect-ratio factor the reference Muon implementation applies \citep{jordan2024muon}\cl{; we apply} the same criterion \cl{to} the \textsc{sign} family, for which no convention exists (Appendix~\ref{app:lrscale}).
 
 \subsection{Image Classification}
 We train a ResNet-18 adapted to low-resolution images on CIFAR-10 \cite{krizhevsky2009cifar} for $75$ epochs, $\eta_0$ cosine-annealed to zero and selected per method on a held-out split. Numbers average three seeds; differences below the seed spread are not claimed (Appendix~\ref{app:repro}).
@@ -156,7 +156,7 @@ We train a ResNet-18 adapted to low-resolution images on CIFAR-10 \cite{krizhevs
 \begin{figure}[!tb]
     \centering
     \includegraphics[width=0.91\textwidth]{images/centralized_images/cifar_main.pdf}
-    \caption{Centralized ResNet-18 on CIFAR-10: test accuracy at the $\eta_0$ selected for each method, from epoch $25$ (Table~\ref{tab:cifar_main}). Panels group the sign placements, the EF21 variants and the baselines; Muon is the gray dashed reference, bands $\pm1$ s.d.\ over three seeds. The numbers are Table~\ref{tab:cifar_main}, Appendix~\ref{app:opt:cen}.}
+    \caption{Centralized ResNet-18 on CIFAR-10: test accuracy at the $\eta_0$ selected for each method, from epoch $25$ (Table~\ref{tab:cifar_main}). \cx{Bands show} $\pm1$ s.d.\ over three seeds.}
     \label{fig:cifar_results}
 \end{figure}
 
@@ -169,14 +169,16 @@ SignMuon ranks first, by less than one seed spread over Muon (Figure~\ref{fig:ci
 \begin{figure}[!tb]
 \centering
 \includegraphics[width=0.43\textwidth]{images/nanogpt/fig_nanogpt_main.pdf}
-\caption{NanoGPT speedrun, $8\times$H100: validation loss against optimizer step, one run per method; dotted is the target $3.28$, and EF21-MuonSign is drawn at its broadcast model $\mathbf{W}$. The inset magnifies the boxed tail, where SignSGD lies above the range shown.}
+\caption{NanoGPT speedrun, $8\times$H100: validation loss against optimizer step, one run per method. EF21-MuonSign is drawn at its broadcast model $\mathbf{W}$.}
 \label{fig:nanogpt}
 \end{figure}
 
 
-We test where the matrices are large enough for the layer-rank dependence of Corollary~\ref{cor:smooth} to take effect: \cl{the modded-nanoGPT speedrun (record \#40) on $8\times$H100 \citep{jordan2024moddednanogpt}, whose hidden matrices are $768\times3072$. Each method replaces Muon on the hidden matrices and gates, at rates fixed a priori by \eqref{eq:unit_gain_main}, one $\eta_0$ per \emph{family}, so every contrast is matched-hyperparameter (Appendix~\ref{app:nanogpt}).}
+We test where the matrices are large enough for the layer-rank dependence of Corollary~\ref{cor:smooth} to take effect: \cl{the modded-nanoGPT speedrun (record \#40) on $8\times$H100 \citep{jordan2024moddednanogpt}, whose hidden matrices are $768\times3072$. Each method replaces Muon on the hidden matrices and gates}\cx{; embeddings, scalar parameters, and the output head retain distributed Adam}. \cl{Rates are fixed a priori by \eqref{eq:unit_gain_main}, one $\eta_0$ per \emph{family}, so every contrast is matched-hyperparameter (Appendix~\ref{app:nanogpt}).}
 
-The composition transfers to language modelling. All six such methods improve on SignSGD by at least $0.08$ in validation loss; the best two, EF21-SignMuon and SignMuon, lie within $0.01$ of full-precision Muon at equal wall-clock (Figure~\ref{fig:nanogpt}, Table~\ref{tab:nanogpt}). On the sign-after placement, error feedback is free: those two differ by $0.002$, below the noise level. The target they compress is an orthogonal factor whose entries stay evenly spread, the case in which the scaled sign loses least. The two models of EF21-MuonSign separate at this width. The run has a single client, so its broadcast model $\mathbf{W}$ is the only point at which a gradient is evaluated; there the compressed downlink costs nothing: $\mathbf{W}$ is indistinguishable from EF21-MuonUSign. The server model $\mathbf{X}$, which the guarantee bounds, settles $2.2$ nats above it. This is the mechanism of Remark~\ref{rem:dimension}, not a tuning failure, and Appendix~\ref{app:nanogpt} localizes it to the zero-initialized MLP output projections.
+\cx{All six sign--LMO compositions improve on SignSGD in validation loss} (Figure~\ref{fig:nanogpt}, Table~\ref{tab:nanogpt}). \cx{The best compressed methods, EF21-SignMuon and SignMuon, achieve validation losses close to full-precision Muon at similar wall-clock times.} The target they compress is an orthogonal factor whose entries stay evenly spread.
+
+The two models of EF21-MuonSign separate at this width. \cx{Gradients are evaluated at the broadcast model} $\mathbf{W}$, \cx{whose validation loss is close to EF21-MuonUSign's.} The server model $\mathbf{X}$, which the guarantee bounds, \cx{has} $2.2$ nats \cx{higher validation loss}. \cx{Appendix~\ref{app:nanogpt} reports the largest relative model gap on the zero-initialized MLP output projections}.
 
 \section{Conclusion}\label{sec:conclusion}
 

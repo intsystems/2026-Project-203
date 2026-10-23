@@ -1,0 +1,653 @@
+\documentclass[11pt]{article}
+\usepackage[a4paper,margin=26mm]{geometry}
+\usepackage{amsmath,amssymb,amsthm,mathtools}
+\usepackage[T1]{fontenc}
+\usepackage{lmodern,microtype}
+\usepackage[colorlinks=true,linkcolor=blue,urlcolor=blue]{hyperref}
+\newtheorem{theorem}{Theorem}
+\newtheorem{lemma}{Lemma}
+\newtheorem{remark}{Remark}
+\newcommand{\E}{\mathbb E}
+\newcommand{\op}[1]{\lVert #1\rVert_{2\to2}}
+\newcommand{\nuc}[1]{\lVert #1\rVert_*}
+\newcommand{\frob}[1]{\lVert #1\rVert_F}
+\newcommand{\ip}[2]{\langle #1,#2\rangle}
+\newcommand{\avg}{\frac1N\sum_{j=1}^N}
+\newcommand{\pol}{\operatorname{polar}}
+\newcommand{\barc}{\bar c}
+\newcommand{\bargamma}{\bar\gamma}
+\allowdisplaybreaks
+\title{Nesterov momentum for EF21-MuonUSign and EF21-MuonSign\\
+\large A separate convergence proof}
+\author{Working proof note}
+\date{October 22, 2026}
+\begin{document}
+\maketitle
+
+\begin{abstract}
+We prove convergence for the precise Nesterov filter in the paper's
+server-side-LMO algorithm. Under its smoothness assumptions, both uplink-only
+and bidirectional EF21 compression attain an expected squared nuclear-gradient
+rate $O(T^{-1/2})$, with the sharp step and horizon-dependent momentum.
+Under the paper's generalized smoothness and local lower bounds, the exact
+downlink variant attains an expected nuclear-gradient rate $O(T^{-1/4})$,
+with a constant-within-run radius. All tracking recursions, initialization
+terms, and sufficient constants are supplied below. This is a mathematical
+proof note. A subsequent, independent Lyapunov proof of both rates is now
+kernel checked in \texttt{lean\_proofs/EF21Muon/Nesterov/} and included in
+the shared article appendix \texttt{ef21\_nesterov\_convergence.tex}.
+That appendix supplies the constants matched to Lean; this earlier note
+retains its original constants and is not itself included by the articles.
+\end{abstract}
+
+\section{Exact algorithm and assumptions}
+
+Let $f=N^{-1}\sum_{j=1}^N f_j$ on a tuple of $p$ matrix blocks
+$X_i\in\mathbb R^{m_i\times n_i}$, where $N,p,m_i,n_i\ge1$ and
+$r_i=\min(m_i,n_i)$. Fix $0<\beta\le1$ and put $a=1-\beta$;
+the paper's momentum parameter is $\mu=a$. At round $t=1,\ldots,T$,
+the algorithm is
+\begin{align}
+ G_t^{(j)}&=\nabla f_j(W_{t-1})+\varepsilon_t^{(j)},
+ &M_t^{(j)}&=aM_{t-1}^{(j)}+\beta G_t^{(j)},\label{eq:momentum}\\
+ V_t^{(j)}&=aM_t^{(j)}+\beta G_t^{(j)},
+ &g_{t,i}^{(j)}&=g_{t-1,i}^{(j)}+
+ C_{D,i}\bigl(V_{t,i}^{(j)}-g_{t-1,i}^{(j)}\bigr),\label{eq:nesterov}\\
+ g_{t,i}&=\avg g_{t,i}^{(j)},
+ &X_{t,i}&=X_{t-1,i}-\eta_{t,i}\pol(g_{t,i}).\label{eq:step}
+\end{align}
+The server average is exactly the estimator reconstructed by the paper's
+message-aggregation recursion. The downlink is either exact, $W_t=X_t$,
+or EF21-P:
+\begin{equation}\label{eq:downlink}
+ W_{t,i}=W_{t-1,i}+C_{P,i}(X_{t,i}-W_{t-1,i}).
+\end{equation}
+Initialize $M_0^{(j)}=g_0^{(j)}=g_0=0$ and $W_0=X_0$, with deterministic
+$X_0$. We also define the bookkeeping values $V_0^{(j)}=M_{-1}^{(j)}=0$.
+These do not introduce a stochastic query before round one.
+
+The oracle is an exact, measurable spectral-ball LMO:
+\begin{equation}\label{eq:polar}
+ \ip{z}{\pol(z)}=\nuc z,\qquad
+ \op{\pol(z)}\le1,\qquad \pol(0)=0.
+\end{equation}
+Every such selection obeys $\frob{\pol(z)}\le\sqrt{r_i}$ on block $i$.
+In particular, the partial polar factor used in the article is allowed.
+
+Write $\mathcal F_{t-1}$ for the history just before the gradients in round
+$t$. The query $W_{t-1}$ and all previous state are measurable with respect
+to this history. For every worker and block assume
+\begin{equation}\label{eq:noise}
+ \E[\varepsilon_{t,i}^{(j)}\mid\mathcal F_{t-1}]=0,
+ \qquad
+ \E[\frob{\varepsilon_{t,i}^{(j)}}^2\mid\mathcal F_{t-1}]
+ \le\sigma_i^2.
+\end{equation}
+The paper's conditional nuclear-norm variance bound implies this condition.
+For the generalized-smooth proof we also use conditional independence of
+the workers' noises, as assumed in the article. It gives
+\begin{equation}\label{eq:mean-noise}
+ \E[\frob{\bar\varepsilon_{t,i}}^2\mid\mathcal F_{t-1}]
+ \le\sigma_i^2/N,\qquad
+ \bar\varepsilon_{t,i}=\avg\varepsilon_{t,i}^{(j)}.
+\end{equation}
+Cross-layer independence is unnecessary.
+
+The compressors are conditionally mean-square contractive in the
+Frobenius norm:
+\begin{equation}\label{eq:contraction}
+ \E[\frob{C(z)-z}^2\mid z,\text{prior history}]
+ \le(1-\alpha)\frob z^2,\qquad 0<\alpha\le1.
+\end{equation}
+The parameters are $\alpha_{D,i}$ on the uplink and $\alpha_{P,i}$ on
+the compressed downlink. The scaled-sign compressors in the article
+satisfy this pathwise with $\alpha_{D,i}=1/(m_i n_i)$ and the same
+downlink parameter. Resolving zero ties in either allowed way causes no
+change to the proof. In the smooth theorem worker independence is not
+needed; \eqref{eq:noise} suffices.
+
+\section{Smooth case: both downlinks}
+
+Assume $f\ge f_*$ and, for all tuples $X,Y$ and every block $i$,
+\begin{align}
+ \nuc{\nabla_i f(X)-\nabla_i f(Y)}
+ &\le L_i\op{X_i-Y_i},\label{eq:smooth}\\
+ \nuc{\nabla_i f_j(X)-\nabla_i f_j(Y)}
+ &\le L_{i,j}\op{X_i-Y_i}.\label{eq:local-smooth}
+\end{align}
+All smoothness constants are nonnegative. These are precisely the
+article's arbitrary-pair assumptions; their restriction on layer
+interactions is retained. Put
+\begin{equation}
+ \widetilde L_i^2=\avg L_{i,j}^2,
+ \qquad F_{0,i}=\avg\frob{\nabla_i f_j(X_0)}^2,
+ \qquad \Delta=f(X_0)-f_*.
+\end{equation}
+Use the sharp schedule $\eta_{t,i}=\gamma_i\nuc{g_{t,i}}$, with fixed
+$\gamma_i>0$ within the run. Define
+\begin{align}
+ \delta_i&=\begin{cases}0,&\text{exact downlink},\\
+                         4/\alpha_{P,i}^2,&\text{EF21-P downlink},\end{cases}
+ &K_i&=3\widetilde L_i^2(1+2\delta_i),\label{eq:constants1}\\
+ A_i(\beta)&=\frac3\beta+\frac{480\beta}{\alpha_{D,i}^2},
+ &C_i(\beta)&=3\beta+
+       \left(9+\frac{360}{\alpha_{D,i}^2}\right)\beta^2,\\
+ B_i(\beta)&=\left(\frac3{\beta^2}+
+                   \frac{480}{\alpha_{D,i}^2}\right)K_i+3L_i^2\delta_i.
+ \label{eq:constants2}
+\end{align}
+
+\begin{theorem}[Smooth finite-time bound and tuning]\label{thm:smooth}
+Suppose \eqref{eq:momentum}--\eqref{eq:contraction} and
+\eqref{eq:smooth}--\eqref{eq:local-smooth} hold. If, for every $i$,
+\begin{equation}\label{eq:small}
+ 2L_i\gamma_i\le1,\qquad
+ 20r_i^2\gamma_i^2B_i(\beta)\le1,
+\end{equation}
+then, with $\bargamma=p^{-1}\sum_i\gamma_i$ and
+$w_i=\gamma_i/\bargamma$,
+\begin{equation}\label{eq:smooth-rate-finite}
+ \frac1T\sum_{t=1}^T\sum_i w_i
+   \E\nuc{\nabla_i f(X_{t-1})}^2
+ \le\frac{4\Delta}{\bargamma T}
+ +10\sum_iw_i r_i\left(
+       \frac{A_i(\beta)F_{0,i}}T+C_i(\beta)\sigma_i^2\right).
+\end{equation}
+In particular, set
+\begin{align}
+ Z_i&=\left(3+\frac{480}{\alpha_{D,i}^2}\right)K_i+3L_i^2\delta_i,\\
+ c_i&=\left(1+2L_i+\sqrt{20}\,r_i\sqrt{Z_i}\right)^{-1},
+ &\beta&=T^{-1/2},\qquad\gamma_i=c_iT^{-1/2}.
+ \label{eq:smooth-tuning}
+\end{align}
+With $\barc=p^{-1}\sum_i c_i$ and $w_i=c_i/\barc$, the left side of
+\eqref{eq:smooth-rate-finite} is at most $D/\sqrt T$, where
+\begin{equation}\label{eq:smooth-constant}
+ D=\frac{4\Delta}{\barc}+10\sum_iw_i r_i
+ \left[\left(3+\frac{480}{\alpha_{D,i}^2}\right)F_{0,i}
+ +\left(12+\frac{360}{\alpha_{D,i}^2}\right)\sigma_i^2\right].
+\end{equation}
+A common $c_i$ can instead be chosen below every displayed threshold;
+then all weights are one.
+\end{theorem}
+
+\subsection{Tracking at the actual query}
+
+Fix a block, temporarily suppress its index, and let
+$h_t^{(j)}=\nabla_i f_j(W_{t-1})$ for $t\ge1$.
+Define $h_0^{(j)}=h_1^{(j)}$ and
+\begin{align}
+ F_t&=\avg\E\frob{M_t^{(j)}-h_t^{(j)}}^2,
+ &D_t&=\avg\E\frob{h_t^{(j)}-h_{t-1}^{(j)}}^2,\\
+ I_t&=\avg\E\frob{M_t^{(j)}-M_{t-1}^{(j)}}^2,
+ &H_t&=\avg\E\frob{g_t^{(j)}-V_t^{(j)}}^2,\\
+ P_t&=\E\frob{W_{t,i}-X_{t,i}}^2,
+ &S_t&=\E\frob{X_{t,i}-X_{t-1,i}}^2.
+\end{align}
+Thus $D_1=0$, $I_0=H_0=P_0=0$, and $F_0$ is the initial constant
+already defined. A summation without limits below runs from $1$ to $T$.
+
+\begin{lemma}[EMA error and its increments]\label{lem:ema}
+For $0<\beta\le1$,
+\begin{align}
+ F_t&\le aF_{t-1}+\beta^{-1}D_t+\beta^2\sigma_i^2,\label{eq:F-rec}\\
+ \sum_tF_t&\le\frac{F_0}\beta+\frac{\sum_tD_t}{\beta^2}
+                    +\beta T\sigma_i^2,\label{eq:F-sum}\\
+ \sum_tI_t&\le4\beta F_0+4\sum_tD_t+3\beta^2T\sigma_i^2.
+ \label{eq:I-sum}
+\end{align}
+\end{lemma}
+\begin{proof}
+Condition on $\mathcal F_{t-1}$. Unbiasedness kills the cross term in
+\[
+ M_t^{(j)}-h_t^{(j)}
+ =a\bigl[(M_{t-1}^{(j)}-h_{t-1}^{(j)})
+                +(h_{t-1}^{(j)}-h_t^{(j)})\bigr]
+        +\beta\varepsilon_t^{(j)}.
+\]
+For vectors in the Frobenius Hilbert space,
+\[
+ a^2\frob{u+v}^2
+ \le a\frob u^2+(a^2/\beta)\frob v^2
+ \le a\frob u^2+\beta^{-1}\frob v^2.
+\]
+The first inequality also holds at $a=0$ (its two sides are zero).
+This proves \eqref{eq:F-rec}. Sum it and discard the nonpositive
+terminal term $-aF_T$ to obtain \eqref{eq:F-sum}.
+Also, directly from \eqref{eq:momentum},
+\[
+ I_t\le2\beta^2F_{t-1}+2\beta^2D_t+\beta^2\sigma_i^2.
+\]
+Use $\sum_tF_{t-1}\le F_0+\sum_tF_t$ and \eqref{eq:F-sum},
+then $\beta^2\le\beta$, $\beta^2\le1$, and $\beta^3\le\beta^2$.
+\end{proof}
+
+\begin{lemma}[The Nesterov increment and the uplink]\label{lem:uplink}
+\begin{align}
+ V_t^{(j)}&=(1+a)M_t^{(j)}-aM_{t-1}^{(j)},\label{eq:V-identity}\\
+ \sum_t\avg\E\frob{V_t^{(j)}-V_{t-1}^{(j)}}^2
+ &\le10\sum_t I_t,\label{eq:V-increment}\\
+ \sum_tH_t&\le\frac{160\beta}{\alpha_{D,i}^2}F_0
+       +\frac{160}{\alpha_{D,i}^2}\sum_tD_t
+       +\frac{120\beta^2}{\alpha_{D,i}^2}T\sigma_i^2.
+ \label{eq:H-sum}
+\end{align}
+\end{lemma}
+\begin{proof}
+Equation \eqref{eq:V-identity} follows by eliminating $\beta G_t$;
+it is valid at $t=0$ with the declared bookkeeping values. Consequently
+\[
+ V_t-V_{t-1}=(1+a)(M_t-M_{t-1})-a(M_{t-1}-M_{t-2}).
+\]
+The squared norm is at most $8\frob{M_t-M_{t-1}}^2+
+2\frob{M_{t-1}-M_{t-2}}^2$. Summation proves
+\eqref{eq:V-increment}, since $I_0=0$.
+
+For $0<\alpha\le1$, Young's inequality gives
+\begin{equation}\label{eq:contracted-sum}
+ (1-\alpha)\frob{u+v}^2
+ \le(1-\alpha/2)\frob u^2+(2/\alpha)\frob v^2.
+\end{equation}
+Apply this to $u=V_{t-1}^{(j)}-g_{t-1}^{(j)}$ and
+$v=V_t^{(j)}-V_{t-1}^{(j)}$, then use compressor contractivity.
+It follows that
+\[
+ H_t\le(1-\alpha_{D,i}/2)H_{t-1}
+       +\frac2{\alpha_{D,i}}\avg\E\frob{V_t^{(j)}-V_{t-1}^{(j)}}^2.
+\]
+As $H_0=0$, summing yields $\sum H_t\le40\alpha_{D,i}^{-2}\sum I_t$.
+Now use Lemma~\ref{lem:ema}.
+\end{proof}
+
+\begin{lemma}[Downlink and query drift]\label{lem:downlink}
+\begin{equation}\label{eq:PD-sum}
+ \sum_tP_t\le\delta_i\sum_tS_t,\qquad
+ \sum_tD_t\le K_i\sum_tS_t.
+\end{equation}
+\end{lemma}
+\begin{proof}
+For an exact downlink $P_t=0$. Otherwise \eqref{eq:contracted-sum}
+applied to \eqref{eq:downlink} gives
+$P_t\le(1-\alpha_{P,i}/2)P_{t-1}+2S_t/\alpha_{P,i}$.
+Summing from $P_0=0$ proves the first inequality.
+For $t\ge2$, smoothness and $\op z\le\frob z$ give
+\[
+ D_t\le3\widetilde L_i^2(S_{t-1}+P_{t-1}+P_{t-2}),
+\]
+because $W_{t-1}-W_{t-2}$ is the sum of the server displacement and
+the two broadcast errors. Sum, use $D_1=P_0=0$, and apply the first
+inequality. This proves the second inequality with \eqref{eq:constants1}.
+\end{proof}
+
+\begin{lemma}[Error of the server estimator]\label{lem:server}
+Let $e_t=\E\frob{g_{t,i}-\nabla_i f(X_{t-1})}^2$. Then
+\begin{equation}\label{eq:server-sum}
+ \sum_te_t\le A_i(\beta)F_{0,i}
+           +B_i(\beta)\sum_t S_t+C_i(\beta)T\sigma_i^2.
+\end{equation}
+\end{lemma}
+\begin{proof}
+At a fixed worker, conditional unbiasedness gives the exact identity
+\begin{equation}\label{eq:local-N-identity}
+ \E[\frob{V_t^{(j)}-h_t^{(j)}}^2\mid\mathcal F_{t-1}]
+ =a^2\E[\frob{M_t^{(j)}-h_t^{(j)}}^2\mid\mathcal F_{t-1}]
+ +\beta^2(1+2a)
+    \E[\frob{\varepsilon_t^{(j)}}^2\mid\mathcal F_{t-1}].
+\end{equation}
+Indeed the two affine noise coefficients are $\beta(1+a)$ and $\beta$,
+and $[\beta(1+a)]^2-a^2\beta^2=\beta^2(1+2a)$.
+Jensen's inequality for the worker averages, followed by the squared
+three-term triangle inequality, therefore yields
+\begin{equation}\label{eq:server-rec}
+ e_t\le3H_t+3F_t+9\beta^2\sigma_i^2+3L_i^2P_{t-1}.
+\end{equation}
+The three terms in the decomposition of the error are
+\[
+ g_t-\bar V_t,\qquad \bar V_t-\nabla_i f(W_{t-1}),\qquad
+ \nabla_i f(W_{t-1})-\nabla_i f(X_{t-1}).
+\]
+All gradient-noise cancellations above are at the predictable query
+$W_{t-1}$; none conditions on $X_t$, which depends on the current noise.
+Substitute \eqref{eq:F-sum}, \eqref{eq:H-sum}, and
+\eqref{eq:PD-sum} in \eqref{eq:server-rec}. The resulting coefficients
+are exactly \eqref{eq:constants2}.
+\end{proof}
+
+\subsection{Descent and closure of the bound}
+
+\begin{proof}[Proof of Theorem~\ref{thm:smooth}]
+For any two block matrices $h,g$, set $b=\nuc g$, $z=\nuc{h-g}$,
+and $u=\nuc h\le b+z$. Duality and \eqref{eq:polar} imply
+\begin{equation}\label{eq:sharp-pairing}
+ \ip{h}{\nuc g\,\pol(g)}\ge b^2-bz
+ \ge\tfrac14u^2+\tfrac12b^2-\tfrac52z^2.
+\end{equation}
+The last inequality follows from $(b-3z)^2/4\ge0$ and $u\le b+z$.
+The smooth descent lemma and $L_i\gamma_i\le1/2$ now give
+\begin{align}\label{eq:sharp-descent}
+ \E f(X_t)\le\E f(X_{t-1})
+ &-\frac14\sum_i\gamma_i\E\nuc{\nabla_i f(X_{t-1})}^2
+ -\frac14\sum_i\gamma_i\E\nuc{g_{t,i}}^2\notag\\
+ &+\frac52\sum_i\gamma_i r_i e_{t,i}.
+\end{align}
+Here $\nuc z^2\le r_i\frob z^2$, and the upper model follows by
+integrating \eqref{eq:smooth} along the actual simultaneous block step.
+The Frobenius displacement satisfies
+\begin{equation}\label{eq:S-bound}
+ S_{t,i}\le r_i\gamma_i^2\E\nuc{g_{t,i}}^2.
+\end{equation}
+Sum \eqref{eq:sharp-descent} and apply Lemma~\ref{lem:server} and
+\eqref{eq:S-bound}. The coefficient of
+$\gamma_i\sum_t\E\nuc{g_{t,i}}^2$ on the positive error side is at
+most $(5/2)r_i^2\gamma_i^2B_i(\beta)\le1/8$.
+Absorb it into the negative coefficient $1/4$ and discard the remaining
+nonpositive estimator term. Lower boundedness gives
+\[
+ \frac14\sum_{t,i}\gamma_i\E\nuc{\nabla_i f(X_{t-1})}^2
+ \le\Delta+\frac52\sum_i\gamma_i r_i
+           [A_i(\beta)F_{0,i}+C_i(\beta)T\sigma_i^2].
+\]
+This is \eqref{eq:smooth-rate-finite} after division.
+For \eqref{eq:smooth-tuning}, $\beta^2B_i(\beta)\le Z_i$,
+so \eqref{eq:small} holds. Finally, for $T\ge1$,
+\[
+ \frac{A_i(\beta)}T\le
+  \frac{3+480/\alpha_{D,i}^2}{\sqrt T},\qquad
+ C_i(\beta)\le\frac{12+360/\alpha_{D,i}^2}{\sqrt T}.
+\]
+These yield \eqref{eq:smooth-constant}.
+\end{proof}
+
+\section{Generalized smoothness: exact downlink}
+
+In this section $W_t=X_t$, $\eta_{t,i}=s_i>0$ is constant within a run,
+and we replace \eqref{eq:smooth} by the article's condition
+\begin{equation}\label{eq:generalized}
+ \nuc{\nabla_i g(X)-\nabla_i g(Y)}
+ \le\bigl(L_i^{0,g}+L_i^{1,g}\nuc{\nabla_i g(X)}\bigr)\op{X_i-Y_i}
+\end{equation}
+for every pair $X,Y$ and $g=f,f_j$, with nonnegative constants.
+Write $(L_i^0,L_i^1)$ for $f$ and $(L_{i,j}^0,L_{i,j}^1)$ for $f_j$.
+Assume $f_j\ge f_{j,*}$, and put
+\[
+ f_\dagger=\avg f_{j,*},\qquad
+ \Delta_0=f(X_0)-f_\dagger,\qquad
+ q_i=\sqrt{1-\alpha_{D,i}},\qquad \kappa_i=\frac{q_i}{1-q_i}.
+\]
+The constants introduced below cover zero generalized-smoothness
+coefficients without any division by them.
+
+\subsection{First-moment tracking, including filtered noise}
+
+For the remainder of this subsection fix a block and suppress $i$.
+Let $h_t^{(j)}=\nabla_i f_j(X_{t-1})$ and again set $h_0=h_1$.
+Define the first-moment quantities
+\begin{align*}
+ u_t&=\avg\E\frob{M_t^{(j)}-h_t^{(j)}},
+ &d_t^{\rm loc}&=\avg\E\frob{h_t^{(j)}-h_{t-1}^{(j)}},\\
+ v_t&=\avg\E\frob{g_t^{(j)}-V_t^{(j)}},
+ &d_t^{\rm glob}&=\E\frob{\bar h_t-\bar h_{t-1}},
+\end{align*}
+where $\bar h_t=\nabla_i f(X_{t-1})$. Thus $v_0=0$ and both
+drifts vanish at $t=1$. The initial local error is
+$u_0=N^{-1}\sum_j\frob{\nabla_i f_j(X_0)}$.
+
+Introduce a noise-only EMA and a de-noised global bias:
+\begin{equation}\label{eq:debias}
+ Z_0=0,\quad Z_t=aZ_{t-1}+\beta\bar\varepsilon_t,\quad
+ B_t=\bar M_t-Z_t-\bar h_t,\quad b_t=\E\frob{B_t}.
+\end{equation}
+Here $b_0=\frob{\nabla_i f(X_0)}$ and
+$B_t=a(B_{t-1}+\bar h_{t-1}-\bar h_t)$ exactly.
+
+\begin{lemma}[First-moment estimator bound]\label{lem:first}
+For every positive prefix length $k\le T$, with all sums from $1$ to $k$,
+\begin{align}\label{eq:first-error}
+ \sum_t\E\frob{g_{t,i}-\nabla_i f(X_{t-1})}
+ \le{}&\frac{b_0}\beta+6\kappa_i u_0
+       +\frac1\beta\sum_t d_t^{\rm glob}
+       +6\kappa_i\sum_td_t^{\rm loc}\notag\\
+       &+6\kappa_i\beta k\sigma_i
+        +2\sqrt\beta\,k\sigma_i/\sqrt N.
+\end{align}
+\end{lemma}
+\begin{proof}
+The triangle inequality, conditional Cauchy--Schwarz, and
+\eqref{eq:momentum} give
+\[
+ u_t\le au_{t-1}+a d_t^{\rm loc}+\beta\sigma_i,
+ \qquad
+ \sum_tu_t\le\frac{u_0}\beta+
+        \frac{\sum_td_t^{\rm loc}}\beta+k\sigma_i.
+\]
+Consequently
+\[
+ \sum_t\avg\E\frob{M_t^{(j)}-M_{t-1}^{(j)}}
+ \le2u_0+2\sum_td_t^{\rm loc}+2\beta k\sigma_i.
+\]
+By \eqref{eq:V-identity}, the corresponding sum for $V_t-V_{t-1}$
+is at most three times this expression. Compressor contractivity and
+conditional Jensen give
+\[
+ v_t\le q_i\left(v_{t-1}+
+               \avg\E\frob{V_t^{(j)}-V_{t-1}^{(j)}}\right).
+\]
+Sum from $v_0=0$ to obtain
+\begin{equation}\label{eq:v-sum}
+ \sum_tv_t\le6\kappa_i
+        \left(u_0+\sum_td_t^{\rm loc}+\beta k\sigma_i\right).
+\end{equation}
+Next, \eqref{eq:debias} yields
+$b_t\le ab_{t-1}+a d_t^{\rm glob}$, whence
+\[
+ \sum_tb_t\le b_0/\beta+\beta^{-1}\sum_td_t^{\rm glob}.
+\]
+The martingale difference property and \eqref{eq:mean-noise} yield
+\begin{equation}\label{eq:Z-bound}
+ \E\frob{Z_t}^2\le\frac{\beta}{2-\beta}\frac{\sigma_i^2}N
+ \le\frac{\beta\sigma_i^2}N.
+\end{equation}
+The effective averaged target satisfies the exact identity
+\[
+ \bar V_t-\bar h_t=aB_t+aZ_t+\beta\bar\varepsilon_t.
+\]
+Hence $\E\frob{\bar V_t-\bar h_t}
+\le b_t+2\sqrt\beta\,\sigma_i/\sqrt N$, since $\beta\le\sqrt\beta$.
+Finally $\E\frob{g_t-\bar h_t}\le v_t+
+\E\frob{\bar V_t-\bar h_t}$. Summation and \eqref{eq:v-sum}
+prove \eqref{eq:first-error}.
+\end{proof}
+
+\subsection{Coefficient envelopes from lower boundedness}
+
+Choose
+\begin{align}
+ M&=1+\max\bigl(\{L_i^1\}_i\cup\{L_{i,j}^1\}_{i,j}\bigr),
+ &\Lambda_i&=\max_jL_{i,j}^1,\\
+ O&=M^{-1}\sum_iL_i^0,
+ &\widetilde O&=M^{-1}\avg\sum_i L_{i,j}^0.
+\end{align}
+For $\Delta(X)=f(X)-f_\dagger\ge0$, define
+\begin{align}
+ A_i&=L_i^0+L_i^1O,&B_i&=2ML_i^1,\label{eq:gen-AB}\\
+ \widetilde A_i&=\avg L_{i,j}^0+\Lambda_i\widetilde O,
+ &\widetilde B_i&=2M\Lambda_i.
+\end{align}
+These symbols $A_i,B_i$ are used only in this generalized-smooth section.
+
+\begin{lemma}[Coefficient envelopes]\label{lem:envelope}
+For every $X$,
+\begin{align}
+ L_i^0+L_i^1\nuc{\nabla_i f(X)}&\le A_i+B_i\Delta(X),\label{eq:gen-global-env}\\
+ \avg\left(L_{i,j}^0+L_{i,j}^1\nuc{\nabla_i f_j(X)}\right)
+ &\le\widetilde A_i+\widetilde B_i\Delta(X).
+ \label{eq:gen-local-env}
+\end{align}
+\end{lemma}
+\begin{proof}
+For any $g$ satisfying \eqref{eq:generalized} and $g\ge g_*$, take the
+simultaneous block step $Y_i=X_i-M^{-1}\pol(\nabla_i g(X))$.
+Integrating \eqref{eq:generalized} along this segment gives
+\[
+ g(Y)\le g(X)-M^{-1}\sum_i\nuc{\nabla_i g(X)}
+       +\frac1{2M^2}\sum_i
+          \left(L_i^{0,g}+L_i^{1,g}\nuc{\nabla_i g(X)}\right).
+\]
+Since $M\ge L_i^{1,g}$ and $g(Y)\ge g_*$,
+\begin{equation}\label{eq:self-bound}
+ \sum_i\nuc{\nabla_i g(X)}
+ \le2M(g(X)-g_*)+M^{-1}\sum_iL_i^{0,g}.
+\end{equation}
+Use $g=f$, $g_*=f_\dagger$ to obtain the first envelope. Apply
+\eqref{eq:self-bound} to each $f_j$, average, and use
+$N^{-1}\sum_j(f_j(X)-f_{j,*})=\Delta(X)$. Multiplication by
+$\Lambda_i$ proves the second envelope.
+\end{proof}
+
+\subsection{Finite-time and asymptotic bounds}
+
+Define nonnegative constants
+\begin{align}
+ U_i&=s_i^2\left(\frac12+\frac{2\sqrt{r_i}}\beta\right),
+ &V_i&=12\kappa_i s_i^2\sqrt{r_i},\\
+ \nu&=\sum_i\left(12\kappa_i s_i\sqrt{r_i}\,\beta\sigma_i
+          +4s_i\sqrt{r_i\beta}\,\sigma_i/\sqrt N\right),\\
+ C_0&=\Delta_0+2\sum_i s_i\sqrt{r_i}
+                      (b_{0,i}/\beta+6\kappa_i u_{0,i}),\\
+ d&=\sum_i(U_iA_i+V_i\widetilde A_i)+\nu,
+ &b&=\sum_i(U_iB_i+V_i\widetilde B_i).
+ \label{eq:gen-constants}
+\end{align}
+
+\begin{theorem}[Generalized-smooth Nesterov convergence]\label{thm:gen}
+Suppose \eqref{eq:momentum}--\eqref{eq:contraction},
+\eqref{eq:generalized}, and the local lower bounds
+hold. Use an exact downlink and a constant radius $\eta_{t,i}=s_i$.
+Then
+\begin{equation}\label{eq:gen-finite}
+ \sum_{t=1}^T\sum_i s_i\E\nuc{\nabla_i f(X_{t-1})}
+ \le(1+b)^T(C_0+Td).
+\end{equation}
+In particular, for any fixed $c_i>0$, choose
+\begin{equation}\label{eq:gen-tuning}
+ \beta=T^{-1/2},\qquad s_i=c_iT^{-3/4},\qquad
+ \barc=p^{-1}\sum_ic_i,\qquad w_i=c_i/\barc.
+\end{equation}
+There is an explicit constant $D_{\rm gen}$, independent of $T$, such that
+\begin{equation}\label{eq:gen-rate}
+ \frac1T\sum_{t=1}^T\sum_iw_i\E\nuc{\nabla_i f(X_{t-1})}
+ \le D_{\rm gen}T^{-1/4}.
+\end{equation}
+In particular the minimum expected weighted gradient norm satisfies
+the same bound. No bounded-gradient hypothesis is added.
+\end{theorem}
+
+\begin{proof}
+Put $\Delta_t=\E[f(X_t)-f_\dagger]$. Exact oracle duality gives
+\[
+ \ip{\nabla_i f(X)}{\pol(g_i)}
+ \ge\nuc{\nabla_i f(X)}-2\nuc{g_i-\nabla_i f(X)}.
+\]
+The generalized descent lemma, $\op{X_{t,i}-X_{t-1,i}}\le s_i$, and
+$\nuc z\le\sqrt{r_i}\frob z$ imply
+\begin{align}\label{eq:gen-descent}
+ \Delta_t+\sum_is_i\E\nuc{\nabla_i f(X_{t-1})}
+ \le{}&\Delta_{t-1}
+   +2\sum_i s_i\sqrt{r_i}\E\frob{g_{t,i}-\nabla_i f(X_{t-1})}\notag\\
+   &+\sum_i\frac{s_i^2}2\E
+          [L_i^0+L_i^1\nuc{\nabla_i f(X_{t-1})}].
+\end{align}
+For $t\ge2$, \eqref{eq:generalized} with the coefficient evaluated at
+$X_{t-2}$ gives
+\begin{align*}
+ d_{t,i}^{\rm glob}&\le s_i\E
+       [L_i^0+L_i^1\nuc{\nabla_i f(X_{t-2})}],\\
+ d_{t,i}^{\rm loc}&\le s_i\avg\E
+       [L_{i,j}^0+L_{i,j}^1\nuc{\nabla_i f_j(X_{t-2})}].
+\end{align*}
+Both drifts vanish at $t=1$. Thus, for every prefix $k$, their sums are
+bounded by the corresponding coefficient sums at $X_0,\ldots,X_{k-1}$,
+multiplied by $s_i$. Sum \eqref{eq:gen-descent}, substitute
+Lemma~\ref{lem:first}, and then Lemma~\ref{lem:envelope}. This gives
+\begin{equation}\label{eq:prefix}
+ Y_k:=\Delta_k+\sum_{t=1}^k\sum_is_i\E\nuc{\nabla_i f(X_{t-1})}
+ \le C_0+kd+b\sum_{t=0}^{k-1}\Delta_t.
+\end{equation}
+All terms in $Y_k$ are nonnegative, so $\Delta_t\le Y_t$ and
+$Y_0=\Delta_0\le C_0$. An elementary induction gives
+\[
+ Y_k\le(C_0+kd)(1+b)^k.
+\]
+For completeness, at induction step $k$ bound each earlier $Y_t$ by
+$(C_0+kd)(1+b)^t$ and use
+$1+b\sum_{t=0}^{k-1}(1+b)^t=(1+b)^k$, an identity also valid at $b=0$.
+Drop $\Delta_T\ge0$ to prove \eqref{eq:gen-finite}.
+
+Here are explicit horizon-independent constants for \eqref{eq:gen-rate}:
+\begin{align*}
+ \bar U_i&=c_i^2(1/2+2\sqrt{r_i}),
+ &\bar V_i&=12\kappa_i c_i^2\sqrt{r_i},\\
+ \bar C_0&=\Delta_0+2\sum_ic_i\sqrt{r_i}
+                    (b_{0,i}+6\kappa_i u_{0,i}),\\
+ \bar d&=\sum_i(\bar U_iA_i+\bar V_i\widetilde A_i)
+       +\sum_i\left(12\kappa_ic_i\sqrt{r_i}\sigma_i
+                    +4c_i\sqrt{r_i}\sigma_i/\sqrt N\right),\\
+ \bar b&=\sum_i(\bar U_iB_i+\bar V_i\widetilde B_i),
+ &D_{\rm gen}&=e^{\bar b}(\bar C_0+\bar d)/\barc.
+\end{align*}
+Indeed \eqref{eq:gen-tuning} implies
+$C_0\le\bar C_0$, $Td\le\bar d$, and $Tb\le\bar b$ for all $T\ge1$.
+In particular $TU_i\le\bar U_i$ and $TV_i\le\bar V_i$;
+the two noise powers are $Ts_i\beta=c_iT^{-1/4}$ and
+$Ts_i\sqrt\beta=c_i$. Since $(1+b)^T\le e^{Tb}$ and
+$T(p^{-1}\sum_i s_i)=\barc T^{1/4}$,
+\eqref{eq:gen-finite} gives \eqref{eq:gen-rate}.
+\end{proof}
+
+\section{Integrability and scope}
+
+All expectations used above are well-defined and finite. In the smooth
+case, global Lipschitz gradients have at most linear growth. Starting
+from deterministic finite state, \eqref{eq:noise}, the finite-dimensional
+norm comparisons, and conditional compressor contractivity inductively
+give square-integrable state at every finite round. Smooth $f$ has at
+most quadratic growth, so its values are integrable. In the
+generalized-smooth case the normalized steps put every finite-horizon
+trajectory in a fixed compact set, independently of the sampled
+gradients. Continuity bounds the objectives and gradients there;
+\eqref{eq:noise} and contractivity then give the remaining integrability.
+The exact partial polar and scaled-sign selections are measurable.
+
+The result concerns the paper's Nesterov \emph{filter}
+$V_t=\mu M_t+(1-\mu)G_t$ at the same queried model. It does not change
+the query to a classical extrapolated Nesterov point. The algorithm
+order, zero initialization, and server aggregation are those of
+\texttt{aaai\_article/signmuon\_appendix.tex}, Algorithm
+\texttt{alg:fed\_serverlmo}.
+
+Theorems~\ref{thm:smooth} and~\ref{thm:gen} close the Nesterov-filter
+extension of the article's two theoretical rates. Their constants are
+conservative and are not asserted to match the EMA constants in the
+article or in \emph{Error Feedback for Muon and Friends}
+(\url{https://arxiv.org/abs/2510.00643}). The arguments above are
+self-contained; they do not invoke that paper's convergence theorems.
+
+The scope remains specific:
+\begin{itemize}
+\item The sharp step is used for the smooth squared-norm bound; the
+generalized-smooth bound uses an exact downlink and a constant-within-run
+radius. Its stationarity criterion is a first moment, not a second moment.
+\item Both vanishing stochastic rates use horizon-dependent
+$\mu=1-T^{-1/2}$. The proofs do not establish a vanishing rate for fixed
+$\mu=0.95$ with fixed-variance gradients and the experimental schedules.
+\item The oracle is exact. A finite Newton--Schulz approximation needs
+an additional error analysis.
+\item The arbitrary-pair layer assumptions from the article are
+preserved. They imply separability across blocks. This note does not
+extend the theorems to arbitrarily coupled neural-network layers.
+\item The subsequent Lean development verifies the full stochastic algorithm,
+including the paper's round order, with the Lyapunov constants in the shared
+article appendix. The constants in this earlier note are separate and are
+not claimed to be the constants checked by Lean.
+\end{itemize}
+\end{document}

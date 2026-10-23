@@ -121,6 +121,8 @@ LINK_LAYER = r"""%%% ---- arXiv link layer (inserted by arxiv/make_arxiv.py) ---
 % number separates them.  Nothing visible changes.
 \providecommand{\theHALG@line}{}
 \renewcommand{\theHALG@line}{alg.\thealgorithm.\arabic{ALG@line}}
+% Theorem 4 is restated in the appendix under its original number.
+\AtBeginDocument{\renewcommand{\theHtheorem}{\thesection.\arabic{theorem}}}
 % \eqref prints "(13)" but hyperref links only the 13, leaving the parentheses
 % outside the hot area. Rebuilt here around \ref*, so that the whole "(13)" is
 % one target. \tagform@ is amsmath's parenthesizer, kept so the form of the
@@ -363,8 +365,22 @@ def build_preamble() -> tuple[str, str]:
     return "".join([head, title_cmd, "\n\n", authors, "\n", meta]), title
 
 
-def build_document() -> tuple[str, str, int]:
+def set_codex_colour(preamble: str, colour: str) -> str:
+    r"""Enable the shared \cx{} markup only in an explicit review build."""
+    if colour == "black":
+        return preamble
+    if "codexdraft" not in preamble:
+        raise SystemExit("the source preamble has no Codex review markup")
+    return "\\def\\codexdraft{}\n" + preamble
+
+
+def preview_name(suffix: str, codex: str = "black") -> str:
+    return "signmuon_arxiv" + ("_codex" if codex == "teal" else "") + suffix
+
+
+def build_document(codex: str = "black") -> tuple[str, str, int]:
     preamble, title = build_preamble()
+    preamble = set_codex_colour(preamble, codex)
     body, n_body = linkify_named_refs(flatten(SRC / BODY))
     appendix, n_app = linkify_named_refs(flatten(SRC / APPENDIX))
     backmatter = BACKMATTER.read_text(encoding="utf-8").rstrip()
@@ -468,7 +484,7 @@ def copy_assets(doc: str, build: Path, keep_bib: bool) -> list[str]:
     return copied
 
 
-def compile_pdf(build: Path, keep_work: bool) -> Path:
+def compile_pdf(build: Path, keep_work: bool, codex: str = "black") -> Path:
     """Compile a throwaway copy, so `build` holds only what arXiv receives."""
     if shutil.which("latexmk") is None:
         raise SystemExit("latexmk not on PATH; rerun with --no-compile")
@@ -492,7 +508,7 @@ def compile_pdf(build: Path, keep_work: bool) -> Path:
         raise SystemExit(f"no {JOBNAME}.bbl was produced; the bibliography did not run")
     shutil.copy2(bbl, build / f"{JOBNAME}.bbl")
 
-    pdf = HERE / "signmuon_arxiv.pdf"
+    pdf = HERE / preview_name(".pdf", codex)
     shutil.copy2(WORKDIR / f"{JOBNAME}.pdf", pdf)
     report_log(log)
     if not keep_work:
@@ -519,8 +535,8 @@ def report_log(log: Path) -> None:
         print(f"  {label:15}: {n}{flag}")
 
 
-def pack(build: Path) -> Path:
-    tarball = HERE / "signmuon_arxiv.tar.gz"
+def pack(build: Path, codex: str = "black") -> Path:
+    tarball = HERE / preview_name(".tar.gz", codex)
     with tarfile.open(tarball, "w:gz") as tar:
         for path in sorted(build.rglob("*")):
             if path.is_file():
@@ -528,9 +544,9 @@ def pack(build: Path) -> Path:
     return tarball
 
 
-def pack_zip(build: Path) -> Path:
+def pack_zip(build: Path, codex: str = "black") -> Path:
     """arXiv accepts either archive; the zip is the one most browsers upload."""
-    archive = HERE / "signmuon_arxiv.zip"
+    archive = HERE / preview_name(".zip", codex)
     with zipfile.ZipFile(archive, "w", zipfile.ZIP_DEFLATED) as zf:
         for path in sorted(build.rglob("*")):
             if path.is_file():
@@ -549,13 +565,16 @@ def main() -> int:
     ap.add_argument("--no-bib", action="store_true",
                     help="omit references.bib; the shipped main.bbl is what arXiv uses")
     ap.add_argument("--no-tar", action="store_true", help="skip the tarball")
+    ap.add_argument("--codex", choices=["black", "teal"], default="black",
+                    help="Codex corrections: black for publication (default), "
+                         "teal for a separate *_codex review copy")
     ap.add_argument("--keep-work", action="store_true",
                     help="keep the scratch compile directory for debugging")
     args = ap.parse_args()
 
     build: Path = args.build.resolve()
     print(f"reading  {SRC}")
-    doc, title, linked = build_document()
+    doc, title, linked = build_document(args.codex)
     sanity_check(doc)
 
     if build.exists():
@@ -577,11 +596,11 @@ def main() -> int:
     print(f"  named refs     : {linked} linked whole (\"Theorem 1\"), {bare} number-only")
 
     if not args.no_compile:
-        pdf = compile_pdf(build, args.keep_work)
+        pdf = compile_pdf(build, args.keep_work, args.codex)
         print(f"  preview        : {pdf}")
 
     if not args.no_tar:
-        for archive in (pack(build), pack_zip(build)):
+        for archive in (pack(build, args.codex), pack_zip(build, args.codex)):
             size = archive.stat().st_size / 1e6
             print(f"  {archive.suffix.lstrip('.'):<14} : {archive} ({size:.1f} MB)")
 

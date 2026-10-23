@@ -14,6 +14,26 @@ That writes `arxiv/build/` — the directory you upload — plus
 arXiv does not read the submission as PDF-only) and
 `arxiv/signmuon_arxiv.tar.gz` (the same directory, packed).
 
+## Codex correction review
+
+Codex corrections use `\cx{...}` or the `codex` environment in the shared
+AAAI sources. Review copies show them in teal, **#007F73**. Ordinary builds
+print them as normal text; the older blue Claude markup has a separate switch.
+
+```sh
+# From aaai_article/: AAAI review and clean, self-contained publication copy
+latexmk -pdf v2_SignMuon_AAAI_full_codex.tex
+latexmk -pdf v2_SignMuon_AAAI_full.tex
+
+# arXiv review, then the clean publication PDF and source archives
+python arxiv/make_arxiv.py --codex teal -o arxiv/build/codex
+python arxiv/make_arxiv.py -o arxiv/build/publication
+```
+
+The review PDF and archives have `_codex` in their names. The ordinary
+AAAI main/supplementary drivers also remain colorless. arXiv reads the AAAI
+body and appendix directly; no mathematical text is maintained separately.
+
 ## What it changes
 
 | AAAI | arXiv |
@@ -59,6 +79,7 @@ boxes; all four should read 0.
 --no-compile   assemble the sources without running latexmk
 --no-bib       drop references.bib; arXiv uses the shipped main.bbl anyway
 --no-tar       skip the tarball
+--codex teal   show Codex corrections in a separate *_codex review copy
 --keep-work    keep .build-work/ (the scratch compile) for debugging
 -o DIR         build somewhere other than arxiv/build
 ```

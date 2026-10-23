@@ -1,0 +1,104 @@
+% Shared finite-time refinements; sources: LongTails/Profiles.lean,
+% AveragedNesterov.lean and Polynomial.lean. Review markup is publication-neutral.
+\begin{codex}
+\subsection{Accuracy, momentum, and worker averaging}\label{app:accuracy_tuning}
+
+The next bound separates initialization, averaged noise, and compression
+costs. It gives a momentum choice and a gradient-query budget for any target
+accuracy. Use a common sharp-step scale $\gamma=c\beta$, where $c>0$
+satisfies the envelope condition of Corollary~\ref{cor:smooth} for EMA or
+Theorem~\ref{thm:nesterov_conv} for Nesterov. Write
+$Q_T=T^{-1}\sum_{t<T}\sum_i\mathbb E\|\nabla_i f(X_t)\|_*^2$.
+
+\begin{proposition}[\textbf{Finite-time smooth bound}]\label{prop:polynomial_rate}
+Under Assumptions~\ref{as:1}--\ref{as:3} with ordinary smoothness and zero
+initialization, either momentum rule and either downlink satisfy
+\begin{equation}\label{eq:polynomial_rate}
+ Q_T\le4\left[\frac{A}{\beta T}+\frac{H\beta}{T}
+              +S_1\beta+S_2\beta^2+S_3\beta^3\right]
+\end{equation}
+for $T\ge1$ and $0<\beta\le1$. The nonnegative coefficients $A,H$ depend
+on initialization, and $S_1,S_2,S_3$ are noise coefficients. All five are
+independent of $\beta,T$; their explicit values are given in the proof.
+\end{proposition}
+\begin{paperproof}
+Put
+$\Delta=f(X_0)-f_*$,
+$G_i^0=\|\nabla_i f(X_0)\|_F^2$ and
+$H_i^0=N^{-1}\sum_j\|\nabla_i f_j(X_0)\|_F^2$.
+Let $\sigma_i^2$ bound the worker noise variance in Frobenius norm;
+Assumption~\ref{as:3} permits $\sigma_i=\sigma$.
+Define $A=\Delta/c+\sum_i a_i$, $H=\sum_i h_i$, and
+$S_k=2\sum_i s_{ki}\sigma_i^2$, using the following coefficients:
+\begin{center}
+\begin{tabular}{@{}lcc@{}}
+\toprule
+ & EMA & Nesterov \\
+\midrule
+$a_i$ & $6\rho_i^2G_i^0$ & $2b_iG_i^0$ \\
+$h_i$ & $72\rho_i^2H_i^0/\alpha_D^2$
+      & $6b_iG_i^0+6\widehat R_iH_i^0$ \\
+$s_{1i}$ & $6\rho_i^2/N$ & $2b_i/N$ \\
+$s_{2i}$ & $6\rho_i^2(1-\alpha_D)/\alpha_D$
+        & $b_i/N+\widehat R_i$ \\
+$s_{3i}$ & $72\rho_i^2/\alpha_D^2$
+        & $6b_i/N+6\widehat R_i$ \\
+\bottomrule
+\end{tabular}
+\end{center}
+Here $\rho_i=\sqrt{r_i}$, $b_i=8\rho_i^2$ and
+$\widehat R_i=40b_i/\alpha_D^2$ as above. The factor two in $S_k$
+accounts for the round rotation in Proposition~\ref{prop:instance}.
+
+For Nesterov, substitution into \eqref{eq:nest_smooth_drift} gives
+$\Psi_0=c(A+H\beta^2)$ and
+$\sum_i\nu_i\sigma_i^2=(S_1\beta+S_2\beta^2+S_3\beta^3)/2$.
+For EMA, the global and local squared momentum errors receive weights
+$6\rho_i^2/\beta$ and $72\beta\rho_i^2/\alpha_D^2$;
+the compression error receives weight
+$6\rho_i^2(1-\alpha_D)/\alpha_D$.
+The usual conditional tracking inequalities give the same initial-potential
+identity and noise polynomial with the EMA column. Their movement terms
+obey the envelope in Corollary~\ref{cor:smooth}.
+In both cases telescope the Lyapunov drift over $T+1$ rotated rounds.
+The extra initial gradient cost is nonnegative and $(T+1)/T\le2$;
+the initial-potential term is $4\Psi_0/(c\beta T)$ and the noise term
+is at most $4(S_1\beta+S_2\beta^2+S_3\beta^3)$.
+\end{paperproof}
+
+\begin{corollary}[\textbf{Tuning for a target accuracy}]\label{cor:accuracy_budget}
+For any $\varepsilon>0$, set
+\begin{align*}
+ D_\varepsilon&=1+\frac{24S_1}{\varepsilon^2}
+       +\sqrt{\frac{24S_2}{\varepsilon^2}}
+       +\left(\frac{24S_3}{\varepsilon^2}\right)^{1/3},\\
+ \beta&=D_\varepsilon^{-1},\qquad \gamma=c\beta,\\
+ T_\varepsilon&=\max\!\left\{1,
+   \left\lceil\frac{8(A+H)D_\varepsilon}{\varepsilon^2}\right\rceil\right\}.
+\end{align*}
+Then $Q_{T_\varepsilon}\le\varepsilon^2$, using exactly
+$T_\varepsilon$ synchronous gradient-query rounds and
+$NT_\varepsilon$ worker-gradient evaluations.
+In particular, the sufficient budget has the dependence
+\[
+ T_\varepsilon=\mathcal O\!\left(1+(A+H)
+ [\varepsilon^{-2}+S_1\varepsilon^{-4}
+  +\sqrt{S_2}\varepsilon^{-3}+S_3^{1/3}\varepsilon^{-8/3}]\right).
+\]
+With zero noise, $\beta=1$ (no momentum) and
+$T_\varepsilon=\mathcal O(\varepsilon^{-2})$.
+For fixed $S_1>0$, $T_\varepsilon=\mathcal O(\varepsilon^{-4})$.
+For both momentum rules, the leading variance coefficient $S_1$ is
+proportional to $1/N$; $S_2,S_3$ also contain local compression costs.
+\end{corollary}
+\begin{paperproof}
+Each of $S_1\beta$, $S_2\beta^2$, $S_3\beta^3$ is at most
+$\varepsilon^2/24$. The two transient terms in
+\eqref{eq:polynomial_rate} total at most
+$4(A+H)/(\beta T_\varepsilon)\le\varepsilon^2/2$.
+The noise terms contribute at most the other half. Substitution of
+$D_\varepsilon$ gives the stated budget and its noiseless and stochastic
+specializations. The query count follows from one fresh gradient per
+worker per paper round.
+\end{paperproof}
+\end{codex}

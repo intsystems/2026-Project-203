@@ -61,8 +61,8 @@ to "Theorem 4" means the same thing in all three.
 - **`opt_appendix_extra.tex`**, holding what the cut displaced and the AAAI
   appendix had no home for: the full related work, the Sign A iteration, the federated
   setting with its table, and the CIFAR-10 and nanoGPT tables. Spliced in
-  immediately after `\section{Appendix}`, ahead of the AAAI appendix's own
-  subsections.
+  immediately after `\appendix`, ahead of the shared AAAI appendix sections.
+  Appendices use letters, with numbered subsections within each topic.
 - **`opt_authors.tex`**, holding `\optauthor`, the running head, the PDF author
   string and the repository URL. `\opttitle` and `\optshorttitle` are read in
   every mode; the author block only in `named` and `final`. `\opttitle` carries
@@ -170,6 +170,20 @@ metadata. Nothing of `opt_authors.tex` reaches an anonymous build but the two
 titles.
 
 ## Drafted text is marked
+
+Codex mathematical corrections use `\cx{...}` and the `codex` environment,
+separately from the older Claude markup. Their review color is teal,
+**#007F73**. From this directory:
+
+```sh
+python make_opt.py --codex teal -o build/codex       # signmuon_opt_codex.pdf
+python make_opt.py -o build/publication             # signmuon_opt.pdf, clean
+```
+
+The default is `--codex black`, which preserves normal publication text.
+Add `--claude blue` to the review command to show both authors' markup.
+The appendix inherits the AAAI corrections automatically; mathematical
+changes to the forked main text are also applied in `opt_body.tex`.
 
 `\cl{...}` marks a phrase and the `claude` environment a block. Both are
 declared in `../aaai_article/signmuon_preamble.tex`, which every edition

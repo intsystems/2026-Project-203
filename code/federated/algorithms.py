@@ -347,6 +347,7 @@ def run_federated(
     mv_ties: str = "random",
     uplink_zeros: str = "random",
     verbose: bool = True,
+    compression_recorder=None,
 ) -> History:
     """Train ``global_model`` with one of the eleven federated methods.
 
@@ -653,6 +654,10 @@ def run_federated(
                 D = muon_lmo(aggregate, ns_steps=ns_steps, dtype=lmo_dtype,
                              scale_aspect=False) \
                     if spec.lmo == "server" else aggregate
+                if compression_recorder is not None and spec.downlink == "ef21p":
+                    # The aggregate estimator is available; the uncompressed
+                    # worker targets are not retained. Do not invent a zero lag.
+                    compression_recorder.measure_direction(n, None, aggregate, D, step=r)
 
                 # 3) the step, on X (ef21p) or directly on the broadcast model
                 if spec.server == "adam":
@@ -660,6 +665,9 @@ def run_federated(
                     continue
 
                 target_tensor = server_exact[n] if spec.needs_exact_model else params[n].data
+                if compression_recorder is not None and spec.downlink == "ef21p":
+                    compression_recorder.begin(n, target_tensor, params[n].data,
+                                               current_lr*lam[n], 1-momentum, nesterov, step=r)
                 if (weight_decay != 0 and decoupled_weight_decay
                         and spec.momentum_form != "heavy_ball"):
                     # Unscaled by the per-layer factor, matching the centralized
@@ -676,6 +684,8 @@ def run_federated(
                 if spec.downlink == "ef21p":
                     shift = server_exact[n] - params[n].data
                     params[n].data.add_(shift.abs().mean() * sign_pm1(shift))
+                    if compression_recorder is not None:
+                        compression_recorder.end(n, server_exact[n], params[n].data, shift)
 
         if server_adam is not None:
             server_adam.step()

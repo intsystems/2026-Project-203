@@ -204,6 +204,11 @@ counts and single-seed groups instead of printing a misleading `± 0`.
 
 ## Tests
 
+Experimental schedule analysis and opt-in EF21-P traces are documented in
+[analysis/README.md](analysis/README.md). This includes raw per-layer alpha,
+server/broadcast tracking, optional exact-SVD oracle diagnostics, and small
+known-gradient calibrations for EMA and Nesterov.
+
 ```bash
 python3 -m tests.test_code                    # torch, CPU only, ~1 min
 python3 -m counterexamples.problems           # the Theorem 1-4 constants

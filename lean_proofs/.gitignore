@@ -1,0 +1,10 @@
+.lake
+.comparator/
+.local.json
+*.olean
+*.ilean
+*.c
+*.o
+.build-log
+__pycache__/
+*.py[cod]

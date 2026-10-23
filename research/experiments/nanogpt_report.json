@@ -1,0 +1,93 @@
+{
+  "generated_schedule_example": {
+    "steps": 2330,
+    "sum_eta": 109.84397344978166,
+    "sum_eta_squared": 5.91005345134952,
+    "initial_gap_multiplier": 0.009103822163326775,
+    "smoothness_multiplier": 0.05380407559684165,
+    "effective_steps": 2041.5548865266553,
+    "beta": 0.050000000000000044,
+    "frozen_query_ema_variance_gain": 0.025641025641025664,
+    "frozen_query_nesterov_variance_gain": 0.030391025641025672,
+    "interpretation": "schedule algebra and frozen-query filter gains; not a stationarity certificate"
+  },
+  "schedule_parameters": {
+    "kind": "stable-linear",
+    "base_lr": 0.06,
+    "steps": 2330,
+    "decay_horizon": 2290,
+    "filter_momentum_example": 0.95
+  },
+  "compression": [
+    {
+      "run_id": "EF21-MuonSign_lr0.06_e6770317",
+      "layer": "blocks.*.attn.attn_gate.weight",
+      "samples": 10,
+      "first_step": 250,
+      "last_step": 2330,
+      "observation": "sampled_group_medians",
+      "alpha_min": 0.3173,
+      "alpha_last": 0.3507,
+      "stationarity_certificate": false,
+      "last_relative_gap": 0.00853,
+      "tracking_envelope": null,
+      "limitation": "sampled medians are not a per-layer uniform contraction bound; missing rounds prevent recurrence reconstruction"
+    },
+    {
+      "run_id": "EF21-MuonSign_lr0.06_e6770317",
+      "layer": "blocks.*.attn.qkvo_w",
+      "samples": 10,
+      "first_step": 250,
+      "last_step": 2330,
+      "observation": "sampled_group_medians",
+      "alpha_min": 0.2883,
+      "alpha_last": 0.3803,
+      "stationarity_certificate": false,
+      "last_relative_gap": 0.001121,
+      "tracking_envelope": null,
+      "limitation": "sampled medians are not a per-layer uniform contraction bound; missing rounds prevent recurrence reconstruction"
+    },
+    {
+      "run_id": "EF21-MuonSign_lr0.06_e6770317",
+      "layer": "blocks.*.mlp.c_fc",
+      "samples": 10,
+      "first_step": 250,
+      "last_step": 2330,
+      "observation": "sampled_group_medians",
+      "alpha_min": 0.1705,
+      "alpha_last": 0.2529,
+      "stationarity_certificate": false,
+      "last_relative_gap": 0.001339,
+      "tracking_envelope": null,
+      "limitation": "sampled medians are not a per-layer uniform contraction bound; missing rounds prevent recurrence reconstruction"
+    },
+    {
+      "run_id": "EF21-MuonSign_lr0.06_e6770317",
+      "layer": "blocks.*.mlp.c_proj",
+      "samples": 10,
+      "first_step": 250,
+      "last_step": 2330,
+      "observation": "sampled_group_medians",
+      "alpha_min": 0.0001233,
+      "alpha_last": 0.0001233,
+      "stationarity_certificate": false,
+      "last_relative_gap": 0.08274,
+      "tracking_envelope": null,
+      "limitation": "sampled medians are not a per-layer uniform contraction bound; missing rounds prevent recurrence reconstruction"
+    },
+    {
+      "run_id": "EF21-MuonSign_lr0.06_e6770317",
+      "layer": "smear_gate.weight",
+      "samples": 10,
+      "first_step": 250,
+      "last_step": 2330,
+      "observation": "sampled_group_medians",
+      "alpha_min": 0.1651,
+      "alpha_last": 0.1651,
+      "stationarity_certificate": false,
+      "last_relative_gap": 0.003848,
+      "tracking_envelope": null,
+      "limitation": "sampled medians are not a per-layer uniform contraction bound; missing rounds prevent recurrence reconstruction"
+    }
+  ]
+}

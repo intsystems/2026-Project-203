@@ -224,6 +224,14 @@ deciding which belong in a six-page paper. `--reconciled` records the new state
 once you have. `newinml_article/` also converts an unrelated paper of its own,
 which is what its `--source` flag selects.
 
+## Lean formalization
+
+Selected theoretical results are formalized in [Lean 4](lean_proofs/README.md),
+including the four divergence results, scaled-sign contractivity, and finite-time
+convergence bounds for the EF21 methods with EMA and Nesterov momentum.
+The folder provides a theorem map,
+pinned dependencies, and build and axiom-audit instructions.
+
 ## Repository layout
 
 ```
@@ -235,6 +243,7 @@ which is what its `--source` flag selects.
 ├── icomp_article_v2/ ICOMP, current
 ├── paper/            the Russian-language version
 ├── slides/           talk and poster
+├── lean_proofs/      Lean formalization  ->  lean_proofs/README.md
 ├── code/             everything runnable  ->  code/README.md
 │   ├── common/         optimizers, models, per-layer LR rules
 │   ├── centralized/    ResNet-18 / CIFAR-10

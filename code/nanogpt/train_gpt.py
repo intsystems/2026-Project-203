@@ -1070,6 +1070,20 @@ for opt, opt_state in zip(optimizers, initial_state["optimizers"]):
     opt.load_state_dict(opt_state)
 del train_loader, initial_state
 
+# Raw measurements start after kernel warmup and state restoration. They are
+# deliberately opt-in: per-block host synchronization affects benchmark timing.
+if os.environ.get("SIGNMUON_COMPRESSION_LOG"):
+    if opt_name != "EF21-MuonSign":
+        raise ValueError("SIGNMUON_COMPRESSION_LOG requires EF21-MuonSign")
+    sys.path.insert(0, str(Path(__file__).resolve().parents[1]))
+    from common.compression_diagnostics import CompressionRecorder
+    recorder = CompressionRecorder(
+        os.environ["SIGNMUON_COMPRESSION_LOG"]+f".rank{dist.get_rank()}.csv",
+        int(os.environ.get("SIGNMUON_COMPRESSION_EVERY", "1")),
+        os.environ.get("SIGNMUON_COMPRESSION_ORACLE", "0") == "1",
+        os.environ.get("SIGNMUON_COMPRESSION_LAYERS", ""))
+    optimizer2.set_compression_recorder(recorder, _param_names)
+
 ########################################
 #        Training and validation       #
 ########################################
@@ -1213,6 +1227,7 @@ for step in range(train_steps + 1):
         optimizer2.step()
         optimizer2.zero_grad(set_to_none=True)
     else:
+        optimizer2.compression_step = step+1
         for opt in optimizers:
             opt.step()
         # null the gradients

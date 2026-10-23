@@ -1,0 +1,43 @@
+{
+  "generated_schedule_example": {
+    "steps": 40,
+    "sum_eta": 0.615,
+    "sum_eta_squared": 0.013949999999999999,
+    "initial_gap_multiplier": 1.6260162601626016,
+    "smoothness_multiplier": 0.022682926829268292,
+    "effective_steps": 27.112903225806452,
+    "beta": 0.050000000000000044,
+    "frozen_query_ema_variance_gain": 0.025641025641025664,
+    "frozen_query_nesterov_variance_gain": 0.030391025641025672,
+    "interpretation": "schedule algebra and frozen-query filter gains; not a stationarity certificate"
+  },
+  "schedule_parameters": {
+    "kind": "cosine",
+    "base_lr": 0.03,
+    "steps": 40,
+    "decay_horizon": 40,
+    "filter_momentum_example": 0.95
+  },
+  "compression": [
+    {
+      "run_id": "",
+      "layer": "group-0",
+      "samples": 40,
+      "first_step": 1,
+      "last_step": 40,
+      "observation": "per_block_trace",
+      "alpha_min": 0.08079295356215295,
+      "alpha_last": 0.08115699993206034,
+      "stationarity_certificate": false,
+      "complete_segment": true,
+      "tracking_envelope": 0.22622296439679168,
+      "max_envelope_excess": 3.469446951953614e-18,
+      "max_energy_closure_relative_error": 5.019104575175014e-16,
+      "max_scaled_sign_identity_defect": 6.661338147750939e-16,
+      "last_relative_gap": 0.28979364537671276,
+      "limitation": "observed multipliers give a retrospective tracking bound, not future contraction or true-gradient control",
+      "max_direction_operator": 1.1343035531246832,
+      "max_oracle_pairing_defect": 0.04302832923597963
+    }
+  ]
+}

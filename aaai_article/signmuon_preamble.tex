@@ -35,6 +35,7 @@
 %
 % Recommended for better-looking tables
 \usepackage{booktabs}
+\usepackage{placeins}
 
 % Float placement. The body is float-dense: every page from the fourth
 % carries a full-width figure or a table, and LaTeX's defaults reserve more
@@ -86,6 +87,11 @@
 \newtheorem{remark}{Remark}
 \newtheorem{hypothesis}{Hypothesis}
 
+% Uniform proof headings and end markers for the shared convergence appendix.
+\newenvironment{paperproof}[1][Proof]
+  {\par\addvspace{\medskipamount}\noindent\textit{#1.}\ \ignorespaces}
+  {\unskip\nobreak\hfill$\square$\par\addvspace{\medskipamount}}
+
 % Capitalized names for \cref output.
 \crefname{algorithm}{Algorithm}{Algorithms}
 \crefname{equation}{Equation}{Equations}
@@ -125,6 +131,13 @@
 \fi
 \newcommand{\cl}[1]{\textcolor{claudecolor}{#1}}
 \newenvironment{claude}{\color{claudecolor}}{}
+
+% Codex mathematical corrections: teal (#007F73) in review builds only.
+% Define \codexdraft before this preamble, or pass --codex teal to a builder.
+% The default commands preserve the surrounding publication typography.
+\definecolor{codexcolor}{RGB}{0,127,115}
+\newcommand{\cx}[1]{\ifdefined\codexdraft\textcolor{codexcolor}{#1}\else#1\fi}
+\newenvironment{codex}{\ifdefined\codexdraft\color{codexcolor}\fi}{}
 
 %
 % Keep the \pdfinfo as shown here. There's no need

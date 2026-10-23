@@ -123,6 +123,13 @@ def get_params() -> argparse.ArgumentParser:
                    help="Learning rate of the auxiliary AdamW (biases, BatchNorm, head)")
     p.add_argument("--momentum", type=float, default=0.9)
     p.add_argument("--nesterov", action="store_true", help="Nesterov look-ahead momentum")
+    p.add_argument("--compression-log", default="",
+                   help="New CSV sidecar for EF21-MuonSign downlink diagnostics")
+    p.add_argument("--compression-every", type=int, default=1,
+                   help="Measure every k rounds; 1 enables full trace reconstruction")
+    p.add_argument("--compression-oracle", action="store_true",
+                   help="Also use exact SVD to audit the implemented LMO (expensive)")
+    p.add_argument("--compression-layers", default="", help="Regex selecting layers for compression diagnostics")
     p.add_argument("--no-cosine", action="store_true",
                    help="Disable the cosine learning-rate schedule (on by default, "
                         "uniformly for every method)")
@@ -376,6 +383,13 @@ def main() -> None:
           f"{sum(len(e) for e in data.eval_sets):,} {data.eval_name} images, "
           f"loader={data.loader}", flush=True)
 
+    compression_recorder = None
+    if args.compression_log:
+        from common.compression_diagnostics import CompressionRecorder
+        if not METHODS[method].needs_exact_model:
+            raise ValueError("--compression-log requires EF21-MuonSign")
+        compression_recorder = CompressionRecorder(args.compression_log, args.compression_every,
+                                                  args.compression_oracle, args.compression_layers)
     history = run_federated(
         method,
         global_model,
@@ -402,6 +416,7 @@ def main() -> None:
         eval_name=data.eval_name,
         mv_ties=args.mv_ties,
         uplink_zeros=args.uplink_zeros,
+        compression_recorder=compression_recorder,
     )
 
     summarize(history, args, data.eval_name, method,

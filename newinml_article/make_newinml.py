@@ -221,6 +221,7 @@ def obtain_source(source: str, scratch: Path,
     if spec["assemble"]:
         out = scratch / "assembled"
         cmd = [a.format(out=str(out)) for a in spec["assemble"]]
+        cmd[0] = sys.executable
         run = subprocess.run(cmd, capture_output=True, text=True, cwd=REPO)
         if run.returncode != 0:
             raise SystemExit(f"assembling {spec['label']} failed:\n"
@@ -499,10 +500,12 @@ def title_of(preamble: str) -> str:
 # --------------------------------------------------------------------------
 
 def build_document(source: str, mode: str, workshop: str, scratch: Path,
-                   root: Path | None = None) -> tuple[str, str, Path, dict]:
+                   root: Path | None = None,
+                   codex: str = "black") -> tuple[str, str, Path, dict]:
     spec = SOURCES[source]
     text, assets, notes = obtain_source(source, scratch, root)
     preamble, body = split_document(text)
+    preamble = _ax.set_codex_colour(preamble, codex)
     preamble, pstats = convert_preamble(preamble, spec, mode, workshop)
     preamble, who = convert_authors(preamble, mode, source)
     body, bstats = convert_body(body, mode)
@@ -629,7 +632,8 @@ def copy_assets(doc: str, assets: Path, build: Path) -> tuple[list[str], list[st
     return copied, bibs
 
 
-def compile_pdf(build: Path, keep_work: bool, workshop: str, source: str) -> Path:
+def compile_pdf(build: Path, keep_work: bool, workshop: str, source: str,
+                codex: str = "black") -> Path:
     if shutil.which("latexmk") is None:
         raise SystemExit("latexmk not on PATH; rerun with --no-compile")
     if WORKDIR.exists():
@@ -650,7 +654,7 @@ def compile_pdf(build: Path, keep_work: bool, workshop: str, source: str) -> Pat
     bbl = WORKDIR / f"{JOBNAME}.bbl"
     if bbl.exists():
         shutil.copy2(bbl, build / bbl.name)
-    pdf = HERE / f"{source}_newinml.pdf"
+    pdf = HERE / preview_name(source, ".pdf", codex)
     shutil.copy2(WORKDIR / f"{JOBNAME}.pdf", pdf)
     report_log(log)
     report_length(WORKDIR / f"{JOBNAME}.aux")
@@ -678,8 +682,12 @@ def report_length(aux: Path) -> None:
     print(f"  main text      : {pages} pages, limit {PAGE_MIN}--{PAGE_MAX}{note}")
 
 
-def pack_zip(build: Path, source: str) -> Path:
-    archive = HERE / f"{source}_newinml.zip"
+def preview_name(source: str, suffix: str, codex: str = "black") -> str:
+    return f"{source}_newinml" + ("_codex" if codex == "teal" else "") + suffix
+
+
+def pack_zip(build: Path, source: str, codex: str = "black") -> Path:
+    archive = HERE / preview_name(source, ".zip", codex)
     with zipfile.ZipFile(archive, "w", zipfile.ZIP_DEFLATED) as zf:
         for path in sorted(build.rglob("*")):
             if path.is_file():
@@ -706,6 +714,9 @@ def main() -> int:
     ap.add_argument("--no-compile", action="store_true")
     ap.add_argument("--no-zip", action="store_true")
     ap.add_argument("--keep-work", action="store_true")
+    ap.add_argument("--codex", choices=["black", "teal"], default="black",
+                    help="Codex corrections: black for publication (default), "
+                         "teal for a separate *_codex review copy")
     args = ap.parse_args()
 
     build = (args.build or DEFAULT_BUILD / args.source).resolve()
@@ -717,7 +728,8 @@ def main() -> int:
     try:
         print(f"reading  {SOURCES[args.source]['label']}")
         doc, title, assets, stats = build_document(
-            args.source, args.mode, args.workshop, scratch, args.source_main)
+            args.source, args.mode, args.workshop, scratch, args.source_main,
+            args.codex)
         sanity_check(doc, args.mode, args.source)
 
         if build.exists():
@@ -741,10 +753,11 @@ def main() -> int:
         print(f"  reordered      : {len(stats['moved'])} package(s) lifted above hyperref")
 
     if not args.no_compile:
-        pdf = compile_pdf(build, args.keep_work, args.workshop, args.source)
+        pdf = compile_pdf(build, args.keep_work, args.workshop, args.source,
+                          args.codex)
         print(f"  preview        : {pdf}")
     if not args.no_zip:
-        archive = pack_zip(build, args.source)
+        archive = pack_zip(build, args.source, args.codex)
         print(f"  zip            : {archive} "
               f"({archive.stat().st_size / 1e6:.1f} MB)")
 
@@ -772,7 +785,7 @@ def main() -> int:
         for line in stats["notes"]:
             print(f"  {line}")
 
-    print(f"\nSubmit {HERE / (args.source + '_newinml.pdf')} to OpenReview.")
+    print(f"\nOutput: {HERE / preview_name(args.source, '.pdf', args.codex)}")
     return 0
 
 
