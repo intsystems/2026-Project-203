@@ -24,11 +24,18 @@
       "R2.1",
       "R2.2",
       "R2.3",
-      "R2.4"
+      "R2.4",
+      "R2.5",
+      "R2.6",
+      "R2.7",
+      "R2.8"
     ],
     "review_R3_Ueq5": [
       "R3.1",
-      "R3.2"
+      "R3.2",
+      "R3.3",
+      "R3.4",
+      "R3.5"
     ],
     "review_R4_pqje": [
       "R4.1",
@@ -81,7 +88,7 @@
   "drafts": [
     {
       "stem": "review_R1_7S1b",
-      "characters": 1477,
+      "characters": 1492,
       "included": [
         "R1.1",
         "R1.2",
@@ -104,7 +111,7 @@
     },
     {
       "stem": "review_R2_D4r2",
-      "characters": 1443,
+      "characters": 1494,
       "included": [
         "R2.1",
         "R2.4",
@@ -124,7 +131,7 @@
     },
     {
       "stem": "review_R3_Ueq5",
-      "characters": 1432,
+      "characters": 1497,
       "included": [
         "R3.2",
         "R3.1",
@@ -163,7 +170,7 @@
     },
     {
       "stem": "review_R5_Tx34",
-      "characters": 1468,
+      "characters": 1492,
       "included": [
         "R5.1",
         "R5.3",
@@ -177,7 +184,7 @@
     },
     {
       "stem": "review_AI_AI_Reviewer",
-      "characters": 1491,
+      "characters": 1492,
       "included": [
         "AI.1",
         "AI.2",
@@ -209,8 +216,8 @@
     }
   ],
   "original_inputs_unchanged": true,
-  "checked_utc": "2026-10-29T18:27:34.564603+00:00",
-  "revision": 2,
+  "checked_utc": "2026-10-29T20:04:20.214073+00:00",
+  "revision": 3,
   "review_files_sha256": {
     "review_AI_AI_Reviewer.md": "65ea9de21ab2c19b45d70859f1b271935b5794a135580775074521d32b8f7dd9",
     "review_R1_7S1b.md": "80b24a98063f589b380b5820faab95485fc84816bcb6e62804e1796305f3ea7a",
@@ -228,5 +235,6 @@
     "ef21_rate_takeaways.tex": "a5d9690015032fa576b39e83999cb76969859e68240d2043182dc7fb7ff97019"
   },
   "ef21_separability_retained": true,
-  "transfer_runs_verified": 50
+  "transfer_runs_verified": 50,
+  "revision_validation": "evidence/revision_3_validation.json"
 }

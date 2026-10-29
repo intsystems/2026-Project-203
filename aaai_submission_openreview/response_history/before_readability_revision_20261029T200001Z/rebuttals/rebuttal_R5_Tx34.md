@@ -1,0 +1,7 @@
+Thank you for asking us to sharpen the contribution and the scope of Theorem 4.
+
+1. Re contribution: SignMuon achieves 85.72% versus SignSGD 81.44% (5 seeds) at the same one-bit budget, near Muon’s 85.98%. Our matched study compares 3 sign placements and their EF variants. The new proofs show ascent for each plain placement and output-EF divergence on a smooth, lower-bounded objective: polar targets can jump independently of stepsize, unlike gradient targets. We credit the positive EF21 framework to prior work. Practical choice: SignMuon for observed accuracy; gradient EF for the analyzed repair, with model EF when both links are constrained.
+2. Re quantifiers: Theorem 4 states $\forall L,\eta>0,\mu\in[0,1),\ \exists f_{L,\eta,\mu}$ causing divergence of the specified output-EF recursion at fixed parameters. It excludes universal constant-step rules based on $L,\mu$; it does not exclude decreasing schedules or horizon-tuned finite-time rates.
+3. Re interpretation: Worst-case guarantees predict no empirical ordering. The added SignMuon theorem requires uniform positive alignment, exact polar, joint smoothness, unbiased finite-variance noise and horizon tuning. We will replace “unrepairable” and “only changing the compressor” with the precise claims: failure of one sufficient condition does not preclude other analyses or parameter choices.
+
+If this clarifies the contribution and resolves your concerns, please consider raising your score.

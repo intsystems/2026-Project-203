@@ -1,0 +1,7 @@
+Thank you for identifying the reporting discrepancy and the rate ambiguity.
+
+1. Re results: The submitted five-seed logs reproduce A8: MuonSign 82.94±0.19% versus SignSGD 81.44±0.15%, a 1.51-point gain. SignMuon achieves 85.72±0.24% versus Muon 85.98±0.26%. We will synchronize Table 2 and reverse the affected comparison. The corrected results preserve SignMuon’s leading compressed accuracy.
+2. Re guarantees: The $O(T^{-1/2})$ squared-gradient rate has a separate second-moment proof with gradient-scaled steps. New fixed-momentum EMA/Nesterov bounds cover constant/cosine rates for ideal EF21: a weighted first-moment bound with an $O(T^{-1})$ transient plus stepsize/noise residuals. EF21’s block assumption still forces separability; we will state it explicitly. The new SignMuon theorem permits interacting layers under joint smoothness, unbiased finite-variance noise, uniform positive alignment and horizon-tuned EMA/Nesterov. Finite polar approximations and nanoGPT’s changing momentum/auxiliary Adam are outside these guarantees; we will distinguish these implementations in the main text.
+3. Re moments: We will delete the squaring inference: a bound on $\mathbb E\|g\|$ cannot bound $\mathbb E\|g\|^2$. The first-moment $O(T^{-1/4})$ and sharp-step squared-gradient $O(T^{-1/2})$ results use separate arguments and parameter choices.
+
+If these corrections resolve your reservations, please consider raising your score.

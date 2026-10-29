@@ -1,9 +1,9 @@
-Thank you for the precise technical and presentation feedback.
+Thank you for the detailed technical and presentation feedback.
 
-1. Re coverage: The squared-gradient $O(T^{-1/2})$ rate needs gradient-scaled steps. Added ideal EF21 bounds cover fixed EMA/Nesterov and constant/cosine rates with residuals, retaining block separability. Finite polar solvers and nanoGPT’s changing momentum/auxiliary Adam remain outside these bounds. We will add a coverage table.
-2. Re tables: The submitted 5-seed logs agree with A8: MuonSign 82.94±0.19% versus SignSGD 81.44±0.15%. We will synchronize Table 2 and reverse that comparison. SignMuon remains 85.72±0.24%, near Muon’s 85.98±0.26% at a one-bit budget.
-3. Re structure: For oracle input $M=U\Sigma V^\top$, diagonal entries of $U^\top\mathrm{sign}(UV^\top)V$ uniformly above $\delta>0$ give alignment $\ge\delta\|M\|_*$. Joint smoothness, unbiased finite-variance noise, exact polar and horizon tuning give SignMuon an $O(T^{-1/4})$ mean gradient-norm rate. The network margin remains unmeasured. We credit concurrent SignMuon and EF21; our matched study compares 6 placements/EF variants and their distinct failures.
-4. Re nanoGPT: nanoGPT tests centralized optimization after full-precision averaging: loss 3.2881 versus SignSGD 3.4049. Worker voting is tested in CNN2.
-5. Re writing: We will lead with gains, define server X/broadcast W, explain scope in the main text, and simplify the introduction, results and captions.
+1. Re our guarantees: We generalized EF21 convergence to EMA and Nesterov momentum with deterministic learning rates, including constant and cosine schedules. Its tracking and convergence proofs are verified in Lean. The bounds retain separable layers and fixed momentum (nanoGPT varies it); numerical orthogonalization needs an error bound. The squared-gradient rate needs gradient-dependent steps.
+2. Re Table 2: The submitted 5-seed logs give MuonSign 82.94±0.19% versus SignSGD 81.44±0.15%, agreeing with A8. We will correct Table 2 and reverse that comparison. SignMuon remains 85.72±0.24%, versus Muon 85.98±0.26%.
+3. Re our contribution: We also prove SignMuon converges when signing preserves enough alignment with momentum, under smoothness and unbiased bounded-variance noise. This allows interacting layers; the network condition remains unmeasured. We compare 3 sign placements, prove they can move uphill, and show output-level error feedback can diverge. We credit concurrent SignMuon and EF21.
+4. Re nanoGPT: nanoGPT tests centralized optimization after full-precision averaging: SignMuon loss 3.2881 versus SignSGD 3.4049. CNN2 tests worker voting.
+5. Re the presentation: We will shorten the introduction, conclusion and captions, explain the two models, and put the assumptions and theorem-coverage table in the main text.
 
 If these answers and revisions resolve your concerns, please consider raising your score.

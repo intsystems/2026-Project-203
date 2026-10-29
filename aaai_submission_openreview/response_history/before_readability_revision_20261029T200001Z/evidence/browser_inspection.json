@@ -1,0 +1,138 @@
+{
+  "checked_utc": "2026-10-29T18:26:13.450077+00:00",
+  "pages": [
+    {
+      "stem": "review_R1_7S1b",
+      "characters": 1477,
+      "countLabel": "1477 / 1,500 characters",
+      "renderedMath": 5,
+      "draftMathErrors": [],
+      "sourceMathErrors": [],
+      "brokenAnchors": [],
+      "selected": 7,
+      "pending": [
+        "R1.6",
+        "R1.7",
+        "R1.8"
+      ],
+      "overflow": false,
+      "saveStatus": "Loaded from files · edits save automatically",
+      "mobileOverflow": false
+    },
+    {
+      "stem": "review_R2_D4r2",
+      "characters": 1443,
+      "countLabel": "1443 / 1,500 characters",
+      "renderedMath": 9,
+      "draftMathErrors": [],
+      "sourceMathErrors": [],
+      "brokenAnchors": [],
+      "selected": 6,
+      "pending": [
+        "R2.2",
+        "R2.8"
+      ],
+      "overflow": false,
+      "saveStatus": "Loaded from files · edits save automatically",
+      "mobileOverflow": false
+    },
+    {
+      "stem": "review_R3_Ueq5",
+      "characters": 1432,
+      "countLabel": "1432 / 1,500 characters",
+      "renderedMath": 6,
+      "draftMathErrors": [],
+      "sourceMathErrors": [],
+      "brokenAnchors": [],
+      "selected": 5,
+      "pending": [],
+      "overflow": false,
+      "saveStatus": "Loaded from files · edits save automatically",
+      "mobileOverflow": false
+    },
+    {
+      "stem": "review_R4_pqje",
+      "characters": 1497,
+      "countLabel": "1497 / 1,500 characters",
+      "renderedMath": 6,
+      "draftMathErrors": [],
+      "sourceMathErrors": [],
+      "brokenAnchors": [],
+      "selected": 14,
+      "pending": [
+        "R4.15"
+      ],
+      "overflow": false,
+      "saveStatus": "Loaded from files · edits save automatically",
+      "mobileOverflow": false
+    },
+    {
+      "stem": "review_R5_Tx34",
+      "characters": 1468,
+      "countLabel": "1468 / 1,500 characters",
+      "renderedMath": 2,
+      "draftMathErrors": [],
+      "sourceMathErrors": [],
+      "brokenAnchors": [],
+      "selected": 6,
+      "pending": [],
+      "overflow": false,
+      "saveStatus": "Loaded from files · edits save automatically",
+      "mobileOverflow": false
+    },
+    {
+      "stem": "review_AI_AI_Reviewer",
+      "characters": 1491,
+      "countLabel": "1491 / 1,500 characters",
+      "renderedMath": 1,
+      "draftMathErrors": [],
+      "sourceMathErrors": [],
+      "brokenAnchors": [],
+      "selected": 18,
+      "pending": [
+        "AI.6",
+        "AI.20"
+      ],
+      "overflow": false,
+      "saveStatus": "Loaded from files · edits save automatically",
+      "mobileOverflow": false
+    },
+    {
+      "stem": "confidential_ac",
+      "characters": 1374,
+      "countLabel": "1374 characters · limit not specified",
+      "renderedMath": 0,
+      "draftMathErrors": [],
+      "sourceMathErrors": [],
+      "brokenAnchors": [],
+      "selected": 1,
+      "pending": [],
+      "overflow": false,
+      "saveStatus": "Loaded from files · edits save automatically",
+      "mobileOverflow": false
+    }
+  ],
+  "index": {
+    "title": "SignMuon — Review navigator",
+    "reviewLinks": [
+      "review_R1_7S1b.html",
+      "review_R1_7S1b.html",
+      "review_R2_D4r2.html",
+      "review_R2_D4r2.html",
+      "review_R3_Ueq5.html",
+      "review_R3_Ueq5.html",
+      "review_R4_pqje.html",
+      "review_R4_pqje.html",
+      "review_R5_Tx34.html",
+      "review_R5_Tx34.html",
+      "review_AI_AI_Reviewer.html",
+      "review_AI_AI_Reviewer.html",
+      "confidential_ac.html",
+      "../03_RESPONSE_WORKSPACE.md"
+    ],
+    "overflow": false
+  },
+  "runtime_exceptions": [],
+  "author_data_unchanged": true,
+  "scope": "Actual generated pages, draft/export equality, UTF-16 counts, draft math, links, desktop/mobile layout. No edits or saves."
+}

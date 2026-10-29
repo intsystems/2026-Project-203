@@ -1,0 +1,27 @@
+{
+  "created_utc": "2026-10-29T20:00:01.912352+00:00",
+  "backup": "response_history/before_readability_revision_20261029T200001Z",
+  "input_response_sha256": "9d8b28c95f4e5fa470be86179aa886d0d6e7fb494d26ef48cfcfe3c628ea7a0d",
+  "response_characters_utf16": {
+    "review_R1_7S1b": 1492,
+    "review_R2_D4r2": 1494,
+    "review_R3_Ueq5": 1497,
+    "review_R4_pqje": 1497,
+    "review_R5_Tx34": 1492,
+    "review_AI_AI_Reviewer": 1492
+  },
+  "review_revisions": {
+    "review_R1_7S1b": 3,
+    "review_R2_D4r2": 3,
+    "review_R3_Ueq5": 3,
+    "review_R4_pqje": 3,
+    "review_R5_Tx34": 9,
+    "review_AI_AI_Reviewer": 3
+  },
+  "confidential_characters_utf16": 1377,
+  "lean_record_checked_statements": 45,
+  "lean_record_verified_utc": "2026-10-23T08:21:07.827270+00:00",
+  "lean_reference_and_dependency_hashes_match": true,
+  "lean_build_rerun_for_prose_edit": false,
+  "conditional_plain_signmuon_claimed_lean_verified": false
+}

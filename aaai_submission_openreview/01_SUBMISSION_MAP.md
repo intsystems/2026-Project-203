@@ -106,3 +106,7 @@ The EF21 fixed-radius proof explicitly invokes block independence. The addendumâ
 ## New transfer archive supplied during revision 2
 
 `code/results/rebuttal_results.zip` was supplied while the audit was running. Its immutable copy is `evidence/heterogeneous_transfer_results.zip`; this is new rebuttal evidence, not a submitted input. The independent audit reproduces all 50 transfer runs (10 methods, 5 seeds) and their means/sample SDs. The current addendum now reports these results. Its EF21 cross-layer target remains open. LR retuning, local updates and partial participation remain outstanding.
+
+## Lean evidence used in the readability revision
+
+`lean_proofs/comparator/VERIFICATION.json` records 45 passed statement comparisons and kernel replay on 23 October 2026. Its reference and dependency hashes still match. `lean_proofs/PAPER_AUDIT.md` and `README.md` explain the original failure theorems, generalized EF21 tracking/convergence proofs, approximation-error terms and manual cosine-sum specialization. The conditional plain SignMuon theorem is an analytic addendum result and is not described as Lean-verified. See `evidence/revision_3_readability.md`.
