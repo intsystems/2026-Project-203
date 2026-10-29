@@ -120,3 +120,9 @@ The full 10-method transfer table is exported in the reply to **7S1b, Q2** and r
 ## Separate quadratic construction added during revision 4
 
 The live `aaai_article/signmuon_addendum_body.tex` changed during preparation to include `ef21_signmuon_vanishing_steps.tex`. The preparation did not edit these scientific sources. The new theorem and its exact rational/algebraic certificate were read, checked and frozen in `evidence/ef21_vanishing_snapshot/`. Hashes and the 20 successful trajectory checks are recorded in `evidence/new_quadratic_certificate.json`. Tx34 Q2 and the AC comment now use this stronger completed result. The existing Lean audit does not cover N4.
+
+## Revision 5: explicit benchmark identities and constructive lower bounding
+
+The exported replies distinguish federated CNN2/CIFAR-10 (85.72% SignMuon; 11 IID clients, 5 seeds), centralized ResNet18/CIFAR-10 (94.60%; 3 seeds) and nanoGPT validation loss (1 run/method). All values retain their previously verified sources.
+
+The shared heterogeneous table highlights both gradient-side EF variants. The only-success statement is scoped to Muon variants above 80% in the specified reused-IID-rate test. The softplus construction is read directly from `signmuon_addendum_body.tex`, Proposition `add:prop:softplus`: positive gradient rescaling preserves the ascent directions and gives smooth convex objectives bounded below by 0. No new training or proof-source edit was performed in this revision.

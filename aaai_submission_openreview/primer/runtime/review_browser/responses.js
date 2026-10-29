@@ -67,6 +67,18 @@
     } catch (_) { return null; }
   }
 
+  function appendStrong(element, text) {
+    let offset = 0;
+    for (const match of text.matchAll(/\*\*([^\n]+?)\*\*/g)) {
+      element.append(document.createTextNode(text.slice(offset, match.index)));
+      const strong = document.createElement("strong");
+      strong.textContent = match[1];
+      element.append(strong);
+      offset = match.index + match[0].length;
+    }
+    element.append(document.createTextNode(text.slice(offset)));
+  }
+
   function renderMath(element, text) {
     const lines = text.split("\n");
     const cells = line => typeof line === "string" && /^\s*\|.*\|\s*$/.test(line) && !line.includes("\\|")
@@ -74,7 +86,7 @@
     const content = document.createDocumentFragment();
     let plain = [];
     const flush = () => {
-      if (plain.length) content.append(document.createTextNode(plain.join("\n")));
+      if (plain.length) appendStrong(content, plain.join("\n"));
       plain = [];
     };
     for (let i = 0; i < lines.length;) {
@@ -92,7 +104,7 @@
         const row = document.createElement("tr");
         values.forEach((value, column) => {
           const cell = document.createElement(tag);
-          cell.textContent = value;
+          appendStrong(cell, value);
           if (tag === "th") cell.scope = "col";
           cell.style.textAlign = separator[column].endsWith(":")
             ? (separator[column].startsWith(":") ? "center" : "right") : "left";

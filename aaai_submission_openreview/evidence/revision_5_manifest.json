@@ -1,0 +1,45 @@
+{
+  "created_utc": "2026-10-29T21:28:28.055357+00:00",
+  "backup": "response_history/before_focused_revision_20261029T212828Z",
+  "input_response_sha256": "b8989698cc7129d2b663ab9c2bde6db5bafb0585fbd7789f066eb6ad00299b74",
+  "response_characters_utf16": {
+    "review_R1_7S1b": 1496,
+    "review_R2_D4r2": 1462,
+    "review_R3_Ueq5": 1490,
+    "review_R4_pqje": 1497,
+    "review_R5_Tx34": 1496,
+    "review_AI_AI_Reviewer": 1473
+  },
+  "review_revisions": {
+    "review_R1_7S1b": 5,
+    "review_R2_D4r2": 5,
+    "review_R3_Ueq5": 5,
+    "review_R4_pqje": 5,
+    "review_R5_Tx34": 11,
+    "review_AI_AI_Reviewer": 5
+  },
+  "confidential_characters_utf16": 2145,
+  "author_requested_presentation_omissions": [
+    "AI.11",
+    "AI.13",
+    "AI.9",
+    "R2.1",
+    "R2.4",
+    "R2.5",
+    "R2.7"
+  ],
+  "pending_evidence_unchanged": true,
+  "shared_table": {
+    "reviewer": "7S1b",
+    "question": 2,
+    "method_count": 10,
+    "bold_methods": [
+      "EF21-MuonSign",
+      "EF21-MuonUSign"
+    ],
+    "success_scope": "Muon variants with mean accuracy above 80% at the IID-selected rates"
+  },
+  "softplus_extension_explained": true,
+  "new_training_run": false,
+  "new_lean_build": false
+}

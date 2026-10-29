@@ -1,10 +1,10 @@
 {
-  "checked_utc": "2026-10-29T20:47:51.856437+00:00",
+  "checked_utc": "2026-10-29T21:31:10.804063+00:00",
   "pages": [
     {
       "stem": "review_R1_7S1b",
-      "characters": 1491,
-      "countLabel": "1491 / 1,500 characters",
+      "characters": 1496,
+      "countLabel": "1496 / 1,500 characters",
       "renderedMath": 0,
       "renderedTables": [
         {
@@ -53,8 +53,27 @@
               "MuonSign",
               "25.63±3.98"
             ]
+          ],
+          "strongCells": [
+            2,
+            2,
+            0,
+            0,
+            0,
+            0,
+            0,
+            0,
+            0,
+            0
           ]
         }
+      ],
+      "strongText": [
+        "EF21-MuonSign",
+        "83.23±0.36",
+        "EF21-MuonUSign",
+        "82.99±0.46",
+        "EF21-Muon(U)Sign are the only Muon variants that work well here (>80%)."
       ],
       "draftMathErrors": [],
       "sourceMathErrors": [],
@@ -72,14 +91,17 @@
     },
     {
       "stem": "review_R2_D4r2",
-      "characters": 1482,
-      "countLabel": "1482 / 1,500 characters",
-      "renderedMath": 3,
+      "characters": 1462,
+      "countLabel": "1462 / 1,500 characters",
+      "renderedMath": 4,
       "renderedTables": [],
+      "strongText": [
+        "only EF21-Muon(U)Sign above 80% among Muon variants"
+      ],
       "draftMathErrors": [],
       "sourceMathErrors": [],
       "brokenAnchors": [],
-      "selected": 6,
+      "selected": 2,
       "pending": [
         "R2.2",
         "R2.8"
@@ -91,10 +113,13 @@
     },
     {
       "stem": "review_R3_Ueq5",
-      "characters": 1473,
-      "countLabel": "1473 / 1,500 characters",
+      "characters": 1490,
+      "countLabel": "1490 / 1,500 characters",
       "renderedMath": 1,
       "renderedTables": [],
+      "strongText": [
+        "only EF21-Muon(U)Sign exceed 80% among Muon variants"
+      ],
       "draftMathErrors": [],
       "sourceMathErrors": [],
       "brokenAnchors": [],
@@ -107,10 +132,13 @@
     },
     {
       "stem": "review_R4_pqje",
-      "characters": 1499,
-      "countLabel": "1499 / 1,500 characters",
+      "characters": 1497,
+      "countLabel": "1497 / 1,500 characters",
       "renderedMath": 0,
       "renderedTables": [],
+      "strongText": [
+        "only EF21-Muon(U)Sign exceed 80% among Muon variants"
+      ],
       "draftMathErrors": [],
       "sourceMathErrors": [],
       "brokenAnchors": [],
@@ -125,10 +153,13 @@
     },
     {
       "stem": "review_R5_Tx34",
-      "characters": 1498,
-      "countLabel": "1498 / 1,500 characters",
+      "characters": 1496,
+      "countLabel": "1496 / 1,500 characters",
       "renderedMath": 0,
       "renderedTables": [],
+      "strongText": [
+        "EF21-MuonSign 83.23% and EF21-MuonUSign 82.99%"
+      ],
       "draftMathErrors": [],
       "sourceMathErrors": [],
       "brokenAnchors": [],
@@ -141,14 +172,17 @@
     },
     {
       "stem": "review_AI_AI_Reviewer",
-      "characters": 1493,
-      "countLabel": "1493 / 1,500 characters",
+      "characters": 1473,
+      "countLabel": "1473 / 1,500 characters",
       "renderedMath": 0,
       "renderedTables": [],
+      "strongText": [
+        "Only EF21-Muon(U)Sign exceed 80% among Muon variants"
+      ],
       "draftMathErrors": [],
       "sourceMathErrors": [],
       "brokenAnchors": [],
-      "selected": 18,
+      "selected": 15,
       "pending": [
         "AI.6",
         "AI.20"
@@ -160,10 +194,13 @@
     },
     {
       "stem": "confidential_ac",
-      "characters": 1949,
-      "countLabel": "1949 characters · limit not specified",
+      "characters": 2145,
+      "countLabel": "2145 characters · limit not specified",
       "renderedMath": 0,
       "renderedTables": [],
+      "strongText": [
+        "EF21-MuonSign reaches 83.23±0.36% and EF21-MuonUSign 82.99±0.46%"
+      ],
       "draftMathErrors": [],
       "sourceMathErrors": [],
       "brokenAnchors": [],

@@ -1,8 +1,8 @@
-Thank you for the detailed checks.
+Thank you for the technical checks.
 
-1. Re our theory: After submission, we extended EF21 to fixed EMA/Nesterov and deterministic learning rates, with core proofs verified in Lean. The bounds retain separable layers and include unbiased bounded-variance noise and orthogonalization error.
-2. Re the two models: EF21-MuonSign queries broadcast W; its theorem concerns server X. Their losses in the same nanoGPT run are 3.3213 and 5.5198.
-3. Re our contribution: We prove all 3 sign placements can ascend and output-level error feedback can diverge. Heterogeneous tests show why EF placement matters. SignSGD already uses EMA. SSVR remains untested and needs matched gradient-query budgets; we will qualify the geometry attribution.
-4. Re heterogeneity: After submission, we added Dirichlet(0.1) tests: gradient-side EF leads at IID-selected rates (table in our reply to 7S1b, Q2). Clients take no local updates; retuning is pending. nanoGPT averages full-precision gradients.
-5. Re the presentation: We will add the method/coverage table and move implementation to setup. Our post-submission SignMuon theorem allows interacting layers under a uniform positive alignment with momentum; this is unmeasured. Our new output-EF example defeats power decay and budget-tuned constant parameters.
-6. Re details: We will define polar(0)=0 and count EF scales. nanoGPT has 1 run/method; its 0.0021 gap cannot rank methods. A5’s 16.6 s/epoch is not network timing. MuonSign and SGD reach 80% in 5/5 seeds.
+1. Re our theory: After submission, we extended gradient-side EF21 to fixed EMA/Nesterov and constant/cosine schedules, with core proofs verified in Lean. Theorems retain separable layers and unbiased bounded-variance noise; finite polar updates need a certified error bound.
+2. Re the two models: EF21-MuonSign queries broadcast W but guarantees server X. Their nanoGPT losses are 3.3213/5.5198 in the same run, after full-precision gradient averaging.
+3. Re our contribution: All 3 sign placements can ascend; output-level EF can fail with decreasing steps or budget tuning. SignSGD already uses EMA. We cannot isolate geometry without a matched-query SSVR comparison, which remains untested.
+4. Re heterogeneous data: Our new federated CNN2/CIFAR-10 tests use 11 Dirichlet(0.1) clients and IID-selected rates, without local updates. **Only EF21-Muon(U)Sign exceed 80% among Muon variants** (table: 7S1b, Q2).
+5. Re the SignMuon condition: Our new SignMuon theorem permits interacting layers when signing preserves enough of the polar update’s alignment with momentum; network verification is pending. The negative result concerns the specified output-EF scheme.
+6. Re the reported measurements: nanoGPT has 1 run/method; a 0.0021 gap cannot rank methods. CNN2’s 1.087 bits/parameter includes auxiliaries and EF scales. A5 reports SignMuon 16.6 s/epoch on centralized ResNet18/CIFAR-10. MuonSign and SGD reach 80% in all 5 IID seeds.

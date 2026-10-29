@@ -68,7 +68,9 @@ def main():
                         renderedMath:document.querySelectorAll('#rendered-draft .katex').length,
                         renderedTables:[...document.querySelectorAll('#rendered-draft table')].map(table=>({
                             headers:[...table.querySelectorAll('thead th')].map(cell=>cell.textContent),
-                            rows:[...table.querySelectorAll('tbody tr')].map(row=>[...row.cells].map(cell=>cell.textContent))})),
+                            rows:[...table.querySelectorAll('tbody tr')].map(row=>[...row.cells].map(cell=>cell.textContent)),
+                            strongCells:[...table.querySelectorAll('tbody tr')].map(row=>[...row.cells].filter(cell=>cell.querySelector('strong')).length)})),
+                        strongText:[...document.querySelectorAll('#rendered-draft strong')].map(node=>node.textContent),
                         draftMathErrors:[...document.querySelectorAll('#rendered-draft .katex-error')].map(x=>x.textContent),
                         sourceMathErrors:[...document.querySelectorAll('.katex-error')].map(x=>x.textContent),
                         brokenAnchors:links.filter(a=>a.hash && !document.getElementById(decodeURIComponent(a.hash.slice(1)))).map(a=>a.hash),
@@ -85,7 +87,9 @@ def main():
                     data['heterogeneousTableRows']=len(table_rows)
                     rendered=data['renderedTables']
                     assert len(rendered)==1 and rendered[0]['headers']==['Method','Accuracy (%)'],rendered
-                    assert rendered[0]['rows']==[line.strip('|').split('|') for line in table_rows],rendered
+                    assert rendered[0]['rows']==[line.replace('**','').strip('|').split('|') for line in table_rows],rendered
+                    assert rendered[0]['strongCells']==[2,2]+[0]*8,rendered
+                    assert any('only Muon variants' in text for text in data['strongText']),data['strongText']
                 else:
                     assert '7S1b, Q2' in expected,spec['stem']
                     data['referencesHeterogeneousTable']=True

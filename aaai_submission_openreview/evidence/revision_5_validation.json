@@ -1,0 +1,184 @@
+{
+  "checked_utc": "2026-10-29T21:32:24.342042+00:00",
+  "revision": 5,
+  "build_passed": true,
+  "workspace_check_passed": true,
+  "browser_inspection_passed": true,
+  "browser_report": "evidence/browser_inspection.json",
+  "browser_checked_utc": "2026-10-29T21:31:10.804063+00:00",
+  "all_six_replies_within_1500_utf16_characters": true,
+  "all_64_concern_ids_pending_flags_and_question_links_preserved": true,
+  "author_requested_presentation_omissions": [
+    "AI.11",
+    "AI.13",
+    "AI.9",
+    "R2.1",
+    "R2.4",
+    "R2.5",
+    "R2.7"
+  ],
+  "selected_concerns": 49,
+  "pending_evidence_concerns": 8,
+  "deliberate_presentation_omissions": 7,
+  "five_human_score_requests_retained": true,
+  "source_reviews_annotations_rules_and_workspace_identity_unchanged": true,
+  "benchmark_model_and_regime_identified": true,
+  "shared_table_exactly_matches_all_10_verified_results": true,
+  "ef_table_cells_and_scoped_conclusion_rendered_bold": true,
+  "success_claim_scoped_to_muon_variants_above_80_at_iid_rates": true,
+  "five_other_replies_and_ac_reference_7S1b_Q2": true,
+  "softplus_construction_and_positive_rescaling_explained": true,
+  "presentation_promises_removed_from_exports": true,
+  "portable_python_checks": {
+    "passed": 6,
+    "command": "python -X utf8 aaai_submission_openreview/primer/tests/test_portable.py"
+  },
+  "relocated_browser_checks": {
+    "passed": true,
+    "coverage": "Both editors, math, 380-character limit, autosave, native folder save, 3 reviews, desktop/mobile, separate identities.",
+    "launch_note": "Used the fixture with --no-sandbox and --disable-features=RendererCodeIntegrity for this Windows Edge environment."
+  },
+  "lean_existing_audit": {
+    "passed": true,
+    "statements": 45,
+    "full_build_rerun": false,
+    "source": "lean_proofs/comparator/VERIFICATION.json"
+  },
+  "frozen_quadratic_certificate_hashes_unchanged": true,
+  "quadratic_certificate": "evidence/new_quadratic_certificate.json",
+  "article_updates_observed_during_writing": {},
+  "live_article_sources_modified_by_this_preparation": false,
+  "training_run_for_writing_edit": false,
+  "confidential_characters": 2145,
+  "confidential_limit": null,
+  "drafts": [
+    {
+      "stem": "review_R1_7S1b",
+      "characters": 1496,
+      "included": [
+        "R1.1",
+        "R1.2",
+        "R1.3",
+        "R1.9",
+        "R1.4",
+        "R1.10",
+        "R1.5"
+      ],
+      "omitted": [
+        "R1.6",
+        "R1.7",
+        "R1.8"
+      ],
+      "pending": [
+        "R1.6",
+        "R1.7",
+        "R1.8"
+      ]
+    },
+    {
+      "stem": "review_R2_D4r2",
+      "characters": 1462,
+      "included": [
+        "R2.6",
+        "R2.3"
+      ],
+      "omitted": [
+        "R2.1",
+        "R2.4",
+        "R2.5",
+        "R2.7",
+        "R2.2",
+        "R2.8"
+      ],
+      "pending": [
+        "R2.2",
+        "R2.8"
+      ]
+    },
+    {
+      "stem": "review_R3_Ueq5",
+      "characters": 1490,
+      "included": [
+        "R3.2",
+        "R3.1",
+        "R3.3",
+        "R3.4",
+        "R3.5"
+      ],
+      "omitted": [],
+      "pending": []
+    },
+    {
+      "stem": "review_R4_pqje",
+      "characters": 1497,
+      "included": [
+        "R4.1",
+        "R4.2",
+        "R4.3",
+        "R4.4",
+        "R4.6",
+        "R4.5",
+        "R4.7",
+        "R4.8",
+        "R4.9",
+        "R4.10",
+        "R4.11",
+        "R4.12",
+        "R4.13",
+        "R4.14"
+      ],
+      "omitted": [
+        "R4.15"
+      ],
+      "pending": [
+        "R4.15"
+      ]
+    },
+    {
+      "stem": "review_R5_Tx34",
+      "characters": 1496,
+      "included": [
+        "R5.1",
+        "R5.3",
+        "R5.2",
+        "R5.4",
+        "R5.5",
+        "R5.6"
+      ],
+      "omitted": [],
+      "pending": []
+    },
+    {
+      "stem": "review_AI_AI_Reviewer",
+      "characters": 1473,
+      "included": [
+        "AI.1",
+        "AI.2",
+        "AI.7",
+        "AI.3",
+        "AI.4",
+        "AI.5",
+        "AI.18",
+        "AI.19",
+        "AI.8",
+        "AI.10",
+        "AI.14",
+        "AI.15",
+        "AI.16",
+        "AI.17",
+        "AI.12"
+      ],
+      "omitted": [
+        "AI.6",
+        "AI.9",
+        "AI.11",
+        "AI.20",
+        "AI.13"
+      ],
+      "pending": [
+        "AI.6",
+        "AI.20"
+      ]
+    }
+  ]
+}

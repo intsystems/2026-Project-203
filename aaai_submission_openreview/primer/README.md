@@ -24,7 +24,7 @@ The importer accepts a downloaded OpenReview `notes` list (wrapped in an object 
 
 - Selectable summaries, exact highlighted review passages and return links.
 - Linked concern editors and numbered, editable “Re …” headings.
-- Editable full response synchronized with separate answers, plus rendered LaTeX and pipe tables.
+- Editable full response synchronized with separate answers, plus rendered LaTeX, bold text and pipe tables.
 - Editable opening/closing alternatives and review-specific score requests.
 - Word/character counts; configurable character limits and external-link rules.
 - Local-server autosave, browser localStorage, Edge/Chrome folder saving, JSON backups, revision conflicts and last-valid Markdown preservation.
