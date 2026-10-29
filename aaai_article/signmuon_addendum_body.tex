@@ -9,7 +9,7 @@ examples. Further extensions are explicitly marked as open targets.
 This working addendum includes proofs of the statements below. Results
 inherited from prior work or the existing manuscript are identified as such;
 open targets are not claimed as theorems. Section~\ref{add:heterogeneous}
-specifies pending heterogeneous experiments.
+reports heterogeneous transfer results and specifies pending LR tuning.
 
 \section{Why Can SignMuon Work in Practice?}
 \label{add:geometry}
@@ -328,7 +328,7 @@ with two CNN2/CIFAR-10 experiments under Dirichlet label skew, concentration
 $\alpha=0.1$. Both retain 11 fully participating clients, 2000 rounds,
 cosine scheduling, momentum $\mu=0.9$, unit-gain scaling, zero weight decay, and auxiliary
 AdamW learning rate $0.001$. Each round accumulates three minibatches of
-64 images per client at the broadcast model, without local model steps.
+up to 64 images per client at the broadcast model, without local model steps.
 Client objectives have equal weight; initialization and partitions are
 paired across methods at each seed.
 
@@ -338,11 +338,12 @@ All ten article algorithms run together (50 final runs). Changing only
 the client partition measures robustness without retuning.
 
 \paragraph{Experiment 2: retune learning rates in two parts.}
-Search learning-rate multipliers $\{0.1,0.3,1,3,10\}$ of the homogeneous
-optimum, keeping momentum fixed: five configurations per method, each
+Use the homogeneous $1$--$2$--$5$ learning-rate grid and initial search centers,
+keeping momentum fixed. Start with five configurations per method; a boundary
+winner adds two rates, with at most three extensions. Each configuration is
 trained for 2000 rounds with tuning seed 0. The priority part covers the
 first five rows of Table~\ref{add:tab:heterogeneous}; the remaining five
-follow for completeness. Each part has 25 validation runs and up to 25
+follow for completeness. Each part starts with 25 validation runs and up to 25
 final runs, reusing matching transfer runs. Select by mean accuracy over
 the last five validation evaluations, holding out 5000 images before
 partitioning the remaining 45,000. Final runs retrain on all 50,000 images.
@@ -367,18 +368,18 @@ rates also test whether the homogeneous optima transfer.
 $\eta_0$ & \textbf{Test acc.\ (\%)} \\
 \midrule
 \multicolumn{6}{l}{\emph{Tuning part 1: priority methods}} \\
-SignMuon & $0.1$ & $85.72\pm0.24$ & \texttt{TODO} & \texttt{TODO} & \texttt{TODO} \\
-EF21-MuonUSign & $0.01$ & $83.56\pm0.41$ & \texttt{TODO} & \texttt{TODO} & \texttt{TODO} \\
-EF21-MuonSign & $0.05$ & $83.99\pm0.28$ & \texttt{TODO} & \texttt{TODO} & \texttt{TODO} \\
-EF21-SignMuon & $0.02$ & $84.71\pm0.15$ & \texttt{TODO} & \texttt{TODO} & \texttt{TODO} \\
-Muon & $0.1$ & $85.98\pm0.26$ & \texttt{TODO} & \texttt{TODO} & \texttt{TODO} \\
+SignMuon & $0.1$ & $85.72\pm0.24$ & $35.92\pm8.49$ & \texttt{TODO} & \texttt{TODO} \\
+EF21-MuonUSign & $0.01$ & $83.56\pm0.41$ & $82.99\pm0.46$ & \texttt{TODO} & \texttt{TODO} \\
+EF21-MuonSign & $0.05$ & $83.99\pm0.28$ & $83.23\pm0.36$ & \texttt{TODO} & \texttt{TODO} \\
+EF21-SignMuon & $0.02$ & $84.71\pm0.15$ & $45.46\pm7.66$ & \texttt{TODO} & \texttt{TODO} \\
+Muon & $0.1$ & $85.98\pm0.26$ & $46.02\pm8.55$ & \texttt{TODO} & \texttt{TODO} \\
 \midrule
 \multicolumn{6}{l}{\emph{Tuning part 2: remaining methods}} \\
-MuonUSign & $0.05$ & $84.56\pm0.35$ & \texttt{TODO} & \texttt{TODO} & \texttt{TODO} \\
-MuonSign & $0.02$ & $82.94\pm0.19$ & \texttt{TODO} & \texttt{TODO} & \texttt{TODO} \\
-SignSGD & $0.01$ & $81.44\pm0.15$ & \texttt{TODO} & \texttt{TODO} & \texttt{TODO} \\
-SGD & $0.05$ & $81.69\pm0.37$ & \texttt{TODO} & \texttt{TODO} & \texttt{TODO} \\
-Adam & $0.001$ & $77.12\pm1.04$ & \texttt{TODO} & \texttt{TODO} & \texttt{TODO} \\
+MuonUSign & $0.05$ & $84.56\pm0.35$ & $26.21\pm2.75$ & \texttt{TODO} & \texttt{TODO} \\
+MuonSign & $0.02$ & $82.94\pm0.19$ & $25.63\pm3.98$ & \texttt{TODO} & \texttt{TODO} \\
+SignSGD & $0.01$ & $81.44\pm0.15$ & $26.42\pm3.23$ & \texttt{TODO} & \texttt{TODO} \\
+SGD & $0.05$ & $81.69\pm0.37$ & $81.03\pm0.62$ & \texttt{TODO} & \texttt{TODO} \\
+Adam & $0.001$ & $77.12\pm1.04$ & $71.17\pm7.16$ & \texttt{TODO} & \texttt{TODO} \\
 \bottomrule
 \end{tabular}
 \caption{CNN2/CIFAR-10, 11 clients, 2000 rounds, five seeds. Both new
@@ -389,6 +390,10 @@ throughout. Accuracy is mean $\pm$ sample standard deviation of per-seed
 last-five test means. \texttt{TODO} denotes pending measurements.}
 \label{add:tab:heterogeneous}
 \end{table*}
+
+With homogeneous hyperparameters, both gradient-EF21 variants retain over
+$82\%$ accuracy, while SignMuon falls to $35.92\%$. The LR-tuned comparison
+tests whether this reversal of the homogeneous ordering persists.
 
 \section{What Is New, and What Must Be Corrected?}
 \label{add:novelty}

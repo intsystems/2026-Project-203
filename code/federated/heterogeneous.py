@@ -21,11 +21,13 @@ import json
 import math
 import os
 import statistics
+import time
 import zipfile
 from contextlib import contextmanager
 from pathlib import Path
 
 from common.paths import results_root, scrub_text
+from common.lr_grid import extend_grid, round_grid
 
 
 # Validation-selected rates in results/federated_overnight/state.json, phase lr;
@@ -39,6 +41,14 @@ PRIORITY_METHODS = ["signmuon", "ef21muonusign", "ef21muonsign", "ef21signmuon",
 REMAINING_METHODS = ["muonusign", "muonsign", "signsgd", "sgd", "adam"]
 DEFAULT_METHODS = PRIORITY_METHODS + REMAINING_METHODS
 HOMOGENEOUS_MOMENTUM = 0.9
+# Nearest lattice points to federated.tune.anchor_for(..., "unit-gain", CNN2).
+# These reproduce the homogeneous initial grids, including its sign-family
+# anchor transport. They are search centers, distinct from the selected LRs.
+HOMOGENEOUS_SEARCH_CENTERS = {
+    "signmuon": 0.02, "ef21muonusign": 0.02, "ef21muonsign": 0.05,
+    "ef21signmuon": 0.02, "muon": 0.05, "muonusign": 0.05,
+    "muonsign": 0.02, "signsgd": 0.02, "sgd": 0.02, "adam": 0.001,
+}
 
 
 def get_args(argv=None):
@@ -53,8 +63,10 @@ def get_args(argv=None):
     p.add_argument("--rounds", type=int, default=2000, help="Same horizon for tuning and finals")
     p.add_argument("--seeds", nargs="+", type=int, default=[0, 1, 2, 3, 4])
     p.add_argument("--tune-seeds", nargs="+", type=int, default=[0])
-    p.add_argument("--lr-factors", nargs="+", type=float, default=[0.1, 0.3, 1, 3, 10],
-                   help="Multipliers of each method's homogeneous LR")
+    p.add_argument("--lr-points", type=int, default=5,
+                   help="Initial 1-2-5 lattice points, matching homogeneous tuning")
+    p.add_argument("--lr-extend-rounds", type=int, default=3)
+    p.add_argument("--lr-extend-points", type=int, default=2)
     p.add_argument("--device", default="cuda:0")
     p.add_argument("--data", default="./data_federated")
     p.add_argument("--download", action="store_true")
@@ -65,11 +77,11 @@ def get_args(argv=None):
     args = p.parse_args(argv)
     if not math.isfinite(args.alpha) or args.alpha <= 0 or args.rounds < 1:
         p.error("alpha must be finite and positive; rounds must be positive")
-    if any(not math.isfinite(x) or x <= 0 for x in args.lr_factors):
-        p.error("LR factors must be finite and positive")
+    if args.lr_points < 1 or args.lr_extend_rounds < 0 or args.lr_extend_points < 1:
+        p.error("LR points and extension points must be positive; extension rounds nonnegative")
     if any(x < 0 for x in args.seeds + args.tune_seeds):
         p.error("seeds must be nonnegative")
-    for name in ("methods", "seeds", "tune_seeds", "lr_factors"):
+    for name in ("methods", "seeds", "tune_seeds"):
         values = getattr(args, name)
         if len(set(values)) != len(values):
             p.error(f"duplicate entries in --{name.replace('_', '-')}")
@@ -91,7 +103,7 @@ def protocol(args):
     # Experiment and tuning part are scheduling choices, absent from identity:
     # all three commands share one cache, report, and cumulative archive.
     return {
-        "version": 2, "dataset": "cifar10", "model": "cnn2", "rounds": args.rounds,
+        "version": 3, "dataset": "cifar10", "model": "cnn2", "rounds": args.rounds,
         "n_parties": 11, "n_steps": 3, "batch_size": 64,
         "partition": "noniid-labeldir", "beta": args.alpha,
         "partition_seed": "run seed", "val_seed": 12345,
@@ -100,7 +112,7 @@ def protocol(args):
         "ns_steps": 5, "lmo_dtype": "bfloat16", "mv_ties": "random",
         "uplink_zeros": "random", "last_k": 5, "eval_points": 20,
         "methods": args.methods, "seeds": args.seeds, "tune_seeds": args.tune_seeds,
-        "lr_factors": args.lr_factors, "momentum": HOMOGENEOUS_MOMENTUM,
+        "momentum": HOMOGENEOUS_MOMENTUM,
         "homogeneous_lrs": {m: HOMOGENEOUS_LRS[m] for m in args.methods},
         "homogeneous_momentum": HOMOGENEOUS_MOMENTUM,
     }
@@ -110,22 +122,40 @@ def protocol_id(spec):
     return hashlib.sha256(json.dumps(spec, sort_keys=True).encode()).hexdigest()[:12]
 
 
-def candidates(args, method):
-    return [(float(f"{HOMOGENEOUS_LRS[method] * f:.12g}"), HOMOGENEOUS_MOMENTUM)
-            for f in args.lr_factors]
+def legacy_protocol(spec):
+    """The original default protocol, for resuming completed transfer runs."""
+    return {**spec, "version": 2, "lr_factors": [0.1, 0.3, 1, 3, 10]}
+
+
+def protocol_directory(spec):
+    base = results_root() / "federated_heterogeneous"
+    current = base / protocol_id(spec)
+    old = base / protocol_id(legacy_protocol(spec))
+    return old if not (current / "state.json").exists() and (old / "state.json").exists() else current
+
+
+def search_protocol(args):
+    return {"grid": "1-2-5", "initial_points": args.lr_points,
+            "extension_rounds": args.lr_extend_rounds, "extension_points": args.lr_extend_points,
+            "centers": {m: HOMOGENEOUS_SEARCH_CENTERS[m] for m in args.methods}}
+
+
+def candidates(args, method, grid=None):
+    rates = round_grid(HOMOGENEOUS_SEARCH_CENTERS[method], args.lr_points) if grid is None else grid
+    return [(lr, HOMOGENEOUS_MOMENTUM) for lr in rates]
 
 
 def job_key(method, lr, momentum, seed, split):
     return f"{method}_lr{float(lr)!r}_mu{float(momentum)!r}_{split}_s{seed}"
 
 
-def select_best(args, jobs, method):
+def select_best(args, jobs, method, grid=None):
     """Use validation only; a candidate needs every requested tuning seed."""
     if any(job_key(method, lr, mu, s, "tune") not in jobs
-           for lr, mu in candidates(args, method) for s in args.tune_seeds):
+           for lr, mu in candidates(args, method, grid) for s in args.tune_seeds):
         return None  # An interrupted grid does not yet define a tuned setting.
     ranked = []
-    for lr, mu in candidates(args, method):
+    for lr, mu in candidates(args, method, grid):
         rows = [jobs.get(job_key(method, lr, mu, s, "tune"), {}) for s in args.tune_seeds]
         if all(r.get("status") == "ok" and "val_acc" in r for r in rows):
             score = statistics.mean(r["val_acc"] for r in rows)
@@ -181,10 +211,12 @@ def run_job(args, root, state, method, lr, mu, seed, split, runner):
         mv_ties="random", uplink_zeros="random", download=args.download,
     )
     print(f"[{split}] {method}: lr={lr:g}, mu={mu:g}, seed={seed}", flush=True)
+    started = time.perf_counter()
     with isolated_results(root / "raw"):
         result = runner(launch, lr=lr, lr_aux=0.001, lr_scaling="unit-gain",
                         method=method, rounds=args.rounds, tag=tag, split=split,
                         seed=seed, extra=["--partition-seed", str(seed)])
+    row["wall_seconds"] = time.perf_counter() - started
     if result is not None:
         try:
             metrics = json.loads((root / relative).read_text(encoding="utf-8"))
@@ -211,13 +243,43 @@ def write_csv(path, rows, columns):
         writer.writerows(rows)
 
 
+def tuned_setting(args, state, method):
+    entry = state.get("searches", {}).get(method, {})
+    return (select_best(args, state["jobs"], method, entry["grid"])
+            if entry.get("complete") else None)
+
+
+def tune_method(args, root, state, method, runner, outcomes):
+    """Same five-point lattice and 3 x 2-point boundary extension as overnight."""
+    entry = state["searches"].setdefault(method, {
+        "grid": [lr for lr, _ in candidates(args, method)], "extensions": 0, "complete": False})
+    if args.retry_failed:
+        entry["complete"] = False
+    while not entry["complete"]:
+        for lr, mu in candidates(args, method, entry["grid"]):
+            for seed in args.tune_seeds:
+                outcomes.append(run_job(args, root, state, method, lr, mu, seed, "tune", runner))
+                report(args, root, state)
+        best = select_best(args, state["jobs"], method, entry["grid"])
+        boundary = best and len(entry["grid"]) > 1 and best[0] in (min(entry["grid"]), max(entry["grid"]))
+        if not boundary or entry["extensions"] >= args.lr_extend_rounds:
+            entry["complete"] = True
+            entry["boundary"] = bool(boundary)
+        else:
+            entry["grid"] = extend_grid(entry["grid"], low=best[0] == min(entry["grid"]),
+                                        points=args.lr_extend_points)
+            entry["extensions"] += 1
+            print(f"  Extending {method} to {entry['grid']} ({entry['extensions']}/{args.lr_extend_rounds})")
+        save_state(root, state)
+
+
 def report(args, root, state, archive=False):
     """Keep transfer and validation-selected finals in separate table rows."""
     rows, notes = [], []
     for experiment in state["experiments"]:
         for method in args.methods:
             chosen = ((HOMOGENEOUS_LRS[method], HOMOGENEOUS_MOMENTUM)
-                      if experiment == "transfer" else select_best(args, state["jobs"], method))
+                      if experiment == "transfer" else tuned_setting(args, state, method))
             lr, mu = chosen if chosen else (None, HOMOGENEOUS_MOMENTUM)
             finals = ([state["jobs"].get(job_key(method, lr, mu, s, "full"), {}) for s in args.seeds]
                       if chosen else [])
@@ -231,9 +293,10 @@ def report(args, root, state, archive=False):
                    "complete": len(values) == len(args.seeds)}
             rows.append(row)
             if experiment == "tuned" and chosen:
-                lrs = sorted({x for x, _ in candidates(args, method)})
+                lrs = sorted(state["searches"][method]["grid"])
                 if len(lrs) > 1 and lr in (lrs[0], lrs[-1]):
-                    notes.append(f"{method}: selected LR {lr:g} is at the search boundary; widen --lr-factors.")
+                    notes.append(f"{method}: selected LR {lr:g} remains at the boundary after "
+                                 f"{state['searches'][method]['extensions']} extensions.")
     jobs = list(state["jobs"].values())
     failures = sum(r["status"] != "ok" for r in jobs)
     if failures:
@@ -245,7 +308,7 @@ def report(args, root, state, archive=False):
               ["method", "lr", "momentum", "seed", "partition_seed", "status", "val_acc", "metrics"])
     write_csv(root / "runs.csv", jobs,
               ["method", "lr", "momentum", "seed", "partition_seed", "split", "status",
-               "val_acc", "test_acc", "metrics", "log", "error"])
+               "val_acc", "test_acc", "wall_seconds", "metrics", "log", "error"])
     lines = ["# CNN2 heterogeneous experiments", "",
              f"CIFAR-10; Dirichlet concentration {args.alpha:g}; 11 clients; full participation; "
              f"{args.rounds} rounds; 3 x 64 gradient accumulation at the broadcast model; cosine schedule.", "",
@@ -269,14 +332,19 @@ def report(args, root, state, archive=False):
         lines.append(f"| {r['experiment']} | {r['tuning_part']} | {r['method']} | {lr} | {r['momentum']:g} | "
                      f"{r['seeds']}/{r['expected_seeds']} | {acc} |")
     lines += ["", "## Search", "",
-              f"LR factors relative to each homogeneous optimum: {args.lr_factors}; fixed momentum 0.9. "
-              "Every method receives the same grid size, seeds, and horizon. Each method's full grid "
+              f"Homogeneous 1-2-5 lattice: {args.lr_points} initial points, at most "
+              f"{args.lr_extend_rounds} boundary extensions of {args.lr_extend_points} points; fixed momentum 0.9. "
+              "Initial search centers match the homogeneous CNN2 experiment. "
+              "Every method receives the same search rule, seeds, and horizon. Each method's full grid "
               "finishes before validation selection; test accuracy never enters selection. "
               "Identical final configurations are reused across experiments.", "",
               f"Priority tuning: {', '.join(m for m in args.methods if m in PRIORITY_METHODS)}.", "",
               f"Remaining tuning: {', '.join(m for m in args.methods if m in REMAINING_METHODS)}.", "",
               f"Tuning parts started: {', '.join(state['tuning_parts']) or 'none'}. "
               "Pending rows identify methods whose tuning or final seeds are unfinished.", ""]
+    for method, entry in state.get("searches", {}).items():
+        lines.append(f"- {method}: grid {entry['grid']}; extensions {entry['extensions']}; "
+                     f"search {'complete' if entry['complete'] else 'pending'}.")
     lines += [f"- {note}" for note in notes]
     lines += ["", "Files: table.csv (final results), tuning.csv (validation trials), runs.csv, state.json, "
               "raw/federated/.../metrics.json (full configs and curves), and per-job logs. "
@@ -295,14 +363,15 @@ def report(args, root, state, archive=False):
 
 def run(args, runner=None):
     spec = protocol(args)
-    root = results_root() / "federated_heterogeneous" / protocol_id(spec)
+    root = protocol_directory(spec)
     experiments = ["transfer", "tuned"] if args.experiment == "both" else [args.experiment]
     n_final = len(args.methods) * len(args.seeds)
     selected_tuning = tuning_methods(args)
-    n_tune = len(selected_tuning) * len(args.lr_factors) * len(args.tune_seeds)
+    n_tune = len(selected_tuning) * args.lr_points * len(args.tune_seeds)
+    n_max = len(selected_tuning) * (args.lr_points + args.lr_extend_points * args.lr_extend_rounds) * len(args.tune_seeds)
     print(f"Dirichlet alpha={args.alpha:g}; methods={', '.join(args.methods)}")
     print(f"Transfer: {n_final} finals (all requested methods, one experiment).")
-    print(f"Tuned/{args.tune_part}: {n_tune} validation trials + up to "
+    print(f"Tuned/{args.tune_part}: {n_tune} initial validation trials ({n_max} maximum with extensions) + up to "
           f"{len(selected_tuning) * len(args.seeds)} finals; fixed momentum 0.9.")
     print(f"Selected experiment(s): {', '.join(experiments)}; {args.rounds} rounds per job.")
     print(f"Results: {root}")
@@ -318,8 +387,18 @@ def run(args, runner=None):
     path = root / "state.json"
     state = json.loads(path.read_text(encoding="utf-8")) if path.exists() else {
         "protocol": spec, "jobs": {}, "experiments": [], "tuning_parts": []}
+    if state["protocol"] == legacy_protocol(spec):
+        state["previous_protocol"] = state["protocol"]
+        state["protocol"] = spec
+        print("Resuming the existing transfer cache; completed runs are preserved.")
     if state["protocol"] != spec:
         raise ValueError("recorded protocol differs; refusing to mix experiments")
+    state.setdefault("searches", {})
+    search = search_protocol(args)
+    if state.get("tuning_protocol", search) != search and state["searches"] and not args.report_only:
+        raise ValueError("recorded LR search settings differ; keep the original search settings")
+    if not args.report_only:
+        state["tuning_protocol"] = search
     if not args.report_only:
         for experiment in experiments:
             if experiment not in state["experiments"]:
@@ -337,14 +416,11 @@ def run(args, runner=None):
                 methods = args.methods if experiment == "transfer" else selected_tuning
                 if experiment == "tuned":
                     for method in methods:
-                        for lr, mu in candidates(args, method):
-                            for seed in args.tune_seeds:
-                                outcomes.append(run_job(args, root, state, method, lr, mu, seed, "tune", runner))
-                                report(args, root, state)
+                        tune_method(args, root, state, method, runner, outcomes)
                 chosen_settings = {}
                 for method in methods:
                     chosen = ((HOMOGENEOUS_LRS[method], HOMOGENEOUS_MOMENTUM)
-                              if experiment == "transfer" else select_best(args, state["jobs"], method))
+                              if experiment == "transfer" else tuned_setting(args, state, method))
                     if chosen is None:
                         raise RuntimeError(f"no valid validation candidate for {method}; inspect state.json")
                     chosen_settings[method] = chosen

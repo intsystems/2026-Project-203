@@ -53,6 +53,7 @@ from typing import Dict, List, Optional, Sequence, Tuple
 from centralized.train import LMO_FAMILY
 from common.lr_scaling import FAMILY_SIGN, RULES
 from common.paths import scrub_text
+from common.lr_grid import ROUND_MANTISSAS, lattice_value, lattice_index, round_grid, extend_grid
 from common.utils import results_root
 
 HERE = Path(__file__).resolve().parent
@@ -129,65 +130,6 @@ def anchor_for(method: str, rule: str) -> float:
 #
 # The lattice spacing is 2x-2.5x (mean 2.15x), i.e. three points per decade,
 # which is finer than the 4.64x the previous four-point/two-decade default used.
-
-ROUND_MANTISSAS = (1.0, 2.0, 5.0)
-
-
-def lattice_value(k: int) -> float:
-    """The ``k``-th 1-2-5 lattice point; ``k=0`` is ``1.0``, and ``k`` may be negative.
-
-    Python's floor division and modulo agree in sign, so negative ``k`` walks the
-    lattice downwards without a special case: ``k=-1`` is ``0.5``, ``k=-3`` is
-    ``0.1``. The result is re-parsed at six significant digits so the value has a
-    clean decimal repr and reaches ``centralized.main`` as ``0.02`` rather than
-    ``0.020000000000000004``.
-    """
-    return float(f"{ROUND_MANTISSAS[k % 3] * 10.0 ** (k // 3):.6g}")
-
-
-def lattice_index(x: float) -> int:
-    """Index of the lattice point closest to ``x`` in log space."""
-    if x <= 0:
-        raise ValueError(f"learning rate must be positive; got {x}")
-    approx = 3 * math.log10(x)
-    target = math.log10(x)
-    candidates = range(math.floor(approx) - 2, math.ceil(approx) + 3)
-    return min(candidates, key=lambda k: abs(math.log10(lattice_value(k)) - target))
-
-
-def round_grid(anchor: float, points: int) -> List[float]:
-    """``points`` consecutive lattice values centred on the one nearest ``anchor``.
-
-    ``points`` alone fixes the span: three lattice points per decade, so seven
-    points is a little over two decades. There is deliberately no ``decades``
-    argument -- the lattice sets the resolution, and letting a caller ask for both
-    a span and a point count would reintroduce the off-lattice strides this exists
-    to remove.
-    """
-    if points < 1:
-        return [float(f"{anchor:.6g}")]
-    k0 = lattice_index(anchor)
-    half = (points - 1) // 2
-    return [lattice_value(k0 - half + i) for i in range(points)]
-
-
-def extend_grid(grid: Sequence[float], *, low: bool, points: int = 2) -> List[float]:
-    """Continue ``grid`` ``points`` lattice steps past one endpoint.
-
-    An optimum sitting on an endpoint is not an optimum -- the grid simply ran out
-    before the objective turned over. Extension walks the same lattice, so however
-    many rounds it takes, the union is still one uniform sweep and every method
-    keeps the same resolution per decade searched.
-    """
-    g = sorted(grid)
-    if not g:
-        return []
-    if low:
-        k = lattice_index(g[0])
-        return sorted([lattice_value(k - i - 1) for i in range(points)] + g)
-    k = lattice_index(g[-1])
-    return sorted(g + [lattice_value(k + i + 1) for i in range(points)])
-
 
 # --------------------------------------------------------------------------
 # Running one configuration

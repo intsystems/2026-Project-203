@@ -19,7 +19,9 @@ The heterogeneous experiment protocol has a separate standard-library check:
 `python -m unittest tests.test_federated_heterogeneous -v`. It checks homogeneous
 parameter provenance, validation-only selection, paired seeds, resume/reuse,
 the complete ten-method transfer, two LR-only tuning parts, failure reporting,
-and their cumulative results archive without training or downloads.
+the homogeneous lattice and boundary extension, reuse of the original transfer
+cache after the search correction, and the cumulative archive without training
+or downloads.
 
 [`test_code.py`](test_code.py) is the suite. The anonymity checks sit beside it in
 `test_anonymize.py`, which `test_code.py` adopts when it is present, so one command

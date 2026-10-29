@@ -67,15 +67,17 @@ auxiliary AdamW LR 0.001. **Momentum is fixed throughout; only LR is tuned.**
   All ten methods run together, without splitting transfer into parts
   (50 final runs). This measures robustness to heterogeneity without retuning.
 - **Tuned, priority:** `signmuon`, `ef21muonusign`, `ef21muonsign`,
-  `ef21signmuon`, and `muon` (25 validation trials plus up to 25 finals).
+  `ef21signmuon`, and `muon` (25 initial validation trials plus up to 25 finals).
   These compare the main practical method, both convergent EF21 placements,
   divergent EF21-SignMuon, and full-precision Muon.
 - **Tuned, remaining:** `muonusign`, `muonsign`, `signsgd`, `sgd`, and `adam`
-  (25 validation trials plus up to 25 finals).
+  (25 initial validation trials plus up to 25 finals).
 
-Both tuning parts search LR factors `{0.1, 0.3, 1, 3, 10}` around each
-homogeneous LR. Each method gets the same five configurations, one tuning
-seed, and the full 2000-round horizon. Select
+Both tuning parts use **the homogeneous 1-2-5 LR lattice and initial CNN2 search
+centers**. Each method starts with five configurations. A boundary winner adds
+two points beyond that endpoint, with at most three extensions (at most eleven
+LRs per method), matching `federated.overnight`. Each method gets the same
+search rule, one tuning seed, and the full 2000-round horizon. Select
 by the last-five validation mean on the existing 45k/5k split, then retrain on
 all 50k images. Auxiliary LR stays fixed. All ten algorithms are the ten rows
 of the article's main federated table.
@@ -98,9 +100,10 @@ The transfer LRs, taken from the saved homogeneous validation search, are:
 | `adam` | 0.001 | remaining |
 
 Transfer answers whether the homogeneous settings remain effective; tuning checks
-whether adapting LR changes the comparison. A selected LR at a search endpoint
-is flagged in the summary; widen `--lr-factors` if this occurs. `--tune-seeds`
-can expand the search. `--methods` can restrict the family for a smoke run;
+whether adapting LR changes the comparison. A winner still at a search endpoint
+after the extension budget is flagged in the summary. `--lr-points`,
+`--lr-extend-rounds`, and `--lr-extend-points` control the search; `--tune-seeds`
+controls replication. `--methods` can restrict the family for a smoke run;
 `--tune-part` affects only tuning and never reduces the transfer method list.
 
 `--dry-run` prints the complete plan without training, downloads, or writes.
@@ -115,9 +118,16 @@ or `table.csv` for mean +/- sample SD of per-seed last-five test accuracy, and
 tables, state, full configs, and curves; weights stay on the training machine.
 Per-job logs are included for diagnosing failed trials from the same ZIP.
 The raw runs are isolated from the homogeneous article export. Changing training
-or search settings creates a separate protocol directory; switching between
-transfer, priority tuning, and remaining tuning keeps the same directory.
+settings creates a separate protocol directory. Search settings are recorded
+separately and must stay fixed once tuning starts; switching between transfer,
+priority tuning, and remaining tuning keeps the same directory.
 `SIGNMUON_RESULTS` relocates the whole tree.
+
+The original transfer cache is adopted automatically when upgrading from the
+first fixed-grid driver. Completed 2000-round runs are retained; the revised
+search protocol and any boundary extensions are recorded in `state.json`.
+Keep the original results directory on the GPU machine to reuse those runs.
+The ZIP is an analysis bundle; resuming uses that machine's original run tree.
 
 Rebuttal setup sentence: "CNN2/CIFAR-10, 11 clients, Dirichlet(0.1) label skew;
 the homogeneous protocol and five paired seeds are retained."
