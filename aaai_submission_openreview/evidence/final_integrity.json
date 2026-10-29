@@ -88,7 +88,7 @@
   "drafts": [
     {
       "stem": "review_R1_7S1b",
-      "characters": 1492,
+      "characters": 1491,
       "included": [
         "R1.1",
         "R1.2",
@@ -111,7 +111,7 @@
     },
     {
       "stem": "review_R2_D4r2",
-      "characters": 1494,
+      "characters": 1482,
       "included": [
         "R2.1",
         "R2.4",
@@ -131,7 +131,7 @@
     },
     {
       "stem": "review_R3_Ueq5",
-      "characters": 1497,
+      "characters": 1473,
       "included": [
         "R3.2",
         "R3.1",
@@ -144,7 +144,7 @@
     },
     {
       "stem": "review_R4_pqje",
-      "characters": 1497,
+      "characters": 1499,
       "included": [
         "R4.1",
         "R4.2",
@@ -170,7 +170,7 @@
     },
     {
       "stem": "review_R5_Tx34",
-      "characters": 1492,
+      "characters": 1498,
       "included": [
         "R5.1",
         "R5.3",
@@ -184,7 +184,7 @@
     },
     {
       "stem": "review_AI_AI_Reviewer",
-      "characters": 1492,
+      "characters": 1493,
       "included": [
         "AI.1",
         "AI.2",
@@ -216,8 +216,8 @@
     }
   ],
   "original_inputs_unchanged": true,
-  "checked_utc": "2026-10-29T20:04:20.214073+00:00",
-  "revision": 3,
+  "checked_utc": "2026-10-29T20:47:52.666836+00:00",
+  "revision": 4,
   "review_files_sha256": {
     "review_AI_AI_Reviewer.md": "65ea9de21ab2c19b45d70859f1b271935b5794a135580775074521d32b8f7dd9",
     "review_R1_7S1b.md": "80b24a98063f589b380b5820faab95485fc84816bcb6e62804e1796305f3ea7a",
@@ -229,12 +229,28 @@
   "annotations_unchanged": true,
   "article_proof_sources_sha256": {
     "signmuon_body.tex": "184a74ac7d4d05d7a6596eed69ccda01f2af0c059b800c364b7e6bf04ac3b696",
-    "signmuon_addendum_body.tex": "ae6ea149c42f8d13e85c53127d90e2241c79b63b18d87afa769b0a78b2419a21",
+    "signmuon_addendum_body.tex": "7a45c5c9c4185312d7f2afde99255dccd4f4452cc8f8e23fa6d19b099dddc8b1",
     "ef21_fixed_radius.tex": "9f4db532589580202646064e3196d7153f235c11f9b94f212cbf66656d369458",
     "ef21_nesterov_convergence.tex": "f3232e168942ebbb49ade7e9382bf3e77a20306f834de789b7b0ef4d11ca3ddd",
     "ef21_rate_takeaways.tex": "a5d9690015032fa576b39e83999cb76969859e68240d2043182dc7fb7ff97019"
   },
   "ef21_separability_retained": true,
   "transfer_runs_verified": 50,
-  "revision_validation": "evidence/revision_3_validation.json"
+  "revision_validation": "evidence/revision_4_validation.json",
+  "previous_article_proof_sources_sha256": {
+    "signmuon_body.tex": "184a74ac7d4d05d7a6596eed69ccda01f2af0c059b800c364b7e6bf04ac3b696",
+    "signmuon_addendum_body.tex": "ae6ea149c42f8d13e85c53127d90e2241c79b63b18d87afa769b0a78b2419a21",
+    "ef21_fixed_radius.tex": "9f4db532589580202646064e3196d7153f235c11f9b94f212cbf66656d369458",
+    "ef21_nesterov_convergence.tex": "f3232e168942ebbb49ade7e9382bf3e77a20306f834de789b7b0ef4d11ca3ddd",
+    "ef21_rate_takeaways.tex": "a5d9690015032fa576b39e83999cb76969859e68240d2043182dc7fb7ff97019"
+  },
+  "article_updates_observed_during_writing": {
+    "signmuon_addendum_body.tex": {
+      "before": "ae6ea149c42f8d13e85c53127d90e2241c79b63b18d87afa769b0a78b2419a21",
+      "current_at_check": "7a45c5c9c4185312d7f2afde99255dccd4f4452cc8f8e23fa6d19b099dddc8b1"
+    }
+  },
+  "all_source_question_links_preserved": true,
+  "shared_heterogeneous_table_verified": true,
+  "new_quadratic_certificate": "evidence/new_quadratic_certificate.json"
 }

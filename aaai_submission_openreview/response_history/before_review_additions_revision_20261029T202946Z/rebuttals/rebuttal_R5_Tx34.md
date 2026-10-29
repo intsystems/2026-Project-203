@@ -1,0 +1,7 @@
+Thank you for asking us to clarify our contribution and Theorem 4.
+
+1. Re our contribution: In the submitted federated study (5 seeds), SignMuon reaches 85.72% using 1 bit per matrix entry, versus 85.98% for full-precision Muon and 81.44% for SignSGD. We compare signing before, after or on both sides of orthogonalization. We prove that every placement can produce an ascent direction. We also prove error feedback after orthogonalization can diverge on a smooth, lower-bounded objective. Lean verifies these failure results. This explains why correcting compression before and after orthogonalization is not interchangeable. The EF21 framework is prior work.
+2. Re what Theorem 4 rules out: For any fixed learning rate and momentum, Theorem 4 constructs a smooth, lower-bounded objective on which EF21-SignMuon diverges. The objective may depend on these parameters. This rules out universal constant-step rules based on smoothness and momentum. It does not rule out decreasing steps or parameters chosen for a finite iteration budget.
+3. Re interpreting the theory: These worst-case theorems do not rank methods on data. Our experiments favor SignMuon for vision accuracy; use EF21-MuonUSign when only the uplink is constrained, or EF21-MuonSign for both links. We will remove blanket “unrepairable” and “only changing the compressor” claims: a sufficient condition need not be necessary.
+
+If this clarifies the contribution and resolves your concerns, please consider raising your score.

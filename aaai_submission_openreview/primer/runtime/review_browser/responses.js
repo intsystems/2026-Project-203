@@ -68,7 +68,52 @@
   }
 
   function renderMath(element, text) {
-    element.textContent = text;
+    const lines = text.split("\n");
+    const cells = line => typeof line === "string" && /^\s*\|.*\|\s*$/.test(line) && !line.includes("\\|")
+      ? line.trim().slice(1, -1).split("|").map(cell => cell.trim()) : null;
+    const content = document.createDocumentFragment();
+    let plain = [];
+    const flush = () => {
+      if (plain.length) content.append(document.createTextNode(plain.join("\n")));
+      plain = [];
+    };
+    for (let i = 0; i < lines.length;) {
+      const header = cells(lines[i]);
+      const separator = cells(lines[i + 1]);
+      if (!header || !separator || header.length !== separator.length ||
+          !separator.every(cell => /^:?-{3,}:?$/.test(cell))) {
+        plain.push(lines[i++]);
+        continue;
+      }
+      flush();
+      const table = document.createElement("table");
+      table.className = "preview-table";
+      const appendRow = (parent, values, tag) => {
+        const row = document.createElement("tr");
+        values.forEach((value, column) => {
+          const cell = document.createElement(tag);
+          cell.textContent = value;
+          if (tag === "th") cell.scope = "col";
+          cell.style.textAlign = separator[column].endsWith(":")
+            ? (separator[column].startsWith(":") ? "center" : "right") : "left";
+          row.append(cell);
+        });
+        parent.append(row);
+      };
+      const head = table.createTHead();
+      appendRow(head, header, "th");
+      const body = table.createTBody();
+      i += 2;
+      for (let row; i < lines.length && (row = cells(lines[i])) && row.length === header.length; i++) {
+        appendRow(body, row, "td");
+      }
+      const wrapper = document.createElement("div");
+      wrapper.className = "preview-table-scroll";
+      wrapper.append(table);
+      content.append(wrapper);
+    }
+    flush();
+    element.replaceChildren(content);
     if (typeof renderMathInElement !== "function") return;
     renderMathInElement(element, {
       delimiters: [{left: "$$", right: "$$", display: true}, {left: "\\[", right: "\\]", display: true},

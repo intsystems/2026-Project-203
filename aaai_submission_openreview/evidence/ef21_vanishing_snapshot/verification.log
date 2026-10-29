@@ -1,0 +1,24 @@
+PASS: exact orthogonality, unique algebraic root, and all 128 strict sign inequalities
+q coefficients (constant, linear, quadratic): [-5493727089, 1548933728, 3903331846]
+root interval: 251/250 201/200
+both sign margins exceed 1/50; h = 0.280595563700; kappa = 5.038967703545
+PASS: constant, scale=0.1, mu=0, nesterov=False, min|grad|=1.068806893, error=0
+PASS: constant, scale=0.1, mu=0, nesterov=True, min|grad|=1.068806893, error=0
+PASS: constant, scale=0.1, mu=0.9, nesterov=False, min|grad|=1.068806893, error=1.4e-15
+PASS: constant, scale=0.1, mu=0.9, nesterov=True, min|grad|=1.068806893, error=6.1e-16
+PASS: constant, scale=0.1, mu=0.99, nesterov=False, min|grad|=1.068806893, error=3.1e-14
+PASS: constant, scale=0.1, mu=0.99, nesterov=True, min|grad|=1.068806893, error=6.4e-15
+PASS: constant, scale=0.001, mu=0, nesterov=False, min|grad|=1.069044968, error=1.4e-15
+PASS: constant, scale=0.001, mu=0, nesterov=True, min|grad|=1.069044968, error=1.4e-15
+PASS: constant, scale=0.001, mu=0.9, nesterov=False, min|grad|=1.069044968, error=1e-13
+PASS: constant, scale=0.001, mu=0.9, nesterov=True, min|grad|=1.069044968, error=3.3e-14
+PASS: constant, scale=0.001, mu=0.99, nesterov=False, min|grad|=1.069044968, error=2.2e-12
+PASS: constant, scale=0.001, mu=0.99, nesterov=True, min|grad|=1.069044968, error=6.8e-13
+PASS: decreasing, scale=0.1, mu=0, nesterov=False, min|grad|=1.061497999, error=1.2e-15
+PASS: decreasing, scale=0.1, mu=0, nesterov=True, min|grad|=1.061497999, error=1.2e-15
+PASS: decreasing, scale=0.1, mu=0.9, nesterov=False, min|grad|=1.068254659, error=2e-14
+PASS: decreasing, scale=0.1, mu=0.9, nesterov=True, min|grad|=1.068254659, error=7.4e-15
+PASS: decreasing, scale=0.1, mu=0, nesterov=False, min|grad|=1.065049362, error=3.2e-14
+PASS: decreasing, scale=0.1, mu=0, nesterov=True, min|grad|=1.065049362, error=3.2e-14
+PASS: decreasing, scale=0.1, mu=0.9, nesterov=False, min|grad|=1.069006523, error=9.9e-13
+PASS: decreasing, scale=0.1, mu=0.9, nesterov=True, min|grad|=1.069006523, error=3.5e-13

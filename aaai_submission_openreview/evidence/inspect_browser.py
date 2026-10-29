@@ -66,6 +66,9 @@ def main():
                     const links=[...document.querySelectorAll('a[href^="#"]')];
                     return {source,characters:source.length,countLabel:document.getElementById('draft-count').textContent,
                         renderedMath:document.querySelectorAll('#rendered-draft .katex').length,
+                        renderedTables:[...document.querySelectorAll('#rendered-draft table')].map(table=>({
+                            headers:[...table.querySelectorAll('thead th')].map(cell=>cell.textContent),
+                            rows:[...table.querySelectorAll('tbody tr')].map(row=>[...row.cells].map(cell=>cell.textContent))})),
                         draftMathErrors:[...document.querySelectorAll('#rendered-draft .katex-error')].map(x=>x.textContent),
                         sourceMathErrors:[...document.querySelectorAll('.katex-error')].map(x=>x.textContent),
                         brokenAnchors:links.filter(a=>a.hash && !document.getElementById(decodeURIComponent(a.hash.slice(1)))).map(a=>a.hash),
@@ -76,6 +79,16 @@ def main():
                 })()''')
                 expected=(BASE/'rebuttals'/spec['target']).read_text(encoding='utf-8')
                 assert data.pop('source')==expected,spec['stem']
+                if spec['stem']=='review_R1_7S1b':
+                    table_rows=[line for line in expected.splitlines() if line.startswith('|') and '±' in line]
+                    assert len(table_rows)==10,table_rows
+                    data['heterogeneousTableRows']=len(table_rows)
+                    rendered=data['renderedTables']
+                    assert len(rendered)==1 and rendered[0]['headers']==['Method','Accuracy (%)'],rendered
+                    assert rendered[0]['rows']==[line.strip('|').split('|') for line in table_rows],rendered
+                else:
+                    assert '7S1b, Q2' in expected,spec['stem']
+                    data['referencesHeterogeneousTable']=True
                 assert not data['draftMathErrors'] and not data['brokenAnchors'],data
                 if spec['stem']!='confidential_ac':assert data['characters']<=1500
                 assert not data['overflow'],data
@@ -83,10 +96,11 @@ def main():
                 data['mobileOverflow']=browser.evaluate('document.documentElement.scrollWidth>innerWidth')
                 assert not data['mobileOverflow'],data
                 browser.call('Emulation.setDeviceMetricsOverride',dict(width=1440,height=1000,deviceScaleFactor=1,mobile=False))
-                if spec['stem']=='review_R3_Ueq5':
+                if spec['stem'] in ('review_R1_7S1b','review_R3_Ueq5'):
                     browser.evaluate("document.getElementById('rendered-draft').scrollIntoView({block:'start'})")
                     screenshot=browser.call('Page.captureScreenshot',{'format':'png','captureBeyondViewport':False})
-                    (BASE/'evidence/browser_R3.png').write_bytes(base64.b64decode(screenshot['data']))
+                    screenshot_name='browser_R1.png' if spec['stem']=='review_R1_7S1b' else 'browser_R3.png'
+                    (BASE/'evidence'/screenshot_name).write_bytes(base64.b64decode(screenshot['data']))
                 report.append(dict(stem=spec['stem'],**data))
             browser.call('Page.navigate',{'url':f'http://127.0.0.1:{port}/reviews/index.html'})
             browser.wait("document.readyState==='complete'")

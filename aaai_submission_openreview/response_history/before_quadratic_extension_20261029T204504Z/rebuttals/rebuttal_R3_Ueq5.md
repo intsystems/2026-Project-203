@@ -1,0 +1,7 @@
+Thank you for identifying the table and rate issues.
+
+1. Re the inconsistent tables: The 5 submitted runs reproduce A8: MuonSign 82.94±0.19% versus SignSGD 81.44±0.15%. SignMuon reaches 85.72±0.24% versus Muon 85.98±0.26%. We will correct Table 2 and its reversed comparison. The heterogeneous results added after submission favor gradient-side EF; see the table in our reply to 7S1b, Q2.
+2. Re the scope of our guarantees: In response to your review, we extended EF21 convergence to fixed EMA and Nesterov momentum with deterministic learning rates, including constant and cosine schedules. The underlying tracking/convergence proofs are verified in Lean. These bounds account for noise and orthogonalization error but retain separable layers. Our added SignMuon theorem permits interacting layers when signing preserves enough alignment with momentum. The numerical solver needs an error bound; nanoGPT’s changing momentum and auxiliary Adam updates need further analysis.
+3. Re the two convergence rates: We will remove the claim that an expected-norm bound can be squared. The $O(T^{-1/2})$ expected squared-gradient result has a separate proof and gradient-dependent steps. Our post-submission bounds instead control the expected gradient norm for constant or cosine schedules; suitable learning rate and momentum choices for the iteration budget make the exact-update bound vanish.
+
+If these corrections resolve your reservations, please consider raising your score.

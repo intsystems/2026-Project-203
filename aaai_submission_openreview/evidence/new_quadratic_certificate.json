@@ -1,0 +1,17 @@
+{
+  "checked_utc": "2026-10-29T20:45:10.722950+00:00",
+  "source_theorem": "aaai_article/ef21_signmuon_vanishing_steps.tex",
+  "source_checker": "research/ef21_signmuon_vanishing_steps.py",
+  "theorem_sha256": "f988365cd4b2eef445e5bc03e014f29c6d1b566f16c7b204d512e8633697a1c4",
+  "checker_sha256": "0c6f2e861a2d16168d209ba75b898edc20b93dbc3d43f520b95d771b1118d60e",
+  "snapshot": "evidence/ef21_vanishing_snapshot",
+  "exact_algebraic_certificate_passed": true,
+  "strict_sign_inequalities": 128,
+  "trajectory_cases_passed": 20,
+  "steps_per_trajectory": 2000,
+  "frobenius_smoothness": 1,
+  "initial_gap": "4/7",
+  "gradient_norm_lower_bound": 1,
+  "lean_verified": false,
+  "live_sources_still_match_snapshot": true
+}

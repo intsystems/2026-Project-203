@@ -1,6 +1,6 @@
-# Rebuttal workspace — readability revision 3
+# Rebuttal workspace — post-submission additions revision 4
 
-All six replies have been rewritten in full sentences. They explain what we proved, what it means and how it answers the review. Headings now say “Re our contribution.” Numbers and conditional higher-score requests remain in all five human replies; the AI reply has no score request. The replies stand alone without access to the revised article.
+All six replies and the confidential AC comment have been revised. The text marks completed additions as work done after submission or in response to the reviews, states what the extended theorems establish, and explains why the new heterogeneous results change the practical recommendation. Credit-only sentences have been removed from the exports. All five human replies retain conditional higher-score requests; the AI reply has none.
 
 ## Current drafts
 
@@ -8,35 +8,45 @@ Open `start_workspace.cmd`, or read `rebuttals/rebuttal_*.md`.
 
 | Response | UTF-16 characters /1500 | Checked concerns selected | Requests still needing evidence |
 | --- | ---: | ---: | --- |
-| R1 ·7S1b | 1492 | 7/10 | R1.6, R1.7, R1.8 |
-| R2 ·D4r2 | 1494 | 6/8 | R2.2, R2.8 |
-| R3 ·Ueq5 | 1497 | 5/5 | None |
-| R4 ·pqje | 1497 | 14/15 | R4.15 |
-| R5 ·Tx34 | 1492 | 6/6 | None |
-| AI reviewer | 1492 | 18/20 | AI.6, AI.20 |
+| R1 ·7S1b | 1491 | 7/10 | R1.6, R1.7, R1.8 |
+| R2 ·D4r2 | 1482 | 6/8 | R2.2, R2.8 |
+| R3 ·Ueq5 | 1473 | 5/5 | None |
+| R4 ·pqje | 1499 | 14/15 | R4.15 |
+| R5 ·Tx34 | 1498 | 6/6 | None |
+| AI reviewer | 1493 | 18/20 | AI.6, AI.20 |
 
-## Theory stated clearly
+## Shared heterogeneous table
 
-- We prove that every sign placement can produce an ascent direction, and that error feedback after orthogonalization can diverge on a smooth, lower-bounded objective. The original failure results are verified in Lean.
-- We generalized the EF21 convergence analysis to EMA and Nesterov momentum with deterministic learning rates. Its underlying tracking/convergence proofs are verified in Lean; constant and cosine schedules are specializations. Printed cosine sums are composed manually, so the replies do not claim every printed corollary is a complete exported Lean declaration.
-- The bounds account for noise and numerical-direction error. The actual approximate solver still needs a certified error/quality bound. Fixed momentum and separable layers remain assumptions of these EF21 results.
-- The separate SignMuon theorem permits interacting layers if signing retains enough alignment with momentum. It is not claimed Lean-verified; the network alignment measurements remain outstanding.
-- The squared-gradient rate uses a separate proof with gradient-dependent steps. A bound on the expected norm cannot simply be squared.
+**The full table is in the reply to 7S1b, Question 2.** It contains all 10 tested methods, with accuracy mean±sample SD over 5 seeds. All other replies and the AC comment refer to that reviewer/question. There are no external links in the exports.
 
-## Evidence and remaining work
+The added test uses CNN2/CIFAR-10, 11 clients, Dirichlet(0.1), 2000 rounds, no local updates and the IID-selected learning rates. EF21-MuonSign reaches 83.23±0.36%, EF21-MuonUSign 82.99±0.46%, SGD 81.03±0.62%, Muon 46.02±8.55% and SignMuon 35.92±8.49%. Gradient-side EF leads this transfer comparison. Retuning is pending; the results do not rank separately retuned heterogeneous optima.
 
-The existing submitted logs/A5/A8 support all quoted vision numbers; the table correction remains MuonSign 82.94±0.19% versus SignSGD 81.44±0.15%. The new transfer archive contains 50 checked runs with IID rates held fixed: EF21-MuonSign 83.23% versus SignMuon 35.92% under Dirichlet(0.1). LR retuning remains pending. nanoGPT has 1 run per method and tests centralized updates after full-precision averaging.
+The table is generated from the previously verified 50-run archive. The archive hash was rechecked; no training or full Lean build was run during this writing revision.
 
-The 8 evidence flags remain visible: network alignment (R1.6, R2.8, R4.15, AI.20), broader federation/models and retuning (R1.7, R2.2), additional nanoGPT seeds (R1.8), and matched SSVR experiments (AI.6). No missing experiment is marked complete by the wording revision.
+## Theory and timing
 
-The Lean audit record passed 45 frozen statements on 23 October 2026. Reference and dependency hashes were rechecked for this edit; the full Lean build was not rerun. See `evidence/revision_3_readability.md` for the precise formalization scope.
+- Submitted ascent/divergence results are identified as submitted results. Their Lean verification and the EF21 momentum/schedule extensions are described as additions after submission.
+- In response to the reviews, the replies explain that EF21 convergence was extended to fixed EMA/Nesterov and deterministic learning rates, including constant/cosine schedules. Core tracking/convergence proofs are verified in Lean. The printed cosine sums are manual compositions of formalized results.
+- EF21 still retains separable layers and a fixed momentum coefficient. Actual numerical orthogonalization needs a quality/error bound. nanoGPT’s changing momentum and auxiliary Adam updates need further analysis.
+- The separate post-submission SignMuon theorem permits interacting layers under uniform alignment. It is not claimed Lean-verified; the network condition remains unmeasured.
+- The squared-gradient rate has a separate proof with gradient-dependent steps. An expected-norm rate cannot simply be squared.
 
-## Preservation and checks
+## Remaining evidence and preservation
 
-The current author state, including R5 revision 8, was backed up before editing in `response_history/before_readability_revision_20261029T200001Z/`. Review IDs, source passages, selections and pending flags are preserved. R5 advances to revision 9; each other reply also advances from its current revision.
+The 8 evidence flags remain: network alignment (R1.6, R2.8, R4.15, AI.20), additional federation/models and retuning (R1.7, R2.2), nanoGPT seeds (R1.8), matched SSVR experiments (AI.6). Local updates, partial participation and retuned heterogeneous optima remain untested. No missing experiment is marked complete.
 
-The independently editable confidential draft has 1377 UTF-16 characters. Its actual field limit/readers remain unknown; check the destination form before using it.
+The prior author state is preserved in `response_history/before_review_additions_revision_20261029T202946Z/`. IDs, source passages, selections and pending flags are preserved. R5 advances to revision 10; all other replies also advance by one revision.
 
-Build, browser inspection and workspace checks passed for this revision. All 7 editor pages have matching exports and counts, working local links, rendered math and no desktop/mobile overflow or JavaScript exceptions. Results are recorded in `evidence/revision_3_validation.json`. After further edits, rebuild with `python -X utf8 aaai_submission_openreview/primer/workspace.py build`, inspect the pages and run the same command with `check`. The evidence ledger is `02_REBUTTAL_PLAN.md`.
+The independent confidential draft has 1949 UTF-16 characters. Its actual field limit/readers remain unknown; configuration keeps the limit `null`. Check the destination form before using it.
 
-Save browser edits before pulling or merging, coordinate work on `response_fragments.json`, and restart the editor after rebuilding. Saves are local. Nothing is submitted to OpenReview automatically; the configured deadline remains 31 October 2026 AoE. Read `README.md` for the collaboration workflow.
+## Checks and collaboration
+
+Build, inspection of all 7 editor pages and workspace checks passed. The table renders as columns and its cells match the 10 verified results. The 6 portable checks and the relocated browser save checks also passed. Results are recorded in `evidence/revision_4_validation.json`. After further edits, build with `python -X utf8 aaai_submission_openreview/primer/workspace.py build`, inspect the pages and run the same command with `check`. The evidence ledger is `02_REBUTTAL_PLAN.md`.
+
+Save browser edits before pulling or merging, coordinate edits to `response_fragments.json`, and restart the editor after rebuilding. Saves are local; nothing is submitted automatically. The configured deadline remains 31 October 2026 AoE. Read `README.md` for the collaboration workflow.
+
+## Separate completed quadratic extension
+
+The addendum changed while this writing revision was in progress. The new exact-polar EF21-SignMuon construction has been checked and is now stated in Tx34 Q2, the AI scope answer and the AC comment. For every budget-tuned constant learning rate and fixed EMA/Nesterov coefficient, an 8×8 convex quadratic has Frobenius smoothness 1, initial gap 4/7 and gradient norm at least 1 at every iterate. The family has uniform constants; the objective can depend on the parameters. Decreasing schedules are covered without momentum, and suitable power decay with each fixed momentum coefficient. This is a separate result from submitted Theorem 4.
+
+Frozen proof/certificate bytes and the passing log are in `evidence/ef21_vanishing_snapshot/`. The exact certificate checks all 128 strict sign inequalities; 20 numerical optimizer trajectories corroborate the recurrence. This new construction is not part of the Lean audit. The preparation did not edit the live scientific sources.

@@ -1,0 +1,191 @@
+{
+  "checked_utc": "2026-10-29T20:47:52.666836+00:00",
+  "revision": 4,
+  "build_passed": true,
+  "workspace_check_passed": true,
+  "browser_inspection_passed": true,
+  "browser_report": "evidence/browser_inspection.json",
+  "browser_checked_utc": "2026-10-29T20:47:51.856437+00:00",
+  "all_six_replies_within_1500_utf16_characters": true,
+  "all_64_concern_ids_selections_pending_flags_and_question_links_preserved": true,
+  "eight_pending_evidence_flags_preserved": true,
+  "five_human_score_requests_retained": true,
+  "source_reviews_annotations_rules_and_workspace_identity_unchanged": true,
+  "shared_table_exactly_matches_all_10_verified_results": true,
+  "shared_table_rendered_as_columns_in_browser": true,
+  "five_other_replies_and_ac_reference_7S1b_Q2": true,
+  "post_submission_additions_explicit": true,
+  "credit_only_sentences_removed_from_exports": true,
+  "portable_python_checks": {
+    "passed": 6,
+    "command": "python -X utf8 aaai_submission_openreview/primer/tests/test_portable.py"
+  },
+  "relocated_browser_checks": {
+    "passed": true,
+    "coverage": "Both editors, 380-character limit, autosave, native folder save, math, 3 reviews, desktop/mobile, separate identities.",
+    "launch_note": "Default Edge launch timed out at Page.enable before loading editor code. Reran the same fixture with --no-sandbox and --disable-features=RendererCodeIntegrity, matching the working inspection launch; passed."
+  },
+  "lean_existing_audit": {
+    "passed": true,
+    "statements": 45,
+    "verified_utc": "2026-10-23T08:21:07.827270+00:00",
+    "full_build_rerun": false
+  },
+  "new_quadratic_obstruction": {
+    "checked_utc": "2026-10-29T20:45:10.722950+00:00",
+    "source_theorem": "aaai_article/ef21_signmuon_vanishing_steps.tex",
+    "source_checker": "research/ef21_signmuon_vanishing_steps.py",
+    "theorem_sha256": "f988365cd4b2eef445e5bc03e014f29c6d1b566f16c7b204d512e8633697a1c4",
+    "checker_sha256": "0c6f2e861a2d16168d209ba75b898edc20b93dbc3d43f520b95d771b1118d60e",
+    "snapshot": "evidence/ef21_vanishing_snapshot",
+    "exact_algebraic_certificate_passed": true,
+    "strict_sign_inequalities": 128,
+    "trajectory_cases_passed": 20,
+    "steps_per_trajectory": 2000,
+    "frobenius_smoothness": 1,
+    "initial_gap": "4/7",
+    "gradient_norm_lower_bound": 1,
+    "lean_verified": false,
+    "live_sources_still_match_snapshot": true
+  },
+  "article_updates_observed_during_writing": {
+    "signmuon_addendum_body.tex": {
+      "before": "ae6ea149c42f8d13e85c53127d90e2241c79b63b18d87afa769b0a78b2419a21",
+      "current_at_check": "7a45c5c9c4185312d7f2afde99255dccd4f4452cc8f8e23fa6d19b099dddc8b1"
+    }
+  },
+  "live_article_sources_modified_by_this_preparation": false,
+  "training_run_for_writing_edit": false,
+  "confidential_characters": 1949,
+  "confidential_limit": null,
+  "drafts": [
+    {
+      "stem": "review_R1_7S1b",
+      "characters": 1491,
+      "included": [
+        "R1.1",
+        "R1.2",
+        "R1.3",
+        "R1.9",
+        "R1.4",
+        "R1.10",
+        "R1.5"
+      ],
+      "omitted": [
+        "R1.6",
+        "R1.7",
+        "R1.8"
+      ],
+      "pending": [
+        "R1.6",
+        "R1.7",
+        "R1.8"
+      ]
+    },
+    {
+      "stem": "review_R2_D4r2",
+      "characters": 1482,
+      "included": [
+        "R2.1",
+        "R2.4",
+        "R2.5",
+        "R2.6",
+        "R2.7",
+        "R2.3"
+      ],
+      "omitted": [
+        "R2.2",
+        "R2.8"
+      ],
+      "pending": [
+        "R2.2",
+        "R2.8"
+      ]
+    },
+    {
+      "stem": "review_R3_Ueq5",
+      "characters": 1473,
+      "included": [
+        "R3.2",
+        "R3.1",
+        "R3.3",
+        "R3.4",
+        "R3.5"
+      ],
+      "omitted": [],
+      "pending": []
+    },
+    {
+      "stem": "review_R4_pqje",
+      "characters": 1499,
+      "included": [
+        "R4.1",
+        "R4.2",
+        "R4.3",
+        "R4.4",
+        "R4.6",
+        "R4.5",
+        "R4.7",
+        "R4.8",
+        "R4.9",
+        "R4.10",
+        "R4.11",
+        "R4.12",
+        "R4.13",
+        "R4.14"
+      ],
+      "omitted": [
+        "R4.15"
+      ],
+      "pending": [
+        "R4.15"
+      ]
+    },
+    {
+      "stem": "review_R5_Tx34",
+      "characters": 1498,
+      "included": [
+        "R5.1",
+        "R5.3",
+        "R5.2",
+        "R5.4",
+        "R5.5",
+        "R5.6"
+      ],
+      "omitted": [],
+      "pending": []
+    },
+    {
+      "stem": "review_AI_AI_Reviewer",
+      "characters": 1493,
+      "included": [
+        "AI.1",
+        "AI.2",
+        "AI.7",
+        "AI.3",
+        "AI.4",
+        "AI.5",
+        "AI.18",
+        "AI.19",
+        "AI.8",
+        "AI.9",
+        "AI.11",
+        "AI.10",
+        "AI.13",
+        "AI.14",
+        "AI.15",
+        "AI.16",
+        "AI.17",
+        "AI.12"
+      ],
+      "omitted": [
+        "AI.6",
+        "AI.20"
+      ],
+      "pending": [
+        "AI.6",
+        "AI.20"
+      ]
+    }
+  ]
+}

@@ -1,0 +1,54 @@
+{
+  "created_utc": "2026-10-29T20:29:47.038933+00:00",
+  "backup": "response_history/before_review_additions_revision_20261029T202946Z",
+  "input_response_sha256": "865234e27dad528e1d14cc37988b382658d1461db213598c1f7adc896941d6d4",
+  "response_characters_utf16": {
+    "review_R1_7S1b": 1491,
+    "review_R2_D4r2": 1482,
+    "review_R3_Ueq5": 1473,
+    "review_R4_pqje": 1499,
+    "review_R5_Tx34": 1498,
+    "review_AI_AI_Reviewer": 1493
+  },
+  "review_revisions": {
+    "review_R1_7S1b": 4,
+    "review_R2_D4r2": 4,
+    "review_R3_Ueq5": 4,
+    "review_R4_pqje": 4,
+    "review_R5_Tx34": 10,
+    "review_AI_AI_Reviewer": 4
+  },
+  "confidential_characters_utf16": 1949,
+  "shared_table": {
+    "reviewer": "7S1b",
+    "stem": "review_R1_7S1b",
+    "question": 2,
+    "concern": "R1.2",
+    "method_count": 10,
+    "verified_runs": 50,
+    "archive_sha256": "b66dbfdfcf8cd8d6211527ac22103b268064a402a99427fd37ecad9d20058d40",
+    "source": "evidence/heterogeneous_transfer_verified.json"
+  },
+  "post_submission_additions_identified": true,
+  "new_training_run_for_prose_edit": false,
+  "lean_build_rerun_for_prose_edit": false,
+  "conditional_signmuon_claimed_lean_verified": false,
+  "quadratic_extension": {
+    "checked_utc": "2026-10-29T20:45:10.722950+00:00",
+    "source_theorem": "aaai_article/ef21_signmuon_vanishing_steps.tex",
+    "source_checker": "research/ef21_signmuon_vanishing_steps.py",
+    "theorem_sha256": "f988365cd4b2eef445e5bc03e014f29c6d1b566f16c7b204d512e8633697a1c4",
+    "checker_sha256": "0c6f2e861a2d16168d209ba75b898edc20b93dbc3d43f520b95d771b1118d60e",
+    "snapshot": "evidence/ef21_vanishing_snapshot",
+    "exact_algebraic_certificate_passed": true,
+    "strict_sign_inequalities": 128,
+    "trajectory_cases_passed": 20,
+    "steps_per_trajectory": 2000,
+    "frobenius_smoothness": 1,
+    "initial_gap": "4/7",
+    "gradient_norm_lower_bound": 1,
+    "lean_verified": false,
+    "live_sources_still_match_snapshot": true
+  },
+  "quadratic_extension_backup": "response_history/before_quadratic_extension_20261029T204504Z"
+}

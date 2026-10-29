@@ -1,0 +1,240 @@
+{
+  "original_review_blocks": {
+    "review_R1_7S1b": "6618849536bb8cd7e12358b037f7649b4f43493ce772bd21310e7018b9a82b16",
+    "review_R2_D4r2": "d490d498909d25eb338e693f45b676f1a4dc93afe23e4e35b856041b4e50f148",
+    "review_R3_Ueq5": "6286195e2095f788f17461ec49cbfd78e93b9a37198c5fec873d6b179171b8f4",
+    "review_R4_pqje": "cfac0c05f6f3627d2d0c25b88eba211b302da875a6890bead175a4fb0fd4a812",
+    "review_R5_Tx34": "d93c09c20ab1a9aee6af8e1828f7ef517ebc6b9e0ac3731039f29395a4007326",
+    "review_AI_AI_Reviewer": "93b54b483c6022656b6d04e4e02fb22cdce6c4d260a6dbad6dc98f48e3d19ed4"
+  },
+  "original_ids_preserved": {
+    "review_R1_7S1b": [
+      "R1.1",
+      "R1.10",
+      "R1.2",
+      "R1.3",
+      "R1.4",
+      "R1.5",
+      "R1.6",
+      "R1.7",
+      "R1.8",
+      "R1.9"
+    ],
+    "review_R2_D4r2": [
+      "R2.1",
+      "R2.2",
+      "R2.3",
+      "R2.4",
+      "R2.5",
+      "R2.6",
+      "R2.7",
+      "R2.8"
+    ],
+    "review_R3_Ueq5": [
+      "R3.1",
+      "R3.2",
+      "R3.3",
+      "R3.4",
+      "R3.5"
+    ],
+    "review_R4_pqje": [
+      "R4.1",
+      "R4.10",
+      "R4.11",
+      "R4.12",
+      "R4.13",
+      "R4.14",
+      "R4.15",
+      "R4.2",
+      "R4.3",
+      "R4.4",
+      "R4.5",
+      "R4.6",
+      "R4.7",
+      "R4.8",
+      "R4.9"
+    ],
+    "review_R5_Tx34": [
+      "R5.1",
+      "R5.2",
+      "R5.3",
+      "R5.4",
+      "R5.5",
+      "R5.6"
+    ],
+    "review_AI_AI_Reviewer": [
+      "AI.1",
+      "AI.10",
+      "AI.11",
+      "AI.12",
+      "AI.13",
+      "AI.14",
+      "AI.15",
+      "AI.16",
+      "AI.17",
+      "AI.18",
+      "AI.19",
+      "AI.2",
+      "AI.20",
+      "AI.3",
+      "AI.4",
+      "AI.5",
+      "AI.6",
+      "AI.7",
+      "AI.8",
+      "AI.9"
+    ]
+  },
+  "drafts": [
+    {
+      "stem": "review_R1_7S1b",
+      "characters": 1492,
+      "included": [
+        "R1.1",
+        "R1.2",
+        "R1.3",
+        "R1.9",
+        "R1.4",
+        "R1.10",
+        "R1.5"
+      ],
+      "omitted": [
+        "R1.6",
+        "R1.7",
+        "R1.8"
+      ],
+      "pending": [
+        "R1.6",
+        "R1.7",
+        "R1.8"
+      ]
+    },
+    {
+      "stem": "review_R2_D4r2",
+      "characters": 1494,
+      "included": [
+        "R2.1",
+        "R2.4",
+        "R2.5",
+        "R2.6",
+        "R2.7",
+        "R2.3"
+      ],
+      "omitted": [
+        "R2.2",
+        "R2.8"
+      ],
+      "pending": [
+        "R2.2",
+        "R2.8"
+      ]
+    },
+    {
+      "stem": "review_R3_Ueq5",
+      "characters": 1497,
+      "included": [
+        "R3.2",
+        "R3.1",
+        "R3.3",
+        "R3.4",
+        "R3.5"
+      ],
+      "omitted": [],
+      "pending": []
+    },
+    {
+      "stem": "review_R4_pqje",
+      "characters": 1497,
+      "included": [
+        "R4.1",
+        "R4.2",
+        "R4.3",
+        "R4.4",
+        "R4.6",
+        "R4.5",
+        "R4.7",
+        "R4.8",
+        "R4.9",
+        "R4.10",
+        "R4.11",
+        "R4.12",
+        "R4.13",
+        "R4.14"
+      ],
+      "omitted": [
+        "R4.15"
+      ],
+      "pending": [
+        "R4.15"
+      ]
+    },
+    {
+      "stem": "review_R5_Tx34",
+      "characters": 1492,
+      "included": [
+        "R5.1",
+        "R5.3",
+        "R5.2",
+        "R5.4",
+        "R5.5",
+        "R5.6"
+      ],
+      "omitted": [],
+      "pending": []
+    },
+    {
+      "stem": "review_AI_AI_Reviewer",
+      "characters": 1492,
+      "included": [
+        "AI.1",
+        "AI.2",
+        "AI.7",
+        "AI.3",
+        "AI.4",
+        "AI.5",
+        "AI.18",
+        "AI.19",
+        "AI.8",
+        "AI.9",
+        "AI.11",
+        "AI.10",
+        "AI.13",
+        "AI.14",
+        "AI.15",
+        "AI.16",
+        "AI.17",
+        "AI.12"
+      ],
+      "omitted": [
+        "AI.6",
+        "AI.20"
+      ],
+      "pending": [
+        "AI.6",
+        "AI.20"
+      ]
+    }
+  ],
+  "original_inputs_unchanged": true,
+  "checked_utc": "2026-10-29T20:04:20.214073+00:00",
+  "revision": 3,
+  "review_files_sha256": {
+    "review_AI_AI_Reviewer.md": "65ea9de21ab2c19b45d70859f1b271935b5794a135580775074521d32b8f7dd9",
+    "review_R1_7S1b.md": "80b24a98063f589b380b5820faab95485fc84816bcb6e62804e1796305f3ea7a",
+    "review_R2_D4r2.md": "fda0598cd8282f252f313764c9ace832bbcf5a72dbab73be8757aedc23266d1c",
+    "review_R3_Ueq5.md": "aff7c93a75c213aba894ee7c81c29c1c1d25004a733223521a907d60567fa68b",
+    "review_R4_pqje.md": "53ca6487791b165795f543996430df858146dfad243c64fb10d71a50a5482cc3",
+    "review_R5_Tx34.md": "1b6bd50466248de358dba1849bd47d25b1c800806b790ecfe0103bbf8a0415a5"
+  },
+  "annotations_unchanged": true,
+  "article_proof_sources_sha256": {
+    "signmuon_body.tex": "184a74ac7d4d05d7a6596eed69ccda01f2af0c059b800c364b7e6bf04ac3b696",
+    "signmuon_addendum_body.tex": "ae6ea149c42f8d13e85c53127d90e2241c79b63b18d87afa769b0a78b2419a21",
+    "ef21_fixed_radius.tex": "9f4db532589580202646064e3196d7153f235c11f9b94f212cbf66656d369458",
+    "ef21_nesterov_convergence.tex": "f3232e168942ebbb49ade7e9382bf3e77a20306f834de789b7b0ef4d11ca3ddd",
+    "ef21_rate_takeaways.tex": "a5d9690015032fa576b39e83999cb76969859e68240d2043182dc7fb7ff97019"
+  },
+  "ef21_separability_retained": true,
+  "transfer_runs_verified": 50,
+  "revision_validation": "evidence/revision_3_validation.json"
+}

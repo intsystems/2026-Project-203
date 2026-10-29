@@ -1,11 +1,61 @@
 {
-  "checked_utc": "2026-10-29T20:02:32.443614+00:00",
+  "checked_utc": "2026-10-29T20:47:51.856437+00:00",
   "pages": [
     {
       "stem": "review_R1_7S1b",
-      "characters": 1492,
-      "countLabel": "1492 / 1,500 characters",
+      "characters": 1491,
+      "countLabel": "1491 / 1,500 characters",
       "renderedMath": 0,
+      "renderedTables": [
+        {
+          "headers": [
+            "Method",
+            "Accuracy (%)"
+          ],
+          "rows": [
+            [
+              "EF21-MuonSign",
+              "83.23±0.36"
+            ],
+            [
+              "EF21-MuonUSign",
+              "82.99±0.46"
+            ],
+            [
+              "SGD",
+              "81.03±0.62"
+            ],
+            [
+              "Adam",
+              "71.17±7.16"
+            ],
+            [
+              "Muon",
+              "46.02±8.55"
+            ],
+            [
+              "EF21-SignMuon",
+              "45.46±7.66"
+            ],
+            [
+              "SignMuon",
+              "35.92±8.49"
+            ],
+            [
+              "SignSGD",
+              "26.42±3.23"
+            ],
+            [
+              "MuonUSign",
+              "26.21±2.75"
+            ],
+            [
+              "MuonSign",
+              "25.63±3.98"
+            ]
+          ]
+        }
+      ],
       "draftMathErrors": [],
       "sourceMathErrors": [],
       "brokenAnchors": [],
@@ -17,13 +67,15 @@
       ],
       "overflow": false,
       "saveStatus": "Loaded from files · edits save automatically",
+      "heterogeneousTableRows": 10,
       "mobileOverflow": false
     },
     {
       "stem": "review_R2_D4r2",
-      "characters": 1494,
-      "countLabel": "1494 / 1,500 characters",
-      "renderedMath": 4,
+      "characters": 1482,
+      "countLabel": "1482 / 1,500 characters",
+      "renderedMath": 3,
+      "renderedTables": [],
       "draftMathErrors": [],
       "sourceMathErrors": [],
       "brokenAnchors": [],
@@ -34,13 +86,15 @@
       ],
       "overflow": false,
       "saveStatus": "Loaded from files · edits save automatically",
+      "referencesHeterogeneousTable": true,
       "mobileOverflow": false
     },
     {
       "stem": "review_R3_Ueq5",
-      "characters": 1497,
-      "countLabel": "1497 / 1,500 characters",
+      "characters": 1473,
+      "countLabel": "1473 / 1,500 characters",
       "renderedMath": 1,
+      "renderedTables": [],
       "draftMathErrors": [],
       "sourceMathErrors": [],
       "brokenAnchors": [],
@@ -48,13 +102,15 @@
       "pending": [],
       "overflow": false,
       "saveStatus": "Loaded from files · edits save automatically",
+      "referencesHeterogeneousTable": true,
       "mobileOverflow": false
     },
     {
       "stem": "review_R4_pqje",
-      "characters": 1497,
-      "countLabel": "1497 / 1,500 characters",
+      "characters": 1499,
+      "countLabel": "1499 / 1,500 characters",
       "renderedMath": 0,
+      "renderedTables": [],
       "draftMathErrors": [],
       "sourceMathErrors": [],
       "brokenAnchors": [],
@@ -64,13 +120,15 @@
       ],
       "overflow": false,
       "saveStatus": "Loaded from files · edits save automatically",
+      "referencesHeterogeneousTable": true,
       "mobileOverflow": false
     },
     {
       "stem": "review_R5_Tx34",
-      "characters": 1492,
-      "countLabel": "1492 / 1,500 characters",
+      "characters": 1498,
+      "countLabel": "1498 / 1,500 characters",
       "renderedMath": 0,
+      "renderedTables": [],
       "draftMathErrors": [],
       "sourceMathErrors": [],
       "brokenAnchors": [],
@@ -78,13 +136,15 @@
       "pending": [],
       "overflow": false,
       "saveStatus": "Loaded from files · edits save automatically",
+      "referencesHeterogeneousTable": true,
       "mobileOverflow": false
     },
     {
       "stem": "review_AI_AI_Reviewer",
-      "characters": 1492,
-      "countLabel": "1492 / 1,500 characters",
+      "characters": 1493,
+      "countLabel": "1493 / 1,500 characters",
       "renderedMath": 0,
+      "renderedTables": [],
       "draftMathErrors": [],
       "sourceMathErrors": [],
       "brokenAnchors": [],
@@ -95,13 +155,15 @@
       ],
       "overflow": false,
       "saveStatus": "Loaded from files · edits save automatically",
+      "referencesHeterogeneousTable": true,
       "mobileOverflow": false
     },
     {
       "stem": "confidential_ac",
-      "characters": 1377,
-      "countLabel": "1377 characters · limit not specified",
+      "characters": 1949,
+      "countLabel": "1949 characters · limit not specified",
       "renderedMath": 0,
+      "renderedTables": [],
       "draftMathErrors": [],
       "sourceMathErrors": [],
       "brokenAnchors": [],
@@ -109,6 +171,7 @@
       "pending": [],
       "overflow": false,
       "saveStatus": "Loaded from files · edits save automatically",
+      "referencesHeterogeneousTable": true,
       "mobileOverflow": false
     }
   ],

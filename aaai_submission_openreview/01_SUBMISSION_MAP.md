@@ -110,3 +110,13 @@ The EF21 fixed-radius proof explicitly invokes block independence. The addendumâ
 ## Lean evidence used in the readability revision
 
 `lean_proofs/comparator/VERIFICATION.json` records 45 passed statement comparisons and kernel replay on 23 October 2026. Its reference and dependency hashes still match. `lean_proofs/PAPER_AUDIT.md` and `README.md` explain the original failure theorems, generalized EF21 tracking/convergence proofs, approximation-error terms and manual cosine-sum specialization. The conditional plain SignMuon theorem is an analytic addendum result and is not described as Lean-verified. See `evidence/revision_3_readability.md`.
+
+## Revision 4: timing of additions and heterogeneous table
+
+The completed momentum/schedule extensions, conditional SignMuon theorem and heterogeneous tests are now explicitly distinguished from submitted results. The original failure theorems and submitted vision measurements remain labeled accordingly. Public replies omit credit-only sentences; the source/bibliography audit above is retained.
+
+The full 10-method transfer table is exported in the reply to **7S1b, Q2** and referenced from the five other replies and the AC comment. It is generated directly from `evidence/heterogeneous_transfer_verified.json`; the frozen archive hash was rechecked and matches that verification record. No new training or numerical result was produced during this prose edit.
+
+## Separate quadratic construction added during revision 4
+
+The live `aaai_article/signmuon_addendum_body.tex` changed during preparation to include `ef21_signmuon_vanishing_steps.tex`. The preparation did not edit these scientific sources. The new theorem and its exact rational/algebraic certificate were read, checked and frozen in `evidence/ef21_vanishing_snapshot/`. Hashes and the 20 successful trajectory checks are recorded in `evidence/new_quadratic_certificate.json`. Tx34 Q2 and the AC comment now use this stronger completed result. The existing Lean audit does not cover N4.

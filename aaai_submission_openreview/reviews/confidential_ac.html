@@ -194,6 +194,10 @@ input[type="checkbox"] { accent-color: var(--accent); width: 16px; height: 16px;
 .rendered-draft { margin-top: 22px; }
 .rendered-draft h3 { margin: 0; font-size: 1.15rem; scroll-margin-top: calc(var(--workspace-toolbar-height, 52px) + 15px); }
 .full-response-preview { border: 1px solid var(--line); border-radius: 7px; padding: 20px; font: 1.06rem/1.85 Georgia, Cambria, "Times New Roman", serif; white-space: pre-wrap; overflow-wrap: anywhere; user-select: text; }
+.preview-table-scroll { max-width: 100%; overflow-x: auto; white-space: normal; }
+.preview-table { border-collapse: collapse; margin: 8px 0; white-space: normal; }
+.preview-table th, .preview-table td { padding: 3px 14px 3px 0; border-bottom: 1px solid var(--line); }
+.preview-table th { font-weight: 650; }
 .full-response-preview .katex-display { overflow-x: auto; overflow-y: hidden; padding: 4px 0; }
 .preview-heading { display: flex; align-items: center; justify-content: space-between; gap: 12px; flex-wrap: wrap; margin-top: 26px; scroll-margin-top: calc(var(--workspace-toolbar-height, 52px) + 15px); }
 .preview-heading h3 { font-size: 1.15rem; margin: 0; }
@@ -281,7 +285,7 @@ input[type="checkbox"] { accent-color: var(--accent); width: 16px; height: 16px;
 <body class="review-page confidential-page"><header class="masthead"><div class="header-identity"><p class="eyebrow">SignMuon / AAAI-27 / #48060</p><h1>Confidential AC/SPC comment</h1></div><a class="button-link" href="index.html">All reviews</a></header>
 <nav class="review-tabs" aria-label="Draft navigation"><a href="review_R1_7S1b.html">Human review 1 · 7S1b</a><a href="review_R2_D4r2.html">Human review 2 · D4r2</a><a href="review_R3_Ueq5.html">Human review 3 · Ueq5</a><a href="review_R4_pqje.html">Human review 4 · pqje</a><a href="review_R5_Tx34.html">Human review 5 · Tx34</a><a href="review_AI_AI_Reviewer.html">AI review · AI_Reviewer</a><a href="confidential_ac.html">Confidential AC/SPC comment</a></nav>
 <div class="reader-layout"><aside class="summary-pane" id="summary-C1"><div class="pane-heading"><h2>Purpose and references</h2><p>A concise decision summary: correct a factual misunderstanding, connect the evidence, and make a reasoned request for acceptance.</p><p>This draft is for the AC/SPC. Saving writes local files; it does not post to OpenReview.</p><a class="button-link" href="#assembled-draft">Edit the confidential comment ↓</a></div>
-<section class="chair-references" id="chair-references"><h3>Relevant review passages</h3><p>Reviewer IDs and question numbers appear in the comment. These clickable links are drafting aids and are excluded from the exported text.</p><ol><li><a href="review_R3_Ueq5.html#passage-R3-2-01">Ueq5 · Table 2/A8 discrepancy</a> <a href="review_R3_Ueq5.html#response-R3-2">Our answer</a></li><li><a href="review_R4_pqje.html#passage-R4-3-01">pqje · Question2: correct five-seed results</a> <a href="review_R4_pqje.html#response-R4-3">Our answer</a></li><li><a href="review_R5_Tx34.html#passage-R5-1-02">Tx34 · Question1: novelty beyond EF21</a> <a href="review_R5_Tx34.html#response-R5-1">Our answer</a></li><li><a href="review_R5_Tx34.html#passage-R5-2-02">Tx34 · Question2: Theorem 4 quantifiers</a> <a href="review_R5_Tx34.html#response-R5-2">Our answer</a></li><li><a href="review_R1_7S1b.html#passage-R1-1-02">7S1b · Question1: positive structural condition</a> <a href="review_R1_7S1b.html#response-R1-1">Our answer</a></li><li><a href="review_R4_pqje.html#passage-R4-1-01">pqje · Question1: theorem/implementation coverage</a> <a href="review_R4_pqje.html#response-R4-1">Our answer</a></li></ol>
+<section class="chair-references" id="chair-references"><h3>Relevant review passages</h3><p>Reviewer IDs and question numbers appear in the comment. These clickable links are drafting aids and are excluded from the exported text.</p><ol><li><a href="review_R1_7S1b.html#passage-R1-2-02">7S1b · Question2: added heterogeneous results</a> <a href="review_R1_7S1b.html#response-R1-2">Our answer</a></li><li><a href="review_R3_Ueq5.html#passage-R3-2-01">Ueq5 · Table 2/A8 discrepancy</a> <a href="review_R3_Ueq5.html#response-R3-2">Our answer</a></li><li><a href="review_R4_pqje.html#passage-R4-3-01">pqje · Question2: correct five-seed results</a> <a href="review_R4_pqje.html#response-R4-3">Our answer</a></li><li><a href="review_R5_Tx34.html#passage-R5-1-02">Tx34 · Question1: novelty beyond EF21</a> <a href="review_R5_Tx34.html#response-R5-1">Our answer</a></li><li><a href="review_R5_Tx34.html#passage-R5-2-02">Tx34 · Question2: Theorem 4 quantifiers</a> <a href="review_R5_Tx34.html#response-R5-2">Our answer</a></li><li><a href="review_R1_7S1b.html#passage-R1-1-02">7S1b · Question1: positive structural condition</a> <a href="review_R1_7S1b.html#response-R1-1">Our answer</a></li><li><a href="review_R4_pqje.html#passage-R4-1-01">pqje · Question1: theorem/implementation coverage</a> <a href="review_R4_pqje.html#response-R4-1">Our answer</a></li></ol>
 <p>Use the internal notes to track unresolved technical items. Add decision-relevant reviewer references in <code>workspace.json</code>; the agent guide explains their format.</p>
 <p><strong>Length:</strong> review responses use the limit in <code>workspace.json</code>. The confidential limit is configured separately and remains unspecified until verified against the conference rules.</p>
 <p><a href="../04_CONFIDENTIAL_COMMENT_STRATEGY.md">Strategy, alternatives and source guidance</a></p></section></aside>
@@ -305,19 +309,20 @@ input[type="checkbox"] { accent-color: var(--accent); width: 16px; height: 16px;
 <div class="response-topic-link"></div>
 <label class="include-row"><input type="checkbox" data-point="C1" data-field="include" checked>Include this answer in the assembled draft</label>
 <label class="editor-label" for="answer-C1">Confidential comment draft</label>
-<textarea class="response-editor" id="answer-C1" data-point="C1" data-field="text" rows="4" spellcheck="true">Dear AC/SPC, our contribution is a systematic comparison of signing before, after and on both sides of Muon’s orthogonalization, with and without error feedback. In the submitted federated study, SignMuon reaches 85.72% using 1 bit per matrix entry, versus Muon 85.98% and SignSGD 81.44% (5 seeds). Its centralized accuracy is 94.60% versus SignSGD 93.37% (3 seeds); nanoGPT loss is 3.2881 versus 3.4049 (1 run/method).
+<textarea class="response-editor" id="answer-C1" data-point="C1" data-field="text" rows="4" spellcheck="true">Dear AC/SPC, our paper combines strong sign-based Muon performance with a controlled comparison of sign and error-feedback placements. Submitted CNN2/CIFAR-10 results give SignMuon 85.72% versus full-precision Muon 85.98% and SignSGD 81.44% (5 seeds), using 1 bit per matrix entry. Centralized ResNet18/CIFAR-10 accuracy is 94.60% versus SignSGD 93.37% (3 seeds).
 
-For Ueq5 and pqje, the submitted logs reproduce A8: MuonSign 82.94±0.19% versus SignSGD 81.44±0.15%. We will correct the main table and its reversed comparison.
+In response to the reviews, we added heterogeneous CNN2/CIFAR-10 tests: 11 clients, Dirichlet(0.1), 2000 rounds, no local updates, IID-selected learning rates. EF21-MuonSign reaches 83.23±0.36%, EF21-MuonUSign 82.99±0.46%, SGD 81.03±0.62%, Muon 46.02±8.55% and SignMuon 35.92±8.49% (5 seeds). The full 10-method table is in our reply to 7S1b, Q2. Gradient-side EF leads in this transfer test; retuning is pending. This adds practical guidance on compression placement under heterogeneity.
 
-We prove that each sign placement can produce ascent directions and that error feedback on the orthogonalized output can diverge on a smooth, lower-bounded objective. These results are verified in Lean. Theorem 4 concerns fixed parameters, so it does not exclude decreasing schedules or parameters chosen for a finite budget. We also generalized the EF21 analysis to EMA/Nesterov and deterministic learning rates, with core proofs verified in Lean; layer separability remains. Our separate SignMuon theorem permits interacting layers under a positive-alignment condition.
+After submission, we extended EF21 convergence to fixed EMA/Nesterov and deterministic learning rates, with core proofs verified in Lean. The EF21 bounds retain separable layers. We also proved conditional SignMuon convergence for interacting layers when signing preserves enough alignment with momentum; this condition remains unmeasured in networks. To address Tx34, we also now construct 8×8 convex quadratics for exact-polar EF21-SignMuon with Frobenius smoothness 1, initial gap 4/7 and gradient norm ≥1 at every iterate, even for constant learning rate and fixed EMA/Nesterov momentum chosen for the iteration budget. The construction also covers strictly decreasing steps to zero without momentum and power decay with fixed momentum. Its exact algebraic certificate has been checked.
 
-New Dirichlet(0.1) transfer at IID rates gives EF21-MuonSign 83.23% versus SignMuon 35.92%; retuning is pending. We ask that the measured sign-based performance and the precise theoretical results be considered together.</textarea>
+For Ueq5 and pqje, the submitted logs reproduce A8: MuonSign 82.94±0.19% versus SignSGD 81.44±0.15%. We will correct the main table, its reversed comparison and the claim that an expected-norm rate can be squared. We ask that the empirical contribution and the completed additions be weighed together.</textarea>
 <p class="shared-answer-note" data-shared-for="C1" hidden><span></span><button type="button" data-separate-answer="C1">Give this concern a separate answer</button></p>
 <div class="preview-label">Preview with LaTeX</div><div class="response-preview" data-preview-for="C1"></div>
 <details class="response-notes"><summary>Evidence and drafting notes · excluded from rebuttal</summary>
 <label class="include-row"><input type="checkbox" data-point="C1" data-field="needs_check">Still needs an evidence check</label>
 <label class="editor-label" for="note-C1">Internal notes</label><textarea id="note-C1" class="notes-editor" data-point="C1" data-field="notes" rows="4">Optional scientific synthesis checked against E1/E3/E4/N1/G1/T1. No reliance on J1. Actual confidential field limit/readers remain unknown. New transfer evidence: E5, 50 independently recomputed run histories.
-Readability revision: claims about Lean refer to original failure results and EF21 core proofs; see F1. The confidential field limit remains unknown.</textarea></details></article>
+Readability revision: claims about Lean refer to original failure results and EF21 core proofs; see F1. The confidential field limit remains unknown.
+Revision 4 foregrounds post-submission heterogeneous results and theory extensions. The full table is in 7S1b Q2. Lean verification covers the core EF21 proofs and original failure results, not the separate conditional SignMuon theorem. Field limit remains unknown.</textarea></details></article>
 <section class="assembled-draft" id="assembled-draft" tabindex="-1"><div class="draft-heading"><h2>Assembled draft</h2><output id="draft-count" aria-live="polite"></output></div>
 <p class="draft-help">Edit the full confidential comment here or in its separate field above.</p>
 <details class="assembly-settings"><summary>Opening and closing · editable wording options</summary><label class="editor-label" for="draft-intro">Active opening</label><textarea id="draft-intro" rows="2" data-review-field="intro"></textarea><label class="editor-label" for="draft-closing">Active closing</label><textarea id="draft-closing" rows="2" data-review-field="closing"></textarea></details>
@@ -332,7 +337,7 @@ Readability revision: claims about Lean refer to original failure results and EF
 <div id="assembled-preview" class="assembled-preview"></div>
 <div class="draft-actions"><button id="download-markdown" type="button">Download confidential_ac_comment.md</button><button id="download-fragments" type="button">Download fragment backup</button><label class="button-link import-backup" for="import-fragments">Restore fragment backup<input type="file" id="import-fragments" accept="application/json,.json"></label></div>
 <p class="draft-help" id="export-status">The local workspace updates <code>rebuttals/confidential_ac_comment.md</code> when the selected text passes the length, link and evidence checks.</p></section></section></main></div>
-<script type="application/json" id="review-data">{"workspaceId": "c04b35a03e2a4a8abba9540ae279b59a", "workspaceFolder": "aaai_submission_openreview", "workspaceLabel": "SignMuon", "expectedTargets": ["confidential_ac_comment.md"], "limit": null, "forbidExternalLinks": true, "stem": "confidential_ac", "response": {"target": "confidential_ac_comment.md", "revision": 3, "intro": "", "closing": "", "sections": [{"id": "comment", "lead": ""}], "reply_topics": [], "fragments": [{"id": "C1", "text": "Dear AC/SPC, our contribution is a systematic comparison of signing before, after and on both sides of Muon’s orthogonalization, with and without error feedback. In the submitted federated study, SignMuon reaches 85.72% using 1 bit per matrix entry, versus Muon 85.98% and SignSGD 81.44% (5 seeds). Its centralized accuracy is 94.60% versus SignSGD 93.37% (3 seeds); nanoGPT loss is 3.2881 versus 3.4049 (1 run/method).\n\nFor Ueq5 and pqje, the submitted logs reproduce A8: MuonSign 82.94±0.19% versus SignSGD 81.44±0.15%. We will correct the main table and its reversed comparison.\n\nWe prove that each sign placement can produce ascent directions and that error feedback on the orthogonalized output can diverge on a smooth, lower-bounded objective. These results are verified in Lean. Theorem 4 concerns fixed parameters, so it does not exclude decreasing schedules or parameters chosen for a finite budget. We also generalized the EF21 analysis to EMA/Nesterov and deterministic learning rates, with core proofs verified in Lean; layer separability remains. Our separate SignMuon theorem permits interacting layers under a positive-alignment condition.\n\nNew Dirichlet(0.1) transfer at IID rates gives EF21-MuonSign 83.23% versus SignMuon 35.92%; retuning is pending. We ask that the measured sign-based performance and the precise theoretical results be considered together.", "notes": "Optional scientific synthesis checked against E1/E3/E4/N1/G1/T1. No reliance on J1. Actual confidential field limit/readers remain unknown. New transfer evidence: E5, 50 independently recomputed run histories.\nReadability revision: claims about Lean refer to original failure results and EF21 core proofs; see F1. The confidential field limit remains unknown.", "include": true, "needs_check": false, "joiner": " ", "section": "comment"}]}, "topicPassages": {}, "pointTitles": {"C1": "Confidential AC/SPC comment"}, "evidence": [{"id": "chair-references", "point": "C1"}], "sourceFile": "confidential_comment.json", "confidential": true}</script><script src="../primer/runtime/review_browser/vendor/katex/katex.min.js"></script><script src="../primer/runtime/review_browser/vendor/katex/contrib/auto-render.min.js"></script><script>/* Exact draft text and its links to reviewer concerns; no browser storage here. */
+<script type="application/json" id="review-data">{"workspaceId": "c04b35a03e2a4a8abba9540ae279b59a", "workspaceFolder": "aaai_submission_openreview", "workspaceLabel": "SignMuon", "expectedTargets": ["confidential_ac_comment.md"], "limit": null, "forbidExternalLinks": true, "stem": "confidential_ac", "response": {"target": "confidential_ac_comment.md", "revision": 4, "intro": "", "closing": "", "sections": [{"id": "comment", "lead": ""}], "reply_topics": [], "fragments": [{"id": "C1", "text": "Dear AC/SPC, our paper combines strong sign-based Muon performance with a controlled comparison of sign and error-feedback placements. Submitted CNN2/CIFAR-10 results give SignMuon 85.72% versus full-precision Muon 85.98% and SignSGD 81.44% (5 seeds), using 1 bit per matrix entry. Centralized ResNet18/CIFAR-10 accuracy is 94.60% versus SignSGD 93.37% (3 seeds).\n\nIn response to the reviews, we added heterogeneous CNN2/CIFAR-10 tests: 11 clients, Dirichlet(0.1), 2000 rounds, no local updates, IID-selected learning rates. EF21-MuonSign reaches 83.23±0.36%, EF21-MuonUSign 82.99±0.46%, SGD 81.03±0.62%, Muon 46.02±8.55% and SignMuon 35.92±8.49% (5 seeds). The full 10-method table is in our reply to 7S1b, Q2. Gradient-side EF leads in this transfer test; retuning is pending. This adds practical guidance on compression placement under heterogeneity.\n\nAfter submission, we extended EF21 convergence to fixed EMA/Nesterov and deterministic learning rates, with core proofs verified in Lean. The EF21 bounds retain separable layers. We also proved conditional SignMuon convergence for interacting layers when signing preserves enough alignment with momentum; this condition remains unmeasured in networks. To address Tx34, we also now construct 8×8 convex quadratics for exact-polar EF21-SignMuon with Frobenius smoothness 1, initial gap 4/7 and gradient norm ≥1 at every iterate, even for constant learning rate and fixed EMA/Nesterov momentum chosen for the iteration budget. The construction also covers strictly decreasing steps to zero without momentum and power decay with fixed momentum. Its exact algebraic certificate has been checked.\n\nFor Ueq5 and pqje, the submitted logs reproduce A8: MuonSign 82.94±0.19% versus SignSGD 81.44±0.15%. We will correct the main table, its reversed comparison and the claim that an expected-norm rate can be squared. We ask that the empirical contribution and the completed additions be weighed together.", "notes": "Optional scientific synthesis checked against E1/E3/E4/N1/G1/T1. No reliance on J1. Actual confidential field limit/readers remain unknown. New transfer evidence: E5, 50 independently recomputed run histories.\nReadability revision: claims about Lean refer to original failure results and EF21 core proofs; see F1. The confidential field limit remains unknown.\nRevision 4 foregrounds post-submission heterogeneous results and theory extensions. The full table is in 7S1b Q2. Lean verification covers the core EF21 proofs and original failure results, not the separate conditional SignMuon theorem. Field limit remains unknown.", "include": true, "needs_check": false, "joiner": " ", "section": "comment"}]}, "topicPassages": {}, "pointTitles": {"C1": "Confidential AC/SPC comment"}, "evidence": [{"id": "chair-references", "point": "C1"}], "sourceFile": "confidential_comment.json", "confidential": true}</script><script src="../primer/runtime/review_browser/vendor/katex/katex.min.js"></script><script src="../primer/runtime/review_browser/vendor/katex/contrib/auto-render.min.js"></script><script>/* Exact draft text and its links to reviewer concerns; no browser storage here. */
 (() => {
   "use strict";
   const clone = value => JSON.parse(JSON.stringify(value));
@@ -642,7 +647,52 @@ Readability revision: claims about Lean refer to original failure results and EF
   }
 
   function renderMath(element, text) {
-    element.textContent = text;
+    const lines = text.split("\n");
+    const cells = line => typeof line === "string" && /^\s*\|.*\|\s*$/.test(line) && !line.includes("\\|")
+      ? line.trim().slice(1, -1).split("|").map(cell => cell.trim()) : null;
+    const content = document.createDocumentFragment();
+    let plain = [];
+    const flush = () => {
+      if (plain.length) content.append(document.createTextNode(plain.join("\n")));
+      plain = [];
+    };
+    for (let i = 0; i < lines.length;) {
+      const header = cells(lines[i]);
+      const separator = cells(lines[i + 1]);
+      if (!header || !separator || header.length !== separator.length ||
+          !separator.every(cell => /^:?-{3,}:?$/.test(cell))) {
+        plain.push(lines[i++]);
+        continue;
+      }
+      flush();
+      const table = document.createElement("table");
+      table.className = "preview-table";
+      const appendRow = (parent, values, tag) => {
+        const row = document.createElement("tr");
+        values.forEach((value, column) => {
+          const cell = document.createElement(tag);
+          cell.textContent = value;
+          if (tag === "th") cell.scope = "col";
+          cell.style.textAlign = separator[column].endsWith(":")
+            ? (separator[column].startsWith(":") ? "center" : "right") : "left";
+          row.append(cell);
+        });
+        parent.append(row);
+      };
+      const head = table.createTHead();
+      appendRow(head, header, "th");
+      const body = table.createTBody();
+      i += 2;
+      for (let row; i < lines.length && (row = cells(lines[i])) && row.length === header.length; i++) {
+        appendRow(body, row, "td");
+      }
+      const wrapper = document.createElement("div");
+      wrapper.className = "preview-table-scroll";
+      wrapper.append(table);
+      content.append(wrapper);
+    }
+    flush();
+    element.replaceChildren(content);
     if (typeof renderMathInElement !== "function") return;
     renderMathInElement(element, {
       delimiters: [{left: "$$", right: "$$", display: true}, {left: "\\[", right: "\\]", display: true},

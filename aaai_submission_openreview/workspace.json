@@ -75,6 +75,11 @@
     "target": "confidential_ac_comment.md",
     "references": [
       {
+        "stem": "review_R1_7S1b",
+        "point": "R1.2",
+        "label": "7S1b · Question2: added heterogeneous results"
+      },
+      {
         "stem": "review_R3_Ueq5",
         "point": "R3.2",
         "label": "Ueq5 · Table 2/A8 discrepancy"

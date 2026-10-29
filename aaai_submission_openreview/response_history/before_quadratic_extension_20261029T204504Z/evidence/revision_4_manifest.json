@@ -1,0 +1,36 @@
+{
+  "created_utc": "2026-10-29T20:29:47.038933+00:00",
+  "backup": "response_history/before_review_additions_revision_20261029T202946Z",
+  "input_response_sha256": "865234e27dad528e1d14cc37988b382658d1461db213598c1f7adc896941d6d4",
+  "response_characters_utf16": {
+    "review_R1_7S1b": 1491,
+    "review_R2_D4r2": 1482,
+    "review_R3_Ueq5": 1473,
+    "review_R4_pqje": 1499,
+    "review_R5_Tx34": 1492,
+    "review_AI_AI_Reviewer": 1493
+  },
+  "review_revisions": {
+    "review_R1_7S1b": 4,
+    "review_R2_D4r2": 4,
+    "review_R3_Ueq5": 4,
+    "review_R4_pqje": 4,
+    "review_R5_Tx34": 10,
+    "review_AI_AI_Reviewer": 4
+  },
+  "confidential_characters_utf16": 1766,
+  "shared_table": {
+    "reviewer": "7S1b",
+    "stem": "review_R1_7S1b",
+    "question": 2,
+    "concern": "R1.2",
+    "method_count": 10,
+    "verified_runs": 50,
+    "archive_sha256": "b66dbfdfcf8cd8d6211527ac22103b268064a402a99427fd37ecad9d20058d40",
+    "source": "evidence/heterogeneous_transfer_verified.json"
+  },
+  "post_submission_additions_identified": true,
+  "new_training_run_for_prose_edit": false,
+  "lean_build_rerun_for_prose_edit": false,
+  "conditional_signmuon_claimed_lean_verified": false
+}

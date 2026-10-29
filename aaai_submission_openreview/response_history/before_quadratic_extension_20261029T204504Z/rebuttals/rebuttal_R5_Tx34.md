@@ -1,0 +1,7 @@
+Thank you for asking us to clarify our contribution and Theorem 4.
+
+1. Re our contribution: SignMuon achieves 85.72% at 1 bit per matrix entry, versus Muon 85.98% and SignSGD 81.44% (5 submitted seeds). Our controlled comparison of sign and error-feedback placements explains why the choice matters. In response to the reviews, we added heterogeneous tests: gradient-side EF reaches 83.23%, versus SignMuon 35.92% at IID-selected rates (table in our reply to 7S1b, Q2). Our submitted theorems prove all 3 sign placements can ascend and output-level EF can diverge. After submission, we extended EF21 to fixed EMA/Nesterov and deterministic rates, retaining separable layers, with core proofs verified in Lean.
+2. Re what Theorem 4 rules out: For any fixed learning rate and momentum, Theorem 4 constructs a smooth, lower-bounded objective where EF21-SignMuon diverges. The objective can depend on these parameters. This rules out universal constant-step rules based on smoothness and momentum; it does not exclude decreasing steps or parameters chosen for a finite budget.
+3. Re practical guidance: The theorems do not predict an accuracy ranking. Our new heterogeneous results favor EF21-MuonUSign for uplink-only compression and EF21-MuonSign for both links; IID results favor SignMuon. We will remove blanket “unrepairable” and “only changing the compressor” claims: sufficient conditions need not be necessary.
+
+If these answers resolve your concerns, please consider raising your score.
