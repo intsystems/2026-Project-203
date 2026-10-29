@@ -29,7 +29,7 @@ The downloaded main paper (9 pages), technical supplement (35 pages), checklist 
 | `signmuon_addendum.tex` / `_body.tex` / `.bib` | Existing author working addendum | Conditional SignMuon, bounded-below plain witnesses and EF gradient-floor scaling. Its deferred experiments are not completed results. Preserved unchanged. |
 | `ef21_signmuon_divergence.tex` | Complete Theorem 4 proof | Parameter-dependent objective for fixed eta/mu, exact polar selection and rational limit cycle. |
 | `signmuon_mishra_comparison.tex` and main comparison | Still needs correction | Mishra v2 (17 October) now gives conditional actual-vote stochastic theory. The v1-only dismissal is stale. |
-| `evidence/EF21_JOINT_SMOOTHNESS.md` | New derivation made during this preparation | Whole-tuple EF21 reduction removes separability; explicit first-moment deterministic-schedule bound for coupled smooth objectives. Not yet inserted into the article. |
+| `evidence/EF21_JOINT_SMOOTHNESS.md` | Separate candidate derivation made during preparation | Not in the manuscript and not relied on by revision 2 replies. The manuscript’s EF21 proofs retain separability; its conditional SignMuon theorem permits interacting layers. |
 
 Current PDFs are separately versioned artifacts. Neither a newer filename nor a timestamp establishes that a PDF contains all current TeX changes. Their exact hashes/pages and all current TeX/Bib hashes are recorded in `evidence/verified_claims.json`.
 
@@ -95,6 +95,14 @@ Configured author-supplied rules: **1500 UTF-16 source characters per review**, 
 
 ## Preservation and summary migration
 
-Late source update: the live author addendum body/PDF changed after the initial article hash snapshot. The latest 479-line body was read again: its added heterogeneous experiment plan still has pending results, and its EF21 cross-layer extension remains marked open. The prepared rebuttal's mathematical claims remain consistent; the independent J1 derivation is still separate from that addendum. `evidence/final_source_drift.json` records the later hashes and the concurrently changed code README files. Those source files were not edited by this preparation.
+Late source update: the live author addendum body/PDF changed after the initial article hash snapshot. The latest 479-line body was read again: its initial heterogeneous plan had pending results; the latest update now includes completed transfer results while LR retuning remains pending, and its EF21 cross-layer extension remains marked open. Revision 2 corrects the earlier rebuttal’s conflation: the manuscript retains EF21 separability. The independent J1 candidate is separate and is not used to claim a completed manuscript extension. `evidence/final_source_drift.json` records the later hashes and the concurrently changed code README files. Those source files were not edited by this preparation.
 
 `response_history/preparation_baseline_20261029T134259Z/` preserves all pre-preparation JSON, summaries and strategy files. The imported fragments had revision0 and empty answers. All original concern IDs are retained, but placeholder headings/praise/reference entries were reassigned to genuine, fine-grained concerns. The migration affects empty scaffolding, not authored scientific answers. All appended **Original review** blocks remain byte-for-byte equivalent after normal newline decoding; original JSON bytes remain unchanged. Each new concern has one response fragment and exactly one topic. Duplicate mentions link to the same concern. `evidence/concern_evidence.json` records all 64 concrete concerns, evidence, intended answers and pending status.
+
+## Revision 2 proof audit
+
+The EF21 fixed-radius proof explicitly invokes block independence. The addendum’s “EF21 cross-layer coupling: open target” paragraph confirms that extension remains open in the manuscript. The conditional plain SignMuon theorem uses joint Frobenius smoothness and allows interacting layers. See `evidence/revision_2_audit.md`. All downloaded originals and source review passages are preserved.
+
+## New transfer archive supplied during revision 2
+
+`code/results/rebuttal_results.zip` was supplied while the audit was running. Its immutable copy is `evidence/heterogeneous_transfer_results.zip`; this is new rebuttal evidence, not a submitted input. The independent audit reproduces all 50 transfer runs (10 methods, 5 seeds) and their means/sample SDs. The current addendum now reports these results. Its EF21 cross-layer target remains open. LR retuning, local updates and partial participation remain outstanding.

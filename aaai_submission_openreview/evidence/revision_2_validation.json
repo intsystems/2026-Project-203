@@ -1,0 +1,168 @@
+{
+  "checked_utc": "2026-10-29T18:27:34.565603+00:00",
+  "revision": 2,
+  "workspace_build": "passed",
+  "workspace_check": "passed",
+  "browser_inspection": "passed: 7 pages; exact exports/counts/math/anchors/layout; author JSON unchanged",
+  "submitted_evidence_verification": "passed: 5 original input hashes; five-seed statistics; 175 unchanged histories; exact ascent/cycle certificates",
+  "new_transfer_verification": "passed: 50 complete configs/histories; all 10 means/sample SDs",
+  "git_diff_check": "passed for rebuttal workspace",
+  "review_files_byte_unchanged_from_commit": "b60118b",
+  "all_concern_ids_preserved": true,
+  "annotations_and_rules_unchanged": true,
+  "human_higher_score_requests": 5,
+  "ai_score_requests": 0,
+  "numbered_headings_consecutive": true,
+  "loaded_uncertainty_wording_absent_from_exports": true,
+  "ef21_manuscript_retains_separability": true,
+  "conditional_signmuon_allows_interacting_layers": true,
+  "article_note": "Read only by this preparation. Concurrent addendum changes supply transfer results; proof premises were rechecked.",
+  "article_sources_sha256": {
+    "signmuon_body.tex": "184a74ac7d4d05d7a6596eed69ccda01f2af0c059b800c364b7e6bf04ac3b696",
+    "signmuon_addendum_body.tex": "ae6ea149c42f8d13e85c53127d90e2241c79b63b18d87afa769b0a78b2419a21",
+    "ef21_fixed_radius.tex": "9f4db532589580202646064e3196d7153f235c11f9b94f212cbf66656d369458",
+    "ef21_nesterov_convergence.tex": "f3232e168942ebbb49ade7e9382bf3e77a20306f834de789b7b0ef4d11ca3ddd",
+    "ef21_rate_takeaways.tex": "a5d9690015032fa576b39e83999cb76969859e68240d2043182dc7fb7ff97019"
+  },
+  "drafts": [
+    {
+      "stem": "review_R1_7S1b",
+      "characters": 1477,
+      "included": [
+        "R1.1",
+        "R1.2",
+        "R1.3",
+        "R1.9",
+        "R1.4",
+        "R1.10",
+        "R1.5"
+      ],
+      "omitted": [
+        "R1.6",
+        "R1.7",
+        "R1.8"
+      ],
+      "pending": [
+        "R1.6",
+        "R1.7",
+        "R1.8"
+      ]
+    },
+    {
+      "stem": "review_R2_D4r2",
+      "characters": 1443,
+      "included": [
+        "R2.1",
+        "R2.4",
+        "R2.5",
+        "R2.6",
+        "R2.7",
+        "R2.3"
+      ],
+      "omitted": [
+        "R2.2",
+        "R2.8"
+      ],
+      "pending": [
+        "R2.2",
+        "R2.8"
+      ]
+    },
+    {
+      "stem": "review_R3_Ueq5",
+      "characters": 1432,
+      "included": [
+        "R3.2",
+        "R3.1",
+        "R3.3",
+        "R3.4",
+        "R3.5"
+      ],
+      "omitted": [],
+      "pending": []
+    },
+    {
+      "stem": "review_R4_pqje",
+      "characters": 1497,
+      "included": [
+        "R4.1",
+        "R4.2",
+        "R4.3",
+        "R4.4",
+        "R4.6",
+        "R4.5",
+        "R4.7",
+        "R4.8",
+        "R4.9",
+        "R4.10",
+        "R4.11",
+        "R4.12",
+        "R4.13",
+        "R4.14"
+      ],
+      "omitted": [
+        "R4.15"
+      ],
+      "pending": [
+        "R4.15"
+      ]
+    },
+    {
+      "stem": "review_R5_Tx34",
+      "characters": 1468,
+      "included": [
+        "R5.1",
+        "R5.3",
+        "R5.2",
+        "R5.4",
+        "R5.5",
+        "R5.6"
+      ],
+      "omitted": [],
+      "pending": []
+    },
+    {
+      "stem": "review_AI_AI_Reviewer",
+      "characters": 1491,
+      "included": [
+        "AI.1",
+        "AI.2",
+        "AI.7",
+        "AI.3",
+        "AI.4",
+        "AI.5",
+        "AI.18",
+        "AI.19",
+        "AI.8",
+        "AI.9",
+        "AI.11",
+        "AI.10",
+        "AI.13",
+        "AI.14",
+        "AI.15",
+        "AI.16",
+        "AI.17",
+        "AI.12"
+      ],
+      "omitted": [
+        "AI.6",
+        "AI.20"
+      ],
+      "pending": [
+        "AI.6",
+        "AI.20"
+      ]
+    }
+  ],
+  "confidential_utf16_characters": 1374,
+  "remaining_evidence_flags": [
+    "R1.6",
+    "R1.7",
+    "R1.8",
+    "R2.2",
+    "R2.8",
+    "R4.15",
+    "AI.6",
+    "AI.20"
+  ]
+}

@@ -8,7 +8,7 @@
     "finding": "The diagonal-correlation condition implies alignment by weighting each diagonal entry by its nonnegative singular value. Uniform alignment, joint smoothness, centered finite-variance noise, exact polar and horizon-tuned fixed EMA/Nesterov yield an expected first-moment nuclear-gradient rate O(T^-1/4). It is a conditional result; actual trajectory verification and distributed-vote alignment remain open.",
     "pending": false,
     "include": true,
-    "export_text": "For momentum $M=U\\Sigma V^\\top$, if each diagonal entry of $U^\\top\\mathrm{sign}(UV^\\top)V$ is at least $\\delta>0$, then $\\langle M,\\mathrm{sign}(UV^\\top)\\rangle\\ge\\delta\\|M\\|_*$. A uniform margin, joint smoothness and unbiased finite-variance noise yield a conditional SignMuon rate; the margin is unmeasured in our networks."
+    "export_text": "For oracle input $M=U\\Sigma V^\\top$, diagonal entries of $U^\\top\\mathrm{sign}(UV^\\top)V$ uniformly above $\\delta>0$ give alignment $\\ge\\delta\\|M\\|_*$. Joint smoothness, unbiased finite-variance noise, exact polar and horizon tuning give SignMuon an $O(T^{-1/4})$ mean gradient-norm rate. The network margin remains unmeasured."
   },
   {
     "review": "review_R1_7S1b",
@@ -26,33 +26,33 @@
     "id": "R1.2",
     "title": "Reviewer asks whether federation changes preserve the ordering",
     "detail": "State what the 11-client experiment supports.",
-    "evidence": "E2: submitted supplement A.14–A.15 and code/federated/algorithms.py, main.py, methods.py. CNN2, N=11, homogeneous, full participation; 3 mini-batches of 64 at fixed weights, zero local updates. New heterogeneous runner exists in live repo, but no completed new result was available.",
-    "finding": "Neither theory nor the existing experiments predict an ordering under label skew, local updates, partial participation or larger client counts. Three accumulated mini-batches are not local parameter steps.",
+    "evidence": "E2: submitted supplement A.14–A.15 and code/federated/algorithms.py, main.py, methods.py. CNN2, N=11, homogeneous, full participation; 3 mini-batches of 64 at fixed weights, zero local updates. E5: evidence/heterogeneous_transfer_results.zip (supplied during revision 2), verified by verify_heterogeneous_transfer.py against all 50 raw run configs/histories; heterogeneous_transfer_verified.json. Dirichlet(0.1), 11 clients, five paired seeds, IID learning rates held fixed. LR-retuned comparison, local updates and partial participation remain outstanding.",
+    "finding": "New supplied transfer evidence changes the empirical ordering under label skew: EF21-MuonSign 83.23±0.36%, EF21-MuonUSign 82.99±0.46%, SignMuon 35.92±8.49% with each method’s IID learning rate (five seeds). This tests hyperparameter transfer, not retuned best performance. No local updates or partial participation were tested.",
     "pending": false,
     "include": true,
-    "export_text": "The 11-client IID experiment takes no local updates. We claim no ordering under non-IID data, local training or partial participation."
+    "export_text": "New CNN2 Dirichlet(0.1) transfer, 5 seeds at IID rates: EF21-MuonSign 83.23±0.36%, SignMuon 35.92±8.49%. The ordering changes. Retuning is pending; still 11 clients and no local updates."
   },
   {
     "review": "review_R1_7S1b",
     "id": "R1.7",
     "title": "Reviewer requests heterogeneous and local-training experiments",
     "detail": "Broaden the federated evaluation beyond synchronized homogeneous clients.",
-    "evidence": "E2: submitted supplement A.14–A.15 and code/federated/algorithms.py, main.py, methods.py. CNN2, N=11, homogeneous, full participation; 3 mini-batches of 64 at fixed weights, zero local updates. New heterogeneous runner exists in live repo, but no completed new result was available.",
-    "finding": "No completed non-IID/local-training/partial-participation result is available in the audited evidence. A newly added heterogeneous runner is preparation, not experimental evidence.",
+    "evidence": "E2: submitted supplement A.14–A.15 and code/federated/algorithms.py, main.py, methods.py. CNN2, N=11, homogeneous, full participation; 3 mini-batches of 64 at fixed weights, zero local updates. E5: evidence/heterogeneous_transfer_results.zip (supplied during revision 2), verified by verify_heterogeneous_transfer.py against all 50 raw run configs/histories; heterogeneous_transfer_verified.json. Dirichlet(0.1), 11 clients, five paired seeds, IID learning rates held fixed. LR-retuned comparison, local updates and partial participation remain outstanding.",
+    "finding": "Five-seed Dirichlet(0.1) transfer is complete and independently recomputed. LR retuning, local model updates, partial participation and larger client populations remain outstanding. A partial answer does not complete the entire broader-federation request.",
     "pending": true,
     "include": false,
-    "export_text": "No completed non-IID/local-training/partial-participation result is available in the audited evidence. A newly added heterogeneous runner is preparation, not experimental evidence."
+    "export_text": "Five-seed non-IID transfer is complete. LR retuning, local updates, partial participation and larger client populations remain outstanding."
   },
   {
     "review": "review_R1_7S1b",
     "id": "R1.3",
     "title": "Reviewer asks which positive results are inherited from EF21",
     "detail": "Credit the existing arbitrary-norm framework and isolate extensions.",
-    "evidence": "P1: Gruntkowska et al. 2025 EF21-Muon, Algorithm 3 / Theorem 19 / Remark 23; Modoranu et al. ICML 2024; Mishra et al. SignMuon v2 (17 October 2026), Section 4 / Appendix F. The current main article comparison to Mishra v1 is stale and must be replaced. J1: evidence/EF21_JOINT_SMOOTHNESS.md, Sections 1–3 and bound (J), derived in this preparation; whole-tuple norm instantiates prior EF21; deterministic-schedule first-moment proof is explicit. T1: submitted supplement A.10; aaai_article/ef21_nesterov_convergence.tex, ef21_fixed_radius.tex, ef21_rate_takeaways.tex. Gradient-scaled steps and horizon-tuned momentum for the separate squared-moment result; never infer it by squaring a first moment.",
-    "finding": "Scaled-sign contractivity and the base positive convergence guarantee instantiate prior EF21-Muon. The new rebuttal analysis treats all layers as one arbitrary-norm block and proves joint-smooth deterministic-schedule first-moment bounds for fixed EMA/Nesterov and either downlink.",
+    "evidence": "P1: Gruntkowska et al. 2025 EF21-Muon, Algorithm 3 / Theorem 19 / Remark 23; Modoranu et al. ICML 2024; Mishra et al. SignMuon v2 (17 October 2026), Section 4 / Appendix F. The current main article comparison to Mishra v1 is stale and must be replaced. T1/G1: aaai_article/ef21_fixed_radius.tex (explicit separability step), ef21_nesterov_convergence.tex, and signmuon_addendum_body.tex (conditional SignMuon theorem and open EF21 cross-layer target). J1: separate candidate derivation in evidence/EF21_JOINT_SMOOTHNESS.md; not a revised-manuscript result and not relied on by the replies. T1: submitted supplement A.10; aaai_article/ef21_nesterov_convergence.tex, ef21_fixed_radius.tex, ef21_rate_takeaways.tex. Gradient-scaled steps and horizon-tuned momentum for the separate squared-moment result; never infer it by squaring a first moment.",
+    "finding": "The base positive EF21 rates instantiate prior work. The revised manuscript adds fixed EMA/Nesterov and deterministic constant/cosine bounds under its original block-separable assumptions. It does not remove EF21 layer separability.",
     "pending": false,
     "include": true,
-    "export_text": "The base positive rates instantiate EF21-Muon. Our added analysis removes layer separability and treats fixed EMA/Nesterov with deterministic schedules; it does not certify finite polar approximations."
+    "export_text": "Base EF21 rates are inherited; added fixed EMA/Nesterov and constant/cosine bounds retain separability."
   },
   {
     "review": "review_R1_7S1b",
@@ -60,10 +60,10 @@
     "title": "Reviewer asks what technical contribution is new",
     "detail": "Distinguish the negative construction from positive framework instantiation.",
     "evidence": "N1: submitted Theorems 1–4 and proofs; aaai_article/ef21_signmuon_divergence.tex; evidence/verified_claims.json exact rational ascent/cycle certificates. Theorem 4 objective depends on fixed eta and mu; no decreasing-schedule impossibility follows. N2: aaai_article/signmuon_addendum_body.tex, lower-bounded softplus witnesses and EF21 gradient-floor corollary. Only plain placements have one fixed softplus witness for all schedules; do not extend this to output EF21.",
-    "finding": "The placement-specific ascent examples and smooth bounded-below output-EF limit cycle are the principal submitted new analysis. The new conditional SignMuon and whole-tuple EF21 derivations are follow-up results; the general EF21 framework is not ours.",
+    "finding": "The contribution is the controlled comparison of three sign placements and their EF variants, demonstrating Muon-level quality at a sign budget, plus placement-specific ascent and output-EF divergence proofs. The author addendum adds conditional SignMuon analysis with joint smoothness; the general EF21 framework and practical SignMuon idea are credited to prior/concurrent work.",
     "pending": false,
     "include": true,
-    "export_text": "The principal new submitted proofs are the placement-specific ascent examples and bounded-below output-EF divergence."
+    "export_text": "Our conditional SignMuon theorem allows interacting layers; the counterexamples motivate its margin."
   },
   {
     "review": "review_R1_7S1b",
@@ -74,7 +74,7 @@
     "finding": "Under an uplink constraint EF21-MuonUSign retains an exact/full-precision downlink; under a bidirectional constraint EF21-MuonSign compresses both sides. SignMuon is the empirical candidate if conditional rather than general guarantees are acceptable. No universal ranking is predicted.",
     "pending": false,
     "include": true,
-    "export_text": "Uplink-only: EF21-MuonUSign; both links: EF21-MuonSign for the analyzed repair, or SignMuon for the strongest observed accuracy."
+    "export_text": "For IID accuracy: SignMuon, 85.72% versus Muon 85.98% and SignSGD 81.44% (5 seeds), at one bit both ways. For the analyzed repair: EF21-MuonUSign uplink-only; EF21-MuonSign both ways."
   },
   {
     "review": "review_R1_7S1b",
@@ -85,7 +85,7 @@
     "finding": "The internal method table is prepared in 02_REBUTTAL_PLAN.md. A compressed CNN2 channel costs 1.0870 bits/parameter for plain signs, 1.0871 for EF with FP32 auxiliary parameters and one FP32 scale per matrix. Each gradient EF method adds one client estimator and one global server estimator; two-sided EF additionally stores exact X separately from W.",
     "pending": false,
     "include": true,
-    "export_text": "CNN2 compressed payloads are 1.087 bits/parameter including FP32 auxiliaries; EF adds one scale/matrix, client/server estimators, and a separate server model for two-sided EF. Polar: clients for SignMuon, server for gradient EF."
+    "export_text": "CNN2 costs 1.087 bits/parameter including FP32 auxiliaries. EF adds scales, client/server estimators and, if two-sided, a server model. Polar: clients for SignMuon, server for gradient EF."
   },
   {
     "review": "review_R1_7S1b",
@@ -93,10 +93,10 @@
     "title": "Reviewer asks which nanoGPT differences are reliable",
     "detail": "Separate descriptive gaps from statistical evidence.",
     "evidence": "E3: submitted Table 3 and supplement A.16–A.17; code/results/nanogpt/runs.csv, diagnostics.csv, SUMMARY.md; one independent unpinned run per compressed method, full-precision gradient reduce-scatter before optimizer.",
-    "finding": "EF21-SignMuon vs SignMuon is 3.2860 vs 3.2881, gap .0021. The approximate .003 upstream variation concerns Muon, not these variants. SignMuon vs SignSGD gap is .1168 nats, descriptive only; no variant-specific variance estimate or robust ranking.",
+    "finding": "One nanoGPT training run per method gives SignMuon 3.2881 versus SignSGD 3.4049, an observed 0.1168-nat improvement. The 0.0021 gap to EF21-SignMuon does not establish an ordering; there is no compressed-method variance estimate. Upstream Muon variance cannot substitute.",
     "pending": false,
     "include": true,
-    "export_text": "nanoGPT: the 0.0021 gap is inconclusive. All compressed-method rankings are preliminary single-run observations; even larger gaps lack a variant-specific variance estimate."
+    "export_text": "nanoGPT loss: 3.2881 versus SignSGD 3.4049, one run/method. The 0.0021 gap to EF21-SignMuon supports no ranking without compressed-method variance estimates."
   },
   {
     "review": "review_R1_7S1b",
@@ -118,7 +118,7 @@
     "finding": "We will state in Section 2 that $-\\mathrm{sign}(G)$ minimizes $\\langle G,D\\rangle$ over $\\|D\\|_\\infty\\le1$.",
     "pending": false,
     "include": true,
-    "export_text": "We will state in Section 2 that $-\\mathrm{sign}(G)$ minimizes $\\langle G,D\\rangle$ over $\\|D\\|_\\infty\\le1$."
+    "export_text": "We will identify $-\\mathrm{sign}(G)$ as the entrywise infinity-ball LMO in Section 2."
   },
   {
     "review": "review_R2_D4r2",
@@ -129,18 +129,18 @@
     "finding": "Plain signs send bits only; EF sends the residual signs plus its mean absolute value per matrix. FP32 auxiliary parameters are also counted.",
     "pending": false,
     "include": true,
-    "export_text": "Plain signs send bits only; EF sends the residual signs plus its mean absolute value per matrix. FP32 auxiliary parameters are also counted."
+    "export_text": "We will distinguish raw signs from EF’s residual signs plus one mean-absolute scale/matrix, and count FP32 auxiliaries."
   },
   {
     "review": "review_R2_D4r2",
     "id": "R2.5",
     "title": "Reviewer asks to distinguish centralized formulas from distributed algorithms",
     "detail": "Explain the N=1 correspondence and nonlinear aggregation.",
-    "evidence": "E2: submitted supplement A.14–A.15 and code/federated/algorithms.py, main.py, methods.py. CNN2, N=11, homogeneous, full participation; 3 mini-batches of 64 at fixed weights, zero local updates. New heterogeneous runner exists in live repo, but no completed new result was available. E3: submitted Table 3 and supplement A.16–A.17; code/results/nanogpt/runs.csv, diagnostics.csv, SUMMARY.md; one independent unpinned run per compressed method, full-precision gradient reduce-scatter before optimizer.",
+    "evidence": "E2: submitted supplement A.14–A.15 and code/federated/algorithms.py, main.py, methods.py. CNN2, N=11, homogeneous, full participation; 3 mini-batches of 64 at fixed weights, zero local updates. E5: evidence/heterogeneous_transfer_results.zip (supplied during revision 2), verified by verify_heterogeneous_transfer.py against all 50 raw run configs/histories; heterogeneous_transfer_verified.json. Dirichlet(0.1), 11 clients, five paired seeds, IID learning rates held fixed. LR-retuned comparison, local updates and partial participation remain outstanding. E3: submitted Table 3 and supplement A.16–A.17; code/results/nanogpt/runs.csv, diagnostics.csv, SUMMARY.md; one independent unpinned run per compressed method, full-precision gradient reduce-scatter before optimizer.",
     "finding": "Algorithms A2/A4/A5 define centralized placements. At N=1 the distributed definitions reduce to them; at N>1 local sign/LMO and majority voting define different algorithms. We will label both settings explicitly.",
     "pending": false,
     "include": true,
-    "export_text": "Algorithms A2/A4/A5 define centralized placements. At N=1 the distributed definitions reduce to them; at N>1 local sign/LMO and majority voting define different algorithms. We will label both settings explicitly."
+    "export_text": "A2/A4/A5 are centralized; A8–A9 are distributed, coinciding at 1 worker. Local signs/polar factors precede voting, so averaging does not commute; we will label both settings."
   },
   {
     "review": "review_R2_D4r2",
@@ -151,7 +151,7 @@
     "finding": "The linear examples test descent outside Assumption 1; $f\\to-\\infty$ is literal there. We also proved lower-bounded replacements: $f(X)=\\log(1+e^{\\langle G,X\\rangle})$ retains the plain placements’ ascent directions for every positive step schedule and EMA/Nesterov momentum.",
     "pending": false,
     "include": true,
-    "export_text": "The linear examples test descent outside Assumption 1; $f\\to-\\infty$ is literal there. We also proved lower-bounded replacements: $f(X)=\\log(1+e^{\\langle G,X\\rangle})$ retains the plain placements’ ascent directions for every positive step schedule and EMA/Nesterov momentum."
+    "export_text": "The linear examples test descent outside Assumption 1, so $f\\to-\\infty$ is literal. We now also have smooth, lower-bounded softplus examples preserving ascent for all 3 plain placements."
   },
   {
     "review": "review_R2_D4r2",
@@ -162,14 +162,14 @@
     "finding": "We will retain labels to keep tables/code traceable and add an operation-order legend: SignMuon = sign(polar(M)); MuonUSign = polar(sign(M)); MuonSign = sign(polar(sign(M))).",
     "pending": false,
     "include": true,
-    "export_text": "We will retain labels to keep tables/code traceable and add an operation-order legend: SignMuon = sign(polar(M)); MuonUSign = polar(sign(M)); MuonSign = sign(polar(sign(M)))."
+    "export_text": "We will retain traceable method names and add a sign-before/after/both legend."
   },
   {
     "review": "review_R2_D4r2",
     "id": "R2.2",
     "title": "Reviewer suggests larger centralized and federated experiments",
     "detail": "Additional models and truly distributed language-model training would strengthen the evidence.",
-    "evidence": "E2: submitted supplement A.14–A.15 and code/federated/algorithms.py, main.py, methods.py. CNN2, N=11, homogeneous, full participation; 3 mini-batches of 64 at fixed weights, zero local updates. New heterogeneous runner exists in live repo, but no completed new result was available. E3: submitted Table 3 and supplement A.16–A.17; code/results/nanogpt/runs.csv, diagnostics.csv, SUMMARY.md; one independent unpinned run per compressed method, full-precision gradient reduce-scatter before optimizer.",
+    "evidence": "E2: submitted supplement A.14–A.15 and code/federated/algorithms.py, main.py, methods.py. CNN2, N=11, homogeneous, full participation; 3 mini-batches of 64 at fixed weights, zero local updates. E5: evidence/heterogeneous_transfer_results.zip (supplied during revision 2), verified by verify_heterogeneous_transfer.py against all 50 raw run configs/histories; heterogeneous_transfer_verified.json. Dirichlet(0.1), 11 clients, five paired seeds, IID learning rates held fixed. LR-retuned comparison, local updates and partial participation remain outstanding. E3: submitted Table 3 and supplement A.16–A.17; code/results/nanogpt/runs.csv, diagnostics.csv, SUMMARY.md; one independent unpinned run per compressed method, full-precision gradient reduce-scatter before optimizer.",
     "finding": "No new large-model or distributed-language-model run was completed. nanoGPT evaluates the centralized optimizer after full-precision averaging, so it cannot fill this request.",
     "pending": true,
     "include": false,
@@ -184,7 +184,7 @@
     "finding": "With joint smoothness, unbiased finite-variance noise, exact polar and horizon-tuned steps/momentum, we prove SignMuon convergence if $\\langle M,\\mathrm{sign}(\\mathrm{polar}(M))\\rangle\\ge\\delta\\|M\\|_*$ uniformly. It suffices that all diagonal entries of $U^\\top\\mathrm{sign}(UV^\\top)V$ exceed $\\delta>0$ for $M=U\\Sigma V^\\top$. Verification in our networks remains open.",
     "pending": false,
     "include": true,
-    "export_text": "With joint smoothness, unbiased finite-variance noise, exact polar and horizon-tuned steps/momentum, we prove SignMuon convergence if $\\langle M,\\mathrm{sign}(\\mathrm{polar}(M))\\rangle\\ge\\delta\\|M\\|_*$ uniformly. It suffices that all diagonal entries of $U^\\top\\mathrm{sign}(UV^\\top)V$ exceed $\\delta>0$ for $M=U\\Sigma V^\\top$. Verification in our networks remains open."
+    "export_text": "For oracle input $M=U\\Sigma V^\\top$, diagonal entries of $U^\\top\\mathrm{sign}(UV^\\top)V$ uniformly above $\\delta>0$ give alignment $\\ge\\delta\\|M\\|_*$. This excludes the sign reversals in our ascent witnesses. Joint smoothness, unbiased finite-variance noise and exact polar give SignMuon an $O(T^{-1/4})$ mean gradient-norm rate with EMA/Nesterov, $\\eta\\propto T^{-3/4}$ and $1-\\mu=T^{-1/2}$. This permits interacting layers; the network margin remains unmeasured. SignMuon reaches 94.60% versus SignSGD 93.37% (3 seeds, submitted A5), and nanoGPT loss 3.2881 versus 3.4049."
   },
   {
     "review": "review_R2_D4r2",
@@ -206,7 +206,7 @@
     "finding": "Table 2 is stale. Five independent submitted runs, each averaged over the final five evaluations at the 2000-round horizon, give MuonSign 82.9424 ± 0.1868 and SignSGD 81.4356 ± 0.1466 sample SD. These agree with A8, reversing the main-table sentence. SignMuon 85.7156 ± .2444 versus Muon 85.9836 ± .2608; no significance claim.",
     "pending": false,
     "include": true,
-    "export_text": "Table 2 is stale. Recomputing the five submitted runs gives MuonSign 82.94±0.19% versus SignSGD 81.44±0.15%, agreeing with A8: MuonSign is higher by 1.51 percentage points. SignMuon is 85.72±0.24% and Muon 85.98±0.26%. We will replace the main table and reverse the affected sentence; no new training was needed."
+    "export_text": "The submitted five-seed logs reproduce A8: MuonSign 82.94±0.19% versus SignSGD 81.44±0.15%, a 1.51-point gain. SignMuon achieves 85.72±0.24% versus Muon 85.98±0.26%. We will synchronize Table 2 and reverse the affected comparison. The corrected results preserve SignMuon’s leading compressed accuracy."
   },
   {
     "review": "review_R3_Ueq5",
@@ -217,62 +217,62 @@
     "finding": "The squared dual-gradient rate O(T^-1/2) has a separate second-moment argument with gradient-scaled radii and horizon-tuned momentum. It does not follow for the cosine settings used in the experiments.",
     "pending": false,
     "include": true,
-    "export_text": "The squared-gradient $O(T^{-1/2})$ result uses gradient-scaled steps and a separate second-moment proof; it does not certify the experimental cosine schedule."
+    "export_text": "The $O(T^{-1/2})$ squared-gradient rate has a separate second-moment proof with gradient-scaled steps. New fixed-momentum EMA/Nesterov bounds cover constant/cosine rates for ideal EF21: a weighted first-moment bound with an $O(T^{-1})$ transient plus stepsize/noise residuals."
   },
   {
     "review": "review_R3_Ueq5",
     "id": "R3.3",
     "title": "Reviewer identifies the separability forced by layer-wise smoothness",
     "detail": "Replace the restriction with an explicit whole-model formulation.",
-    "evidence": "J1: evidence/EF21_JOINT_SMOOTHNESS.md, Sections 1–3 and bound (J), derived in this preparation; whole-tuple norm instantiates prior EF21; deterministic-schedule first-moment proof is explicit.",
-    "finding": "We removed separability by treating the whole model as one block with norm $\\max_i\\|X_i\\|_{\\rm op}/\\lambda_i$ and dual $\\sum_i\\lambda_i\\|G_i\\|_*$, for fixed layer weights $\\lambda_i>0$. Joint Frobenius smoothness suffices. The squared-rate formulation then uses one common radius scaled by this dual norm, changing the per-layer rule.",
+    "evidence": "T1/G1: aaai_article/ef21_fixed_radius.tex (explicit separability step), ef21_nesterov_convergence.tex, and signmuon_addendum_body.tex (conditional SignMuon theorem and open EF21 cross-layer target). J1: separate candidate derivation in evidence/EF21_JOINT_SMOOTHNESS.md; not a revised-manuscript result and not relied on by the replies.",
+    "finding": "The manuscript’s block-only smoothness forces separability, and the revised EF21 proofs retain it. The author addendum explicitly calls EF21 cross-layer coupling an open target. Only the added conditional plain SignMuon theorem uses joint Frobenius smoothness and permits interacting layers. The separate J1 candidate must not be described as a completed manuscript extension.",
     "pending": false,
     "include": true,
-    "export_text": "We removed separability by treating the whole model as one block with norm $\\max_i\\|X_i\\|_{\\rm op}/\\lambda_i$ and dual $\\sum_i\\lambda_i\\|G_i\\|_*$, for fixed layer weights $\\lambda_i>0$. Joint Frobenius smoothness suffices. The squared-rate formulation then uses one common radius scaled by this dual norm, changing the per-layer rule."
+    "export_text": "EF21’s block assumption still forces separability; we will state it explicitly. The new SignMuon theorem permits interacting layers under joint smoothness, unbiased finite-variance noise, uniform positive alignment and horizon-tuned EMA/Nesterov."
   },
   {
     "review": "review_R3_Ueq5",
     "id": "R3.4",
     "title": "Reviewer rejects squaring an expected first-moment bound",
     "detail": "Remove the unsupported inference and state two distinct results.",
-    "evidence": "T1: submitted supplement A.10; aaai_article/ef21_nesterov_convergence.tex, ef21_fixed_radius.tex, ef21_rate_takeaways.tex. Gradient-scaled steps and horizon-tuned momentum for the separate squared-moment result; never infer it by squaring a first moment. J1: evidence/EF21_JOINT_SMOOTHNESS.md, Sections 1–3 and bound (J), derived in this preparation; whole-tuple norm instantiates prior EF21; deterministic-schedule first-moment proof is explicit.",
-    "finding": "You are right: squaring $\\mathbb E\\|\\nabla f\\|$ does not bound $\\mathbb E\\|\\nabla f\\|^2$. We will delete that inference. For deterministic constant/cosine radii, our new joint-smooth bound gives a weighted first moment $O(T^{-1/4})$ when peak LR scales as $T^{-3/4}$ and $1-\\mu=T^{-1/2}$. Fixed LR/momentum leave a residual bound.",
+    "evidence": "T1: submitted supplement A.10; aaai_article/ef21_nesterov_convergence.tex, ef21_fixed_radius.tex, ef21_rate_takeaways.tex. Gradient-scaled steps and horizon-tuned momentum for the separate squared-moment result; never infer it by squaring a first moment. T1/G1: aaai_article/ef21_fixed_radius.tex (explicit separability step), ef21_nesterov_convergence.tex, and signmuon_addendum_body.tex (conditional SignMuon theorem and open EF21 cross-layer target). J1: separate candidate derivation in evidence/EF21_JOINT_SMOOTHNESS.md; not a revised-manuscript result and not relied on by the replies.",
+    "finding": "A first-moment gradient bound cannot be squared to obtain a second-moment bound. The squared O(T^-1/2) result has a separate proof and gradient-scaled steps. Under the original separable assumptions, ideal fixed-momentum EF21 has a deterministic-schedule first-moment bound: a transient plus residuals, or O(T^-1/4) with eta_peak proportional to T^-3/4 and 1-mu=T^-1/2.",
     "pending": false,
     "include": true,
-    "export_text": "You are right: squaring $\\mathbb E\\|\\nabla f\\|$ does not bound $\\mathbb E\\|\\nabla f\\|^2$. We will delete that inference. For deterministic constant/cosine radii, our new joint-smooth bound gives a weighted first moment $O(T^{-1/4})$ when peak LR scales as $T^{-3/4}$ and $1-\\mu=T^{-1/2}$. Fixed LR/momentum leave a residual bound."
+    "export_text": "We will delete the squaring inference: a bound on $\\mathbb E\\|g\\|$ cannot bound $\\mathbb E\\|g\\|^2$. The first-moment $O(T^{-1/4})$ and sharp-step squared-gradient $O(T^{-1/2})$ results use separate arguments and parameter choices."
   },
   {
     "review": "review_R3_Ueq5",
     "id": "R3.5",
     "title": "Reviewer asks to distinguish ideal EF21 from the implementations",
     "detail": "State the remaining oracle and optimizer qualifications.",
-    "evidence": "J1: evidence/EF21_JOINT_SMOOTHNESS.md, Sections 1–3 and bound (J), derived in this preparation; whole-tuple norm instantiates prior EF21; deterministic-schedule first-moment proof is explicit. E3: submitted Table 3 and supplement A.16–A.17; code/results/nanogpt/runs.csv, diagnostics.csv, SUMMARY.md; one independent unpinned run per compressed method, full-precision gradient reduce-scatter before optimizer.",
-    "finding": "The new deterministic-schedule bound allows fixed EMA/Nesterov and either downlink but assumes exact polar, no decoupled weight decay and all jointly analyzed updates of the specified form. Finite polynomial polar, momentum warmup and auxiliary Adam are not covered.",
+    "evidence": "T1/G1: aaai_article/ef21_fixed_radius.tex (explicit separability step), ef21_nesterov_convergence.tex, and signmuon_addendum_body.tex (conditional SignMuon theorem and open EF21 cross-layer target). J1: separate candidate derivation in evidence/EF21_JOINT_SMOOTHNESS.md; not a revised-manuscript result and not relied on by the replies. E3: submitted Table 3 and supplement A.16–A.17; code/results/nanogpt/runs.csv, diagnostics.csv, SUMMARY.md; one independent unpinned run per compressed method, full-precision gradient reduce-scatter before optimizer.",
+    "finding": "The revised EF21 deterministic-schedule bound retains separability and assumes exact polar and fixed-within-run momentum. Finite polar approximations, changing nanoGPT momentum and auxiliary Adam are not covered. It bounds the server iterate, not automatically the compressed broadcast model.",
     "pending": false,
     "include": true,
-    "export_text": "These statements concern exact polar factors, fixed-within-run momentum and the server iterate. Finite polar solvers, nanoGPT momentum warmup and auxiliary Adam remain outside the guarantees."
+    "export_text": "Finite polar approximations and nanoGPT’s changing momentum/auxiliary Adam are outside these guarantees; we will distinguish these implementations in the main text."
   },
   {
     "review": "review_R4_pqje",
     "id": "R4.1",
     "title": "Reviewer asks whether the experimental schedules have the proved rate",
     "detail": "Identify the distinction between squared-gradient steps and deterministic schedules.",
-    "evidence": "T1: submitted supplement A.10; aaai_article/ef21_nesterov_convergence.tex, ef21_fixed_radius.tex, ef21_rate_takeaways.tex. Gradient-scaled steps and horizon-tuned momentum for the separate squared-moment result; never infer it by squaring a first moment. J1: evidence/EF21_JOINT_SMOOTHNESS.md, Sections 1–3 and bound (J), derived in this preparation; whole-tuple norm instantiates prior EF21; deterministic-schedule first-moment proof is explicit.",
-    "finding": "The original sharp-stepsize squared guarantee does not cover Tables 1–3. New joint-smooth deterministic-schedule proof (J) gives a residual or a horizon-tuned first-moment rate, not the advertised squared rate.",
+    "evidence": "T1: submitted supplement A.10; aaai_article/ef21_nesterov_convergence.tex, ef21_fixed_radius.tex, ef21_rate_takeaways.tex. Gradient-scaled steps and horizon-tuned momentum for the separate squared-moment result; never infer it by squaring a first moment. T1/G1: aaai_article/ef21_fixed_radius.tex (explicit separability step), ef21_nesterov_convergence.tex, and signmuon_addendum_body.tex (conditional SignMuon theorem and open EF21 cross-layer target). J1: separate candidate derivation in evidence/EF21_JOINT_SMOOTHNESS.md; not a revised-manuscript result and not relied on by the replies.",
+    "finding": "The original squared-gradient rate does not certify Tables 1–3: it needs gradient-scaled steps. Revised constant/cosine bounds describe ideal exact-polar EF21 with fixed EMA/Nesterov under the original separable assumptions. Fixed parameters give explicit residuals. No complete finite-polar network implementation is certified.",
     "pending": false,
     "include": true,
-    "export_text": "No complete network run is certified: all use finite polar solvers; nanoGPT also warms momentum and uses auxiliary Adam. The squared-gradient rate needs gradient-scaled steps. We now prove, under joint smoothness and unbiased bounded-variance noise, a constant/cosine first-moment bound for exact-polar EF21 with either downlink and fixed EMA/Nesterov. Fixed peak LR/momentum leave a residual; $T^{-3/4}$ peak LR and $1-\\mu=T^{-1/2}$ give $O(T^{-1/4})$."
+    "export_text": "The squared-gradient $O(T^{-1/2})$ rate needs gradient-scaled steps. Added ideal EF21 bounds cover fixed EMA/Nesterov and constant/cosine rates with residuals, retaining block separability. Finite polar solvers and nanoGPT’s changing momentum/auxiliary Adam remain outside these bounds. We will add a coverage table."
   },
   {
     "review": "review_R4_pqje",
     "id": "R4.2",
     "title": "Reviewer asks whether nanoGPT Nesterov momentum is covered",
     "detail": "Separate a fixed Nesterov coefficient from momentum warmup.",
-    "evidence": "J1: evidence/EF21_JOINT_SMOOTHNESS.md, Sections 1–3 and bound (J), derived in this preparation; whole-tuple norm instantiates prior EF21; deterministic-schedule first-moment proof is explicit. E3: submitted Table 3 and supplement A.16–A.17; code/results/nanogpt/runs.csv, diagnostics.csv, SUMMARY.md; one independent unpinned run per compressed method, full-precision gradient reduce-scatter before optimizer.",
-    "finding": "Bound (J) permits fixed Nesterov; nanoGPT changes momentum during the run and is not covered.",
+    "evidence": "T1/G1: aaai_article/ef21_fixed_radius.tex (explicit separability step), ef21_nesterov_convergence.tex, and signmuon_addendum_body.tex (conditional SignMuon theorem and open EF21 cross-layer target). J1: separate candidate derivation in evidence/EF21_JOINT_SMOOTHNESS.md; not a revised-manuscript result and not relied on by the replies. E3: submitted Table 3 and supplement A.16–A.17; code/results/nanogpt/runs.csv, diagnostics.csv, SUMMARY.md; one independent unpinned run per compressed method, full-precision gradient reduce-scatter before optimizer.",
+    "finding": "The revised manuscript extends ideal EF21 theory to fixed Nesterov, retaining its separable assumptions. nanoGPT changes momentum within a run and uses auxiliary Adam; the fixed-momentum theorem does not certify that implementation.",
     "pending": false,
     "include": true,
-    "export_text": "No complete network run is certified: all use finite polar solvers; nanoGPT also warms momentum and uses auxiliary Adam. The squared-gradient rate needs gradient-scaled steps. We now prove, under joint smoothness and unbiased bounded-variance noise, a constant/cosine first-moment bound for exact-polar EF21 with either downlink and fixed EMA/Nesterov. Fixed peak LR/momentum leave a residual; $T^{-3/4}$ peak LR and $1-\\mu=T^{-1/2}$ give $O(T^{-1/4})$."
+    "export_text": "The squared-gradient $O(T^{-1/2})$ rate needs gradient-scaled steps. Added ideal EF21 bounds cover fixed EMA/Nesterov and constant/cosine rates with residuals, retaining block separability. Finite polar solvers and nanoGPT’s changing momentum/auxiliary Adam remain outside these bounds. We will add a coverage table."
   },
   {
     "review": "review_R4_pqje",
@@ -283,7 +283,7 @@
     "finding": "The original submitted five-seed archive agrees with A8. Table 2 is stale; final-five-evaluation means give 82.9424 ± .1868 vs 81.4356 ± .1466. The main-table comparison must be reversed.",
     "pending": false,
     "include": true,
-    "export_text": "The submitted five-seed logs agree with A8: MuonSign 82.94±0.19% versus SignSGD 81.44±0.15%; Table 2 is stale. We will replace it and reverse the ranking sentence. SignMuon remains 85.72±0.24%, versus Muon 85.98±0.26%."
+    "export_text": "The submitted 5-seed logs agree with A8: MuonSign 82.94±0.19% versus SignSGD 81.44±0.15%. We will synchronize Table 2 and reverse that comparison. SignMuon remains 85.72±0.24%, near Muon’s 85.98±0.26% at a one-bit budget."
   },
   {
     "review": "review_R4_pqje",
@@ -294,7 +294,7 @@
     "finding": "The full addendum gives the weaker covariance/spread criterion epsilon*rho<1 and a complete stochastic fixed-momentum first-moment proof. The simpler diagonal lower bound in the export is sufficient and self-contained.",
     "pending": false,
     "include": true,
-    "export_text": "For $M=U\\Sigma V^\\top$, positive diagonal entries of $U^\\top\\mathrm{sign}(UV^\\top)V$ bounded below by $\\delta$ imply alignment at least $\\delta\\|M\\|_*$. This yields conditional SignMuon convergence; its margin is unverified in our networks."
+    "export_text": "For oracle input $M=U\\Sigma V^\\top$, diagonal entries of $U^\\top\\mathrm{sign}(UV^\\top)V$ uniformly above $\\delta>0$ give alignment $\\ge\\delta\\|M\\|_*$. Joint smoothness, unbiased finite-variance noise, exact polar and horizon tuning give SignMuon an $O(T^{-1/4})$ mean gradient-norm rate. The network margin remains unmeasured."
   },
   {
     "review": "review_R4_pqje",
@@ -313,10 +313,10 @@
     "title": "Reviewer questions novelty relative to EF21 and concurrent SignMuon",
     "detail": "Credit existing frameworks and the latest concurrent theory.",
     "evidence": "P1: Gruntkowska et al. 2025 EF21-Muon, Algorithm 3 / Theorem 19 / Remark 23; Modoranu et al. ICML 2024; Mishra et al. SignMuon v2 (17 October 2026), Section 4 / Appendix F. The current main article comparison to Mishra v1 is stale and must be replaced. N1: submitted Theorems 1–4 and proofs; aaai_article/ef21_signmuon_divergence.tex; evidence/verified_claims.json exact rational ascent/cycle certificates. Theorem 4 objective depends on fixed eta and mu; no decreasing-schedule impossibility follows.",
-    "finding": "The new submitted contribution is the negative sign-composition and output-EF analysis. The base EF21 theory and practical SignMuon precede this response. Mishra v2 now has conditional actual-vote stochastic momentum results, so our current v1 comparison must be replaced.",
+    "finding": "Practical SignMuon and the general EF21 framework are prior/concurrent work. Our supported contribution is the controlled comparison of six placements/EF variants, strong sign-based performance and distinct sign/polar failure mechanisms. Mishra v2 has conditional actual-vote stochastic momentum theory; the current manuscript’s v1-only comparison must be updated. The added conditional SignMuon theorem is new to this submission, not claimed as the first conditional SignMuon result.",
     "pending": false,
     "include": true,
-    "export_text": "We credit EF21 and concurrent SignMuon, including Mishra v2’s conditional theory; our main novelty is the negative placement analysis."
+    "export_text": "We credit concurrent SignMuon and EF21; our matched study compares 6 placements/EF variants and their distinct failures."
   },
   {
     "review": "review_R4_pqje",
@@ -327,7 +327,7 @@
     "finding": "The reviewer is correct. Full-precision gradient averaging precedes the owning-rank optimizer; parameter all-gather follows. Local compress-then-vote semantics and actual one-bit communication gains are not tested by this experiment.",
     "pending": false,
     "include": true,
-    "export_text": "nanoGPT applies these optimizers after full-precision reduce-scatter. It tests centralized updates, not compressed worker votes or network savings."
+    "export_text": "nanoGPT tests centralized optimization after full-precision averaging: loss 3.2881 versus SignSGD 3.4049. Worker voting is tested in CNN2."
   },
   {
     "review": "review_R4_pqje",
@@ -338,7 +338,7 @@
     "finding": "Introduce the operations before the introduction cites alignment results. Prepared replacement prose and a theorem/implementation table are in 02_REBUTTAL_PLAN.md. X takes exact server updates; W is the compressed broadcast at which gradients are queried. Theorem 4 has parameter-dependent objectives and no decreasing-schedule conclusion. The theory makes no performance-order prediction.",
     "pending": false,
     "include": true,
-    "export_text": "We will put theorem coverage and X/W definitions in the main text and simplify the introduction, results and captions."
+    "export_text": "We will lead with gains, define server X/broadcast W, explain scope in the main text, and simplify the introduction, results and captions."
   },
   {
     "review": "review_R4_pqje",
@@ -349,7 +349,7 @@
     "finding": "Replace “unrepairable” with the specified fixed-parameter output-EF statement. Prepared replacement prose and a theorem/implementation table are in 02_REBUTTAL_PLAN.md. X takes exact server updates; W is the compressed broadcast at which gradients are queried. Theorem 4 has parameter-dependent objectives and no decreasing-schedule conclusion. The theory makes no performance-order prediction.",
     "pending": false,
     "include": true,
-    "export_text": "We will put theorem coverage and X/W definitions in the main text and simplify the introduction, results and captions."
+    "export_text": "We will lead with gains, define server X/broadcast W, explain scope in the main text, and simplify the introduction, results and captions."
   },
   {
     "review": "review_R4_pqje",
@@ -360,7 +360,7 @@
     "finding": "The existence of failure examples does not predict method ranking. Prepared replacement prose and a theorem/implementation table are in 02_REBUTTAL_PLAN.md. X takes exact server updates; W is the compressed broadcast at which gradients are queried. Theorem 4 has parameter-dependent objectives and no decreasing-schedule conclusion. The theory makes no performance-order prediction.",
     "pending": false,
     "include": true,
-    "export_text": "We will put theorem coverage and X/W definitions in the main text and simplify the introduction, results and captions."
+    "export_text": "We will lead with gains, define server X/broadcast W, explain scope in the main text, and simplify the introduction, results and captions."
   },
   {
     "review": "review_R4_pqje",
@@ -371,7 +371,7 @@
     "finding": "Remove repeated “document rather than resolve” language. Prepared replacement prose and a theorem/implementation table are in 02_REBUTTAL_PLAN.md. X takes exact server updates; W is the compressed broadcast at which gradients are queried. Theorem 4 has parameter-dependent objectives and no decreasing-schedule conclusion. The theory makes no performance-order prediction.",
     "pending": false,
     "include": true,
-    "export_text": "We will put theorem coverage and X/W definitions in the main text and simplify the introduction, results and captions."
+    "export_text": "We will lead with gains, define server X/broadcast W, explain scope in the main text, and simplify the introduction, results and captions."
   },
   {
     "review": "review_R4_pqje",
@@ -382,7 +382,7 @@
     "finding": "Explain exact server X, compressed broadcast W and their roles. Prepared replacement prose and a theorem/implementation table are in 02_REBUTTAL_PLAN.md. X takes exact server updates; W is the compressed broadcast at which gradients are queried. Theorem 4 has parameter-dependent objectives and no decreasing-schedule conclusion. The theory makes no performance-order prediction.",
     "pending": false,
     "include": true,
-    "export_text": "We will put theorem coverage and X/W definitions in the main text and simplify the introduction, results and captions."
+    "export_text": "We will lead with gains, define server X/broadcast W, explain scope in the main text, and simplify the introduction, results and captions."
   },
   {
     "review": "review_R4_pqje",
@@ -393,7 +393,7 @@
     "finding": "Distinguish finite-target success and stationary error floors from asymptotic rate. Prepared replacement prose and a theorem/implementation table are in 02_REBUTTAL_PLAN.md. X takes exact server updates; W is the compressed broadcast at which gradients are queried. Theorem 4 has parameter-dependent objectives and no decreasing-schedule conclusion. The theory makes no performance-order prediction.",
     "pending": false,
     "include": true,
-    "export_text": "We will put theorem coverage and X/W definitions in the main text and simplify the introduction, results and captions."
+    "export_text": "We will lead with gains, define server X/broadcast W, explain scope in the main text, and simplify the introduction, results and captions."
   },
   {
     "review": "review_R4_pqje",
@@ -404,7 +404,7 @@
     "finding": "Lead with measured accuracy instead of theorem qualifications. Prepared replacement prose and a theorem/implementation table are in 02_REBUTTAL_PLAN.md. X takes exact server updates; W is the compressed broadcast at which gradients are queried. Theorem 4 has parameter-dependent objectives and no decreasing-schedule conclusion. The theory makes no performance-order prediction.",
     "pending": false,
     "include": true,
-    "export_text": "We will put theorem coverage and X/W definitions in the main text and simplify the introduction, results and captions."
+    "export_text": "We will lead with gains, define server X/broadcast W, explain scope in the main text, and simplify the introduction, results and captions."
   },
   {
     "review": "review_R4_pqje",
@@ -415,7 +415,7 @@
     "finding": "Prepare a coverage table and shorten captions. Prepared replacement prose and a theorem/implementation table are in 02_REBUTTAL_PLAN.md. X takes exact server updates; W is the compressed broadcast at which gradients are queried. Theorem 4 has parameter-dependent objectives and no decreasing-schedule conclusion. The theory makes no performance-order prediction.",
     "pending": false,
     "include": true,
-    "export_text": "We will put theorem coverage and X/W definitions in the main text and simplify the introduction, results and captions."
+    "export_text": "We will lead with gains, define server X/broadcast W, explain scope in the main text, and simplify the introduction, results and captions."
   },
   {
     "review": "review_R5_Tx34",
@@ -423,10 +423,10 @@
     "title": "Reviewer asks what is new beyond the EF21-Muon framework",
     "detail": "State the new proofs and credit inherited positive rates.",
     "evidence": "N1: submitted Theorems 1–4 and proofs; aaai_article/ef21_signmuon_divergence.tex; evidence/verified_claims.json exact rational ascent/cycle certificates. Theorem 4 objective depends on fixed eta and mu; no decreasing-schedule impossibility follows. P1: Gruntkowska et al. 2025 EF21-Muon, Algorithm 3 / Theorem 19 / Remark 23; Modoranu et al. ICML 2024; Mishra et al. SignMuon v2 (17 October 2026), Section 4 / Appendix F. The current main article comparison to Mishra v1 is stale and must be replaced.",
-    "finding": "The submitted novelty is the negative sign-placement diagnosis and smooth bounded-below output-EF cycle. The proof separates the discontinuous polar target from the smooth gradient-side target; this is Muon/LMO-specific and not a new arbitrary-norm EF framework.",
+    "finding": "The contribution combines strong measured sign-based optimization with a systematic comparison of three sign placements and their EF variants, and explicit placement-specific ascent/output-EF divergence proofs. In the submitted IID CNN2 study, at the same payload SignMuon gains 4.28 points over momentum SignSGD and is 0.27 points below Muon. This is evidence among tested methods, not a universal ranking or priority claim for the SignMuon idea.",
     "pending": false,
     "include": true,
-    "export_text": "The new submitted analysis is the explicit ascent constructions and the smooth, lower-bounded output-EF limit cycle. It shows why tracking a polar direction can fail although gradient-side EF succeeds: the polar target can jump by constant order independently of the step size. The base positive rates instantiate EF21-Muon; we will credit that directly."
+    "export_text": "In IID CNN2, SignMuon achieves 85.72% versus SignSGD 81.44% (5 seeds) at the same one-bit budget, near Muon’s 85.98%. Our matched study compares 3 sign placements and their EF variants. The new proofs show ascent for each plain placement and output-EF divergence on a smooth, lower-bounded objective: polar targets can jump independently of stepsize, unlike gradient targets. We credit the positive EF21 framework to prior work. Practical choice: SignMuon for IID accuracy; gradient EF for the analyzed repair, with model EF when both links are constrained."
   },
   {
     "review": "review_R5_Tx34",
@@ -437,7 +437,7 @@
     "finding": "The example proves that sharing one residual scale while tracking a rapidly changing polar output can create a persistent wrong-sign component. Gradient-level EF avoids this particular tracking obstacle under smoothness; the guarantee still requires its stated assumptions.",
     "pending": false,
     "include": true,
-    "export_text": "The new submitted analysis is the explicit ascent constructions and the smooth, lower-bounded output-EF limit cycle. It shows why tracking a polar direction can fail although gradient-side EF succeeds: the polar target can jump by constant order independently of the step size. The base positive rates instantiate EF21-Muon; we will credit that directly."
+    "export_text": "In IID CNN2, SignMuon achieves 85.72% versus SignSGD 81.44% (5 seeds) at the same one-bit budget, near Muon’s 85.98%. Our matched study compares 3 sign placements and their EF variants. The new proofs show ascent for each plain placement and output-EF divergence on a smooth, lower-bounded objective: polar targets can jump independently of stepsize, unlike gradient targets. We credit the positive EF21 framework to prior work. Practical choice: SignMuon for IID accuracy; gradient EF for the analyzed repair, with model EF when both links are constrained."
   },
   {
     "review": "review_R5_Tx34",
@@ -448,7 +448,7 @@
     "finding": "For each fixed L, eta and mu there is an objective and either momentum variant diverges. The smooth objective may depend on those parameters. The scaled gradient floor is Omega(c_mu L eta), not a horizon-independent positive constant. No decreasing-schedule result is established for output EF.",
     "pending": false,
     "include": true,
-    "export_text": "Theorem 4 says $\\forall L,\\eta>0,\\mu\\in[0,1),\\ \\exists f_{L,\\eta,\\mu}$ causing divergence for the specified output-EF recursion with fixed parameters. It rules out universal constant-step rules based only on $L,\\mu$. It does not cover decreasing schedules or rule out horizon-tuned finite-time rates: the objective depends on the parameters, and its gradient floor scales as $L\\eta$."
+    "export_text": "Theorem 4 states $\\forall L,\\eta>0,\\mu\\in[0,1),\\ \\exists f_{L,\\eta,\\mu}$ causing divergence of the specified output-EF recursion at fixed parameters. It excludes universal constant-step rules based on $L,\\mu$; it does not exclude decreasing schedules or horizon-tuned finite-time rates."
   },
   {
     "review": "review_R5_Tx34",
@@ -459,7 +459,7 @@
     "finding": "The new floor calculation makes the limitation explicit. It shrinks with eta and does not defeat horizon-tuned convergence theorems whose objective gap and constants are fixed.",
     "pending": false,
     "include": true,
-    "export_text": "Theorem 4 says $\\forall L,\\eta>0,\\mu\\in[0,1),\\ \\exists f_{L,\\eta,\\mu}$ causing divergence for the specified output-EF recursion with fixed parameters. It rules out universal constant-step rules based only on $L,\\mu$. It does not cover decreasing schedules or rule out horizon-tuned finite-time rates: the objective depends on the parameters, and its gradient floor scales as $L\\eta$."
+    "export_text": "Theorem 4 states $\\forall L,\\eta>0,\\mu\\in[0,1),\\ \\exists f_{L,\\eta,\\mu}$ causing divergence of the specified output-EF recursion at fixed parameters. It excludes universal constant-step rules based on $L,\\mu$; it does not exclude decreasing schedules or horizon-tuned finite-time rates."
   },
   {
     "review": "review_R5_Tx34",
@@ -470,7 +470,7 @@
     "finding": "The theory does not predict which optimizer wins on a task. The positive SignMuon theorem is conditional and compatible with the counterexamples. A new fixed softplus objective proves arbitrary-schedule nonstationarity only for each plain placement; this does not strengthen the output-EF quantifiers.",
     "pending": false,
     "include": true,
-    "export_text": "The theory predicts no empirical ranking. Our added SignMuon analysis gives a first-moment rate under a uniform positive alignment margin, not a predicted winner. Separately, new fixed softplus witnesses prove failure for every positive step schedule and EMA/Nesterov momentum for the three plain placements; this stronger statement does not extend to output EF."
+    "export_text": "Worst-case guarantees predict no empirical ordering. The added SignMuon theorem requires uniform positive alignment, exact polar, joint smoothness, unbiased finite-variance noise and horizon tuning."
   },
   {
     "review": "review_R5_Tx34",
@@ -481,51 +481,51 @@
     "finding": "Failure of spectral contractivity does not prove nonconvergence under every analysis or parameter choice. c_proj concentration is observational. No initialization/step/compressor ablation proves causation or uniqueness of a remedy.",
     "pending": false,
     "include": true,
-    "export_text": "We will remove “unrepairable” and “only changing the compressor”: failing a sufficient condition excludes neither other analyses nor other parameter choices."
+    "export_text": "We will replace “unrepairable” and “only changing the compressor” with the precise claims: failure of one sufficient condition does not preclude other analyses or parameter choices."
   },
   {
     "review": "review_AI_AI_Reviewer",
     "id": "AI.1",
     "title": "Reviewer asks for the missing stochastic assumptions",
     "detail": "State the noise assumptions where the theorem is stated.",
-    "evidence": "T1: submitted supplement A.10; aaai_article/ef21_nesterov_convergence.tex, ef21_fixed_radius.tex, ef21_rate_takeaways.tex. Gradient-scaled steps and horizon-tuned momentum for the separate squared-moment result; never infer it by squaring a first moment. J1: evidence/EF21_JOINT_SMOOTHNESS.md, Sections 1–3 and bound (J), derived in this preparation; whole-tuple norm instantiates prior EF21; deterministic-schedule first-moment proof is explicit.",
-    "finding": "Unbiased bounded nuclear-variance assumptions are in submitted A.10 but missing from the advertised main statement. The new proof uses conditional zero mean and a joint Frobenius variance bound.",
+    "evidence": "T1: submitted supplement A.10; aaai_article/ef21_nesterov_convergence.tex, ef21_fixed_radius.tex, ef21_rate_takeaways.tex. Gradient-scaled steps and horizon-tuned momentum for the separate squared-moment result; never infer it by squaring a first moment. T1/G1: aaai_article/ef21_fixed_radius.tex (explicit separability step), ef21_nesterov_convergence.tex, and signmuon_addendum_body.tex (conditional SignMuon theorem and open EF21 cross-layer target). J1: separate candidate derivation in evidence/EF21_JOINT_SMOOTHNESS.md; not a revised-manuscript result and not relied on by the replies.",
+    "finding": "Unbiased bounded-variance assumptions are in submitted A.10 and must also appear in the main statement. Revised EF21 bounds retain the original separable smoothness; the added plain SignMuon theorem instead uses joint Frobenius smoothness and conditional centering/finite variance. The two results must be distinguished.",
     "pending": false,
     "include": true,
-    "export_text": "A.10 states unbiased bounded-variance noise; we will add it to the main statement. One max-spectral norm on all layers removes separability. Our new deterministic-schedule bound allows fixed EMA/Nesterov and either EF21 downlink, but not finite polar solvers, changing momentum or auxiliary Adam."
+    "export_text": "EF21 retains block separability and unbiased bounded-variance noise. New constant/cosine bounds use exact polar and fixed EMA/Nesterov, with residuals. The conditional SignMuon $O(T^{-1/4})$ mean gradient-norm theorem uses joint smoothness, uniform alignment and horizon tuning. Finite polar/changing momentum remain uncovered."
   },
   {
     "review": "review_AI_AI_Reviewer",
     "id": "AI.2",
     "title": "Reviewer says the layer smoothness forces separability",
     "detail": "Use jointly coupled smoothness instead of the original restrictive assumption.",
-    "evidence": "J1: evidence/EF21_JOINT_SMOOTHNESS.md, Sections 1–3 and bound (J), derived in this preparation; whole-tuple norm instantiates prior EF21; deterministic-schedule first-moment proof is explicit.",
-    "finding": "The whole-tuple max-spectral norm and sum-nuclear dual permit arbitrary inter-layer coupling under ordinary joint Frobenius smoothness. This reduction may worsen dimension constants.",
+    "evidence": "T1/G1: aaai_article/ef21_fixed_radius.tex (explicit separability step), ef21_nesterov_convergence.tex, and signmuon_addendum_body.tex (conditional SignMuon theorem and open EF21 cross-layer target). J1: separate candidate derivation in evidence/EF21_JOINT_SMOOTHNESS.md; not a revised-manuscript result and not relied on by the replies.",
+    "finding": "The manuscript does not remove EF21 separability. Its fixed-radius proof explicitly uses block independence, and the author addendum marks a joint-smooth EF21 extension open. The added conditional SignMuon theorem allows interacting layers. J1 is a separate candidate derivation and is excluded from public claims.",
     "pending": false,
     "include": true,
-    "export_text": "A.10 states unbiased bounded-variance noise; we will add it to the main statement. One max-spectral norm on all layers removes separability. Our new deterministic-schedule bound allows fixed EMA/Nesterov and either EF21 downlink, but not finite polar solvers, changing momentum or auxiliary Adam."
+    "export_text": "EF21 retains block separability and unbiased bounded-variance noise. New constant/cosine bounds use exact polar and fixed EMA/Nesterov, with residuals. The conditional SignMuon $O(T^{-1/4})$ mean gradient-norm theorem uses joint smoothness, uniform alignment and horizon tuning. Finite polar/changing momentum remain uncovered."
   },
   {
     "review": "review_AI_AI_Reviewer",
     "id": "AI.7",
     "title": "Reviewer asks for an inexact polar-oracle guarantee",
     "detail": "Do not identify the finite polynomial solver with the exact polar theorem.",
-    "evidence": "J1: evidence/EF21_JOINT_SMOOTHNESS.md, Sections 1–3 and bound (J), derived in this preparation; whole-tuple norm instantiates prior EF21; deterministic-schedule first-moment proof is explicit. G1: aaai_article/signmuon_addendum_body.tex, conditional SignMuon theorem and geometry lemma; OLion v2, Lemma 4.3 / Corollary 4.4; exact-oracle, fixed-within-run momentum, uniformly positive margin. E3: submitted Table 3 and supplement A.16–A.17; code/results/nanogpt/runs.csv, diagnostics.csv, SUMMARY.md; one independent unpinned run per compressed method, full-precision gradient reduce-scatter before optimizer.",
+    "evidence": "T1/G1: aaai_article/ef21_fixed_radius.tex (explicit separability step), ef21_nesterov_convergence.tex, and signmuon_addendum_body.tex (conditional SignMuon theorem and open EF21 cross-layer target). J1: separate candidate derivation in evidence/EF21_JOINT_SMOOTHNESS.md; not a revised-manuscript result and not relied on by the replies. G1: aaai_article/signmuon_addendum_body.tex, conditional SignMuon theorem and geometry lemma; OLion v2, Lemma 4.3 / Corollary 4.4; exact-oracle, fixed-within-run momentum, uniformly positive margin. E3: submitted Table 3 and supplement A.16–A.17; code/results/nanogpt/runs.csv, diagnostics.csv, SUMMARY.md; one independent unpinned run per compressed method, full-precision gradient reduce-scatter before optimizer.",
     "finding": "There is no trajectory-wide oracle-error bound for the five-step solvers. The new addendum provides a conditional weighted sign-mismatch penalty, not a certificate that it vanishes in the actual experiments. Full-run theory coverage remains open.",
     "pending": false,
     "include": true,
-    "export_text": "A.10 states unbiased bounded-variance noise; we will add it to the main statement. One max-spectral norm on all layers removes separability. Our new deterministic-schedule bound allows fixed EMA/Nesterov and either EF21 downlink, but not finite polar solvers, changing momentum or auxiliary Adam."
+    "export_text": "EF21 retains block separability and unbiased bounded-variance noise. New constant/cosine bounds use exact polar and fixed EMA/Nesterov, with residuals. The conditional SignMuon $O(T^{-1/4})$ mean gradient-norm theorem uses joint smoothness, uniform alignment and horizon tuning. Finite polar/changing momentum remain uncovered."
   },
   {
     "review": "review_AI_AI_Reviewer",
     "id": "AI.3",
     "title": "Reviewer says the guaranteed iterate differs from the queried model",
     "detail": "Explain X versus W without transferring the guarantee.",
-    "evidence": "E3: submitted Table 3 and supplement A.16–A.17; code/results/nanogpt/runs.csv, diagnostics.csv, SUMMARY.md; one independent unpinned run per compressed method, full-precision gradient reduce-scatter before optimizer. J1: evidence/EF21_JOINT_SMOOTHNESS.md, Sections 1–3 and bound (J), derived in this preparation; whole-tuple norm instantiates prior EF21; deterministic-schedule first-moment proof is explicit.",
+    "evidence": "E3: submitted Table 3 and supplement A.16–A.17; code/results/nanogpt/runs.csv, diagnostics.csv, SUMMARY.md; one independent unpinned run per compressed method, full-precision gradient reduce-scatter before optimizer. T1/G1: aaai_article/ef21_fixed_radius.tex (explicit separability step), ef21_nesterov_convergence.tex, and signmuon_addendum_body.tex (conditional SignMuon theorem and open EF21 cross-layer target). J1: separate candidate derivation in evidence/EF21_JOINT_SMOOTHNESS.md; not a revised-manuscript result and not relied on by the replies.",
     "finding": "X takes the exact server update; W tracks it through compressed downlink; workers evaluate gradients at W. The guarantee is stationarity at X, not W.",
     "pending": false,
     "include": true,
-    "export_text": "EF21-MuonSign losses are 5.5198 at server X and 3.3213 at broadcast W. The guarantee concerns X; success at W does not validate it."
+    "export_text": "EF21-MuonSign queries broadcast W; the theorem concerns server X. Their losses are 3.3213 and 5.5198 in the same run; we will distinguish them."
   },
   {
     "review": "review_AI_AI_Reviewer",
@@ -536,7 +536,7 @@
     "finding": "The two reported losses are evaluations of the same EF21-MuonSign run, not two independent runs. The gap is 2.1985 nats; c_proj residual concentration is an observation, not a causal initialization/compressor ablation.",
     "pending": false,
     "include": true,
-    "export_text": "EF21-MuonSign losses are 5.5198 at server X and 3.3213 at broadcast W. The guarantee concerns X; success at W does not validate it."
+    "export_text": "EF21-MuonSign queries broadcast W; the theorem concerns server X. Their losses are 3.3213 and 5.5198 in the same run; we will distinguish them."
   },
   {
     "review": "review_AI_AI_Reviewer",
@@ -544,10 +544,10 @@
     "title": "Reviewer asks to frame positive EF21 results as an instantiation",
     "detail": "Identify the paper-specific contribution.",
     "evidence": "P1: Gruntkowska et al. 2025 EF21-Muon, Algorithm 3 / Theorem 19 / Remark 23; Modoranu et al. ICML 2024; Mishra et al. SignMuon v2 (17 October 2026), Section 4 / Appendix F. The current main article comparison to Mishra v1 is stale and must be replaced. N1: submitted Theorems 1–4 and proofs; aaai_article/ef21_signmuon_divergence.tex; evidence/verified_claims.json exact rational ascent/cycle certificates. Theorem 4 objective depends on fixed eta and mu; no decreasing-schedule impossibility follows.",
-    "finding": "The arbitrary-norm framework and general idea of gradient-side EF before a matrix transform are prior work. The new submitted proofs concern sign/polar ascent and output-EF divergence.",
+    "finding": "The arbitrary-norm EF21 framework and gradient-side EF before a matrix transform are credited to prior work. Our empirical contribution is a controlled six-variant comparison with strong SignMuon performance; the new submitted proofs diagnose sign/polar ascent and output-EF divergence.",
     "pending": false,
     "include": true,
-    "export_text": "We credit EF21-Muon and Modoranu et al.; the submitted novelty is the negative sign-placement/output-EF analysis."
+    "export_text": "We credit EF21, Modoranu and concurrent SignMuon; our matched study identifies distinct placement/output-EF failures."
   },
   {
     "review": "review_AI_AI_Reviewer",
@@ -558,7 +558,7 @@
     "finding": "Modoranu et al. 2024 establishes a precedent for EF compression before a structured preconditioner. It does not supply the sign/polar negative construction; cite both facts accurately.",
     "pending": false,
     "include": true,
-    "export_text": "We credit EF21-Muon and Modoranu et al.; the submitted novelty is the negative sign-placement/output-EF analysis."
+    "export_text": "We credit EF21, Modoranu and concurrent SignMuon; our matched study identifies distinct placement/output-EF failures."
   },
   {
     "review": "review_AI_AI_Reviewer",
@@ -580,18 +580,18 @@
     "finding": "The existing SignSGD baseline uses the same EMA momentum coefficient. Thus the comparison is not against memoryless gradient signs, but it does not isolate geometry against all variance-reduction choices.",
     "pending": false,
     "include": true,
-    "export_text": "SignSGD uses momentum; SSVR is untested. We will cite Jiang et al. and remove exclusive attribution to geometry."
+    "export_text": "SSVR is applicable but needs matched query budgets; it is untested. SignSGD uses EMA. We will narrow geometry attribution."
   },
   {
     "review": "review_AI_AI_Reviewer",
     "id": "AI.8",
     "title": "Reviewer asks to limit broad federated claims",
     "detail": "State the actual data and update regime.",
-    "evidence": "E2: submitted supplement A.14–A.15 and code/federated/algorithms.py, main.py, methods.py. CNN2, N=11, homogeneous, full participation; 3 mini-batches of 64 at fixed weights, zero local updates. New heterogeneous runner exists in live repo, but no completed new result was available. E3: submitted Table 3 and supplement A.16–A.17; code/results/nanogpt/runs.csv, diagnostics.csv, SUMMARY.md; one independent unpinned run per compressed method, full-precision gradient reduce-scatter before optimizer.",
-    "finding": "No non-IID/local-update result is completed; nanoGPT uses full-precision gradient transport and centralized optimizer semantics.",
+    "evidence": "E2: submitted supplement A.14–A.15 and code/federated/algorithms.py, main.py, methods.py. CNN2, N=11, homogeneous, full participation; 3 mini-batches of 64 at fixed weights, zero local updates. E5: evidence/heterogeneous_transfer_results.zip (supplied during revision 2), verified by verify_heterogeneous_transfer.py against all 50 raw run configs/histories; heterogeneous_transfer_verified.json. Dirichlet(0.1), 11 clients, five paired seeds, IID learning rates held fixed. LR-retuned comparison, local updates and partial participation remain outstanding. E3: submitted Table 3 and supplement A.16–A.17; code/results/nanogpt/runs.csv, diagnostics.csv, SUMMARY.md; one independent unpinned run per compressed method, full-precision gradient reduce-scatter before optimizer.",
+    "finding": "New supplied CNN2 transfer adds five-seed Dirichlet(0.1) label skew using unchanged IID rates, still 11 fully participating clients and no local updates. EF21-MuonSign reaches 83.23±0.36% versus SignMuon 35.92±8.49%; retuning is pending. nanoGPT remains centralized optimization after full-precision averaging, not an LLM one-bit transport test.",
     "pending": false,
     "include": true,
-    "export_text": "Federation uses 11 IID clients, no local updates. nanoGPT averages full-precision gradients; no distributed one-bit gains are demonstrated."
+    "export_text": "Added CNN2 Dirichlet(0.1) transfer at IID rates gives EF21-MuonSign 83.23% versus SignMuon 35.92%; retuning is pending. Still 11 clients, no local updates. nanoGPT’s 3.2881 versus SignSGD 3.4049 tests centralized updates after full-precision averaging."
   },
   {
     "review": "review_AI_AI_Reviewer",
@@ -602,7 +602,7 @@
     "finding": "A concrete table is prepared internally with all six methods, EF targets, polar location, payloads, memory and theoretical iterate. It should replace the current scattered explanations.",
     "pending": false,
     "include": true,
-    "export_text": "We will add the method/coverage table and move implementation details to the experiments."
+    "export_text": "We will add theorem coverage and move implementation details to setup."
   },
   {
     "review": "review_AI_AI_Reviewer",
@@ -613,7 +613,7 @@
     "finding": "Move solver and layer-scaling details from Section 4.1 to the experimental setup. Keep theory definitions before counterexamples and EF results.",
     "pending": false,
     "include": true,
-    "export_text": "We will add the method/coverage table and move implementation details to the experiments."
+    "export_text": "We will add theorem coverage and move implementation details to setup."
   },
   {
     "review": "review_AI_AI_Reviewer",
@@ -624,7 +624,7 @@
     "finding": "The diagonal lower bound implies alignment by a singular-value-weighted sum. The full covariance criterion and stochastic first-moment theorem are in the author addendum. Credit OLion v2; it is not an empirical explanation for our networks.",
     "pending": false,
     "include": true,
-    "export_text": "A sufficient SignMuon condition is $[U^\\top\\mathrm{sign}(UV^\\top)V]_{jj}\\ge\\delta>0$ for $M=U\\Sigma V^\\top$; it implies alignment $\\ge\\delta\\|M\\|_*$."
+    "export_text": "The network alignment margin remains unmeasured."
   },
   {
     "review": "review_AI_AI_Reviewer",
@@ -646,7 +646,7 @@
     "finding": "Use polar(0)=0 in the exact theory. For plain strict-binary sign ties at zero, the implementation can randomize; this is distinct from the polar selection.",
     "pending": false,
     "include": true,
-    "export_text": "We will define polar(0)=0. The 0.0021 gap is inconclusive. A5 reports seconds/epoch; we drop the broad 2x claim. Payloads include FP32 auxiliaries/EF scales. Corrected MuonSign/SGD runs reach 80% in all 5 seeds."
+    "export_text": "We will define polar(0)=0; state 1 nanoGPT run/method; avoid ranking the 0.0021 gap; cite A5 (16.6 s/epoch); qualify timing; count EF scales; correct MuonSign/SGD threshold success to 5/5."
   },
   {
     "review": "review_AI_AI_Reviewer",
@@ -654,10 +654,10 @@
     "title": "Reviewer questions the single-seed 0.0021 nanoGPT ordering",
     "detail": "Do not infer a reliable ranking from that difference.",
     "evidence": "E3: submitted Table 3 and supplement A.16–A.17; code/results/nanogpt/runs.csv, diagnostics.csv, SUMMARY.md; one independent unpinned run per compressed method, full-precision gradient reduce-scatter before optimizer.",
-    "finding": "The gap EF21-SignMuon 3.2860 vs SignMuon 3.2881 is below an upstream Muon noise reference, not a variant-specific noise estimate. All compressed-method ranks are preliminary.",
+    "finding": "nanoGPT has one training run per compressed method. EF21-SignMuon 3.2860 versus SignMuon 3.2881 is an observed gap of 0.0021, not evidence of a reproducible ranking. SignMuon improves the observed SignSGD loss by 0.1168. No variance estimate is available for the compressed variants.",
     "pending": false,
     "include": true,
-    "export_text": "We will define polar(0)=0. The 0.0021 gap is inconclusive. A5 reports seconds/epoch; we drop the broad 2x claim. Payloads include FP32 auxiliaries/EF scales. Corrected MuonSign/SGD runs reach 80% in all 5 seeds."
+    "export_text": "We will define polar(0)=0; state 1 nanoGPT run/method; avoid ranking the 0.0021 gap; cite A5 (16.6 s/epoch); qualify timing; count EF scales; correct MuonSign/SGD threshold success to 5/5."
   },
   {
     "review": "review_AI_AI_Reviewer",
@@ -668,7 +668,7 @@
     "finding": "Elapsed seconds/epoch are already in A5, so timing data are not entirely absent. The old main-table threshold numbers are stale. Withdraw the generic approximately 2x end-to-end speed claim and report per-epoch timing/threshold separately; compilation/validation and network transport differ across settings.",
     "pending": false,
     "include": true,
-    "export_text": "We will define polar(0)=0. The 0.0021 gap is inconclusive. A5 reports seconds/epoch; we drop the broad 2x claim. Payloads include FP32 auxiliaries/EF scales. Corrected MuonSign/SGD runs reach 80% in all 5 seeds."
+    "export_text": "We will define polar(0)=0; state 1 nanoGPT run/method; avoid ranking the 0.0021 gap; cite A5 (16.6 s/epoch); qualify timing; count EF scales; correct MuonSign/SGD threshold success to 5/5."
   },
   {
     "review": "review_AI_AI_Reviewer",
@@ -679,7 +679,7 @@
     "finding": "CNN2 has 762560 matrix and 2146 auxiliary parameters and 3 compressed blocks. Bits/channel are 1.0870 plain and 1.0871 EF, not exactly one per total parameter; uplink-only round-trip gain is 1.93x, not 29.4x.",
     "pending": false,
     "include": true,
-    "export_text": "We will define polar(0)=0. The 0.0021 gap is inconclusive. A5 reports seconds/epoch; we drop the broad 2x claim. Payloads include FP32 auxiliaries/EF scales. Corrected MuonSign/SGD runs reach 80% in all 5 seeds."
+    "export_text": "We will define polar(0)=0; state 1 nanoGPT run/method; avoid ranking the 0.0021 gap; cite A5 (16.6 s/epoch); qualify timing; count EF scales; correct MuonSign/SGD threshold success to 5/5."
   },
   {
     "review": "review_AI_AI_Reviewer",
@@ -690,7 +690,7 @@
     "finding": "Corrected submitted archive: MuonSign rounds80 860, SGD1240, both 5/5 successes; SignSGD1140 and SignMuon540, also5/5. Do not use the stale main-table 4/5 and3/5 denominators.",
     "pending": false,
     "include": true,
-    "export_text": "We will define polar(0)=0. The 0.0021 gap is inconclusive. A5 reports seconds/epoch; we drop the broad 2x claim. Payloads include FP32 auxiliaries/EF scales. Corrected MuonSign/SGD runs reach 80% in all 5 seeds."
+    "export_text": "We will define polar(0)=0; state 1 nanoGPT run/method; avoid ranking the 0.0021 gap; cite A5 (16.6 s/epoch); qualify timing; count EF scales; correct MuonSign/SGD threshold success to 5/5."
   },
   {
     "review": "review_AI_AI_Reviewer",
@@ -701,6 +701,6 @@
     "finding": "Theorem4 is forall fixed L,eta,mu exists parameter-dependent f for the specified scaled-sign output estimator. It does not rule out horizon-tuned finite-time rates, other EF schemes or different analyses.",
     "pending": false,
     "include": true,
-    "export_text": "“Unrepairable” will be limited to the specified output-EF counterexample; decreasing schedules and other repairs are not ruled out."
+    "export_text": "Theorem 4 excludes universal fixed-step rules, not decreasing schedules/horizon tuning."
   }
 ]

@@ -1,0 +1,447 @@
+{
+  "checked_utc": "2026-10-29T18:26:55.362630+00:00",
+  "archive_sha256": "b66dbfdfcf8cd8d6211527ac22103b268064a402a99427fd37ecad9d20058d40",
+  "source": "Supplied code/results/rebuttal_results.zip; copied without modification during revision 2.",
+  "protocol": {
+    "version": 2,
+    "dataset": "cifar10",
+    "model": "cnn2",
+    "rounds": 2000,
+    "n_parties": 11,
+    "n_steps": 3,
+    "batch_size": 64,
+    "partition": "noniid-labeldir",
+    "beta": 0.1,
+    "partition_seed": "run seed",
+    "val_seed": 12345,
+    "lr_aux": 0.001,
+    "lr_scaling": "unit-gain",
+    "weight_decay": 0.0,
+    "nesterov": false,
+    "cosine_schedule": true,
+    "freeze_bn_stats": true,
+    "ns_steps": 5,
+    "lmo_dtype": "bfloat16",
+    "mv_ties": "random",
+    "uplink_zeros": "random",
+    "last_k": 5,
+    "eval_points": 20,
+    "methods": [
+      "signmuon",
+      "ef21muonusign",
+      "ef21muonsign",
+      "ef21signmuon",
+      "muon",
+      "muonusign",
+      "muonsign",
+      "signsgd",
+      "sgd",
+      "adam"
+    ],
+    "seeds": [
+      0,
+      1,
+      2,
+      3,
+      4
+    ],
+    "tune_seeds": [
+      0
+    ],
+    "lr_factors": [
+      0.1,
+      0.3,
+      1,
+      3,
+      10
+    ],
+    "momentum": 0.9,
+    "homogeneous_lrs": {
+      "signmuon": 0.1,
+      "ef21muonusign": 0.01,
+      "ef21muonsign": 0.05,
+      "ef21signmuon": 0.02,
+      "muon": 0.1,
+      "muonusign": 0.05,
+      "muonsign": 0.02,
+      "signsgd": 0.01,
+      "sgd": 0.05,
+      "adam": 0.001
+    },
+    "homogeneous_momentum": 0.9
+  },
+  "verified_runs": 50,
+  "results": {
+    "signmuon": {
+      "mean": 35.9176,
+      "sample_sd": 8.494826825780502,
+      "lr": 0.1,
+      "runs": [
+        {
+          "seed": 0,
+          "tail_mean": 42.206,
+          "metrics_path": "raw/federated/final_hetero_7d50d2b73d33_signmuon_lr0.1_mu0.9_full_s0_e2000_fs0/seed0/metrics.json",
+          "metrics_sha256": "a7aeb1e8ab4b73b7da06040076bd7eafca1691b5bfddd9839f89c6ce4fe7d919"
+        },
+        {
+          "seed": 1,
+          "tail_mean": 37.388,
+          "metrics_path": "raw/federated/final_hetero_7d50d2b73d33_signmuon_lr0.1_mu0.9_full_s1_e2000_fs1/seed1/metrics.json",
+          "metrics_sha256": "d5ed2a8de093b8f417ee9ec66388533241bb288a71d6fbead89a5fd8fe2318ca"
+        },
+        {
+          "seed": 2,
+          "tail_mean": 23.416,
+          "metrics_path": "raw/federated/final_hetero_7d50d2b73d33_signmuon_lr0.1_mu0.9_full_s2_e2000_fs2/seed2/metrics.json",
+          "metrics_sha256": "4eb1a459d1e51146a4abab36e4e8615ff0bd7ce6402b788e3140652ff5a1be65"
+        },
+        {
+          "seed": 3,
+          "tail_mean": 31.988,
+          "metrics_path": "raw/federated/final_hetero_7d50d2b73d33_signmuon_lr0.1_mu0.9_full_s3_e2000_fs3/seed3/metrics.json",
+          "metrics_sha256": "961147781fe93b834f839ea5006a826cdbeffdf39a73cddefef92452cbfc7d73"
+        },
+        {
+          "seed": 4,
+          "tail_mean": 44.59,
+          "metrics_path": "raw/federated/final_hetero_7d50d2b73d33_signmuon_lr0.1_mu0.9_full_s4_e2000_fs4/seed4/metrics.json",
+          "metrics_sha256": "dd1a5e5dd2e66f1f4085e161813e561aee4a451edaad565b755ae62551406e7f"
+        }
+      ]
+    },
+    "ef21muonusign": {
+      "mean": 82.9868,
+      "sample_sd": 0.45906775099106784,
+      "lr": 0.01,
+      "runs": [
+        {
+          "seed": 0,
+          "tail_mean": 82.528,
+          "metrics_path": "raw/federated/final_hetero_7d50d2b73d33_ef21muonusign_lr0.01_mu0.9_full_s0_e2000_fs0/seed0/metrics.json",
+          "metrics_sha256": "2d084f31e400f2ef0bfcd471aefc85d295c8a35790a3e523896a1c84330fd751"
+        },
+        {
+          "seed": 1,
+          "tail_mean": 82.656,
+          "metrics_path": "raw/federated/final_hetero_7d50d2b73d33_ef21muonusign_lr0.01_mu0.9_full_s1_e2000_fs1/seed1/metrics.json",
+          "metrics_sha256": "f40d5a1293a30619012b5430d87571624c78479ca7846e88bca85333a8a449c0"
+        },
+        {
+          "seed": 2,
+          "tail_mean": 83.248,
+          "metrics_path": "raw/federated/final_hetero_7d50d2b73d33_ef21muonusign_lr0.01_mu0.9_full_s2_e2000_fs2/seed2/metrics.json",
+          "metrics_sha256": "3ba5529d9ef92f5a9969599625185817c63c1cc0418d0b1e718d5c6adcd9e6a1"
+        },
+        {
+          "seed": 3,
+          "tail_mean": 83.648,
+          "metrics_path": "raw/federated/final_hetero_7d50d2b73d33_ef21muonusign_lr0.01_mu0.9_full_s3_e2000_fs3/seed3/metrics.json",
+          "metrics_sha256": "94aa158314e7c0200f6acb2ab6ce7689b8ea53372271fa2b620bc69e675f581e"
+        },
+        {
+          "seed": 4,
+          "tail_mean": 82.854,
+          "metrics_path": "raw/federated/final_hetero_7d50d2b73d33_ef21muonusign_lr0.01_mu0.9_full_s4_e2000_fs4/seed4/metrics.json",
+          "metrics_sha256": "a1240b4719c69ce1b18834daaaf744a20f7d7f458b037442833fff72d543227b"
+        }
+      ]
+    },
+    "ef21muonsign": {
+      "mean": 83.22840000000001,
+      "sample_sd": 0.3583249921509813,
+      "lr": 0.05,
+      "runs": [
+        {
+          "seed": 0,
+          "tail_mean": 83.456,
+          "metrics_path": "raw/federated/final_hetero_7d50d2b73d33_ef21muonsign_lr0.05_mu0.9_full_s0_e2000_fs0/seed0/metrics.json",
+          "metrics_sha256": "35bbcd114a19be9545fe70c734fe4c494030bdc611e96a1fea6ab1de5091f9ab"
+        },
+        {
+          "seed": 1,
+          "tail_mean": 83.376,
+          "metrics_path": "raw/federated/final_hetero_7d50d2b73d33_ef21muonsign_lr0.05_mu0.9_full_s1_e2000_fs1/seed1/metrics.json",
+          "metrics_sha256": "d4c8c1f1ce0e721ca56e2726905a7d21ed1034322a59747739b5408d5db9a852"
+        },
+        {
+          "seed": 2,
+          "tail_mean": 82.7,
+          "metrics_path": "raw/federated/final_hetero_7d50d2b73d33_ef21muonsign_lr0.05_mu0.9_full_s2_e2000_fs2/seed2/metrics.json",
+          "metrics_sha256": "403e740d3bed1823dc92c9c783baefbb4e5b56132ad81f5e257d0c63f5e1d307"
+        },
+        {
+          "seed": 3,
+          "tail_mean": 83.578,
+          "metrics_path": "raw/federated/final_hetero_7d50d2b73d33_ef21muonsign_lr0.05_mu0.9_full_s3_e2000_fs3/seed3/metrics.json",
+          "metrics_sha256": "339b37dc19174a11262708ede0d9eac8802dc39d5d4346285884401448a174b7"
+        },
+        {
+          "seed": 4,
+          "tail_mean": 83.032,
+          "metrics_path": "raw/federated/final_hetero_7d50d2b73d33_ef21muonsign_lr0.05_mu0.9_full_s4_e2000_fs4/seed4/metrics.json",
+          "metrics_sha256": "c9b279f31d1e7405f022a8f4c8cc219ba9b84f1e62c05dd04dd4549670b720ea"
+        }
+      ]
+    },
+    "ef21signmuon": {
+      "mean": 45.4576,
+      "sample_sd": 7.663050097709133,
+      "lr": 0.02,
+      "runs": [
+        {
+          "seed": 0,
+          "tail_mean": 51.818,
+          "metrics_path": "raw/federated/final_hetero_7d50d2b73d33_ef21signmuon_lr0.02_mu0.9_full_s0_e2000_fs0/seed0/metrics.json",
+          "metrics_sha256": "e3595de33b3204ebb3628bcddbc98db6a0cbf10a87030225c52b5fcdc6787aef"
+        },
+        {
+          "seed": 1,
+          "tail_mean": 43.606,
+          "metrics_path": "raw/federated/final_hetero_7d50d2b73d33_ef21signmuon_lr0.02_mu0.9_full_s1_e2000_fs1/seed1/metrics.json",
+          "metrics_sha256": "7c3fac44082203732c0481830af1e700b38cb70e0ca7ed22d27b050c66e59896"
+        },
+        {
+          "seed": 2,
+          "tail_mean": 35.176,
+          "metrics_path": "raw/federated/final_hetero_7d50d2b73d33_ef21signmuon_lr0.02_mu0.9_full_s2_e2000_fs2/seed2/metrics.json",
+          "metrics_sha256": "bee0c086a2331cff75e42d5dbbf565c0fc59f2cf969a2ea9aac354287ece30b6"
+        },
+        {
+          "seed": 3,
+          "tail_mean": 42.486000000000004,
+          "metrics_path": "raw/federated/final_hetero_7d50d2b73d33_ef21signmuon_lr0.02_mu0.9_full_s3_e2000_fs3/seed3/metrics.json",
+          "metrics_sha256": "6c9f55fd7b19424f850d6a93d7e07f0e58bd949e2d199f12080f45078b10a093"
+        },
+        {
+          "seed": 4,
+          "tail_mean": 54.202,
+          "metrics_path": "raw/federated/final_hetero_7d50d2b73d33_ef21signmuon_lr0.02_mu0.9_full_s4_e2000_fs4/seed4/metrics.json",
+          "metrics_sha256": "7bc9959b14aa107af1c437bae3709974f3f27d48b024aa1f50e202a364b063ef"
+        }
+      ]
+    },
+    "muon": {
+      "mean": 46.022,
+      "sample_sd": 8.546213547530858,
+      "lr": 0.1,
+      "runs": [
+        {
+          "seed": 0,
+          "tail_mean": 51.53,
+          "metrics_path": "raw/federated/final_hetero_7d50d2b73d33_muon_lr0.1_mu0.9_full_s0_e2000_fs0/seed0/metrics.json",
+          "metrics_sha256": "571947e19464372d3881c9f0f3978724ddb47316544bfeb00936e87a1c8bd2a0"
+        },
+        {
+          "seed": 1,
+          "tail_mean": 47.404,
+          "metrics_path": "raw/federated/final_hetero_7d50d2b73d33_muon_lr0.1_mu0.9_full_s1_e2000_fs1/seed1/metrics.json",
+          "metrics_sha256": "3ecf5071f9119bf81e8de63affc98ef1e738e2c8b2cc9950978acd467eb7186d"
+        },
+        {
+          "seed": 2,
+          "tail_mean": 33.614000000000004,
+          "metrics_path": "raw/federated/final_hetero_7d50d2b73d33_muon_lr0.1_mu0.9_full_s2_e2000_fs2/seed2/metrics.json",
+          "metrics_sha256": "8e0ead1b8e3cd4b9c1f0c3c1dbb6d28746f8888dd634bb2c3d2e00b0da2ee325"
+        },
+        {
+          "seed": 3,
+          "tail_mean": 42.046,
+          "metrics_path": "raw/federated/final_hetero_7d50d2b73d33_muon_lr0.1_mu0.9_full_s3_e2000_fs3/seed3/metrics.json",
+          "metrics_sha256": "1733dc73e0564a96f74a40c0e5eda04f01b6603f885d5fbf4d23bac314bbf1dd"
+        },
+        {
+          "seed": 4,
+          "tail_mean": 55.516,
+          "metrics_path": "raw/federated/final_hetero_7d50d2b73d33_muon_lr0.1_mu0.9_full_s4_e2000_fs4/seed4/metrics.json",
+          "metrics_sha256": "5397fc132605710e73be277bb36f2b016f7afd412fa7e5726ae0f1e9602311cc"
+        }
+      ]
+    },
+    "muonusign": {
+      "mean": 26.2144,
+      "sample_sd": 2.7488377180182892,
+      "lr": 0.05,
+      "runs": [
+        {
+          "seed": 0,
+          "tail_mean": 28.348,
+          "metrics_path": "raw/federated/final_hetero_7d50d2b73d33_muonusign_lr0.05_mu0.9_full_s0_e2000_fs0/seed0/metrics.json",
+          "metrics_sha256": "e445ae386ba2c660117c53129226a9af410b788ebb921535b07693b3d80f07cc"
+        },
+        {
+          "seed": 1,
+          "tail_mean": 24.798000000000002,
+          "metrics_path": "raw/federated/final_hetero_7d50d2b73d33_muonusign_lr0.05_mu0.9_full_s1_e2000_fs1/seed1/metrics.json",
+          "metrics_sha256": "c3a5246e7b260408c6c9eefa7908534ec55a067ddf8e6a181f34cdfd9874f375"
+        },
+        {
+          "seed": 2,
+          "tail_mean": 23.706,
+          "metrics_path": "raw/federated/final_hetero_7d50d2b73d33_muonusign_lr0.05_mu0.9_full_s2_e2000_fs2/seed2/metrics.json",
+          "metrics_sha256": "a68b14ee59b6e6c09ffd9165f29a39ae21ac3769b712b1ba36e46f49dfa9e684"
+        },
+        {
+          "seed": 3,
+          "tail_mean": 24.302,
+          "metrics_path": "raw/federated/final_hetero_7d50d2b73d33_muonusign_lr0.05_mu0.9_full_s3_e2000_fs3/seed3/metrics.json",
+          "metrics_sha256": "8e1ebd24a329f6a0806b23e1bb3fa7a85a32af500a2354f9d2880b1fcc8789d5"
+        },
+        {
+          "seed": 4,
+          "tail_mean": 29.918,
+          "metrics_path": "raw/federated/final_hetero_7d50d2b73d33_muonusign_lr0.05_mu0.9_full_s4_e2000_fs4/seed4/metrics.json",
+          "metrics_sha256": "bb3f9350487c7b91c782dd116d293da9b440d2b969fb4a982f480da39eba85d7"
+        }
+      ]
+    },
+    "muonsign": {
+      "mean": 25.6268,
+      "sample_sd": 3.977293200155101,
+      "lr": 0.02,
+      "runs": [
+        {
+          "seed": 0,
+          "tail_mean": 27.832,
+          "metrics_path": "raw/federated/final_hetero_7d50d2b73d33_muonsign_lr0.02_mu0.9_full_s0_e2000_fs0/seed0/metrics.json",
+          "metrics_sha256": "40f5d40f02ebf2afce54191de2dcc9a1838a34fa5b3514c90c4d6d32f3acfa80"
+        },
+        {
+          "seed": 1,
+          "tail_mean": 24.810000000000002,
+          "metrics_path": "raw/federated/final_hetero_7d50d2b73d33_muonsign_lr0.02_mu0.9_full_s1_e2000_fs1/seed1/metrics.json",
+          "metrics_sha256": "e425042e5c3d01f41ac6492f04659bbce490ed1a894e0d50b0d9f44d025bd8a9"
+        },
+        {
+          "seed": 2,
+          "tail_mean": 19.572,
+          "metrics_path": "raw/federated/final_hetero_7d50d2b73d33_muonsign_lr0.02_mu0.9_full_s2_e2000_fs2/seed2/metrics.json",
+          "metrics_sha256": "3f8a77e79e65db20d455faa19ce475f4d440fa65e4ffd3fa674fc959a80610bb"
+        },
+        {
+          "seed": 3,
+          "tail_mean": 25.701999999999998,
+          "metrics_path": "raw/federated/final_hetero_7d50d2b73d33_muonsign_lr0.02_mu0.9_full_s3_e2000_fs3/seed3/metrics.json",
+          "metrics_sha256": "224ae766c92c4d2abc4ac7bbb4494d157ded8c31d7afbe78b9f83ee11aacedfb"
+        },
+        {
+          "seed": 4,
+          "tail_mean": 30.218,
+          "metrics_path": "raw/federated/final_hetero_7d50d2b73d33_muonsign_lr0.02_mu0.9_full_s4_e2000_fs4/seed4/metrics.json",
+          "metrics_sha256": "ca9dc4ce9b8ecb63bf2c584fafb11931fd22689c2149c084e1d35f449e45e7f2"
+        }
+      ]
+    },
+    "signsgd": {
+      "mean": 26.4216,
+      "sample_sd": 3.2258283897318525,
+      "lr": 0.01,
+      "runs": [
+        {
+          "seed": 0,
+          "tail_mean": 26.446,
+          "metrics_path": "raw/federated/final_hetero_7d50d2b73d33_signsgd_lr0.01_mu0.9_full_s0_e2000_fs0/seed0/metrics.json",
+          "metrics_sha256": "239a2b16a390bf7fa630a352944d0680c9580e53f5057c3aa5fe51c6cdbeb8b0"
+        },
+        {
+          "seed": 1,
+          "tail_mean": 28.03,
+          "metrics_path": "raw/federated/final_hetero_7d50d2b73d33_signsgd_lr0.01_mu0.9_full_s1_e2000_fs1/seed1/metrics.json",
+          "metrics_sha256": "738a5506a3668f4aaeb375ff1b269db7c33d757e4754b85742e8c22177a46852"
+        },
+        {
+          "seed": 2,
+          "tail_mean": 21.478,
+          "metrics_path": "raw/federated/final_hetero_7d50d2b73d33_signsgd_lr0.01_mu0.9_full_s2_e2000_fs2/seed2/metrics.json",
+          "metrics_sha256": "489a1fd25b268bcc7ac69ba0ecbd67cb6bfa4a11f6d50c9b466270e955e56ac2"
+        },
+        {
+          "seed": 3,
+          "tail_mean": 25.942,
+          "metrics_path": "raw/federated/final_hetero_7d50d2b73d33_signsgd_lr0.01_mu0.9_full_s3_e2000_fs3/seed3/metrics.json",
+          "metrics_sha256": "2142697febf2268bb07e94c8a4fb493ca75f5632bd4ab9354dd01c0efc341c5a"
+        },
+        {
+          "seed": 4,
+          "tail_mean": 30.212,
+          "metrics_path": "raw/federated/final_hetero_7d50d2b73d33_signsgd_lr0.01_mu0.9_full_s4_e2000_fs4/seed4/metrics.json",
+          "metrics_sha256": "5247a6f04acfcfaa81b3116655c7251d5877556eed5715c2666a2cc8d4e2b2b9"
+        }
+      ]
+    },
+    "sgd": {
+      "mean": 81.0276,
+      "sample_sd": 0.6213266451714421,
+      "lr": 0.05,
+      "runs": [
+        {
+          "seed": 0,
+          "tail_mean": 80.01,
+          "metrics_path": "raw/federated/final_hetero_7d50d2b73d33_sgd_lr0.05_mu0.9_full_s0_e2000_fs0/seed0/metrics.json",
+          "metrics_sha256": "452df9a3453807ad8ad3c67d316e85637323793945c765577cae149dbd97ef95"
+        },
+        {
+          "seed": 1,
+          "tail_mean": 81.102,
+          "metrics_path": "raw/federated/final_hetero_7d50d2b73d33_sgd_lr0.05_mu0.9_full_s1_e2000_fs1/seed1/metrics.json",
+          "metrics_sha256": "cbef454ddb7266b8cf8c3b8207f936884f285a1d26096eb89cc773a8c350a1dc"
+        },
+        {
+          "seed": 2,
+          "tail_mean": 81.182,
+          "metrics_path": "raw/federated/final_hetero_7d50d2b73d33_sgd_lr0.05_mu0.9_full_s2_e2000_fs2/seed2/metrics.json",
+          "metrics_sha256": "1a20b205d678209ad7a383cc6e886d280da9f6f785b39e6d5811ed806213e335"
+        },
+        {
+          "seed": 3,
+          "tail_mean": 81.712,
+          "metrics_path": "raw/federated/final_hetero_7d50d2b73d33_sgd_lr0.05_mu0.9_full_s3_e2000_fs3/seed3/metrics.json",
+          "metrics_sha256": "64c14da9dbd36504d11214ec9d6c111fb2c1c7cd129be8b46fba418ad2a9f427"
+        },
+        {
+          "seed": 4,
+          "tail_mean": 81.132,
+          "metrics_path": "raw/federated/final_hetero_7d50d2b73d33_sgd_lr0.05_mu0.9_full_s4_e2000_fs4/seed4/metrics.json",
+          "metrics_sha256": "8e0f1f161c749bb488c1b6e0b2368ef0af256afbddd6f6c276fb2e6795e846a1"
+        }
+      ]
+    },
+    "adam": {
+      "mean": 71.1672,
+      "sample_sd": 7.161389334479726,
+      "lr": 0.001,
+      "runs": [
+        {
+          "seed": 0,
+          "tail_mean": 70.354,
+          "metrics_path": "raw/federated/final_hetero_7d50d2b73d33_adam_lr0.001_mu0.9_full_s0_e2000_fs0/seed0/metrics.json",
+          "metrics_sha256": "f4aca9edc947fedaf6dc5e36e9fcbda82f275c60824011f42953b65a0a20f0fe"
+        },
+        {
+          "seed": 1,
+          "tail_mean": 59.09,
+          "metrics_path": "raw/federated/final_hetero_7d50d2b73d33_adam_lr0.001_mu0.9_full_s1_e2000_fs1/seed1/metrics.json",
+          "metrics_sha256": "b8b9bdabebd3feb86e41bca0b01792fe1479110851b9be73db0d8f6d68965d87"
+        },
+        {
+          "seed": 2,
+          "tail_mean": 75.352,
+          "metrics_path": "raw/federated/final_hetero_7d50d2b73d33_adam_lr0.001_mu0.9_full_s2_e2000_fs2/seed2/metrics.json",
+          "metrics_sha256": "899ae75be6d7df2b7f49a677008c509e698219fb13ddb33a170b702b605450f0"
+        },
+        {
+          "seed": 3,
+          "tail_mean": 74.252,
+          "metrics_path": "raw/federated/final_hetero_7d50d2b73d33_adam_lr0.001_mu0.9_full_s3_e2000_fs3/seed3/metrics.json",
+          "metrics_sha256": "7f410d11e41d38d0cb3b3d17d15c408100848d1d03160b678d1284e23fbf9fcc"
+        },
+        {
+          "seed": 4,
+          "tail_mean": 76.788,
+          "metrics_path": "raw/federated/final_hetero_7d50d2b73d33_adam_lr0.001_mu0.9_full_s4_e2000_fs4/seed4/metrics.json",
+          "metrics_sha256": "d8d0b2c6bc8d5c67538844da651c934406bd9096964640e57f146922e361c504"
+        }
+      ]
+    }
+  },
+  "scope": "Fixed-IID-hyperparameter transfer under label skew. LR-retuned comparison is pending; no local model updates or partial participation."
+}

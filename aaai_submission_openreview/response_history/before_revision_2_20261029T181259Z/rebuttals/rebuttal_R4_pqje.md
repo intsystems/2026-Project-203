@@ -1,0 +1,7 @@
+Thank you for the precise questions on theorem coverage and reporting.
+
+1. Re theorem coverage: No complete network run is certified: all use finite polar solvers; nanoGPT also warms momentum and uses auxiliary Adam. The squared-gradient rate needs gradient-scaled steps. We now prove, under joint smoothness and unbiased bounded-variance noise, a constant/cosine first-moment bound for exact-polar EF21 with either downlink and fixed EMA/Nesterov. Fixed peak LR/momentum leave a residual; $T^{-3/4}$ peak LR and $1-\mu=T^{-1/2}$ give $O(T^{-1/4})$.
+2. Re inconsistent tables: The submitted five-seed logs agree with A8: MuonSign 82.94±0.19% versus SignSGD 81.44±0.15%; Table 2 is stale. We will replace it and reverse the ranking sentence. SignMuon remains 85.72±0.24%, versus Muon 85.98±0.26%.
+Re scope and novelty: For $M=U\Sigma V^\top$, positive diagonal entries of $U^\top\mathrm{sign}(UV^\top)V$ bounded below by $\delta$ imply alignment at least $\delta\|M\|_*$. This yields conditional SignMuon convergence; its margin is unverified in our networks. We credit EF21 and concurrent SignMuon, including Mishra v2’s conditional theory; our main novelty is the negative placement analysis.
+Re nanoGPT: nanoGPT applies these optimizers after full-precision reduce-scatter. It tests centralized updates, not compressed worker votes or network savings.
+Re presentation: We will put theorem coverage and X/W definitions in the main text and simplify the introduction, results and captions.

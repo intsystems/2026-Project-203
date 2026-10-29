@@ -1,5 +1,5 @@
 {
-  "checked_utc": "2026-10-29T13:57:20.012720+00:00",
+  "checked_utc": "2026-10-29T18:13:14.642080+00:00",
   "original_hashes_verified": 5,
   "federated_results": {
     "muonsign": {
@@ -213,9 +213,9 @@
     },
     {
       "path": "aaai_article/signmuon_addendum.pdf",
-      "sha256": "9f9b854694d00a73356031eff106833eadd54de529f09be6a3c4834ec98b0d6b",
-      "bytes": 314821,
-      "modified_utc": "2026-10-29T13:52:25.740482+00:00",
+      "sha256": "4fa564775ec3bdeac18b6bc27e2fe89d73677575a9cc748ba5b4c80dbceb0f74",
+      "bytes": 315208,
+      "modified_utc": "2026-10-29T14:03:21.299036+00:00",
       "pages": 5,
       "metadata": {
         "format": "PDF 1.5",
@@ -225,12 +225,12 @@
         "keywords": "",
         "creator": "TeX",
         "producer": "MiKTeX pdfTeX-1.40.27",
-        "creationDate": "D:20261029165225+03'00'",
-        "modDate": "D:20261029165225+03'00'",
+        "creationDate": "D:20261029170320+03'00'",
+        "modDate": "D:20261029170320+03'00'",
         "trapped": "",
         "encryption": null
       },
-      "plain_text_sha256": "c84bf9d18d0bbc5e2d3bf4523bebf0539cefedf0ff5fe22dfb70716a5fa8672f"
+      "plain_text_sha256": "a7b294c4185bc914552d7b9b4f2d840c1e8d49acb1ccf4b728067c43379e29da"
     },
     {
       "path": "aaai_article/signmuon_addendum.tex",
@@ -240,9 +240,9 @@
     },
     {
       "path": "aaai_article/signmuon_addendum_body.tex",
-      "sha256": "9afb45c3433973afa599423a786ffeec83b41efa1d2bb88c91d00297a68ee18a",
-      "bytes": 24931,
-      "modified_utc": "2026-10-29T13:52:06.869948+00:00"
+      "sha256": "b170cae8a80b7606e12e91f453b257d2dc8cbda4ccb50fc414798c19557d1c85",
+      "bytes": 25751,
+      "modified_utc": "2026-10-29T15:03:23.687911+00:00"
     },
     {
       "path": "aaai_article/signmuon_appendix.tex",
