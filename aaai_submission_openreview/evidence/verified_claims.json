@@ -1,0 +1,413 @@
+{
+  "checked_utc": "2026-10-29T13:57:20.012720+00:00",
+  "original_hashes_verified": 5,
+  "federated_results": {
+    "muonsign": {
+      "seed_tail_means": [
+        83.026,
+        83.046,
+        82.65599999999999,
+        82.86,
+        83.124
+      ],
+      "mean": 82.94239999999999,
+      "sample_sd": 0.18675866780420383,
+      "first_crossings": [
+        800,
+        900,
+        900,
+        900,
+        800
+      ],
+      "successful_seeds": 5,
+      "mean_rounds_80": 860
+    },
+    "signsgd": {
+      "seed_tail_means": [
+        81.596,
+        81.512,
+        81.216,
+        81.372,
+        81.482
+      ],
+      "mean": 81.4356,
+      "sample_sd": 0.14661787067066878,
+      "first_crossings": [
+        1100,
+        1100,
+        1200,
+        1100,
+        1200
+      ],
+      "successful_seeds": 5,
+      "mean_rounds_80": 1140
+    },
+    "signmuon": {
+      "seed_tail_means": [
+        85.472,
+        85.55,
+        86.088,
+        85.654,
+        85.814
+      ],
+      "mean": 85.7156,
+      "sample_sd": 0.24439885433446606,
+      "first_crossings": [
+        600,
+        600,
+        500,
+        500,
+        500
+      ],
+      "successful_seeds": 5,
+      "mean_rounds_80": 540
+    },
+    "muon": {
+      "seed_tail_means": [
+        86.386,
+        85.972,
+        85.798,
+        86.04599999999999,
+        85.71600000000001
+      ],
+      "mean": 85.9836,
+      "sample_sd": 0.26077346490775793,
+      "first_crossings": [
+        300,
+        200,
+        300,
+        200,
+        300
+      ],
+      "successful_seeds": 5,
+      "mean_rounds_80": 260
+    },
+    "ef21muonusign": {
+      "seed_tail_means": [
+        83.698,
+        83.286,
+        83.33200000000001,
+        84.224,
+        83.242
+      ],
+      "mean": 83.5564,
+      "sample_sd": 0.4147466696671584,
+      "first_crossings": [
+        900,
+        900,
+        800,
+        900,
+        1000
+      ],
+      "successful_seeds": 5,
+      "mean_rounds_80": 900
+    },
+    "ef21muonsign": {
+      "seed_tail_means": [
+        83.888,
+        84.428,
+        83.972,
+        84.016,
+        83.648
+      ],
+      "mean": 83.9904,
+      "sample_sd": 0.28293603517403,
+      "first_crossings": [
+        1000,
+        1000,
+        900,
+        1000,
+        1000
+      ],
+      "successful_seeds": 5,
+      "mean_rounds_80": 980
+    },
+    "sgd": {
+      "seed_tail_means": [
+        82.038,
+        82.144,
+        81.494,
+        81.378,
+        81.382
+      ],
+      "mean": 81.6872,
+      "sample_sd": 0.3734316537199276,
+      "first_crossings": [
+        1200,
+        1100,
+        1200,
+        1300,
+        1400
+      ],
+      "successful_seeds": 5,
+      "mean_rounds_80": 1240
+    }
+  },
+  "submitted_and_repo_identical_training_histories": 175,
+  "exact_certificates": {
+    "signmuon_pairing": "-42468/103",
+    "muonusign_pairing": "6 - 82*sqrt(17)/17",
+    "muonusign_pairing_float": -13.887921252979304,
+    "muonsign_pairing": "-76",
+    "output_ef_cycle_mean_22": "7/40"
+  },
+  "joint_norm_sanity_samples": 80,
+  "communication": {
+    "matrix_parameters": 762560,
+    "auxiliary_parameters": 2146,
+    "layers": 3,
+    "plain_bits_per_channel": 1.0869955250776115,
+    "ef_bits_per_channel": 1.0871210635198363,
+    "both_channel_reduction_plain": 29.438943640283338,
+    "uplink_only_round_trip_reduction": 1.934287358429716,
+    "bytes_per_extra_fp32_matrix_buffer": 3050240
+  },
+  "article_versions": [
+    {
+      "path": "aaai_article/ef21_fixed_radius.tex",
+      "sha256": "9f4db532589580202646064e3196d7153f235c11f9b94f212cbf66656d369458",
+      "bytes": 9283,
+      "modified_utc": "2026-10-23T13:11:49.416305+00:00"
+    },
+    {
+      "path": "aaai_article/ef21_musign_reduction.tex",
+      "sha256": "b0c3ea0dfb8136d738d807c13f1cc65a02c34c8fd454278a0f379d14b4a3fe08",
+      "bytes": 21910,
+      "modified_utc": "2026-10-23T14:41:03.379005+00:00"
+    },
+    {
+      "path": "aaai_article/ef21_nesterov_convergence.tex",
+      "sha256": "f3232e168942ebbb49ade7e9382bf3e77a20306f834de789b7b0ef4d11ca3ddd",
+      "bytes": 14709,
+      "modified_utc": "2026-10-23T13:11:49.416305+00:00"
+    },
+    {
+      "path": "aaai_article/ef21_rate_takeaways.tex",
+      "sha256": "a5d9690015032fa576b39e83999cb76969859e68240d2043182dc7fb7ff97019",
+      "bytes": 4768,
+      "modified_utc": "2026-10-23T13:11:49.413304+00:00"
+    },
+    {
+      "path": "aaai_article/ef21_signmuon_divergence.tex",
+      "sha256": "143b3789c51467b5aac5c555997bb79b7b23ac4cb38ed5a3ddd10bddb0be7489",
+      "bytes": 26082,
+      "modified_utc": "2026-10-23T15:05:28.863760+00:00"
+    },
+    {
+      "path": "aaai_article/references.bib",
+      "sha256": "a5964fb420a6bac027748b2ced4b9a8fe9fcc011e4c61f5ccd15ae4b8062c30d",
+      "bytes": 23909,
+      "modified_utc": "2026-09-05T11:14:48.338274+00:00"
+    },
+    {
+      "path": "aaai_article/review_links.tex",
+      "sha256": "cf5fc3c93b1d36d0839807705d141b77b8b8d2844dabdbfd8a24f96575b58674",
+      "bytes": 879,
+      "modified_utc": "2026-10-23T16:12:46.996268+00:00"
+    },
+    {
+      "path": "aaai_article/signmuon_addendum.bib",
+      "sha256": "5abea5c9d4f76abc7c9c2ab9f52deb692be20c2dfd109cb6afd697f84afa370e",
+      "bytes": 889,
+      "modified_utc": "2026-10-29T10:03:08.070387+00:00"
+    },
+    {
+      "path": "aaai_article/signmuon_addendum.pdf",
+      "sha256": "9f9b854694d00a73356031eff106833eadd54de529f09be6a3c4834ec98b0d6b",
+      "bytes": 314821,
+      "modified_utc": "2026-10-29T13:52:25.740482+00:00",
+      "pages": 5,
+      "metadata": {
+        "format": "PDF 1.5",
+        "title": "",
+        "author": "",
+        "subject": "",
+        "keywords": "",
+        "creator": "TeX",
+        "producer": "MiKTeX pdfTeX-1.40.27",
+        "creationDate": "D:20261029165225+03'00'",
+        "modDate": "D:20261029165225+03'00'",
+        "trapped": "",
+        "encryption": null
+      },
+      "plain_text_sha256": "c84bf9d18d0bbc5e2d3bf4523bebf0539cefedf0ff5fe22dfb70716a5fa8672f"
+    },
+    {
+      "path": "aaai_article/signmuon_addendum.tex",
+      "sha256": "0a28997ea7386296cfb0156631be3ffa3890002cd11ee227fced0a8da6932c6d",
+      "bytes": 362,
+      "modified_utc": "2026-10-29T10:03:07.701700+00:00"
+    },
+    {
+      "path": "aaai_article/signmuon_addendum_body.tex",
+      "sha256": "9afb45c3433973afa599423a786ffeec83b41efa1d2bb88c91d00297a68ee18a",
+      "bytes": 24931,
+      "modified_utc": "2026-10-29T13:52:06.869948+00:00"
+    },
+    {
+      "path": "aaai_article/signmuon_appendix.tex",
+      "sha256": "d4510c34fccf3b5046535a608f7fe32fcb7649ffcfeb8dd85b5efb99ae5c77bc",
+      "bytes": 80947,
+      "modified_utc": "2026-10-23T17:47:17.126778+00:00"
+    },
+    {
+      "path": "aaai_article/signmuon_body.tex",
+      "sha256": "184a74ac7d4d05d7a6596eed69ccda01f2af0c059b800c364b7e6bf04ac3b696",
+      "bytes": 48347,
+      "modified_utc": "2026-10-23T15:31:08.899923+00:00"
+    },
+    {
+      "path": "aaai_article/signmuon_mishra_comparison.tex",
+      "sha256": "ac7256830313b3a04f3059a6efbb7d9d8c99f0ee082086f1055813b2a75b42f2",
+      "bytes": 3954,
+      "modified_utc": "2026-10-23T16:25:02.046413+00:00"
+    },
+    {
+      "path": "aaai_article/signmuon_preamble.tex",
+      "sha256": "2466774b8eb9e459a286d5ba9c0e52850d6880dc8bba05b5d5bf5b3fe21749a8",
+      "bytes": 11972,
+      "modified_utc": "2026-10-23T16:17:06.896121+00:00"
+    },
+    {
+      "path": "aaai_article/v2_SignMuon_AAAI.pdf",
+      "sha256": "765703175c4140367f541529c3f12097d47225e464c40d52546cc4d82a592149",
+      "bytes": 537293,
+      "modified_utc": "2026-10-23T17:48:16.159696+00:00",
+      "pages": 9,
+      "metadata": {
+        "format": "PDF 1.5",
+        "title": "",
+        "author": "",
+        "subject": "",
+        "keywords": "",
+        "creator": "TeX",
+        "producer": "MiKTeX pdfTeX-1.40.27",
+        "creationDate": "D:20261023204815+03'00'",
+        "modDate": "D:20261023204815+03'00'",
+        "trapped": "",
+        "encryption": null
+      },
+      "plain_text_sha256": "1051b20f1e458a686f0debf5dde6888b6bbdc87caf883dea3e4491e3ea0db339"
+    },
+    {
+      "path": "aaai_article/v2_SignMuon_AAAI.tex",
+      "sha256": "07d286438117895bff560d2adfd82eb5a9be36c62e64275769b524402d1aefff",
+      "bytes": 1017,
+      "modified_utc": "2026-10-22T17:02:03.130055+00:00"
+    },
+    {
+      "path": "aaai_article/v2_SignMuon_AAAI_full.pdf",
+      "sha256": "573679a153eb1c3ffcec3446826e0661508115106f1b61dd912ac0b28b8fe552",
+      "bytes": 1864935,
+      "modified_utc": "2026-10-23T17:48:24.702495+00:00",
+      "pages": 40,
+      "metadata": {
+        "format": "PDF 1.5",
+        "title": "",
+        "author": "",
+        "subject": "",
+        "keywords": "",
+        "creator": "TeX",
+        "producer": "MiKTeX pdfTeX-1.40.27",
+        "creationDate": "D:20261023204823+03'00'",
+        "modDate": "D:20261023204823+03'00'",
+        "trapped": "",
+        "encryption": null
+      },
+      "plain_text_sha256": "8fa72fdf29a69d648b486411e593b0d7513327b8ca75f27d59ca82db53979ef9"
+    },
+    {
+      "path": "aaai_article/v2_SignMuon_AAAI_full.tex",
+      "sha256": "032d3a0ebbf2a858e12092eaf8a6043e82196ea2300a2c37784f81409b1236a6",
+      "bytes": 841,
+      "modified_utc": "2026-07-28T21:40:00.884597+00:00"
+    },
+    {
+      "path": "aaai_article/v2_SignMuon_AAAI_full_blue.pdf",
+      "sha256": "ef32695c3eb88f6850213fe12a44a62b51d54a3ae1b84e31c9373bbca2762753",
+      "bytes": 1888695,
+      "modified_utc": "2026-09-05T11:45:38.920546+00:00",
+      "pages": 41,
+      "metadata": {
+        "format": "PDF 1.5",
+        "title": "",
+        "author": "",
+        "subject": "",
+        "keywords": "",
+        "creator": "TeX",
+        "producer": "MiKTeX pdfTeX-1.40.27",
+        "creationDate": "D:20260905144537+03'00'",
+        "modDate": "D:20260905144537+03'00'",
+        "trapped": "",
+        "encryption": null
+      },
+      "plain_text_sha256": "9ecf0e8149242b54621edba057a701d25e2b21546e29fac372fde5d5d5399eef"
+    },
+    {
+      "path": "aaai_article/v2_SignMuon_AAAI_full_blue.tex",
+      "sha256": "9c08c891759178708c9781a1bc83ce88e3c208b5cff63e133a65631e0480c07c",
+      "bytes": 1072,
+      "modified_utc": "2026-09-05T11:22:17.957871+00:00"
+    },
+    {
+      "path": "aaai_article/v2_SignMuon_AAAI_full_codex.pdf",
+      "sha256": "599823a1da9aa57c735ebf263683c774d6e15c7575d6cb5b0a60114c57ad8567",
+      "bytes": 2055795,
+      "modified_utc": "2026-10-23T17:47:26.461045+00:00",
+      "pages": 40,
+      "metadata": {
+        "format": "PDF 1.5",
+        "title": "",
+        "author": "",
+        "subject": "",
+        "keywords": "",
+        "creator": "TeX",
+        "producer": "MiKTeX pdfTeX-1.40.27",
+        "creationDate": "D:20261023204725+03'00'",
+        "modDate": "D:20261023204725+03'00'",
+        "trapped": "",
+        "encryption": null
+      },
+      "plain_text_sha256": "68314d140d388ec86bc7785b5e6a57837ad1c5d6d070f5d9ebb01548fbd9b925"
+    },
+    {
+      "path": "aaai_article/v2_SignMuon_AAAI_full_codex.tex",
+      "sha256": "d60ef56a09e9e1efa0e338a5caeae4ffaf64791995429a79e51162f1db1320be",
+      "bytes": 263,
+      "modified_utc": "2026-10-23T16:08:38.898885+00:00"
+    },
+    {
+      "path": "aaai_article/v2_SignMuon_AAAI_supp.pdf",
+      "sha256": "f26493bea31adea1aacee081e6ce29f829f92986ebbc0e1f8270ea08c93dff9f",
+      "bytes": 1668674,
+      "modified_utc": "2026-10-23T17:48:20.345237+00:00",
+      "pages": 32,
+      "metadata": {
+        "format": "PDF 1.5",
+        "title": "",
+        "author": "",
+        "subject": "",
+        "keywords": "",
+        "creator": "TeX",
+        "producer": "MiKTeX pdfTeX-1.40.27",
+        "creationDate": "D:20261023204819+03'00'",
+        "modDate": "D:20261023204819+03'00'",
+        "trapped": "",
+        "encryption": null
+      },
+      "plain_text_sha256": "446b11c5162f897864cdfc428a7b2f96115d356a722e0bd04e7b6a076b6edef8"
+    },
+    {
+      "path": "aaai_article/v2_SignMuon_AAAI_supp.tex",
+      "sha256": "c458c4a4839fa51bdb8a66d4b733b8c7f5d05ca3a745142dc190fe8dac0dc54f",
+      "bytes": 1324,
+      "modified_utc": "2026-10-22T17:02:03.886514+00:00"
+    }
+  ],
+  "limits": [
+    "No new training runs.",
+    "Finite rational checks do not replace the smooth interpolation proof.",
+    "Norm samples do not replace the analytic proof of bound J.",
+    "Current PDFs and TeX are separately hashed; PDF freshness is not assumed."
+  ]
+}

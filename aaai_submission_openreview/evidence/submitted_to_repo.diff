@@ -1,0 +1,543 @@
+--- submitted/code/centralized/main.py
++++ repo/code/centralized/main.py
+@@ -156,6 +156,13 @@
+     p.add_argument("--log-gain", action="store_true",
+                    help="Record the realized gain of the accumulated update per layer "
+                         "(the diagnostic that separates unit-gain from mup)")
++    p.add_argument("--compression-log", default="",
++                   help="New CSV sidecar for EF21-MuonSign downlink diagnostics")
++    p.add_argument("--compression-every", type=int, default=1,
++                   help="Measure every k optimizer steps; 1 enables full trace reconstruction")
++    p.add_argument("--compression-oracle", action="store_true",
++                   help="Also use exact SVD to audit the implemented LMO (expensive)")
++    p.add_argument("--compression-layers", default="", help="Regex selecting layers for compression diagnostics")
+     p.add_argument("--nondeterministic", action="store_true",
+                    help="Allow cuDNN autotuning: faster, but not bitwise reproducible")
+ 
+--- submitted/code/centralized/train.py
++++ repo/code/centralized/train.py
+@@ -322,6 +322,13 @@
+ 
+     model = build_model(args.dataset, args.model).to(device)
+     opt_main, opt_aux, info = build_optimizers(model, args)
++    if getattr(args, "compression_log", ""):
++        if not hasattr(opt_main, "enable_compression_diagnostics"):
++            raise ValueError("--compression-log requires EF21-MuonSign")
++        opt_main.enable_compression_diagnostics(args.compression_log,
++                                               getattr(args, "compression_every", 1),
++                                               getattr(args, "compression_oracle", False),
++                                               getattr(args, "compression_layers", ""))
+ 
+     rule = resolve_rule(getattr(args, "lr_scaling", "unit-gain"))
+     if info["family"] and info["shapes"]:
+--- submitted/code/common/optimizers.py
++++ repo/code/common/optimizers.py
+@@ -265,6 +265,7 @@
+             with torch.enable_grad():
+                 loss = closure()
+ 
++        recorder = getattr(self, "compression_recorder", None)
+         for group in self.param_groups:
+             lr = group["lr"]
+             mu = group["momentum"]
+@@ -297,6 +298,8 @@
+ 
+                 # 2) method-specific step direction
+                 d_t = self._direction(m_tilde, state, group)
++                if recorder is not None:
++                    self._observe_direction(p, m_tilde, d_t, state)
+                 if self.capture_direction:
+                     state["last_direction"] = d_t.clone()
+ 
+@@ -465,11 +468,33 @@
+     method_name = "ef21muonsign"
+     family = FAMILY_LMO
+ 
++    def enable_compression_diagnostics(self, path, every=1, audit_oracle=False, layers=""):
++        """Write EF21-P measurements to a new CSV; opt-in host synchronization."""
++        from common.compression_diagnostics import CompressionRecorder
++        self.compression_recorder = CompressionRecorder(path, every, audit_oracle, layers)
++        self._compression_groups = {}
++        for gi, group in enumerate(self.param_groups):
++            for pi, parameter in enumerate(group["params"]):
++                name = group.get("name", f"group-{gi}")
++                if len(group["params"]) > 1:
++                    name += f":{pi}"
++                self._compression_groups[id(parameter)] = (name, group)
++
++    def _observe_direction(self, p, target, direction, state):
++        self.compression_recorder.measure_direction(self._compression_groups[id(p)][0],
++                                                    target, state["grad_estimator"], direction)
++
+     def _weight_decay_target(self, p, state):
+         return self._exact(p)
+ 
+     def _step_target(self, p, state):
+-        return self._exact(p)
++        exact = self._exact(p)
++        recorder = getattr(self, "compression_recorder", None)
++        if recorder is not None:
++            name, group = self._compression_groups[id(p)]
++            recorder.begin(name, exact, p.data, group["lr"]*group["lambda_mult"],
++                           1-group["momentum"], group["nesterov"])
++        return exact
+ 
+     def _exact(self, p) -> Tensor:
+         state = self.state[p]
+@@ -485,6 +510,10 @@
+         # Downlink EF21-P: broadcast a scaled sign of the model shift X - W.
+         delta = state["exact_model"] - p.data
+         p.data.add_(delta.abs().mean() * sign_pm1(delta))
++        recorder = getattr(self, "compression_recorder", None)
++        if recorder is not None:
++            recorder.end(self._compression_groups[id(p)][0],
++                         state["exact_model"], p.data, delta)
+ 
+     # -- exposing the exact model ----------------------------------------
+     @torch.no_grad()
+--- submitted/code/common/README.md
++++ repo/code/common/README.md
+@@ -3,6 +3,10 @@
+ Everything more than one experiment needs. Nothing here trains anything; all five
+ experiment packages import from it, which is what stops them describing different
+ algorithms under the same name.
++
++[compression_diagnostics.py](compression_diagnostics.py) provides opt-in raw
++EF21-P trace recording for the experiment drivers. See
++[analysis/README.md](../analysis/README.md) for the schema, usage, and scope.
+ 
+ | File | What it holds |
+ | :--- | :--- |
+--- submitted/code/federated/algorithms.py
++++ repo/code/federated/algorithms.py
+@@ -347,6 +347,7 @@
+     mv_ties: str = "random",
+     uplink_zeros: str = "random",
+     verbose: bool = True,
++    compression_recorder=None,
+ ) -> History:
+     """Train ``global_model`` with one of the eleven federated methods.
+ 
+@@ -653,6 +654,10 @@
+                 D = muon_lmo(aggregate, ns_steps=ns_steps, dtype=lmo_dtype,
+                              scale_aspect=False) \
+                     if spec.lmo == "server" else aggregate
++                if compression_recorder is not None and spec.downlink == "ef21p":
++                    # The aggregate estimator is available; the uncompressed
++                    # worker targets are not retained. Do not invent a zero lag.
++                    compression_recorder.measure_direction(n, None, aggregate, D, step=r)
+ 
+                 # 3) the step, on X (ef21p) or directly on the broadcast model
+                 if spec.server == "adam":
+@@ -660,6 +665,9 @@
+                     continue
+ 
+                 target_tensor = server_exact[n] if spec.needs_exact_model else params[n].data
++                if compression_recorder is not None and spec.downlink == "ef21p":
++                    compression_recorder.begin(n, target_tensor, params[n].data,
++                                               current_lr*lam[n], 1-momentum, nesterov, step=r)
+                 if (weight_decay != 0 and decoupled_weight_decay
+                         and spec.momentum_form != "heavy_ball"):
+                     # Unscaled by the per-layer factor, matching the centralized
+@@ -676,6 +684,8 @@
+                 if spec.downlink == "ef21p":
+                     shift = server_exact[n] - params[n].data
+                     params[n].data.add_(shift.abs().mean() * sign_pm1(shift))
++                    if compression_recorder is not None:
++                        compression_recorder.end(n, server_exact[n], params[n].data, shift)
+ 
+         if server_adam is not None:
+             server_adam.step()
+--- submitted/code/federated/main.py
++++ repo/code/federated/main.py
+@@ -123,6 +123,13 @@
+                    help="Learning rate of the auxiliary AdamW (biases, BatchNorm, head)")
+     p.add_argument("--momentum", type=float, default=0.9)
+     p.add_argument("--nesterov", action="store_true", help="Nesterov look-ahead momentum")
++    p.add_argument("--compression-log", default="",
++                   help="New CSV sidecar for EF21-MuonSign downlink diagnostics")
++    p.add_argument("--compression-every", type=int, default=1,
++                   help="Measure every k rounds; 1 enables full trace reconstruction")
++    p.add_argument("--compression-oracle", action="store_true",
++                   help="Also use exact SVD to audit the implemented LMO (expensive)")
++    p.add_argument("--compression-layers", default="", help="Regex selecting layers for compression diagnostics")
+     p.add_argument("--no-cosine", action="store_true",
+                    help="Disable the cosine learning-rate schedule (on by default, "
+                         "uniformly for every method)")
+@@ -376,6 +383,13 @@
+           f"{sum(len(e) for e in data.eval_sets):,} {data.eval_name} images, "
+           f"loader={data.loader}", flush=True)
+ 
++    compression_recorder = None
++    if args.compression_log:
++        from common.compression_diagnostics import CompressionRecorder
++        if not METHODS[method].needs_exact_model:
++            raise ValueError("--compression-log requires EF21-MuonSign")
++        compression_recorder = CompressionRecorder(args.compression_log, args.compression_every,
++                                                  args.compression_oracle, args.compression_layers)
+     history = run_federated(
+         method,
+         global_model,
+@@ -402,6 +416,7 @@
+         eval_name=data.eval_name,
+         mv_ties=args.mv_ties,
+         uplink_zeros=args.uplink_zeros,
++        compression_recorder=compression_recorder,
+     )
+ 
+     summarize(history, args, data.eval_name, method,
+--- submitted/code/federated/README.md
++++ repo/code/federated/README.md
+@@ -33,6 +33,65 @@
+ 
+ Read `SUMMARY.md` in the bundle first: `tab:exp_3`, the communication accounting
+ and the diagnostics in one file.
++
++## Two heterogeneous experiments for the rebuttal
++
++From `code/`, run the inexpensive transfer experiment first:
++
++```bash
++python -m federated.heterogeneous --experiment transfer --device cuda:0 --download
++python -m federated.heterogeneous --experiment tuned --device cuda:0
++```
++
++Both use **CNN2/CIFAR-10, Dirichlet label skew with concentration 0.1**, 11 clients,
++full participation, 2000 rounds, and 3 x 64 gradient accumulation at the same
++broadcast model. Client objectives have equal weight. All other training choices
++match the homogeneous experiment: cosine schedule, unit-gain scaling, EMA,
++zero weight decay, and auxiliary AdamW LR 0.001.
++
++- **Transfer:** keep the homogeneous validation-selected LR and momentum 0.9.
++  This measures robustness to heterogeneity without retuning (25 final runs).
++- **Tuned:** jointly search LR factors `{0.1, 0.3, 1, 3, 10}` around each
++  homogeneous LR and momentum `{0, 0.9, 0.99}`. Each method gets the same
++  15 configurations, one tuning seed, and the full 2000-round horizon. Select
++  by the last-five validation mean on the existing 45k/5k split, then retrain on
++  all 50k images (75 validation runs plus up to 25 finals). Auxiliary LR stays fixed.
++
++Defaults compare `signmuon`, `ef21muonusign`, `ef21muonsign`, `muon` (worker LMO),
++and `muonserver` (server LMO), over **five paired final seeds**. A seed determines
++initialization and client partition, shared across methods and experiments.
++The transfer LRs, taken from the saved homogeneous validation search, are:
++
++| Method | LR | Momentum |
++| :-- | --: | --: |
++| `signmuon` | 0.1 | 0.9 |
++| `ef21muonusign` | 0.01 | 0.9 |
++| `ef21muonsign` | 0.05 | 0.9 |
++| `muon` | 0.1 | 0.9 |
++| `muonserver` | 0.05 | 0.9 |
++
++Heterogeneity can change both optimal LR and momentum. Transfer answers whether
++the homogeneous settings remain effective; tuning checks whether the comparison
++survives adapting both parameters. A selected LR at a search endpoint is flagged
++in the summary; widen `--lr-factors` if this occurs. `--momenta` and `--tune-seeds`
++can also expand the search. `--methods` optionally adds the matching plain
++`muonusign` and `muonsign` baselines.
++
++`--dry-run` prints the complete plan without training, downloads, or writes.
++Rerunning either command automatically resumes completed jobs. Identical finals
++are reused if tuning selects the transfer setting. `--retry-failed` retries
++recorded failures; `--report-only` rebuilds outputs without training. `--rounds`
++sets **both** horizons; a shorter smoke run is a separate protocol.
++
++Outputs are in `results/federated_heterogeneous/<protocol-id>/`: read `SUMMARY.md`
++or `table.csv` for mean +/- sample SD of per-seed last-five test accuracy, and
++`tuning.csv` for all validation trials. Download `rebuttal_results.zip` for the
++tables, state, full configs, and curves; weights stay on the training machine.
++The raw runs are isolated from the homogeneous article export. Changing settings
++creates a separate protocol directory. `SIGNMUON_RESULTS` relocates the whole tree.
++
++Rebuttal setup sentence: "CNN2/CIFAR-10, 11 clients, Dirichlet(0.1) label skew;
++the homogeneous protocol and five paired seeds are retained."
+ 
+ | File | What it does |
+ | :--- | :--- |
+@@ -42,6 +101,7 @@
+ | [`data.py`](data.py) | Partitioning, the 45k/5k split, device-resident shards |
+ | [`tune.py`](tune.py) | Equal-budget, validation-only learning-rate search |
+ | [`overnight.py`](overnight.py) | **Step 1**: the whole protocol, resumable |
++| [`heterogeneous.py`](heterogeneous.py) | Homogeneous-parameter transfer and validation-tuned label-skew experiments |
+ | [`export_article.py`](export_article.py) | **Step 2**: pack the results into one `.zip` |
+ | [`plot_article.py`](plot_article.py) | **Step 3**: `fig_federated_main.pdf`, the figure the paper prints |
+ | [`plot_federated.py`](plot_federated.py) | Exploratory plotter: one file per metric, also takes `--bundle` |
+--- submitted/code/nanogpt/README.md
++++ repo/code/nanogpt/README.md
+@@ -446,3 +446,13 @@
+ while keeping a separable Muon, tuned for plain Muon, whose LMO the variants
+ slot into unchanged. Porting onto a later record is a separate, larger effort
+ with real degradation risk (see the project notes).
++# Raw EF21-P traces
++
++For EF21-MuonSign, the full repository's `train_gpt.py` supports
++`SIGNMUON_COMPRESSION_LOG=traces/cproj`,
++`SIGNMUON_COMPRESSION_LAYERS=c_proj`, and `SIGNMUON_COMPRESSION_EVERY=1`.
++It writes a new CSV per rank after warmup, keeping individual layers and
++Q/K/V/O blocks separate. `SIGNMUON_COMPRESSION_ORACLE=1` adds an expensive
++SVD audit of the implemented LMO. These opt-in diagnostics synchronize with
++the host and affect timing. See [analysis/README.md](../analysis/README.md)
++for analysis and mathematical scope.
+--- submitted/code/nanogpt/signmuon_optimizers.py
++++ repo/code/nanogpt/signmuon_optimizers.py
+@@ -398,10 +398,11 @@
+ # every non-owning rank contributes zero -- so the table is identical everywhere.
+ #
+ # These exist because the convergence threshold of the EF21 methods is governed
+-# by the compressor's contraction constant ``alpha``, and the scaled sign's
+-# ``alpha`` is NOT a constant: it is ``||r||_1^2 / (d ||r||_2^2)``, which equals
+-# ``2/pi`` for an isotropic residual and decays toward ``1/d`` as the residual
+-# becomes directionally coherent.  ``alpha_up`` / ``alpha_dn`` measure it.
++# by the compressor's contraction constant ``alpha``. The scaled sign's
++# achieved ``alpha`` is ``||r||_1^2 / (d ||r||_2^2)`` for nonzero r.
++# It approaches ``2/pi`` for large iid Gaussian blocks and reaches ``1/d``
++# for one nonzero entry. It measures magnitude concentration, not directional
++# coherence or matrix rank. ``alpha_up`` / ``alpha_dn`` are sampled summaries.
+ # ---------------------------------------------------------------------------
+ 
+ DIAG_SLOTS = (
+@@ -532,9 +533,9 @@
+ 
+     def _record_alpha(self, p: Tensor, r: Tensor, slot: str) -> None:
+         """``alpha_eff = ||r||_1^2 / (d ||r||_2^2)``: the contraction the scaled
+-        sign ACTUALLY achieves on this round's residual -- ``2/pi`` for an
+-        isotropic ``r``, decaying to ``1/d`` as ``r`` becomes coherent.  This is
+-        the ``alpha`` of the convergence threshold, measured rather than assumed.
++        sign achieves on this round's nonzero residual. Small values indicate
++        magnitude concentration. Sampled means/medians do not establish the
++        uniform contraction lower bound required by a convergence theorem.
+ 
+         ``r`` arrives already blocked for the merged attention weight, in which
+         case we report the mean of the four blocks' values.  Accumulated in fp32
+@@ -943,20 +944,42 @@
+ 
+     ``X`` and ``W`` are NOT interchangeable in practice. The convergence corollary
+     bounds ``||grad f(X_t)||``, but the EF21-P downlink's contraction constant is
+-    only ``alpha ~ 1/d`` in the worst case, and on a coherent residual -- which is
+-    what momentum plus a slowly-turning gradient produces -- it really does
+-    collapse to that end of the range. ``X`` then runs many steps ahead of the
+-    iterate every gradient was actually taken at. The ``lag_XW`` diagnostic
+-    measures the gap, and the training script reports the loss at both models.
++    only ``alpha >= 1/d`` in the worst case. Magnitude concentration in the
++    residual can reduce the achieved contraction and permit a persistent gap;
++    directional coherence alone does not imply small alpha. ``lag_XW`` measures
++    the gap, and the training script reports the loss at both models.
+     """
+ 
+     family = FAMILY_LMO
++
++    def set_compression_recorder(self, recorder, names):
++        """Attach an optional raw per-block EF21-P CSV recorder.
++
++        The recorder is supplied by the caller; the standalone optimizer has
++        no dependency on the repository's analysis package. Write one file per
++        rank. Logging synchronizes with the host and changes measured timing.
++        """
++        self.compression_recorder = recorder
++        self.compression_names = names
++
++    def _compression_parts(self, p, value):
++        name = self.compression_names[id(p)]
++        if self._is_attn(p):
++            h, w = value.shape[-2:]
++            return [(name+":"+tag, block) for tag, block in
++                    zip(("Q", "K", "V", "O"), value.reshape(4, h, w//4))]
++        return [(name, value)]
+ 
+     def update_param(self, p, group):
+         state = self.state[p]
+         if "exact_model" not in state:
+             state["exact_model"] = p.detach().clone()   # X_0 = W_0 (broadcast model)
+         X = state["exact_model"]
++        recorder = getattr(self, "compression_recorder", None)
++        if recorder is not None:
++            for (name, xb), (_, wb) in zip(self._compression_parts(p, X), self._compression_parts(p, p)):
++                recorder.begin(name, xb, wb, self._eff_lr(p, group), 1-group["momentum"],
++                               True, step=getattr(self, "compression_step", None))
+         self._decoupled_weight_decay(X, p, group)       # decay the exact server model
+ 
+         m = self._effective_grad(p, group, state)  # gradient was taken at W = p
+@@ -969,10 +992,20 @@
+             self._record_lag(p, "lag_est", m - g_est, m)
+ 
+         d = self._lmo(g_est, p)
++        if recorder is not None:
++            for (name, mb), (_, gb), (_, db) in zip(self._compression_parts(p, m),
++                    self._compression_parts(p, g_est), self._compression_parts(p, d)):
++                # begin() has already incremented this block's counter.
++                recorder.measure_direction(name, mb, gb, db,
++                    step=getattr(self, "compression_step", recorder.counts.get(name, 0)))
+         X.add_(d, alpha=-self._eff_lr(p, group))        # exact server step: X <- X - eta * PE(g_est)
+ 
+         delta_dn = X - p                                # downlink EF21-P on the model increment
+         p.add_(self._scaled_sign(delta_dn, p, slot="alpha_dn"))
++        if recorder is not None:
++            for (name, xb), (_, wb), (_, rb) in zip(self._compression_parts(p, X),
++                    self._compression_parts(p, p), self._compression_parts(p, delta_dn)):
++                recorder.end(name, xb, wb, rb)
+         if self.diagnostics:                            # server/broadcast gap after the round
+             self._record_lag(p, "lag_XW", X - p, p)
+ 
+--- submitted/code/nanogpt/test_signmuon_optimizers.py
++++ repo/code/nanogpt/test_signmuon_optimizers.py
+@@ -252,13 +252,51 @@
+     print("  OK   single-layer parameters bit-identical to the pre-fix rule")
+ 
+ 
++def test_raw_compression_records_each_attention_block():
++    """Raw logging preserves the update and measures Q/K/V/O independently."""
++    import csv
++    import tempfile
++    from common.compression_diagnostics import CompressionRecorder
++    from analysis.ef21_report import analyze_rows
++    with tempfile.TemporaryDirectory() as tmp:
++        def drive(logged, layers=""):
++            torch.manual_seed(43)
++            p = _tagged((4, 16), "attn")
++            opt = smo.EF21MuonSign([p], lr=0.02, momentum=0.95,
++                                   weight_decay=0.0, lr_scaling="none")
++            if logged:
++                filename = "filtered.csv" if layers else "raw.csv"
++                opt.set_compression_recorder(CompressionRecorder(Path(tmp)/filename,
++                                             audit_oracle=True, layers=layers),
++                                             {id(p): "qkvo"})
++            for t in range(4):
++                opt.compression_step = t+1
++                p.grad = torch.randn_like(p)
++                opt.update_param(p, opt.param_groups[0])
++            return p.clone(), opt.state[p]["exact_model"].clone(), torch.get_rng_state()
++        plain = drive(False)
++        for a, b in zip(plain, drive(True)):
++            assert torch.equal(a, b)
++        with (Path(tmp)/"raw.csv").open() as f:
++            rows = list(csv.DictReader(f))
++        assert {r["layer"] for r in rows} == {"qkvo:"+s for s in ("Q", "K", "V", "O")}
++        assert all(int(r["dimension"]) == 16 for r in rows)
++        report = analyze_rows(rows)
++        assert all(r["complete_segment"] and r["max_direction_operator"] is not None for r in report)
++        for a, b in zip(plain, drive(True, layers=":Q$")):
++            assert torch.equal(a, b)
++        with (Path(tmp)/"filtered.csv").open() as f:
++            filtered = list(csv.DictReader(f))
++        assert len(filtered) == 4 and all(r["layer"] == "qkvo:Q" for r in filtered)
++
++
+ def test_diagnostics_record_and_report():
+     """The diagnostics path must run single-process and report a sane ``alpha``.
+ 
+     For an isotropic residual the scaled sign's achieved contraction
+     ``||r||_1^2 / (d ||r||_2^2)`` is ``2/pi = 0.6366``. That is where ``alpha_up``
+-    should sit early in a run -- and its DECAY toward ``1/d`` as the residual
+-    becomes directionally coherent is the whole reason the slot is logged.
++    should sit early in this Gaussian probe. Small alpha measures concentration
++    of entry magnitudes; it does not measure directional coherence.
+     """
+     torch.manual_seed(0)
+     p = _tagged((32, 32), None)
+@@ -377,6 +415,7 @@
+     test_compressor_scale_is_per_block()
+     test_compressor_unchanged_for_single_layer_parameters()
+     test_diagnostics_record_and_report()
++    test_raw_compression_records_each_attention_block()
+     print("\nVerifying per-layer LR scaling...\n")
+     test_lmo_family_matches_record40_aspect_factor()
+     test_unit_gain_equalizes_the_per_step_gain()
+--- submitted/code/nanogpt/train_gpt.py
++++ repo/code/nanogpt/train_gpt.py
+@@ -1070,6 +1070,20 @@
+     opt.load_state_dict(opt_state)
+ del train_loader, initial_state
+ 
++# Raw measurements start after kernel warmup and state restoration. They are
++# deliberately opt-in: per-block host synchronization affects benchmark timing.
++if os.environ.get("SIGNMUON_COMPRESSION_LOG"):
++    if opt_name != "EF21-MuonSign":
++        raise ValueError("SIGNMUON_COMPRESSION_LOG requires EF21-MuonSign")
++    sys.path.insert(0, str(Path(__file__).resolve().parents[1]))
++    from common.compression_diagnostics import CompressionRecorder
++    recorder = CompressionRecorder(
++        os.environ["SIGNMUON_COMPRESSION_LOG"]+f".rank{dist.get_rank()}.csv",
++        int(os.environ.get("SIGNMUON_COMPRESSION_EVERY", "1")),
++        os.environ.get("SIGNMUON_COMPRESSION_ORACLE", "0") == "1",
++        os.environ.get("SIGNMUON_COMPRESSION_LAYERS", ""))
++    optimizer2.set_compression_recorder(recorder, _param_names)
++
+ ########################################
+ #        Training and validation       #
+ ########################################
+@@ -1213,6 +1227,7 @@
+         optimizer2.step()
+         optimizer2.zero_grad(set_to_none=True)
+     else:
++        optimizer2.compression_step = step+1
+         for opt in optimizers:
+             opt.step()
+         # null the gradients
+--- submitted/code/README.md
++++ repo/code/README.md
+@@ -204,6 +204,11 @@
+ 
+ ## Tests
+ 
++Experimental schedule analysis and opt-in EF21-P traces are documented in
++[analysis/README.md](analysis/README.md). This includes raw per-layer alpha,
++server/broadcast tracking, optional exact-SVD oracle diagnostics, and small
++known-gradient calibrations for EMA and Nesterov.
++
+ ```bash
+ python3 -m tests.test_code                    # torch, CPU only, ~1 min
+ python3 -m counterexamples.problems           # the Theorem 1-4 constants
+--- submitted/code/tests/README.md
++++ repo/code/tests/README.md
+@@ -9,6 +9,16 @@
+ No GPU, no dataset, no network. Both `overnight.py` drivers run it as their first
+ preflight step and refuse to start a night if it fails, printing the failing
+ assertions rather than the test names.
++
++The experimental schedule and EF21 trace checks also run separately with
++`python -m unittest tests.test_experiment_diagnostics tests.test_fixed_momentum -v`. They exercise
++trajectory/RNG preservation, known-gradient stationarity accounting, missing
++rounds, and the actual federated logging path.
++
++The heterogeneous experiment protocol has a separate standard-library check:
++`python -m unittest tests.test_federated_heterogeneous -v`. It checks homogeneous
++parameter provenance, validation-only selection, paired seeds, resume/reuse,
++failure reporting, and the results archive without training or downloads.
+ 
+ [`test_code.py`](test_code.py) is the suite. The anonymity checks sit beside it in
+ `test_anonymize.py`, which `test_code.py` adopts when it is present, so one command
+--- submitted/code/tests/test_code.py
++++ repo/code/tests/test_code.py
+@@ -1457,22 +1457,31 @@
+     as a diagnostic; the raw zero rate is still recorded either way, which is what
+     the last assertion here pins. `communication_bits` is what covers `keep`.
+     """
++    torch.manual_seed(3)
+     M = torch.randn(6, 8)
+     M[2] = 0.0                                    # a dead unit's gradient row
+     s = torch.sign(muon_lmo(M, ns_steps=5, dtype=torch.float32, scale_aspect=False))
+     assert int((s == 0).sum()) >= 8, "a zero row of M must give zeros in sign(polar(M))"
+ 
+-    # ... and the driver measures it rather than assuming it away.
++    # ... and the driver measures it rather than assuming it away.  Every run
++    # below is seeded identically: the zero rate is a property of the gradients,
++    # so three unseeded TinyNet initialisations would give three different rates
++    # and the comparison at the end of this test would compare nothing.
+     loaders = [tiny_loader(seed=s) for s in range(5)]        # ODD client count
++    torch.manual_seed(3)
+     h = run_federated("signmuon", TinyNet(), loaders, [tiny_loader()],
+                       rounds=2, n_steps=1, lr=0.01, eval_freq=1, device="cpu",
+                       lmo_dtype=torch.float32, verbose=False)
+     assert len(h.values("uplink_zero_frac")) == 2
+     assert all(0.0 <= z <= 1.0 for z in h.values("uplink_zero_frac"))
++    assert max(h.values("uplink_zero_frac")) > 0.0, \
++        "seed 3 is chosen because the compressor really does emit zeros there; " \
++        "at a seed with none, the last assertion below would hold vacuously"
+ 
+     # Forcing the zeros to +-1 makes the channel a genuine one bit, and then an
+     # odd count really cannot tie.
+     for rule in ("random", "positive"):
++        torch.manual_seed(3)
+         h2 = run_federated("signmuon", TinyNet(), loaders, [tiny_loader()],
+                            rounds=2, n_steps=1, lr=0.01, eval_freq=1, device="cpu",
+                            lmo_dtype=torch.float32, uplink_zeros=rule, verbose=False)

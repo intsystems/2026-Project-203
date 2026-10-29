@@ -1,0 +1,7 @@
+Thank you for the theory and practical questions.
+
+1. Re SignMuon structure: For momentum $M=U\Sigma V^\top$, if each diagonal entry of $U^\top\mathrm{sign}(UV^\top)V$ is at least $\delta>0$, then $\langle M,\mathrm{sign}(UV^\top)\rangle\ge\delta\|M\|_*$. A uniform margin, joint smoothness and unbiased finite-variance noise yield a conditional SignMuon rate; the margin is unmeasured in our networks.
+2. Re federated scope: The 11-client IID experiment takes no local updates. We claim no ordering under non-IID data, local training or partial participation.
+3. Re new analysis: The base positive rates instantiate EF21-Muon. Our added analysis removes layer separability and treats fixed EMA/Nesterov with deterministic schedules; it does not certify finite polar approximations. The principal new submitted proofs are the placement-specific ascent examples and bounded-below output-EF divergence.
+4. Re practical choice: Uplink-only: EF21-MuonUSign; both links: EF21-MuonSign for the analyzed repair, or SignMuon for the strongest observed accuracy. CNN2 compressed payloads are 1.087 bits/parameter including FP32 auxiliaries; EF adds one scale/matrix, client/server estimators, and a separate server model for two-sided EF. Polar: clients for SignMuon, server for gradient EF.
+5. Re nanoGPT uncertainty: nanoGPT: the 0.0021 gap is inconclusive. All compressed-method rankings are preliminary single-run observations; even larger gaps lack a variant-specific variance estimate.

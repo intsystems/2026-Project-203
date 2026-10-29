@@ -1,0 +1,29 @@
+{
+  "version": 1,
+  "reviews": {
+    "confidential_ac": {
+      "target": "confidential_ac_comment.md",
+      "revision": 0,
+      "intro": "",
+      "closing": "",
+      "sections": [
+        {
+          "id": "comment",
+          "lead": ""
+        }
+      ],
+      "reply_topics": [],
+      "fragments": [
+        {
+          "id": "C1",
+          "text": "",
+          "notes": "Optional: determine whether a factual correction or a concise synthesis would help the AC/SPC. Verify the field limit and readers.",
+          "include": true,
+          "needs_check": true,
+          "joiner": " ",
+          "section": "comment"
+        }
+      ]
+    }
+  }
+}

@@ -1,0 +1,10 @@
+algorithm,rule,phase,lr,seeds,acc_mean,acc_std
+signmuon,unit-gain,final,0.1,5,85.7156,0.2444
+signmuon,mup,rules,2.0,3,85.5213,0.007
+signmuon,none,rules,0.002,3,85.6833,0.1744
+signsgd,unit-gain,final,0.01,5,81.4356,0.1466
+signsgd,mup,rules,0.5,3,81.4727,0.2502
+signsgd,none,rules,0.0005,3,81.374,0.208
+muonsign,unit-gain,final,0.02,5,82.9424,0.1868
+muonsign,mup,rules,0.5,3,82.372,0.2721
+muonsign,none,rules,0.001,3,82.2633,0.3962

@@ -1,0 +1,1124 @@
+{
+  "federated_export/communication.csv": {
+    "submitted_sha256": "b05c4a6763a2e407f42dcca45409796f82baf698fad128145e9f8f50add2ee7a",
+    "repo_sha256": "b05c4a6763a2e407f42dcca45409796f82baf698fad128145e9f8f50add2ee7a",
+    "identical_bytes": true,
+    "identical_after_newline_normalization": true
+  },
+  "federated_export/configs.json": {
+    "submitted_sha256": "306db9c3130d61dc5cfcc6801e89d59abd4fa4f9f5c050dfb01c07d8792ee550",
+    "repo_sha256": "31d63cd4e86100d05b0962f28dc5add7552c0e2d9f85244087508bb2b84304b5",
+    "identical_bytes": false,
+    "identical_after_newline_normalization": false
+  },
+  "federated_export/curves.csv": {
+    "submitted_sha256": "7c4afb4ad05ac6c9873dce859ea03e5db270aa22f2826ecd2d6e79f5818aca6d",
+    "repo_sha256": "7c4afb4ad05ac6c9873dce859ea03e5db270aa22f2826ecd2d6e79f5818aca6d",
+    "identical_bytes": true,
+    "identical_after_newline_normalization": true
+  },
+  "federated_export/environment.json": {
+    "submitted_sha256": "cd291459e6416ac8774348ec30c69c4c8d3a5953e02b1111e4df02e42dd3c3fe",
+    "repo_sha256": "11b4ad46131a53b96d4622ead9dbb4be532c6402e0c9ec3bf517db25c60e97e6",
+    "identical_bytes": false,
+    "identical_after_newline_normalization": false
+  },
+  "federated_export/hardware.tex": {
+    "submitted_sha256": "a4fcc7305f6d2998258e14357987b59a83adff966b687d77739a4c89b0f5db78",
+    "repo_sha256": "a4fcc7305f6d2998258e14357987b59a83adff966b687d77739a4c89b0f5db78",
+    "identical_bytes": true,
+    "identical_after_newline_normalization": true
+  },
+  "federated_export/MANIFEST.json": {
+    "submitted_sha256": "0d9ccdf8bed4dc2a4905406cb13b2b2f764ac157b62e5bf204dc6ddc7b104c5e",
+    "repo_sha256": "db6c2e878754c03134643dd7d46aaed070fa7f7ce24a1fa1f481bffb0f1eccb6",
+    "identical_bytes": false,
+    "identical_after_newline_normalization": false
+  },
+  "federated_export/overnight/REPORT.md": {
+    "submitted_sha256": "715945680eaab4ae6481559c2363c3d80348bc488f5306dcc91783a857a96b83",
+    "repo_sha256": "715945680eaab4ae6481559c2363c3d80348bc488f5306dcc91783a857a96b83",
+    "identical_bytes": true,
+    "identical_after_newline_normalization": true
+  },
+  "federated_export/overnight/state.json": {
+    "submitted_sha256": "ed5347a4b9ff943f09ee05ded0892ab332db7b6e447081d5d491725070004700",
+    "repo_sha256": "ed5347a4b9ff943f09ee05ded0892ab332db7b6e447081d5d491725070004700",
+    "identical_bytes": true,
+    "identical_after_newline_normalization": true
+  },
+  "federated_export/rule_ablation.csv": {
+    "submitted_sha256": "cc453ef8d8b849a38754469d2c141da242a731f00875172a88dde5acfbb6e199",
+    "repo_sha256": "cc453ef8d8b849a38754469d2c141da242a731f00875172a88dde5acfbb6e199",
+    "identical_bytes": true,
+    "identical_after_newline_normalization": true
+  },
+  "federated_export/runs/final_adam_scaled_unit-gain_e2000_fs0/seed0/metrics.json": {
+    "submitted_sha256": "70910a06fabe7ddbb1942f57f26961675ad54229b795bb92f071455f74375833",
+    "repo_sha256": "5ac2ff89b8f689f82169dbbecdedf9a0281c95b3a606954c43296e3158a2c18a",
+    "identical_bytes": false,
+    "identical_after_newline_normalization": false
+  },
+  "federated_export/runs/final_adam_scaled_unit-gain_e2000_fs1/seed1/metrics.json": {
+    "submitted_sha256": "267bda5b5fa13c5ae50f2f269eecfe977a5d7e719eb7aaf6deca7d98cdf184fd",
+    "repo_sha256": "7a8595f79cc62e48267a1c7873b198f55529344ce44897f457d94c4b615a0e5a",
+    "identical_bytes": false,
+    "identical_after_newline_normalization": false
+  },
+  "federated_export/runs/final_adam_scaled_unit-gain_e2000_fs2/seed2/metrics.json": {
+    "submitted_sha256": "99778a988bd0b4929f7f3a5cb2fca434dccc48fbed99ce3fa4e36d5926e2bc8b",
+    "repo_sha256": "c158ebcd66c4fab5fb08d788e341494f07571b13b000489bb4b767e37c42ce79",
+    "identical_bytes": false,
+    "identical_after_newline_normalization": false
+  },
+  "federated_export/runs/final_adam_scaled_unit-gain_e2000_fs3/seed3/metrics.json": {
+    "submitted_sha256": "4c1d9072c247e2b7a78336165733116dbe993da1070f7057b11d1a88773fff9d",
+    "repo_sha256": "511378e6a1050030d5646a4ba579004cf0f5f7f97304a86a2b8b04967ba1d683",
+    "identical_bytes": false,
+    "identical_after_newline_normalization": false
+  },
+  "federated_export/runs/final_adam_scaled_unit-gain_e2000_fs4/seed4/metrics.json": {
+    "submitted_sha256": "d49be24366bc550287cde1c20afaea56b006495cd7eb4490bd4ed621ddc304cc",
+    "repo_sha256": "d21dbdbcf17f7acd0bd60a230eb9c3db541c1c9778a51a266723a55a74204b38",
+    "identical_bytes": false,
+    "identical_after_newline_normalization": false
+  },
+  "federated_export/runs/final_adam_unit-gain_e2000_fs0/seed0/metrics.json": {
+    "submitted_sha256": "df542d08d4801cbf460bc467a84ca99043748a55145050f778fc3550539c5a67",
+    "repo_sha256": "8fa1ef335047cd581e2c722f67657dc3cb179bc02df8f5328aafeaf2b03ec2a0",
+    "identical_bytes": false,
+    "identical_after_newline_normalization": false
+  },
+  "federated_export/runs/final_adam_unit-gain_e2000_fs1/seed1/metrics.json": {
+    "submitted_sha256": "4bf00e468defa2c8925d6bb427b50b0048be726571c00185662206c5343403bf",
+    "repo_sha256": "afcb5e5fa3a02c76e44ffc50e1f9640eabfd0e18991bd3feaf6678abfe18b676",
+    "identical_bytes": false,
+    "identical_after_newline_normalization": false
+  },
+  "federated_export/runs/final_adam_unit-gain_e2000_fs2/seed2/metrics.json": {
+    "submitted_sha256": "49d7a5be001c43a83e23249c2fab8766577a60bfec39e0fb78d25781f874c082",
+    "repo_sha256": "f861b03e6192fe72db057d4fdacabdd5439977a82539d3ecb8b1fb78f9129cc0",
+    "identical_bytes": false,
+    "identical_after_newline_normalization": false
+  },
+  "federated_export/runs/final_adam_unit-gain_e2000_fs3/seed3/metrics.json": {
+    "submitted_sha256": "132f4e4c0030e098e884ea06f40c821aa1dd3f365b0271fa785c1a0408790967",
+    "repo_sha256": "d485de5a5e55720b22f58437692ae9d6cca80cdc203c1f13b7d9b2f4a17795b7",
+    "identical_bytes": false,
+    "identical_after_newline_normalization": false
+  },
+  "federated_export/runs/final_adam_unit-gain_e2000_fs4/seed4/metrics.json": {
+    "submitted_sha256": "7ac994e493cf8d92a9f0d3218a46fc9fbffe781549bbcb59b2a170b96dd242b5",
+    "repo_sha256": "0176444f8c449fe656f9f2238bb769fcdc0ed0d27b1d8376a19d54fc059f6f14",
+    "identical_bytes": false,
+    "identical_after_newline_normalization": false
+  },
+  "federated_export/runs/final_ef21muonsign_unit-gain_e2000_fs0/seed0/metrics.json": {
+    "submitted_sha256": "2dd8cc97e03556df62b3ddd19480a103470fd96ad62dc764d7d29dbca132918a",
+    "repo_sha256": "7551d9a31213f9cdd659a2d5f3991f149c9b6a10e822f3d28edd3ab8290c7f7e",
+    "identical_bytes": false,
+    "identical_after_newline_normalization": false
+  },
+  "federated_export/runs/final_ef21muonsign_unit-gain_e2000_fs1/seed1/metrics.json": {
+    "submitted_sha256": "8efb45ca1b41070c6cbdfa897340388a1159c6b6c713d317592fb02a07a9ed09",
+    "repo_sha256": "8e8feb288f7b5e24692bc88b8441b30506a7a5a33e5a19242d06c702d5847cea",
+    "identical_bytes": false,
+    "identical_after_newline_normalization": false
+  },
+  "federated_export/runs/final_ef21muonsign_unit-gain_e2000_fs2/seed2/metrics.json": {
+    "submitted_sha256": "545b86de0547a070fe2295b8005fe21c7c80da5b5438bcb09d4321896a0586c4",
+    "repo_sha256": "2e13833490a08a05715a0389509424485dfad869f9f2c06e7bc2d0d44377ab20",
+    "identical_bytes": false,
+    "identical_after_newline_normalization": false
+  },
+  "federated_export/runs/final_ef21muonsign_unit-gain_e2000_fs3/seed3/metrics.json": {
+    "submitted_sha256": "2744041fea263511e153e76108ba5d38c13c0eec83ca6046e09aed15e7b0369b",
+    "repo_sha256": "c7c55224ead2ece527cb250749cbb9a8eed2befad7b2ffbd945b9123d8baeda6",
+    "identical_bytes": false,
+    "identical_after_newline_normalization": false
+  },
+  "federated_export/runs/final_ef21muonsign_unit-gain_e2000_fs4/seed4/metrics.json": {
+    "submitted_sha256": "48c3b28c845acb7cc440ff7d696b2a3607e889e683f119bb349f864932544530",
+    "repo_sha256": "3e23012f800b68bb9951644961d366e2c047b2c86c5350c1e5af6b1ff1e47db5",
+    "identical_bytes": false,
+    "identical_after_newline_normalization": false
+  },
+  "federated_export/runs/final_ef21muonusign_unit-gain_e2000_fs0/seed0/metrics.json": {
+    "submitted_sha256": "4528cd5750fb6eaa02fe0f75354b9e7b70319e05f05ad38dc1de3643b5dc29cc",
+    "repo_sha256": "153c739a37df884febd4a467a979f89b4af7f32dd4aa2a23353dd0387767845b",
+    "identical_bytes": false,
+    "identical_after_newline_normalization": false
+  },
+  "federated_export/runs/final_ef21muonusign_unit-gain_e2000_fs1/seed1/metrics.json": {
+    "submitted_sha256": "752ea2a7cfbd699cfa746f9d818d8ddc9724c09dd12d496d6171aafa4df69848",
+    "repo_sha256": "f8dcc8d11a00f524cab736d016b31ebec49af6e1d0acecbbd1621ea49d06e38a",
+    "identical_bytes": false,
+    "identical_after_newline_normalization": false
+  },
+  "federated_export/runs/final_ef21muonusign_unit-gain_e2000_fs2/seed2/metrics.json": {
+    "submitted_sha256": "08ea863364e588ca14628af6a13baefbb979c8a788e77061970dc9c88f8a027a",
+    "repo_sha256": "05bd038085505b6df21667b9f21f938e9d6d9c3a447c52922125f788d44ccec7",
+    "identical_bytes": false,
+    "identical_after_newline_normalization": false
+  },
+  "federated_export/runs/final_ef21muonusign_unit-gain_e2000_fs3/seed3/metrics.json": {
+    "submitted_sha256": "0f6fecf24bab3c5c505fbb83884db81056c2a10c240b622a6d90e29264278c4e",
+    "repo_sha256": "0daea9a090964c8421f9b2920656cba3720ca1c228155d015db6e0ddbfe1955e",
+    "identical_bytes": false,
+    "identical_after_newline_normalization": false
+  },
+  "federated_export/runs/final_ef21muonusign_unit-gain_e2000_fs4/seed4/metrics.json": {
+    "submitted_sha256": "57624ae0f9805c5c8c3f87eb3978e2634753a89f4aa8652f8c0939ba84481dec",
+    "repo_sha256": "d0ac88d7ae8f766cfc65246f4d0842d95fad2b38d969a99e883f1594a3251638",
+    "identical_bytes": false,
+    "identical_after_newline_normalization": false
+  },
+  "federated_export/runs/final_ef21signmuon_unit-gain_e2000_fs0/seed0/metrics.json": {
+    "submitted_sha256": "c38274b1f254a27aa815450b3b9399435a9ca677673f825881ef78141ec73a13",
+    "repo_sha256": "e923c8f7d2473e861e240ca0d730d7ee43cd4898d6055f329055b31811817928",
+    "identical_bytes": false,
+    "identical_after_newline_normalization": false
+  },
+  "federated_export/runs/final_ef21signmuon_unit-gain_e2000_fs1/seed1/metrics.json": {
+    "submitted_sha256": "4a699ffccfc53ae263f047b69a1bcdd7d0ebcfc062bc7b1335f1215d46fe8e42",
+    "repo_sha256": "721bafbe0fd84aa5f89924eb1f2b57bc9167267f5a8ad35c6d8fc1f6a1b4f73f",
+    "identical_bytes": false,
+    "identical_after_newline_normalization": false
+  },
+  "federated_export/runs/final_ef21signmuon_unit-gain_e2000_fs2/seed2/metrics.json": {
+    "submitted_sha256": "14f9fffbb991cab1533f24be554797122383ebc7846dca8327f4c049a44b09a4",
+    "repo_sha256": "ac45884d41c69a1cda3c5e01402c4cb8eeb09b8f1f2b02f0e3d3e6a85eef8049",
+    "identical_bytes": false,
+    "identical_after_newline_normalization": false
+  },
+  "federated_export/runs/final_ef21signmuon_unit-gain_e2000_fs3/seed3/metrics.json": {
+    "submitted_sha256": "913175539007b68ed89bb64ddc69ecd8d9938655d137c07439922761cd682b7d",
+    "repo_sha256": "21ede28d18306a67b45fcad69db13d0ed02b70345c2e8f6682394a5e9b8bd535",
+    "identical_bytes": false,
+    "identical_after_newline_normalization": false
+  },
+  "federated_export/runs/final_ef21signmuon_unit-gain_e2000_fs4/seed4/metrics.json": {
+    "submitted_sha256": "233665c944036685b739322455dc71bdb85174a8e10efaa111a69b3230980a11",
+    "repo_sha256": "1e04f758d3941860b65d42c759f499f486d8a66fa2d703b34ed049b82d814ca1",
+    "identical_bytes": false,
+    "identical_after_newline_normalization": false
+  },
+  "federated_export/runs/final_muon_unit-gain_e2000_fs0/seed0/metrics.json": {
+    "submitted_sha256": "8bed07caff37db80ed3b302cb87d7c9486739c14cb684259c6993b6b48b16235",
+    "repo_sha256": "a910d5ad7c581addf5810a68ed767da349e611ee0c398c30d7911e60a4857bfc",
+    "identical_bytes": false,
+    "identical_after_newline_normalization": false
+  },
+  "federated_export/runs/final_muon_unit-gain_e2000_fs1/seed1/metrics.json": {
+    "submitted_sha256": "697ab679be0604298669241702531f1427b7d93acc69b7ecd4356f277f00e3f6",
+    "repo_sha256": "6929b4c5d78714d5ec3d76dc801d717f7e19fcf08b4e981adf21a7749fdc47a8",
+    "identical_bytes": false,
+    "identical_after_newline_normalization": false
+  },
+  "federated_export/runs/final_muon_unit-gain_e2000_fs2/seed2/metrics.json": {
+    "submitted_sha256": "87130da0616f3416acf2412cc3acb21d9756fd7022f2afa39f53611e67341416",
+    "repo_sha256": "a498505f50216297feec6fb9bf3d096fdd58bed3f61af912b131d2df50029177",
+    "identical_bytes": false,
+    "identical_after_newline_normalization": false
+  },
+  "federated_export/runs/final_muon_unit-gain_e2000_fs3/seed3/metrics.json": {
+    "submitted_sha256": "9d7de20f632b11a7f3f9e9a903b0e14d86a87843b55a0941e641c7e2968c0198",
+    "repo_sha256": "6adf1c556d0419186c2f40e61c68f4d04285c5ccf2fa0f975126e53a60cf1c72",
+    "identical_bytes": false,
+    "identical_after_newline_normalization": false
+  },
+  "federated_export/runs/final_muon_unit-gain_e2000_fs4/seed4/metrics.json": {
+    "submitted_sha256": "3899c4621d4a5815ab1717599ebbfa4f9af303f20310e9092c72c5f26f52e57e",
+    "repo_sha256": "2f857243449d641b232641d71693db0acf6d3376917cfd3a98706e6dd4d3dca4",
+    "identical_bytes": false,
+    "identical_after_newline_normalization": false
+  },
+  "federated_export/runs/final_muonserver_unit-gain_e2000_fs0/seed0/metrics.json": {
+    "submitted_sha256": "ce6c0e4c225619ef08b999a5be9f6f5223e515ec1b577f79da6461bc46fcedf2",
+    "repo_sha256": "ca5ad4d728063d9fc7dbefb4a6475ac9183a7595ed4f561bc630d2d38dc22a64",
+    "identical_bytes": false,
+    "identical_after_newline_normalization": false
+  },
+  "federated_export/runs/final_muonserver_unit-gain_e2000_fs1/seed1/metrics.json": {
+    "submitted_sha256": "22a19078c7a563ddd5e2e35840b388e57454a851976f2c2ca8781956844d47e8",
+    "repo_sha256": "a6505f6463bf1f287c3c5d7e865a519b2c1122d532ce47108fd0f6db90cb491c",
+    "identical_bytes": false,
+    "identical_after_newline_normalization": false
+  },
+  "federated_export/runs/final_muonserver_unit-gain_e2000_fs2/seed2/metrics.json": {
+    "submitted_sha256": "592b134bc7ce40982fb8232e7819b41a3fb49c869099504d9fbcc9c0b56d97d8",
+    "repo_sha256": "0c54d4410c3f28e0c1aeaadc2db31a29b185a75dc7aad7a04af918276f737c09",
+    "identical_bytes": false,
+    "identical_after_newline_normalization": false
+  },
+  "federated_export/runs/final_muonserver_unit-gain_e2000_fs3/seed3/metrics.json": {
+    "submitted_sha256": "2b1f274172d2746f51e984ccb4e44adc6e65160a8339dfbbac2c92e22d39e3ed",
+    "repo_sha256": "fe14afc735eae85e1c80b5b83f65d7655c19aa2ba4b8078c466bea1da73aeb9e",
+    "identical_bytes": false,
+    "identical_after_newline_normalization": false
+  },
+  "federated_export/runs/final_muonserver_unit-gain_e2000_fs4/seed4/metrics.json": {
+    "submitted_sha256": "e15ee21a3dcd4a34afc6dea6e71d6455d472034756c927e6134c3abe705443fc",
+    "repo_sha256": "7718e232065df313493f86df858ca0282fd40c3486dde93ea95f3f16e19919ed",
+    "identical_bytes": false,
+    "identical_after_newline_normalization": false
+  },
+  "federated_export/runs/final_muonsign_unit-gain_e2000_fs0/seed0/metrics.json": {
+    "submitted_sha256": "67c919dcaaf3802235a18a51f5e9b210e06e6ee0884da062466b84a33d503acf",
+    "repo_sha256": "af7d9c0c5a73a28f79d10563617f82db6db457ebf821a8cb4d9dafbfe4a0591e",
+    "identical_bytes": false,
+    "identical_after_newline_normalization": false
+  },
+  "federated_export/runs/final_muonsign_unit-gain_e2000_fs1/seed1/metrics.json": {
+    "submitted_sha256": "a5d6d6fb5febca065b86791e7e2fcaf1ff93c0990c1f1c7e2753ba04b212db0d",
+    "repo_sha256": "beed52801bbda7d7b3494c6d4fd6ab80fe7e6d85665724039f13cb9fd257408b",
+    "identical_bytes": false,
+    "identical_after_newline_normalization": false
+  },
+  "federated_export/runs/final_muonsign_unit-gain_e2000_fs2/seed2/metrics.json": {
+    "submitted_sha256": "cc6e692663487aaf42dde9871e35466ac0e3d24b34ead594f2bd8d34a9fc035b",
+    "repo_sha256": "f65082a54c01ff42839fc1f8ff57326ceafd27321ea34c92cf56e577133666ad",
+    "identical_bytes": false,
+    "identical_after_newline_normalization": false
+  },
+  "federated_export/runs/final_muonsign_unit-gain_e2000_fs3/seed3/metrics.json": {
+    "submitted_sha256": "55105a379e819289c9d932e8f14135afbf454366886a7ce632e24e35c136dc54",
+    "repo_sha256": "c92d8f964e9ed9f036ac1cd432fc20e0deb4a6f8e1d2574ed546fe88998c9234",
+    "identical_bytes": false,
+    "identical_after_newline_normalization": false
+  },
+  "federated_export/runs/final_muonsign_unit-gain_e2000_fs4/seed4/metrics.json": {
+    "submitted_sha256": "8f2c38d36fa1b231ae4cde63463c8a2bf68817e372424a0688c8b35335cc6cdb",
+    "repo_sha256": "bbefc1cd9089b5e76aa46d2d92d236af2ad8d5a3043fbaceac89a24dead3a4e1",
+    "identical_bytes": false,
+    "identical_after_newline_normalization": false
+  },
+  "federated_export/runs/final_muonusign_unit-gain_e2000_fs0/seed0/metrics.json": {
+    "submitted_sha256": "7453bd64f7f011455b5d7c54173e6fa9479a194883d83d75b116446832935e0b",
+    "repo_sha256": "126d8991b2a64a8c9a7c0f3fc33bb316abbc07338993d758fb6cf962bade0ea5",
+    "identical_bytes": false,
+    "identical_after_newline_normalization": false
+  },
+  "federated_export/runs/final_muonusign_unit-gain_e2000_fs1/seed1/metrics.json": {
+    "submitted_sha256": "0984d7f5992705225727e57158b889a53abaef1dabe8901c59ccac4b0ffce1df",
+    "repo_sha256": "6801e9b15590118be25430be0ee61686461271169f77289ae7e9fc26289a1448",
+    "identical_bytes": false,
+    "identical_after_newline_normalization": false
+  },
+  "federated_export/runs/final_muonusign_unit-gain_e2000_fs2/seed2/metrics.json": {
+    "submitted_sha256": "72552fae74d246dd2e9e199be8787f8e7abb080563d3458ecce09d5a17426c20",
+    "repo_sha256": "8cfd762244e73654aaf2ef7e97470afef9a1634f1b7b5a6c5dd5bf7bc6245a8b",
+    "identical_bytes": false,
+    "identical_after_newline_normalization": false
+  },
+  "federated_export/runs/final_muonusign_unit-gain_e2000_fs3/seed3/metrics.json": {
+    "submitted_sha256": "be3daa635b8de55b31bd3523b82ef68305239dbf62eca7b6463ca570b084e182",
+    "repo_sha256": "06c42c49ad67d50349bd2f65fc8e697072ec8ae0dc4fed2e5d753f94f59a05bb",
+    "identical_bytes": false,
+    "identical_after_newline_normalization": false
+  },
+  "federated_export/runs/final_muonusign_unit-gain_e2000_fs4/seed4/metrics.json": {
+    "submitted_sha256": "95e608bf506f2ba969bb30beb86c6d06df9e84f7b0d7a0702b3f01c4da97ac71",
+    "repo_sha256": "32b7e58ff747184716cfc4c996503dee30b813adef5c76842986e7bf6bee9e05",
+    "identical_bytes": false,
+    "identical_after_newline_normalization": false
+  },
+  "federated_export/runs/final_rulefinal_muonsign_mup_e2000_fs0/seed0/metrics.json": {
+    "submitted_sha256": "7bd3527b30c1473a5879c419d87c7c9297b5b8e2eb9d0906c3033916b45d4849",
+    "repo_sha256": "9c69c58938de92534e1c2b4e3973d37dea49e6286721c4fab70f65e8d17994ff",
+    "identical_bytes": false,
+    "identical_after_newline_normalization": false
+  },
+  "federated_export/runs/final_rulefinal_muonsign_mup_e2000_fs1/seed1/metrics.json": {
+    "submitted_sha256": "f9ff3962c261c83f90a682ee3e1ccd0dc2e4f155570330e059472a5dd36bc9a0",
+    "repo_sha256": "c2841e0cb974996d35369a7f43f75442b437ff16ef3d8c8f3a399d2ab0b62315",
+    "identical_bytes": false,
+    "identical_after_newline_normalization": false
+  },
+  "federated_export/runs/final_rulefinal_muonsign_mup_e2000_fs2/seed2/metrics.json": {
+    "submitted_sha256": "84a43af074a3ed98e9f7fa9cac30b02c202cf91ff4c11ebdc4c0a84e58c11bf2",
+    "repo_sha256": "b14a477c11a8372a85aa794b74ddef67b2160a918178afc59e46ee8571b95fde",
+    "identical_bytes": false,
+    "identical_after_newline_normalization": false
+  },
+  "federated_export/runs/final_rulefinal_muonsign_none_e2000_fs0/seed0/metrics.json": {
+    "submitted_sha256": "2a5cee2afedf3ce64c6a1bfd186c6de7380e8f933135fcf4bb1d5cda3c528584",
+    "repo_sha256": "4375ff13e14ba78d339841cb6ef3e8a428570c47ed77226b4cfb83f2e28111cc",
+    "identical_bytes": false,
+    "identical_after_newline_normalization": false
+  },
+  "federated_export/runs/final_rulefinal_muonsign_none_e2000_fs1/seed1/metrics.json": {
+    "submitted_sha256": "ae9dc3c6fc4bb1cc0425140cf8413df4af27a8c28976ffc6a7399ffadf639486",
+    "repo_sha256": "9b6883ba2cf08ae7103b56a270e1d20e8429a12240830c98f14cfd1507bc3cae",
+    "identical_bytes": false,
+    "identical_after_newline_normalization": false
+  },
+  "federated_export/runs/final_rulefinal_muonsign_none_e2000_fs2/seed2/metrics.json": {
+    "submitted_sha256": "40c1e86142c84da823f4292601fa03dfc0fd00f9e9d5eb17edd19b2c4af6459a",
+    "repo_sha256": "94420f3a6fa3f6c78a25d62ef8a854b60c31dbebfa5c60e08ae64e1237703e79",
+    "identical_bytes": false,
+    "identical_after_newline_normalization": false
+  },
+  "federated_export/runs/final_rulefinal_signmuon_mup_e2000_fs0/seed0/metrics.json": {
+    "submitted_sha256": "06d2032642e4994b336513c3afb8095fefc9afab8412045f1d9e7c9dd35ce609",
+    "repo_sha256": "1671901ad27a9936972db9af0e5534bbb7d797b495c92268af35b8057b99e869",
+    "identical_bytes": false,
+    "identical_after_newline_normalization": false
+  },
+  "federated_export/runs/final_rulefinal_signmuon_mup_e2000_fs1/seed1/metrics.json": {
+    "submitted_sha256": "a532ec8a40d4feced01c460bbaf7bde8dec826f0fd9972e01177de6e89f3c5ec",
+    "repo_sha256": "f12158ffb70519c95509ce5e41e25cae6eb254772e38c566de88f2ad42fb6897",
+    "identical_bytes": false,
+    "identical_after_newline_normalization": false
+  },
+  "federated_export/runs/final_rulefinal_signmuon_mup_e2000_fs2/seed2/metrics.json": {
+    "submitted_sha256": "4df027338c6257b120b60eb2b54b50f6c1ccbb95ba2a7eb29f2712cbfb7043c0",
+    "repo_sha256": "4498fc2c7146b0776861c2a19ccb49158e1eebd33069c5a180d4e22909bd1fc7",
+    "identical_bytes": false,
+    "identical_after_newline_normalization": false
+  },
+  "federated_export/runs/final_rulefinal_signmuon_none_e2000_fs0/seed0/metrics.json": {
+    "submitted_sha256": "6d3b7653a429b3be1a723f62116e2000768a7abf880323ea34faebb7ec1cea47",
+    "repo_sha256": "daefa22f0a37d249f50558425aeab597afc6e52e70609f656589a10b3075b5f6",
+    "identical_bytes": false,
+    "identical_after_newline_normalization": false
+  },
+  "federated_export/runs/final_rulefinal_signmuon_none_e2000_fs1/seed1/metrics.json": {
+    "submitted_sha256": "6bb08d8b95d705eee195f55086a0d977d728036b5bcf1c4400313aa8d193c774",
+    "repo_sha256": "7aef12bb086a9bd06f0979768d8f2f799b9c94cf0c6f1bf6419e25e8266d9253",
+    "identical_bytes": false,
+    "identical_after_newline_normalization": false
+  },
+  "federated_export/runs/final_rulefinal_signmuon_none_e2000_fs2/seed2/metrics.json": {
+    "submitted_sha256": "bc9c66cf0116abc8a6067d0ec23e9b450dbe7a39bb8ed39edc04543cb95a79a2",
+    "repo_sha256": "a42f312a04c8c4ba0682c56201e51870d4f838788c1cb5ad5693bb837618866c",
+    "identical_bytes": false,
+    "identical_after_newline_normalization": false
+  },
+  "federated_export/runs/final_rulefinal_signsgd_mup_e2000_fs0/seed0/metrics.json": {
+    "submitted_sha256": "80e3444d86e151c21db105fa1d8145d6cd42f196002d764fc128cb22d952b24b",
+    "repo_sha256": "5d036c66c9832a422b98a87b29436306460974c6d74a02c56c9eafe669989427",
+    "identical_bytes": false,
+    "identical_after_newline_normalization": false
+  },
+  "federated_export/runs/final_rulefinal_signsgd_mup_e2000_fs1/seed1/metrics.json": {
+    "submitted_sha256": "2c4435071901c4aa19c0ed192421a53015940a4a96aa2b7c8663854ee979c6d4",
+    "repo_sha256": "092dc7f1a89dd2be083c6e40c272ef02dcc5fd8f040e8a97e1dac3564c156aa6",
+    "identical_bytes": false,
+    "identical_after_newline_normalization": false
+  },
+  "federated_export/runs/final_rulefinal_signsgd_mup_e2000_fs2/seed2/metrics.json": {
+    "submitted_sha256": "523ac641c989580fd00a306597bd429720e2c366d1287481c5753ec80dc0060d",
+    "repo_sha256": "a7467a6da314df3d31411d455537dc8cbd5cc3dbc7f8753fb41abcd1d24ad4fb",
+    "identical_bytes": false,
+    "identical_after_newline_normalization": false
+  },
+  "federated_export/runs/final_rulefinal_signsgd_none_e2000_fs0/seed0/metrics.json": {
+    "submitted_sha256": "5a9af1350fbf482b5a950f6a17b65544566746cfc848d53107799e3337d42a71",
+    "repo_sha256": "260aed8fdd55f1ff999212992ee1e3613f89b83eef1bbb42794d142ccdd1bb56",
+    "identical_bytes": false,
+    "identical_after_newline_normalization": false
+  },
+  "federated_export/runs/final_rulefinal_signsgd_none_e2000_fs1/seed1/metrics.json": {
+    "submitted_sha256": "417454fbd4a601984c753aeb9c2d91c014fb021d4f830b178559b8d069279554",
+    "repo_sha256": "1e979a10e7059e7393dd16b7172db9f22a0ea0f0f7b6222d85f6bf26a98692cd",
+    "identical_bytes": false,
+    "identical_after_newline_normalization": false
+  },
+  "federated_export/runs/final_rulefinal_signsgd_none_e2000_fs2/seed2/metrics.json": {
+    "submitted_sha256": "a4f54a675e0fe9056824533ec57c281271869e5247a372bb341ddbf5cb6c9395",
+    "repo_sha256": "f87232dcd23d59767a829ff89fd9089197074b29b7c401e8ec8552bba3f6fd0c",
+    "identical_bytes": false,
+    "identical_after_newline_normalization": false
+  },
+  "federated_export/runs/final_sgd_unit-gain_e2000_fs0/seed0/metrics.json": {
+    "submitted_sha256": "58ef35e6ff709e3018424f3ae401b16d9540993f70a28742722a30354d55b807",
+    "repo_sha256": "c44f7932c81a0f32efc2ae86690297f75bccbf98cf03c9fb4a50439d2a4e42a8",
+    "identical_bytes": false,
+    "identical_after_newline_normalization": false
+  },
+  "federated_export/runs/final_sgd_unit-gain_e2000_fs1/seed1/metrics.json": {
+    "submitted_sha256": "d874cc53aa01c080f9ff751979800e580579aa41a63a9a243aa6796036410509",
+    "repo_sha256": "1a03bb82c9235735209994403604dd15d549e742aa75d087bda3e585dc5ddd21",
+    "identical_bytes": false,
+    "identical_after_newline_normalization": false
+  },
+  "federated_export/runs/final_sgd_unit-gain_e2000_fs2/seed2/metrics.json": {
+    "submitted_sha256": "b1fa62d507b4ec6aec942537ed689e0ed57de64be9e5bd61e0561a4e08089ac3",
+    "repo_sha256": "281f90e2c520fc260ff2075f0053cb5cf90d82befef3f2a6aa333f7102d36c34",
+    "identical_bytes": false,
+    "identical_after_newline_normalization": false
+  },
+  "federated_export/runs/final_sgd_unit-gain_e2000_fs3/seed3/metrics.json": {
+    "submitted_sha256": "135adf86d19118d3187ff8861eee6bc88e5cf085cc6189b2b81c93d6e53b1458",
+    "repo_sha256": "e8396c5d4c4487fad3f0849ecc60bb204f9abc493323726c7355fb97a93744b3",
+    "identical_bytes": false,
+    "identical_after_newline_normalization": false
+  },
+  "federated_export/runs/final_sgd_unit-gain_e2000_fs4/seed4/metrics.json": {
+    "submitted_sha256": "f597af73df7d6c796f13e7cb047b1213888cc231c74e586d953889861c6c11db",
+    "repo_sha256": "71cbb021a7526d689075e3ddad2e9d3409d28b762ed2505e7337bd3d69d05bc1",
+    "identical_bytes": false,
+    "identical_after_newline_normalization": false
+  },
+  "federated_export/runs/final_signmuon_unit-gain_e2000_fs0/seed0/metrics.json": {
+    "submitted_sha256": "0a9b1376a2eec0d9edcab8bb100d1e030ef62afd3ef7dca1d2ca69d9006ee84e",
+    "repo_sha256": "cd4d9d7bf24525a035584e31d388bb0c23bce4215a8e7d2a9600a9edf7abc3f5",
+    "identical_bytes": false,
+    "identical_after_newline_normalization": false
+  },
+  "federated_export/runs/final_signmuon_unit-gain_e2000_fs1/seed1/metrics.json": {
+    "submitted_sha256": "87f58c45cf0bb38fffca83c0bd7dfc3390cf6d8b2ec09a85b5b8b0bf180d56db",
+    "repo_sha256": "55ecc8f01e94faccd4a822f0ca00bb15b81a66b470c7e464bda3bf15fc5fa5be",
+    "identical_bytes": false,
+    "identical_after_newline_normalization": false
+  },
+  "federated_export/runs/final_signmuon_unit-gain_e2000_fs2/seed2/metrics.json": {
+    "submitted_sha256": "14a2ca9c7fd692ea901b66d0cac4ed9e2c78f2734a2accdbfde478329398a793",
+    "repo_sha256": "09ab6fab6e629cd193ba7c3537f815a0b9942df2650d270c9f96b8b442bd7e61",
+    "identical_bytes": false,
+    "identical_after_newline_normalization": false
+  },
+  "federated_export/runs/final_signmuon_unit-gain_e2000_fs3/seed3/metrics.json": {
+    "submitted_sha256": "153af58eb19dd924c0bae8e5983e6216431cf0aec9cdad859b0640c945203685",
+    "repo_sha256": "5ef46a3af7654e4623add7255fc125e5c77751ce7a13ca28e019790a57c05b96",
+    "identical_bytes": false,
+    "identical_after_newline_normalization": false
+  },
+  "federated_export/runs/final_signmuon_unit-gain_e2000_fs4/seed4/metrics.json": {
+    "submitted_sha256": "7680b12977e3d3e0254b2d715577c0f5a27c0b03ac5e1eeabc151faf5f4e3868",
+    "repo_sha256": "d470caf697e0ebbb477ccb0f425d5b7fe47105a5fa75665bace2d9391cace22d",
+    "identical_bytes": false,
+    "identical_after_newline_normalization": false
+  },
+  "federated_export/runs/final_signsgd_unit-gain_e2000_fs0/seed0/metrics.json": {
+    "submitted_sha256": "1fbd2cb38d6f80385e691f7f72bc0d77e560900b48ffa011f75272f993babbd9",
+    "repo_sha256": "e02b6041e2f6831802fc06e36e07b5de249d2d92a667dea3f871ed76b6fc1ef3",
+    "identical_bytes": false,
+    "identical_after_newline_normalization": false
+  },
+  "federated_export/runs/final_signsgd_unit-gain_e2000_fs1/seed1/metrics.json": {
+    "submitted_sha256": "462f42a2ce4d9b79f7fde7d2d5efc6ac795fde20c0d4a92a0266d0ee3507f6ef",
+    "repo_sha256": "33a5325916bbedbbd1921bf4292ae3bb03229631253f13488d2cd0c9b1d161a1",
+    "identical_bytes": false,
+    "identical_after_newline_normalization": false
+  },
+  "federated_export/runs/final_signsgd_unit-gain_e2000_fs2/seed2/metrics.json": {
+    "submitted_sha256": "ca00c37b41587cf2b71c3b5da79a76e437b8e84ef3611367390061520ba27b8b",
+    "repo_sha256": "b90ed7e8e3fc1fcb31b5cb5b5fad8f467ace74d7445e9c33afacd482e48f1e06",
+    "identical_bytes": false,
+    "identical_after_newline_normalization": false
+  },
+  "federated_export/runs/final_signsgd_unit-gain_e2000_fs3/seed3/metrics.json": {
+    "submitted_sha256": "e4fa0f757f25000bd8333c1d52e2ef6a3ce2dc6aaf8031f4c5d349d19358b79c",
+    "repo_sha256": "c97932c66c28f91eac033d2a592c1a81b9ede70d5f8f1e40c3dec6b84c3c9d48",
+    "identical_bytes": false,
+    "identical_after_newline_normalization": false
+  },
+  "federated_export/runs/final_signsgd_unit-gain_e2000_fs4/seed4/metrics.json": {
+    "submitted_sha256": "e05bf3cf2c2aa65667ecc7be410ee534e905d883c6d9a27f54c7cf71a0c8d029",
+    "repo_sha256": "bf2dd70db8164a7743d2b008daf5d2eb2021c57747673119bcc05e7f3fad3218",
+    "identical_bytes": false,
+    "identical_after_newline_normalization": false
+  },
+  "federated_export/runs/final_wd_muon_unit-gain_e2000_fs0/seed0/metrics.json": {
+    "submitted_sha256": "dd6a7ad49575bd4814cc2d2dcbd31147b017194bcf07cc3541532220cb2cc972",
+    "repo_sha256": "ffb988c2079104598f8e0d2e9bca0b2407f8829021279ed38dfa72c1aece4596",
+    "identical_bytes": false,
+    "identical_after_newline_normalization": false
+  },
+  "federated_export/runs/final_wd_muonserver_unit-gain_e2000_fs0/seed0/metrics.json": {
+    "submitted_sha256": "05981e97e969e400fb7b2fecb4d7aa4965ba840b1be9e603e4fa8af696f92fb0",
+    "repo_sha256": "e67b28d4d227386d396055bda547c6fad279dfd7df92093a04cfba66f70f48a9",
+    "identical_bytes": false,
+    "identical_after_newline_normalization": false
+  },
+  "federated_export/runs/final_wd_signmuon_unit-gain_e2000_fs0/seed0/metrics.json": {
+    "submitted_sha256": "a712851af45500021d93a7bf44541ea49fd0600c1160c6d12035da6ed0ae9a27",
+    "repo_sha256": "eedb276b0ce99e70a907bc301b392ad93499c330d86fc084ff24c41565d29779",
+    "identical_bytes": false,
+    "identical_after_newline_normalization": false
+  },
+  "federated_export/runs/tune_lr_adam_scaled_unit-gain_0.005_e2000_t/seed0/metrics.json": {
+    "submitted_sha256": "f64365b1c2aaee27ca859ab91e4ff7f16bfe33898fa5d8aaeae91a78c5bde5f5",
+    "repo_sha256": "0d0ab96a180b429726946a0f0f4b6a1bedcedac25a0a911d01e6c0da9f734557",
+    "identical_bytes": false,
+    "identical_after_newline_normalization": false
+  },
+  "federated_export/runs/tune_lr_adam_scaled_unit-gain_0.01_e2000_t/seed0/metrics.json": {
+    "submitted_sha256": "e66db50c7da3d69feb31600229b0dc5b34e55ef04d0ea0a289beab1c781a8cca",
+    "repo_sha256": "2a3f0ca618c691269ef39ba6589b3ee7cf3ebdda95a788c6ae51ffd3b11eae9c",
+    "identical_bytes": false,
+    "identical_after_newline_normalization": false
+  },
+  "federated_export/runs/tune_lr_adam_scaled_unit-gain_0.02_e2000_t/seed0/metrics.json": {
+    "submitted_sha256": "205578ecfb3910658189ffc463b16b6db545fcbb6df652b7e7f149257760aa1b",
+    "repo_sha256": "30fab809da9438b8adf05411ebfad2cecc5b667b6a8101cdc2c14e7834709801",
+    "identical_bytes": false,
+    "identical_after_newline_normalization": false
+  },
+  "federated_export/runs/tune_lr_adam_scaled_unit-gain_0.05_e2000_t/seed0/metrics.json": {
+    "submitted_sha256": "2317967294ff9b5bebfeda3feb838261fa1b0c2ec3454806bcad6c24ce2fef24",
+    "repo_sha256": "53bd4e5077972812b8c659051d60f4e72d438b9ec2b001c0c1182b7943c045dc",
+    "identical_bytes": false,
+    "identical_after_newline_normalization": false
+  },
+  "federated_export/runs/tune_lr_adam_scaled_unit-gain_0.1_e2000_t/seed0/metrics.json": {
+    "submitted_sha256": "4d69ebacba13d26dff541e4c3e81bba06ddfaebf76275d6381014e573f9f6ad7",
+    "repo_sha256": "99eed6e5c6e003d4fa17fa126361fcd848dc233816cdeaf29fcd80bf8095fed9",
+    "identical_bytes": false,
+    "identical_after_newline_normalization": false
+  },
+  "federated_export/runs/tune_lr_adam_unit-gain_0.0002_e2000_t/seed0/metrics.json": {
+    "submitted_sha256": "c71bee05ce666a0dd603498176f0187a833c5f6c0188d19fc8924d6f90eea8c0",
+    "repo_sha256": "f1650d96c91edbd365662cc045a5f6c59610fe339a5ad839810597b6f8615b73",
+    "identical_bytes": false,
+    "identical_after_newline_normalization": false
+  },
+  "federated_export/runs/tune_lr_adam_unit-gain_0.0005_e2000_t/seed0/metrics.json": {
+    "submitted_sha256": "c3d1736302fae97a6c837a8f1cb5be3ae676960e513e88b7d99d2304adfe4b47",
+    "repo_sha256": "95ab24d25ee28326fa89d77cd4549034d75d5ecba920250512dd01811fa08212",
+    "identical_bytes": false,
+    "identical_after_newline_normalization": false
+  },
+  "federated_export/runs/tune_lr_adam_unit-gain_0.001_e2000_t/seed0/metrics.json": {
+    "submitted_sha256": "9f0ace2754a349e7388fbb1247a167e24af7f769ff6714c0d3567188e8c23a19",
+    "repo_sha256": "1cf57449d3123e525cb3137e62c72fbeb08c196f39d085268b9e7da0aaf90881",
+    "identical_bytes": false,
+    "identical_after_newline_normalization": false
+  },
+  "federated_export/runs/tune_lr_adam_unit-gain_0.002_e2000_t/seed0/metrics.json": {
+    "submitted_sha256": "32fe60668a2c4defab806b52c3b87c5f3806f2ca13cdace7f00fd8d3f1685c14",
+    "repo_sha256": "64e53d3ce530ef073f4a6bcf136bfab2714bc3255da660e267afa76b66a1554c",
+    "identical_bytes": false,
+    "identical_after_newline_normalization": false
+  },
+  "federated_export/runs/tune_lr_adam_unit-gain_0.005_e2000_t/seed0/metrics.json": {
+    "submitted_sha256": "d95d0a271faf4dd9749264e818d2983e3ba89473713f40739b5298c606a5e547",
+    "repo_sha256": "77a793f81c3ebe325cee7e27e9387d5dde0fc3cc1fedfd884d6931e231c960e8",
+    "identical_bytes": false,
+    "identical_after_newline_normalization": false
+  },
+  "federated_export/runs/tune_lr_ef21muonsign_unit-gain_0.01_e2000_t/seed0/metrics.json": {
+    "submitted_sha256": "542d7c7fa2405bce9070401a51bb8064a3be85ecc238ece4b07a036e7e019079",
+    "repo_sha256": "00ee4c027ddbbd9739c2cc3cd836994bcfdc411683d1883e4e1db2a6bcc9a018",
+    "identical_bytes": false,
+    "identical_after_newline_normalization": false
+  },
+  "federated_export/runs/tune_lr_ef21muonsign_unit-gain_0.02_e2000_t/seed0/metrics.json": {
+    "submitted_sha256": "57a451c467b88418e4842549ff655e7e421ba8ad79f6108b7041e4a9438bcaf1",
+    "repo_sha256": "6ce559141b2bde36ba026b1ef59d9b34cef0e506968159c6d2ac3ee93256f797",
+    "identical_bytes": false,
+    "identical_after_newline_normalization": false
+  },
+  "federated_export/runs/tune_lr_ef21muonsign_unit-gain_0.05_e2000_t/seed0/metrics.json": {
+    "submitted_sha256": "5da1e43cb5086a9467ff27d4e32122644187bedf14de9be8fb81bd021ae9426a",
+    "repo_sha256": "0366045071db8f6c8af147dec65c93d94bbdc3f02fe9ed50cef7819005dc7ad9",
+    "identical_bytes": false,
+    "identical_after_newline_normalization": false
+  },
+  "federated_export/runs/tune_lr_ef21muonsign_unit-gain_0.1_e2000_t/seed0/metrics.json": {
+    "submitted_sha256": "17a5896cb0622eb7ef14687febc0358ca0d80b2fc59bacfa5842f7efd4624c92",
+    "repo_sha256": "7247e2246fbe8b12c0889a628a927a09c0400fc591cecdbd13fb3609868ac82a",
+    "identical_bytes": false,
+    "identical_after_newline_normalization": false
+  },
+  "federated_export/runs/tune_lr_ef21muonsign_unit-gain_0.2_e2000_t/seed0/metrics.json": {
+    "submitted_sha256": "957067bb2dd56d429817fa35028f915739358a0f6223ae91990c3b8d9c3ea84e",
+    "repo_sha256": "b2e8a90cebed94e334e8f73472af921ede0d5d502eafb977781f89efba26dcc1",
+    "identical_bytes": false,
+    "identical_after_newline_normalization": false
+  },
+  "federated_export/runs/tune_lr_ef21muonusign_unit-gain_0.005_e2000_t/seed0/metrics.json": {
+    "submitted_sha256": "be2266ae603df718fda4141ca809d6e916e284292b8e972e0da3001b663b3fe5",
+    "repo_sha256": "36305a963147226d31240f578e3299cff1b3472b661066e19e80b057c5817c3b",
+    "identical_bytes": false,
+    "identical_after_newline_normalization": false
+  },
+  "federated_export/runs/tune_lr_ef21muonusign_unit-gain_0.01_e2000_t/seed0/metrics.json": {
+    "submitted_sha256": "ef02d4bf6955557f3fdb8a34c5fa260b9ce8f2866fc45a181855911c7ccbe23b",
+    "repo_sha256": "9d9cf9c23978d67586a2f1397bd196ab71d49d14520945c4bb930a497f5b7a64",
+    "identical_bytes": false,
+    "identical_after_newline_normalization": false
+  },
+  "federated_export/runs/tune_lr_ef21muonusign_unit-gain_0.02_e2000_t/seed0/metrics.json": {
+    "submitted_sha256": "8f61629c1113ec0485630f7c898fa908e070d132917341860ebd7d00c7180b6c",
+    "repo_sha256": "030c64c7ebfc82d983f7c9bd1593ed9bc39f7da8ffbb1121dc470f2d05e0d09b",
+    "identical_bytes": false,
+    "identical_after_newline_normalization": false
+  },
+  "federated_export/runs/tune_lr_ef21muonusign_unit-gain_0.05_e2000_t/seed0/metrics.json": {
+    "submitted_sha256": "e898307e508051aa030327e4aced84bb437920f4ca7c88137bfadc8074fc75cc",
+    "repo_sha256": "b3251a5bfff80b317747ae9c3ebb082933ab732c3adf170d322508d6eba56bdc",
+    "identical_bytes": false,
+    "identical_after_newline_normalization": false
+  },
+  "federated_export/runs/tune_lr_ef21muonusign_unit-gain_0.1_e2000_t/seed0/metrics.json": {
+    "submitted_sha256": "b8ec452962ec70f52452f91e40a1454a0a80608ff19690295e1370d15aaf6a2f",
+    "repo_sha256": "6787d4f3bcd002b8253cbb868c28ebf1271055a02313e98ac2144e44aa670839",
+    "identical_bytes": false,
+    "identical_after_newline_normalization": false
+  },
+  "federated_export/runs/tune_lr_ef21signmuon_unit-gain_0.005_e2000_t/seed0/metrics.json": {
+    "submitted_sha256": "39174170cc485729420b50ffa297bc290abede90ddf86ff8973b7041d07907f7",
+    "repo_sha256": "58dcc8c6862fcf9bfb9993552334ee8ff0a12a4e1abcc69205ac22a2f15d673b",
+    "identical_bytes": false,
+    "identical_after_newline_normalization": false
+  },
+  "federated_export/runs/tune_lr_ef21signmuon_unit-gain_0.01_e2000_t/seed0/metrics.json": {
+    "submitted_sha256": "49fa64e92230f427c2ac8d89b85f5148d1fd1216141b5b293d398942cd907f06",
+    "repo_sha256": "c519fd2db6e4636840f49566e95fba6c0df92580347302a73dd221a273f91efb",
+    "identical_bytes": false,
+    "identical_after_newline_normalization": false
+  },
+  "federated_export/runs/tune_lr_ef21signmuon_unit-gain_0.02_e2000_t/seed0/metrics.json": {
+    "submitted_sha256": "c5fe9c3f357e6271f1d1daf3512e9761fde2ecd489c47a412f1d7284abea8a34",
+    "repo_sha256": "a79a825d876ac62766d70c7c1086239f6075d0fb51ae31fbff5b7c85181bddad",
+    "identical_bytes": false,
+    "identical_after_newline_normalization": false
+  },
+  "federated_export/runs/tune_lr_ef21signmuon_unit-gain_0.05_e2000_t/seed0/metrics.json": {
+    "submitted_sha256": "e0b03d820e641a7fd18424e9c9868145e207cfe649852b2c07200245d97cf9c8",
+    "repo_sha256": "00d1bde165f4d8277d19e5ac19e65d12468ac71bb6c7ab0372bcc3f621aea181",
+    "identical_bytes": false,
+    "identical_after_newline_normalization": false
+  },
+  "federated_export/runs/tune_lr_ef21signmuon_unit-gain_0.1_e2000_t/seed0/metrics.json": {
+    "submitted_sha256": "ac04b6be390c8edc41238e2174cbe81db4d6a9f09c8a15f6f8fa462603e5e729",
+    "repo_sha256": "75dea4dff1713cb2959d2eb2c829203d8fa6a7401dc168746a562b94104316e0",
+    "identical_bytes": false,
+    "identical_after_newline_normalization": false
+  },
+  "federated_export/runs/tune_lr_muon_unit-gain_0.01_e2000_t/seed0/metrics.json": {
+    "submitted_sha256": "36be10f3cb39052ef5423431a2c5f6ee552d08adb4ae31a9f6ff3a9594ff8abd",
+    "repo_sha256": "adc47d1b66701d7807bbdc0fe08f2086f1f5f38a82c4fd6c69515d8098997a6d",
+    "identical_bytes": false,
+    "identical_after_newline_normalization": false
+  },
+  "federated_export/runs/tune_lr_muon_unit-gain_0.02_e2000_t/seed0/metrics.json": {
+    "submitted_sha256": "f05296f35aadc22a35c5d82f81c593438bf43c7d37eb8293c14261d7833c2efd",
+    "repo_sha256": "b647ba4db562a7894d8a11e66d682008c5f8027f3813604c0282fb7b83c5aa7a",
+    "identical_bytes": false,
+    "identical_after_newline_normalization": false
+  },
+  "federated_export/runs/tune_lr_muon_unit-gain_0.05_e2000_t/seed0/metrics.json": {
+    "submitted_sha256": "0e637fd7e1fe8708e79c7222f5338dda09ce71ae603f1df9640261f98a613c74",
+    "repo_sha256": "fd666e613a8a59bd37015894069f63535c7cfa4e96f362d69c8dbe6e9b0e1709",
+    "identical_bytes": false,
+    "identical_after_newline_normalization": false
+  },
+  "federated_export/runs/tune_lr_muon_unit-gain_0.1_e2000_t/seed0/metrics.json": {
+    "submitted_sha256": "49155a28570052286b30caee97f9ecbda3942116c13417c4fdfcff8aa70b4825",
+    "repo_sha256": "002da95f4d3e41451634db965ae3ac3ee724fb11a7710ecf00a32e183c2ec1f6",
+    "identical_bytes": false,
+    "identical_after_newline_normalization": false
+  },
+  "federated_export/runs/tune_lr_muon_unit-gain_0.2_e2000_t/seed0/metrics.json": {
+    "submitted_sha256": "c201ae7373ac7f496834bf920cb41ff8e826252882a0d646f265d9a7690cb0f7",
+    "repo_sha256": "8c3d70a3ee2856f594b4f24ee1dc5b7a33d9b235933176324d25a76798c0ffb8",
+    "identical_bytes": false,
+    "identical_after_newline_normalization": false
+  },
+  "federated_export/runs/tune_lr_muonserver_unit-gain_0.01_e2000_t/seed0/metrics.json": {
+    "submitted_sha256": "8e94c9b2372d65f0f446751032bf4c9d4307aa1fd118b114450768bcd704774b",
+    "repo_sha256": "8e74338168665f15579e70bb711d468ea11016f2e310b06ea62dc7ec7acca3ca",
+    "identical_bytes": false,
+    "identical_after_newline_normalization": false
+  },
+  "federated_export/runs/tune_lr_muonserver_unit-gain_0.02_e2000_t/seed0/metrics.json": {
+    "submitted_sha256": "01f1b9a4dad2bdeac2ae2f606b01a22ab73b05602a8f82a7fbe6735eca2a1b71",
+    "repo_sha256": "b5524d04e8033124a621129a3681d6642672c28810704a73a58ec1b84f3546e7",
+    "identical_bytes": false,
+    "identical_after_newline_normalization": false
+  },
+  "federated_export/runs/tune_lr_muonserver_unit-gain_0.05_e2000_t/seed0/metrics.json": {
+    "submitted_sha256": "c008bcf083ad0999bf63fa3323aa2a18b3a96ffab6c855593872f5b2aa7c5c22",
+    "repo_sha256": "6ffb885b6d120ab2f4048d2642558b425daa0196d84a1aa16af9e5f3024bd758",
+    "identical_bytes": false,
+    "identical_after_newline_normalization": false
+  },
+  "federated_export/runs/tune_lr_muonserver_unit-gain_0.1_e2000_t/seed0/metrics.json": {
+    "submitted_sha256": "c995f1f2a83535c5fa3937f2d81929203a7551f1ef2f433684c2c0dfbc06b69a",
+    "repo_sha256": "81743981464491868edf1025d94aa71970dc87676bbabfb0a5011247f197c15e",
+    "identical_bytes": false,
+    "identical_after_newline_normalization": false
+  },
+  "federated_export/runs/tune_lr_muonserver_unit-gain_0.2_e2000_t/seed0/metrics.json": {
+    "submitted_sha256": "e302fe7b5d5115fd6d0406e80c6b1c47755987b7f26449d989bce260255a07c1",
+    "repo_sha256": "be005fa7d6ed761ca86c5b77924a76c3c18f63e9a346fe5d9f3b00d80cde1d00",
+    "identical_bytes": false,
+    "identical_after_newline_normalization": false
+  },
+  "federated_export/runs/tune_lr_muonsign_unit-gain_0.005_e2000_t/seed0/metrics.json": {
+    "submitted_sha256": "fda68fa779f113e823771c58bd64e99dd160ce419787865b5ae01fe35797bb0b",
+    "repo_sha256": "38d320f33b5b2540eafbaab4db535b0dbbf6b8f474363cbf0cbe8b7eeb3a00e9",
+    "identical_bytes": false,
+    "identical_after_newline_normalization": false
+  },
+  "federated_export/runs/tune_lr_muonsign_unit-gain_0.01_e2000_t/seed0/metrics.json": {
+    "submitted_sha256": "3cb2e9296ac76bd2faf962756409d34e33f9e343cdf3d9af221fd65c8e43563e",
+    "repo_sha256": "fa5092fcb97f3a031cf9a05fd7140291abfc9023fc9062509a42471c1c7899e7",
+    "identical_bytes": false,
+    "identical_after_newline_normalization": false
+  },
+  "federated_export/runs/tune_lr_muonsign_unit-gain_0.02_e2000_t/seed0/metrics.json": {
+    "submitted_sha256": "8ca1c9e41b6111d55f37a21d22ec88b079f9293144f53547e5b985147dd4766d",
+    "repo_sha256": "4cf93c596f6e54edf13db3f84bc35b00495cfb18a32c84251d2a0ff817b2dbcf",
+    "identical_bytes": false,
+    "identical_after_newline_normalization": false
+  },
+  "federated_export/runs/tune_lr_muonsign_unit-gain_0.05_e2000_t/seed0/metrics.json": {
+    "submitted_sha256": "60ed678a36fc6e8ee1e6b193db587c06d60d96fb283505f1946084410d6577cb",
+    "repo_sha256": "c75b4d03e24a174127424194db60144601870ac80f84a2b110506d35d2b76ead",
+    "identical_bytes": false,
+    "identical_after_newline_normalization": false
+  },
+  "federated_export/runs/tune_lr_muonsign_unit-gain_0.1_e2000_t/seed0/metrics.json": {
+    "submitted_sha256": "392f9c755a3777061f7b0c079ad0a36923257845852efacecdab639e686ffc4e",
+    "repo_sha256": "e67b85ccafafb1c2c0f101e08914648b02ca7aa9a1695ecac1000bb5a412c431",
+    "identical_bytes": false,
+    "identical_after_newline_normalization": false
+  },
+  "federated_export/runs/tune_lr_muonusign_unit-gain_0.01_e2000_t/seed0/metrics.json": {
+    "submitted_sha256": "fceeb90effa2768ee6ff1bf6ce336b9141e25322cb2f1c3ef73a169fd73870bc",
+    "repo_sha256": "fdf1f8922e915b9fd407ca7ca2dc4f4459067e0fcd4c6f040b561b7860fb35f8",
+    "identical_bytes": false,
+    "identical_after_newline_normalization": false
+  },
+  "federated_export/runs/tune_lr_muonusign_unit-gain_0.02_e2000_t/seed0/metrics.json": {
+    "submitted_sha256": "e4c574f90017345c863a1f7781db5d023175f68e2f5f520cff5329c0d9a43fcb",
+    "repo_sha256": "cc3cf2db339c640e390acd14d72936cb16ca911f89b3c4ec0fde2d4199bfdec4",
+    "identical_bytes": false,
+    "identical_after_newline_normalization": false
+  },
+  "federated_export/runs/tune_lr_muonusign_unit-gain_0.05_e2000_t/seed0/metrics.json": {
+    "submitted_sha256": "09babd41f4cfde732adeadffe6d4d1c7ab97b34469644d29718780ec5bbff3e4",
+    "repo_sha256": "c424d755a152a62f5d06aad7c82360c2203263505a6b26e899fd9a8feaacaa22",
+    "identical_bytes": false,
+    "identical_after_newline_normalization": false
+  },
+  "federated_export/runs/tune_lr_muonusign_unit-gain_0.1_e2000_t/seed0/metrics.json": {
+    "submitted_sha256": "6598d6ad7b849ceafd5913d15e055675569c2024c64eb8915f0df9bbd073be27",
+    "repo_sha256": "05ab9f656d2eef67780a5c0b10b0322095d7f433544df12c6044eac4af14de2c",
+    "identical_bytes": false,
+    "identical_after_newline_normalization": false
+  },
+  "federated_export/runs/tune_lr_muonusign_unit-gain_0.2_e2000_t/seed0/metrics.json": {
+    "submitted_sha256": "eadf545cc733462b356d03ff257015e60776b4a8d988a76d53f4ae095b432218",
+    "repo_sha256": "d1fc81d18c52f4d9ce45365856b69ed2a2cd19235bc8b56fc84d4242bb1b1cf8",
+    "identical_bytes": false,
+    "identical_after_newline_normalization": false
+  },
+  "federated_export/runs/tune_lr_sgd_unit-gain_0.005_e2000_t/seed0/metrics.json": {
+    "submitted_sha256": "e0ac753a6ce6e4ac1d948e4c9e3bc1a9133f5bd9f39b9f6801e1a634e494daa1",
+    "repo_sha256": "e62439b95e395bf7dfd2f67796689279f6b07c3a38d99ce632d0eb4e122f749c",
+    "identical_bytes": false,
+    "identical_after_newline_normalization": false
+  },
+  "federated_export/runs/tune_lr_sgd_unit-gain_0.01_e2000_t/seed0/metrics.json": {
+    "submitted_sha256": "7f14872e4aa36a973550e26bdec618f5441f98f6a9039eb65f9228236ba60355",
+    "repo_sha256": "5ccbbfb6f69effdc7d5d95761ad0e6e2e64575aa3d8c0d3edf435270edbb1f9e",
+    "identical_bytes": false,
+    "identical_after_newline_normalization": false
+  },
+  "federated_export/runs/tune_lr_sgd_unit-gain_0.02_e2000_t/seed0/metrics.json": {
+    "submitted_sha256": "ecbb198c6aec47aa0b047baa24ce5c77fcb9783b4b7e903d7d6c7843029371ba",
+    "repo_sha256": "fc540129302131d50af758e3ea68f86c6d294b38457a398a1f19a90bba45e020",
+    "identical_bytes": false,
+    "identical_after_newline_normalization": false
+  },
+  "federated_export/runs/tune_lr_sgd_unit-gain_0.05_e2000_t/seed0/metrics.json": {
+    "submitted_sha256": "07d77c0417f7ad4e8dcaf423bcea0b4483dc6c66044fd312d28f8f3587e9f77c",
+    "repo_sha256": "0a4cced0cfb34412b63381e38abb0023e01fb44d6d877cc0b017d82b05152bab",
+    "identical_bytes": false,
+    "identical_after_newline_normalization": false
+  },
+  "federated_export/runs/tune_lr_sgd_unit-gain_0.1_e2000_t/seed0/metrics.json": {
+    "submitted_sha256": "1f7fad4f985cee92825de32ac165beb54df0a6e53d028dbd6197959b1fc6384e",
+    "repo_sha256": "6052baaadaff8a100f6e36a4def62edfaa89f4a0f4b51f3cf494f2f1ba823204",
+    "identical_bytes": false,
+    "identical_after_newline_normalization": false
+  },
+  "federated_export/runs/tune_lr_signmuon_unit-gain_0.005_e2000_t/seed0/metrics.json": {
+    "submitted_sha256": "7292167cfc9657a55c7043e033c6046d7cc6d7826d06352677d0625028ff5a5a",
+    "repo_sha256": "51cd72d6deeef6853c17c14b5d49f68c7ce0c7606dee06240234f3efae3767a0",
+    "identical_bytes": false,
+    "identical_after_newline_normalization": false
+  },
+  "federated_export/runs/tune_lr_signmuon_unit-gain_0.01_e2000_t/seed0/metrics.json": {
+    "submitted_sha256": "d43dbc435a85bb20766a703063fb8e7dd65b64b5d8ec607a0ac6aa08a0d57a66",
+    "repo_sha256": "552ecaf8e8d286eb404303d3e1227b0c71489fdb86248ee8eedbc689294186ba",
+    "identical_bytes": false,
+    "identical_after_newline_normalization": false
+  },
+  "federated_export/runs/tune_lr_signmuon_unit-gain_0.02_e2000_t/seed0/metrics.json": {
+    "submitted_sha256": "9156492ef2f5e1f11d1b8af9c0d6c358921332fceae37665e179c973ca463cc6",
+    "repo_sha256": "4c4c57561112d726881c260ed7c63384c24b144f841ae8e12c339478a7739360",
+    "identical_bytes": false,
+    "identical_after_newline_normalization": false
+  },
+  "federated_export/runs/tune_lr_signmuon_unit-gain_0.05_e2000_t/seed0/metrics.json": {
+    "submitted_sha256": "d263691ee4a12d4868a9c3dd7c6bf6a24c4b009a163cd2f7b44d9b3b78354fcc",
+    "repo_sha256": "2370f4279f1f8eee4cd3b4233309438b5cc58e0a1b6d9dc4d1946065e4f19d9d",
+    "identical_bytes": false,
+    "identical_after_newline_normalization": false
+  },
+  "federated_export/runs/tune_lr_signmuon_unit-gain_0.1_e2000_t/seed0/metrics.json": {
+    "submitted_sha256": "7d3fe2c06962fc401f24c92ec2492d5721082acf1d98bcdf516303b827d43228",
+    "repo_sha256": "6924e66c0337b12a6d51f006c2cdd724a4bdd999a997030ee62284653826a54b",
+    "identical_bytes": false,
+    "identical_after_newline_normalization": false
+  },
+  "federated_export/runs/tune_lr_signmuon_unit-gain_0.2_e2000_t/seed0/metrics.json": {
+    "submitted_sha256": "9c26e1c5bc319a9ae6d4907aa9be2faa0ce6f4b57906588ae28c749d617fa9e8",
+    "repo_sha256": "26b8d83ecc169a411bdf7c2c8453443923dcb5880ee00a0281d5d61c08281010",
+    "identical_bytes": false,
+    "identical_after_newline_normalization": false
+  },
+  "federated_export/runs/tune_lr_signmuon_unit-gain_0.5_e2000_t/seed0/metrics.json": {
+    "submitted_sha256": "7216bbb4c093bca0db40f1b98d03932e387c2e44cf7a5b1f950dbc177690ab29",
+    "repo_sha256": "564f8a0426d9d7c0cf82a5a6b15bee5212527ab6f219ca8445c71ad3e0c11bf1",
+    "identical_bytes": false,
+    "identical_after_newline_normalization": false
+  },
+  "federated_export/runs/tune_lr_signsgd_unit-gain_0.005_e2000_t/seed0/metrics.json": {
+    "submitted_sha256": "b94fbefa57cb59f35b1b9f08dce9dfab9830ec1b4d0a11d04c26088f3876f4fc",
+    "repo_sha256": "0457f9c2e0db5bb6c00fe525cf723eecd0c484bc6f913b56858faf070327a2ea",
+    "identical_bytes": false,
+    "identical_after_newline_normalization": false
+  },
+  "federated_export/runs/tune_lr_signsgd_unit-gain_0.01_e2000_t/seed0/metrics.json": {
+    "submitted_sha256": "d283613ae6d9baaeeb50da6f76dffbe9fcc38f50bb537d4ad86f4eda74291222",
+    "repo_sha256": "36a9de31f9e784fb5cee1a5aaae2dc8507bf442ddf3b388889869d71262d6421",
+    "identical_bytes": false,
+    "identical_after_newline_normalization": false
+  },
+  "federated_export/runs/tune_lr_signsgd_unit-gain_0.02_e2000_t/seed0/metrics.json": {
+    "submitted_sha256": "4b590b7624baaf7e46e0ad96ff253e432cb4490486e92d8d9ce49d41aff80cfd",
+    "repo_sha256": "0b93c0168a3b43b98c4814780de3483a286d269f8c4fb4802d17d1e447ed5d6b",
+    "identical_bytes": false,
+    "identical_after_newline_normalization": false
+  },
+  "federated_export/runs/tune_lr_signsgd_unit-gain_0.05_e2000_t/seed0/metrics.json": {
+    "submitted_sha256": "c302ea9b387e6056bf235b02c6930ca5cc3c24436a93736d3de547480cb047cf",
+    "repo_sha256": "857aa8b70e2da46c6317b878f435ab01f7def8085cf59d45572749dd3bbb2745",
+    "identical_bytes": false,
+    "identical_after_newline_normalization": false
+  },
+  "federated_export/runs/tune_lr_signsgd_unit-gain_0.1_e2000_t/seed0/metrics.json": {
+    "submitted_sha256": "c3bb116d5983456dac166863f79f088f1438c41d13bc40afcf14addcf2f091a4",
+    "repo_sha256": "f9232881b939e3913a85c6d379696d45832a48471ae1142d017b59f2695e2d78",
+    "identical_bytes": false,
+    "identical_after_newline_normalization": false
+  },
+  "federated_export/runs/tune_preflight_startup_e0_t/seed0/metrics.json": {
+    "submitted_sha256": "012e9c3d36f3ce5e1cc2f3e87b4481d9aa8cb599fc362a1ae6e906293978c332",
+    "repo_sha256": "b2409ed4913fceadd9852cf52837ab6511caea9995b4d7459ca8ca2425047031",
+    "identical_bytes": false,
+    "identical_after_newline_normalization": false
+  },
+  "federated_export/runs/tune_preflight_timing_e40_t/seed0/metrics.json": {
+    "submitted_sha256": "eece11f6b2713fc226e414b2a2062d123585ce2468d2f69dfe0d3632ea642fda",
+    "repo_sha256": "cf44d3806205a2eb82c4612b113cf142c6d389085415c2032bfe3b1a46fbaa67",
+    "identical_bytes": false,
+    "identical_after_newline_normalization": false
+  },
+  "federated_export/runs/tune_rule_muonsign_mup_0.2_e2000_t/seed0/metrics.json": {
+    "submitted_sha256": "fab6a5686d1b09f6a84739c7aab6aafe8b4deac5d98716d78acb9dc3989b3713",
+    "repo_sha256": "7ff79cce72dd2f0ab715416872f28793490b8f7291a244b9913b3163c839e1b6",
+    "identical_bytes": false,
+    "identical_after_newline_normalization": false
+  },
+  "federated_export/runs/tune_rule_muonsign_mup_0.5_e2000_t/seed0/metrics.json": {
+    "submitted_sha256": "5ee1b23b121e9ef947c565b18e8971679ed52655b43db956c3b7648e0dafe355",
+    "repo_sha256": "6eb375e24b4547a7fde389ee0d563eeab18fd6643ab3d8cc8d713f2ec93856ee",
+    "identical_bytes": false,
+    "identical_after_newline_normalization": false
+  },
+  "federated_export/runs/tune_rule_muonsign_mup_1_e2000_t/seed0/metrics.json": {
+    "submitted_sha256": "1125ae8fd275536ba95a4080ca938d26c2b16f07598aad7f526e23aabe89f3d8",
+    "repo_sha256": "b6e3b916d11c1264810388fda06ac8bf71d2addf1fe90fc24d8540233f9a9923",
+    "identical_bytes": false,
+    "identical_after_newline_normalization": false
+  },
+  "federated_export/runs/tune_rule_muonsign_mup_2_e2000_t/seed0/metrics.json": {
+    "submitted_sha256": "3bb6ebed9e06e3dbbadd7ab357c13eff4dcfdcb26db52ddcf10299aabccc5f17",
+    "repo_sha256": "9b11128c9825a9a9ad8ec82d1f0826a98b35471ae2bf72431cb2632a2bb33221",
+    "identical_bytes": false,
+    "identical_after_newline_normalization": false
+  },
+  "federated_export/runs/tune_rule_muonsign_mup_5_e2000_t/seed0/metrics.json": {
+    "submitted_sha256": "7408f088ffb1159a8b686e0c2b0e5c0b806344d1168c045f5d8e4fe9f0e5a688",
+    "repo_sha256": "3b269ba79d75a6cfe82411e9bfd7164ac6ecebbed18b6b8834877d187281acde",
+    "identical_bytes": false,
+    "identical_after_newline_normalization": false
+  },
+  "federated_export/runs/tune_rule_muonsign_none_0.0002_e2000_t/seed0/metrics.json": {
+    "submitted_sha256": "5ac411e95b6c9d92600709df780c66a9b199e9ae3fa4ed4a9ff59f4ed5fce09a",
+    "repo_sha256": "e813f2a506a70794e6f11cedab982ab9eee6bd60e70e58c56861610870c642ab",
+    "identical_bytes": false,
+    "identical_after_newline_normalization": false
+  },
+  "federated_export/runs/tune_rule_muonsign_none_0.0005_e2000_t/seed0/metrics.json": {
+    "submitted_sha256": "9e0c7f5d4867af0e9c6882336adafc58181f215f443baa7d0b9ba8b84ae01f6c",
+    "repo_sha256": "fcda2c6224910b1b59d857f2fb773eeafd9cb3e895065f9d76081403491d7aec",
+    "identical_bytes": false,
+    "identical_after_newline_normalization": false
+  },
+  "federated_export/runs/tune_rule_muonsign_none_0.001_e2000_t/seed0/metrics.json": {
+    "submitted_sha256": "acb02e859e29600fd9c92ef963e2acb5301dcb9f45a33553499cef49f8ce577a",
+    "repo_sha256": "218847e9ee2ec099f9662702286ee5d688129e18f714a279a763504851cac34a",
+    "identical_bytes": false,
+    "identical_after_newline_normalization": false
+  },
+  "federated_export/runs/tune_rule_muonsign_none_0.002_e2000_t/seed0/metrics.json": {
+    "submitted_sha256": "70ca268441a886f46232688850110af5e4c68dbac7458eff72c7a6ec2d336684",
+    "repo_sha256": "d07e6788af7a807f09a9addb5752d01c830f76d60d3d1875e1ccc0e0c522ef58",
+    "identical_bytes": false,
+    "identical_after_newline_normalization": false
+  },
+  "federated_export/runs/tune_rule_muonsign_none_0.005_e2000_t/seed0/metrics.json": {
+    "submitted_sha256": "3890ac9d29b84d92328b66fa9398d6087bb9fb5ead3d6462c6c09a6f3fdf5e43",
+    "repo_sha256": "1d62ae13142522a68e280556cc10de93f059b43b3c627c037fc637d88c68c9b9",
+    "identical_bytes": false,
+    "identical_after_newline_normalization": false
+  },
+  "federated_export/runs/tune_rule_signmuon_mup_0.2_e2000_t/seed0/metrics.json": {
+    "submitted_sha256": "5e32a823da35e8160663e5b050a7c1acb1f73f859266aae446c9e5939478a38f",
+    "repo_sha256": "ba1f2ff28fe8751f49868b21094633e30a769f9fd2be70bdb44dcc80775bf261",
+    "identical_bytes": false,
+    "identical_after_newline_normalization": false
+  },
+  "federated_export/runs/tune_rule_signmuon_mup_0.5_e2000_t/seed0/metrics.json": {
+    "submitted_sha256": "bf743b31d832ad92a8f5343a09657c0565c9a67625bb44956a61dd9e1ed6bb53",
+    "repo_sha256": "7ea4fd277a47445818707c7c271eae8a7fb812e0e9de4b2634039a1f2d13da5d",
+    "identical_bytes": false,
+    "identical_after_newline_normalization": false
+  },
+  "federated_export/runs/tune_rule_signmuon_mup_1_e2000_t/seed0/metrics.json": {
+    "submitted_sha256": "c57b5212860e0c939f96792c6593cc103c3916e08a6f6f02a14d11ca40568bdd",
+    "repo_sha256": "261e2e486a63d74539e889018461d30113a91697e5630cdb99d0c84b3b532567",
+    "identical_bytes": false,
+    "identical_after_newline_normalization": false
+  },
+  "federated_export/runs/tune_rule_signmuon_mup_2_e2000_t/seed0/metrics.json": {
+    "submitted_sha256": "4c0521dd2d763c60f10ffdecbe0fecce5d77dca68c1255e324efa11fe0abca8c",
+    "repo_sha256": "04d3e0593e022df7f6559bd0451dd535b2c0c765b0d29c556e7e1ab5d2292ce3",
+    "identical_bytes": false,
+    "identical_after_newline_normalization": false
+  },
+  "federated_export/runs/tune_rule_signmuon_mup_5_e2000_t/seed0/metrics.json": {
+    "submitted_sha256": "1e2817670e073e43ebc397585c06379660da03c74f61d12547c2d9a69ca5e11e",
+    "repo_sha256": "c12d670c71eccf2127566c1991df5afac1283fcf81c13d39d2f0bd6392a121de",
+    "identical_bytes": false,
+    "identical_after_newline_normalization": false
+  },
+  "federated_export/runs/tune_rule_signmuon_none_0.0002_e2000_t/seed0/metrics.json": {
+    "submitted_sha256": "1257cc841c2bc07143670c83fb296fc224c00bfd03377a625d6bfce8576cd676",
+    "repo_sha256": "4afc7eeefaf609fb35576f75400b42fbcc926e032667460a8f84cd18584bf41b",
+    "identical_bytes": false,
+    "identical_after_newline_normalization": false
+  },
+  "federated_export/runs/tune_rule_signmuon_none_0.0005_e2000_t/seed0/metrics.json": {
+    "submitted_sha256": "111f472a18d6bd41a66a814e5009c9a5f89f7be0cbbec9191e71b3f72917beb8",
+    "repo_sha256": "e56c1f7ef07a558c0de8b07b19521042c0954b7c82fcb2d5c06165184d98aab9",
+    "identical_bytes": false,
+    "identical_after_newline_normalization": false
+  },
+  "federated_export/runs/tune_rule_signmuon_none_0.001_e2000_t/seed0/metrics.json": {
+    "submitted_sha256": "a45964bea12f0d0f4f55bae15a68af5c6d50f9e1057bce0b12901b4ded2fd982",
+    "repo_sha256": "a963b79e85f51668d2521fe7dbb22d6d130e4f2fa77f7d4f5837af7db8738ed8",
+    "identical_bytes": false,
+    "identical_after_newline_normalization": false
+  },
+  "federated_export/runs/tune_rule_signmuon_none_0.002_e2000_t/seed0/metrics.json": {
+    "submitted_sha256": "a83a5db304a8f1a8492b27188781e11ef1d4b2e566957d7ebbd49f2373daa166",
+    "repo_sha256": "a4f0d7ed92de978073f388affccb63638592be5d0445bbd686875f20c7cd4342",
+    "identical_bytes": false,
+    "identical_after_newline_normalization": false
+  },
+  "federated_export/runs/tune_rule_signmuon_none_0.005_e2000_t/seed0/metrics.json": {
+    "submitted_sha256": "887fedabe8b066907ea203615299bba78ee46481fe1f16bc4a9b1bedb7702706",
+    "repo_sha256": "c3729d2e17b642b64d9639ace855ee2858c28a5d9f09ff8ef9d8acde3f645c90",
+    "identical_bytes": false,
+    "identical_after_newline_normalization": false
+  },
+  "federated_export/runs/tune_rule_signsgd_mup_0.2_e2000_t/seed0/metrics.json": {
+    "submitted_sha256": "337f8b6f63d9fe3bd9143f531017d89845e622279763e03d24d79b83bd557eb6",
+    "repo_sha256": "d4fc1ca4fadf3d1e6e4edbb6e23354a46e8f73e347067f295657a370f78d4ea9",
+    "identical_bytes": false,
+    "identical_after_newline_normalization": false
+  },
+  "federated_export/runs/tune_rule_signsgd_mup_0.5_e2000_t/seed0/metrics.json": {
+    "submitted_sha256": "82f840b6dfaee304bc00f62b71cbf0146f0ddbd3d5d12d71b702e4c07cd7bb14",
+    "repo_sha256": "ebaa77b64419f934440bd36c6796bbf61f87d9d5cd0821729e7b25b2d11a6dae",
+    "identical_bytes": false,
+    "identical_after_newline_normalization": false
+  },
+  "federated_export/runs/tune_rule_signsgd_mup_1_e2000_t/seed0/metrics.json": {
+    "submitted_sha256": "6a1394983df2f7d0415c0a9d17213014149bf5a8804a96ce21de277afaba9a38",
+    "repo_sha256": "f4d9cca2a918ea7802aa489a4ff568a5a2d00c985395a4be35cc62495a14e144",
+    "identical_bytes": false,
+    "identical_after_newline_normalization": false
+  },
+  "federated_export/runs/tune_rule_signsgd_mup_2_e2000_t/seed0/metrics.json": {
+    "submitted_sha256": "f8ac537d52fd54961cbec27eb3e40b6b7e8b49d9cec1d3a2b5549050b1852ca2",
+    "repo_sha256": "e5ceaf7b186e08910ec9bf44e25eeec09ef939e0467847c664ea48a7b2307dd7",
+    "identical_bytes": false,
+    "identical_after_newline_normalization": false
+  },
+  "federated_export/runs/tune_rule_signsgd_mup_5_e2000_t/seed0/metrics.json": {
+    "submitted_sha256": "40346eb9ec0ec763dc0f858b063301e329d86d0ef1cb001e9b06210d951dc041",
+    "repo_sha256": "4dedcb5972d62038ce287af73fb5ce2794f3e909936ee00d3e1c2121c7654aa1",
+    "identical_bytes": false,
+    "identical_after_newline_normalization": false
+  },
+  "federated_export/runs/tune_rule_signsgd_none_0.0002_e2000_t/seed0/metrics.json": {
+    "submitted_sha256": "99fb8e5eb4ca879a07648f5933f53c1f3a8406bf75b54fdc7163214ed1132a4e",
+    "repo_sha256": "8635f79880af6b1a97c3f67e119580d99d7b2356f704c1b73cf4afdf5825d9fa",
+    "identical_bytes": false,
+    "identical_after_newline_normalization": false
+  },
+  "federated_export/runs/tune_rule_signsgd_none_0.0005_e2000_t/seed0/metrics.json": {
+    "submitted_sha256": "b010c9932699d5bd5aee164eda65b6eae91f76e6dbd28dada7392c3f2a99ba6f",
+    "repo_sha256": "7fefc7ee2e6fb4734f9b8b334d3f85a4a94a9161270a45e040b5881e393a5ac5",
+    "identical_bytes": false,
+    "identical_after_newline_normalization": false
+  },
+  "federated_export/runs/tune_rule_signsgd_none_0.001_e2000_t/seed0/metrics.json": {
+    "submitted_sha256": "4182f3449e2317e2635e4b0332b7dbbfcd6d49ec6b1ba8077174a755c9d123b8",
+    "repo_sha256": "ea3d784c77ec914e6b2f29d78849e660319f6e2cfb6c3702f1e5e90979030525",
+    "identical_bytes": false,
+    "identical_after_newline_normalization": false
+  },
+  "federated_export/runs/tune_rule_signsgd_none_0.002_e2000_t/seed0/metrics.json": {
+    "submitted_sha256": "0ee9a1cca9651eca343f7fe3432f9c45f27f61e26eec4833b6d161ad39f2862e",
+    "repo_sha256": "30626310cb2f1261d5375fd297389e7088de5d09bb1054fe3af51c09c55439f6",
+    "identical_bytes": false,
+    "identical_after_newline_normalization": false
+  },
+  "federated_export/runs/tune_rule_signsgd_none_0.005_e2000_t/seed0/metrics.json": {
+    "submitted_sha256": "e10e3ab1b59ae76206be3c8eeee1f05a62c96d05b40c13ef5f51184333ee63ef",
+    "repo_sha256": "6e7f16ad68201fcce78707a6027412cfaf1c01acf1f4f410748eabda92c3d24d",
+    "identical_bytes": false,
+    "identical_after_newline_normalization": false
+  },
+  "federated_export/runs.csv": {
+    "submitted_sha256": "e45b3041958ec200f7847cf9b0b0790edefe039b1baab61996a5f7aed67efa92",
+    "repo_sha256": "e45b3041958ec200f7847cf9b0b0790edefe039b1baab61996a5f7aed67efa92",
+    "identical_bytes": true,
+    "identical_after_newline_normalization": true
+  },
+  "federated_export/SUMMARY.md": {
+    "submitted_sha256": "a0c8fc7418f43b9014eb3b859665c4f9266499f86cc800e8ccdf2ec3ff6062b4",
+    "repo_sha256": "a0c8fc7418f43b9014eb3b859665c4f9266499f86cc800e8ccdf2ec3ff6062b4",
+    "identical_bytes": true,
+    "identical_after_newline_normalization": true
+  },
+  "federated_export/table_federated.csv": {
+    "submitted_sha256": "3211b558d7da57827121701863b267479ff98a0174e9db22f6c94611af625271",
+    "repo_sha256": "3211b558d7da57827121701863b267479ff98a0174e9db22f6c94611af625271",
+    "identical_bytes": true,
+    "identical_after_newline_normalization": true
+  }
+}

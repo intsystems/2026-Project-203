@@ -1,0 +1,13 @@
+algorithm,uplink_bits_per_param,downlink_bits_per_param,round_trip_reduction
+muon,32.0,32.0,1.0
+muonserver,32.0,32.0,1.0
+signmuon,1.087,1.087,29.44
+ef21signmuon,1.0871,32.0,1.93
+muonusign,1.087,32.0,1.93
+ef21muonsign,1.0871,1.0871,29.44
+ef21muonusign,1.0871,32.0,1.93
+signsgd,1.087,1.087,29.44
+muonsign,1.087,1.087,29.44
+sgd,32.0,32.0,1.0
+adam,32.0,32.0,1.0
+adam+scaled,32.0,32.0,1.0

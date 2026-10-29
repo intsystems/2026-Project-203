@@ -1,0 +1,30 @@
+{
+  "created_utc": "2026-10-29T13:23:01.602678+00:00",
+  "files": [
+    {
+      "path": "48060_SignMuon_MuonSign_and_th.pdf",
+      "bytes": 537728,
+      "sha256": "21b59932be1126ea6fb14a7692552e857835379e76df49c9a5f15df97131e5cd"
+    },
+    {
+      "path": "48060_SignMuon_MuonSign_and_th_Code And Data Supplement.zip",
+      "bytes": 5769984,
+      "sha256": "71949a629127440afc0644cd0c15c6c8c56d98a7b446fdd9dd29fd6b9e945379"
+    },
+    {
+      "path": "48060_SignMuon_MuonSign_and_th_Reproducibility Checklist.pdf",
+      "bytes": 99062,
+      "sha256": "6aeef05eb5f0b1483a2472414678f1c3783859810daf07b711b5c396652a0a36"
+    },
+    {
+      "path": "48060_SignMuon_MuonSign_and_th_Technical Supplement.pdf",
+      "bytes": 1692505,
+      "sha256": "c99343a41e01a2a571bdb9e58b8a011488534c3d52c6f8edd5e09035171fd11c"
+    },
+    {
+      "path": "signmuon_openreview_page.json",
+      "bytes": 54034,
+      "sha256": "0cc0650775acecc94b3c7da35198ad3132ece81c54bf64d1b694d2eb14122345"
+    }
+  ]
+}

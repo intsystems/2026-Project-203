@@ -1,0 +1,798 @@
+{
+  "inputs": [
+    {
+      "path": "48060_SignMuon_MuonSign_and_th.pdf",
+      "bytes": 537728,
+      "sha256": "21b59932be1126ea6fb14a7692552e857835379e76df49c9a5f15df97131e5cd",
+      "verified_sha256": "21b59932be1126ea6fb14a7692552e857835379e76df49c9a5f15df97131e5cd"
+    },
+    {
+      "path": "48060_SignMuon_MuonSign_and_th_Code And Data Supplement.zip",
+      "bytes": 5769984,
+      "sha256": "71949a629127440afc0644cd0c15c6c8c56d98a7b446fdd9dd29fd6b9e945379",
+      "verified_sha256": "71949a629127440afc0644cd0c15c6c8c56d98a7b446fdd9dd29fd6b9e945379"
+    },
+    {
+      "path": "48060_SignMuon_MuonSign_and_th_Reproducibility Checklist.pdf",
+      "bytes": 99062,
+      "sha256": "6aeef05eb5f0b1483a2472414678f1c3783859810daf07b711b5c396652a0a36",
+      "verified_sha256": "6aeef05eb5f0b1483a2472414678f1c3783859810daf07b711b5c396652a0a36"
+    },
+    {
+      "path": "48060_SignMuon_MuonSign_and_th_Technical Supplement.pdf",
+      "bytes": 1692505,
+      "sha256": "c99343a41e01a2a571bdb9e58b8a011488534c3d52c6f8edd5e09035171fd11c",
+      "verified_sha256": "c99343a41e01a2a571bdb9e58b8a011488534c3d52c6f8edd5e09035171fd11c"
+    },
+    {
+      "path": "signmuon_openreview_page.json",
+      "bytes": 54034,
+      "sha256": "0cc0650775acecc94b3c7da35198ad3132ece81c54bf64d1b694d2eb14122345",
+      "verified_sha256": "0cc0650775acecc94b3c7da35198ad3132ece81c54bf64d1b694d2eb14122345"
+    }
+  ],
+  "code_archive_members": [
+    {
+      "member": "code/aggregate.py",
+      "bytes": 11932,
+      "submitted_sha256": "6c019e0fc3174e59d630c75481ab63a9f0d868a0f74f9bdb7f807a5b4622923a",
+      "repo_sha256": "6c019e0fc3174e59d630c75481ab63a9f0d868a0f74f9bdb7f807a5b4622923a",
+      "status": "identical"
+    },
+    {
+      "member": "code/centralized/__init__.py",
+      "bytes": 62,
+      "submitted_sha256": "fac429b17d13a33d5dbeb6ed467677b6b1f33c91a7c7a633a6f202d7623342f8",
+      "repo_sha256": "fac429b17d13a33d5dbeb6ed467677b6b1f33c91a7c7a633a6f202d7623342f8",
+      "status": "identical"
+    },
+    {
+      "member": "code/centralized/data.py",
+      "bytes": 6788,
+      "submitted_sha256": "bf0d522b97603dd2eeecd9432bc13c5beb2fc70f9e5c785712ba20c0eefcea52",
+      "repo_sha256": "bf0d522b97603dd2eeecd9432bc13c5beb2fc70f9e5c785712ba20c0eefcea52",
+      "status": "identical"
+    },
+    {
+      "member": "code/centralized/export_article.py",
+      "bytes": 35271,
+      "submitted_sha256": "7e5d1814551644dadce736ebfd1e9657f28b17fc2794f537a933d91dc7558306",
+      "repo_sha256": "7e5d1814551644dadce736ebfd1e9657f28b17fc2794f537a933d91dc7558306",
+      "status": "identical"
+    },
+    {
+      "member": "code/centralized/main.py",
+      "bytes": 10551,
+      "submitted_sha256": "db2f2c6543cfe70539f1455f3408c06e583e1ff139c9c6c91e5e7418c612f21a",
+      "repo_sha256": "cfb38aa84430c4d602d03517fe1ad94d6f4a7be0b0bee6aab2350a9c66d7ecc7",
+      "status": "different"
+    },
+    {
+      "member": "code/centralized/overnight.py",
+      "bytes": 57603,
+      "submitted_sha256": "b3f6b663bd8877911cb4dab3685cab97e21a60cf071801a16f3e71cf2fe9dafa",
+      "repo_sha256": "b3f6b663bd8877911cb4dab3685cab97e21a60cf071801a16f3e71cf2fe9dafa",
+      "status": "identical"
+    },
+    {
+      "member": "code/centralized/plot_analysis.py",
+      "bytes": 25040,
+      "submitted_sha256": "5c8d2f381163c83d274d61a21c607aff64754cba61c21a9616a3d16157cc666d",
+      "repo_sha256": "5c8d2f381163c83d274d61a21c607aff64754cba61c21a9616a3d16157cc666d",
+      "status": "identical"
+    },
+    {
+      "member": "code/centralized/README.md",
+      "bytes": 7158,
+      "submitted_sha256": "2750ff5dac083d5011df5fa509e38c3bbddfb4a05d295c5545110bd05bd7f3f5",
+      "repo_sha256": "2750ff5dac083d5011df5fa509e38c3bbddfb4a05d295c5545110bd05bd7f3f5",
+      "status": "identical"
+    },
+    {
+      "member": "code/centralized/train.py",
+      "bytes": 21266,
+      "submitted_sha256": "ccc35ba21fe0404e89bb998164187cff4aa0553ae51beb800d7209f86483348b",
+      "repo_sha256": "1fa072be5acb38d63e48d4479d28d15991afbe88dea60ca5c213877e10d49190",
+      "status": "different"
+    },
+    {
+      "member": "code/centralized/tune.py",
+      "bytes": 27303,
+      "submitted_sha256": "a1989809b0878606de708cbb2846891b1662ce6830f5456e8d6b1bb746b13e25",
+      "repo_sha256": "a1989809b0878606de708cbb2846891b1662ce6830f5456e8d6b1bb746b13e25",
+      "status": "identical"
+    },
+    {
+      "member": "code/common/__init__.py",
+      "bytes": 77,
+      "submitted_sha256": "d92c2f8904d982c46abc7fbf08b7f49b9a17c7635679b11b0ebc93f1db7bbeec",
+      "repo_sha256": "d92c2f8904d982c46abc7fbf08b7f49b9a17c7635679b11b0ebc93f1db7bbeec",
+      "status": "identical"
+    },
+    {
+      "member": "code/common/hardware.py",
+      "bytes": 15742,
+      "submitted_sha256": "57fc653fbc4998b857b6f668383a9e901bb538f55cb0e8bb5309b1dbf5225bba",
+      "repo_sha256": "57fc653fbc4998b857b6f668383a9e901bb538f55cb0e8bb5309b1dbf5225bba",
+      "status": "identical"
+    },
+    {
+      "member": "code/common/lr_scaling.py",
+      "bytes": 16978,
+      "submitted_sha256": "d42b004ea3f6aa72a70e0d268d63e3c953e943fd9398e132c4239a66938193d0",
+      "repo_sha256": "d42b004ea3f6aa72a70e0d268d63e3c953e943fd9398e132c4239a66938193d0",
+      "status": "identical"
+    },
+    {
+      "member": "code/common/models.py",
+      "bytes": 6528,
+      "submitted_sha256": "5062308cf54711b2b6e7a2d30c9f374b0570cabc6391e54e1b41b09b59fbffe1",
+      "repo_sha256": "5062308cf54711b2b6e7a2d30c9f374b0570cabc6391e54e1b41b09b59fbffe1",
+      "status": "identical"
+    },
+    {
+      "member": "code/common/optimizers.py",
+      "bytes": 20006,
+      "submitted_sha256": "b498fde09086ae27caac0bee2ce35f677c3f7ec8b0e43d98cf24d77850e7560d",
+      "repo_sha256": "6e6cb36616ed905ed39701056be4e25c0663b94c0c475d1308523df9984385b5",
+      "status": "different"
+    },
+    {
+      "member": "code/common/paths.py",
+      "bytes": 5881,
+      "submitted_sha256": "5af007452f79c52d2594acddd9736c45353237b4aa22c3b4fa3f9c289516fb4d",
+      "repo_sha256": "5af007452f79c52d2594acddd9736c45353237b4aa22c3b4fa3f9c289516fb4d",
+      "status": "identical"
+    },
+    {
+      "member": "code/common/plotting.py",
+      "bytes": 13731,
+      "submitted_sha256": "6809335a9484d35c915ec44dc5ad17b28f9f82c832e5199996c8d7119a5ab928",
+      "repo_sha256": "6809335a9484d35c915ec44dc5ad17b28f9f82c832e5199996c8d7119a5ab928",
+      "status": "identical"
+    },
+    {
+      "member": "code/common/README.md",
+      "bytes": 6606,
+      "submitted_sha256": "295c9128abfe3d4c01c3043f4e80feea5c26735d3e7eceeb965430bc219428d9",
+      "repo_sha256": "1cf9ec2ae7e49c63d0fd75737e5dec7dd4f3c9ca7bcd1cfa65abfb6dc7c2db76",
+      "status": "different"
+    },
+    {
+      "member": "code/common/utils.py",
+      "bytes": 12933,
+      "submitted_sha256": "82f4208b6f0bf3033316332b435ace5abc75838c01b529fed15a3f196949cb61",
+      "repo_sha256": "82f4208b6f0bf3033316332b435ace5abc75838c01b529fed15a3f196949cb61",
+      "status": "identical"
+    },
+    {
+      "member": "code/counterexamples/__init__.py",
+      "bytes": 75,
+      "submitted_sha256": "2856c304b96d42446d0bf258cb9bb8a5d1854b2080e1f48dc2904f7ae7ec4078",
+      "repo_sha256": "2856c304b96d42446d0bf258cb9bb8a5d1854b2080e1f48dc2904f7ae7ec4078",
+      "status": "identical"
+    },
+    {
+      "member": "code/counterexamples/enumerate_minimality.py",
+      "bytes": 5415,
+      "submitted_sha256": "d640b0141f4ad917099e34ebe30c1ae189fe26b26222ee4e4e14ecb6626bc91c",
+      "repo_sha256": "d640b0141f4ad917099e34ebe30c1ae189fe26b26222ee4e4e14ecb6626bc91c",
+      "status": "identical"
+    },
+    {
+      "member": "code/counterexamples/figures/counterexamples_main.pdf",
+      "bytes": 63981,
+      "submitted_sha256": "ec5afd27e7287765878e4f4175874010524087709854350314cc0a7ab92d3069",
+      "repo_sha256": "ec5afd27e7287765878e4f4175874010524087709854350314cc0a7ab92d3069",
+      "status": "identical"
+    },
+    {
+      "member": "code/counterexamples/figures/counterexamples_main.png",
+      "bytes": 129885,
+      "submitted_sha256": "1368a955d828757dbf89bf005f9f62e2b2ffad113361ac6e09605dec04e486e3",
+      "repo_sha256": "1368a955d828757dbf89bf005f9f62e2b2ffad113361ac6e09605dec04e486e3",
+      "status": "identical"
+    },
+    {
+      "member": "code/counterexamples/figures/ef21_construction.pdf",
+      "bytes": 34604,
+      "submitted_sha256": "ab009b209999db46bbb5003bc64006bcfabb4d5acb2b24a53f7ba7d5bfd6cc29",
+      "repo_sha256": "ab009b209999db46bbb5003bc64006bcfabb4d5acb2b24a53f7ba7d5bfd6cc29",
+      "status": "identical"
+    },
+    {
+      "member": "code/counterexamples/figures/ef21_construction.png",
+      "bytes": 67498,
+      "submitted_sha256": "65cda2a93aea805e0e8a79054312fc6c41331e51f641a67e9305551b2d5f98d9",
+      "repo_sha256": "65cda2a93aea805e0e8a79054312fc6c41331e51f641a67e9305551b2d5f98d9",
+      "status": "identical"
+    },
+    {
+      "member": "code/counterexamples/figures/ef21_signmuon_momentum.pdf",
+      "bytes": 116491,
+      "submitted_sha256": "45eefd0f22ec141a641cadb5b1a7c29dcac257cb7719c063708c2a30acb16e35",
+      "repo_sha256": "45eefd0f22ec141a641cadb5b1a7c29dcac257cb7719c063708c2a30acb16e35",
+      "status": "identical"
+    },
+    {
+      "member": "code/counterexamples/figures/ef21_signmuon_momentum.png",
+      "bytes": 75563,
+      "submitted_sha256": "d41b02ef0b62e832af934ce1d82f0d021b29634617ca78e2cf3db1b7aacb6d0d",
+      "repo_sha256": "d41b02ef0b62e832af934ce1d82f0d021b29634617ca78e2cf3db1b7aacb6d0d",
+      "status": "identical"
+    },
+    {
+      "member": "code/counterexamples/optimizers.py",
+      "bytes": 17087,
+      "submitted_sha256": "ea3ebef186c332d2d5bea31029baf2f51e36f334fceee7368ba3db8560e83a6e",
+      "repo_sha256": "ea3ebef186c332d2d5bea31029baf2f51e36f334fceee7368ba3db8560e83a6e",
+      "status": "identical"
+    },
+    {
+      "member": "code/counterexamples/plot_ef21_construction.py",
+      "bytes": 6141,
+      "submitted_sha256": "4c10a4f1e624f054b573a85522037e599798c9db51ef0437cd701ee0053f0890",
+      "repo_sha256": "4c10a4f1e624f054b573a85522037e599798c9db51ef0437cd701ee0053f0890",
+      "status": "identical"
+    },
+    {
+      "member": "code/counterexamples/plot_ef21_momentum.py",
+      "bytes": 5880,
+      "submitted_sha256": "6120faf599fba64b78146db6e1bb0bc9b01f1b45ae0bda46ea4c0a5aa44fc0de",
+      "repo_sha256": "6120faf599fba64b78146db6e1bb0bc9b01f1b45ae0bda46ea4c0a5aa44fc0de",
+      "status": "identical"
+    },
+    {
+      "member": "code/counterexamples/problems.py",
+      "bytes": 20447,
+      "submitted_sha256": "a148dfde173e523ccd73b0f0f816358af253b48fc737d271026928cabf71858d",
+      "repo_sha256": "a148dfde173e523ccd73b0f0f816358af253b48fc737d271026928cabf71858d",
+      "status": "identical"
+    },
+    {
+      "member": "code/counterexamples/README.md",
+      "bytes": 9443,
+      "submitted_sha256": "b45b20e118f5ec8855db8b00facd3dba7ac417fbd46badfe00c61a93cf3ed364",
+      "repo_sha256": "b45b20e118f5ec8855db8b00facd3dba7ac417fbd46badfe00c61a93cf3ed364",
+      "status": "identical"
+    },
+    {
+      "member": "code/counterexamples/run_counterexamples.py",
+      "bytes": 17642,
+      "submitted_sha256": "5fd6c1712fc05a0fb0a9ce3cc1cf5fd9697cb11706f0a9598783079b2ae14254",
+      "repo_sha256": "5fd6c1712fc05a0fb0a9ce3cc1cf5fd9697cb11706f0a9598783079b2ae14254",
+      "status": "identical"
+    },
+    {
+      "member": "code/counterexamples/verify_ns_oracle.py",
+      "bytes": 8051,
+      "submitted_sha256": "607d14424d00320a05674fab9498c136ebe59a889bc009158a1b6d42e40304ea",
+      "repo_sha256": "607d14424d00320a05674fab9498c136ebe59a889bc009158a1b6d42e40304ea",
+      "status": "identical"
+    },
+    {
+      "member": "code/federated/__init__.py",
+      "bytes": 78,
+      "submitted_sha256": "231d63a6a128a70dfea8eca0fa44ab5d2c083f9d8394f8aa65f949ea668a417e",
+      "repo_sha256": "231d63a6a128a70dfea8eca0fa44ab5d2c083f9d8394f8aa65f949ea668a417e",
+      "status": "identical"
+    },
+    {
+      "member": "code/federated/algorithms.py",
+      "bytes": 36176,
+      "submitted_sha256": "a8cf5411f84a8016d6d3889887285061dbaf580c10463a9e0ae7ed0144187b5a",
+      "repo_sha256": "5a8b9d2e04781013c55bfabdff505ddffbb789d6029c446fce5e723aad6de382",
+      "status": "different"
+    },
+    {
+      "member": "code/federated/data.py",
+      "bytes": 20666,
+      "submitted_sha256": "057cbbceebdecc191ced79dfcd978716bf797da2748c99397f416cd683c54a1e",
+      "repo_sha256": "057cbbceebdecc191ced79dfcd978716bf797da2748c99397f416cd683c54a1e",
+      "status": "identical"
+    },
+    {
+      "member": "code/federated/export_article.py",
+      "bytes": 42121,
+      "submitted_sha256": "dcaf3f787a10cb00aa086a39b4aa937e9bf855eae142b89d5801364e7a79779d",
+      "repo_sha256": "dcaf3f787a10cb00aa086a39b4aa937e9bf855eae142b89d5801364e7a79779d",
+      "status": "identical"
+    },
+    {
+      "member": "code/federated/grid.py",
+      "bytes": 1721,
+      "submitted_sha256": "c1bf4321f4218b65e09104cb777e8abae6aafac3525c2a30cd83472b1af1e369",
+      "repo_sha256": "c1bf4321f4218b65e09104cb777e8abae6aafac3525c2a30cd83472b1af1e369",
+      "status": "identical"
+    },
+    {
+      "member": "code/federated/main.py",
+      "bytes": 20993,
+      "submitted_sha256": "81e83667cb9b43c44095ab67ffe284a99cde0540718da9c79f7c85dae8d5337d",
+      "repo_sha256": "64a997d4289817e78c645ef264458f561290e4178140ed79983356b82b249f93",
+      "status": "different"
+    },
+    {
+      "member": "code/federated/methods.py",
+      "bytes": 14620,
+      "submitted_sha256": "faee034f93586c037a47eef6b637f8fb4e316c9ac2f6f9c816ef38b18c735120",
+      "repo_sha256": "faee034f93586c037a47eef6b637f8fb4e316c9ac2f6f9c816ef38b18c735120",
+      "status": "identical"
+    },
+    {
+      "member": "code/federated/overnight.py",
+      "bytes": 65143,
+      "submitted_sha256": "4477e10c588c39e75ea79d0e303458c815d194eb60c198105b3fc21ce4bb94e7",
+      "repo_sha256": "4477e10c588c39e75ea79d0e303458c815d194eb60c198105b3fc21ce4bb94e7",
+      "status": "identical"
+    },
+    {
+      "member": "code/federated/plot_article.py",
+      "bytes": 20361,
+      "submitted_sha256": "029704ab72d189ce2a8be564440721d68c126b929ce80aa3304c5955c6ccbf1e",
+      "repo_sha256": "029704ab72d189ce2a8be564440721d68c126b929ce80aa3304c5955c6ccbf1e",
+      "status": "identical"
+    },
+    {
+      "member": "code/federated/plot_federated.py",
+      "bytes": 9056,
+      "submitted_sha256": "8b892ad63c24a8b21a0f7bcd4537237fb5aa3396caf37ffcde4a07441eb55127",
+      "repo_sha256": "8b892ad63c24a8b21a0f7bcd4537237fb5aa3396caf37ffcde4a07441eb55127",
+      "status": "identical"
+    },
+    {
+      "member": "code/federated/README.md",
+      "bytes": 14837,
+      "submitted_sha256": "b7737066d616c69184755fdf8b81734b0d81fb1eea28e401d865823685b161bb",
+      "repo_sha256": "106b3270d7ecea584dd0d10d6f90ec57cbadb0e4789758cf82515b7b49391400",
+      "status": "different"
+    },
+    {
+      "member": "code/federated/tune.py",
+      "bytes": 28358,
+      "submitted_sha256": "3f8f3a9b2c466701705cbdf01d82b55bf7558d23ed851ef8ba300b2dd6123c60",
+      "repo_sha256": "3f8f3a9b2c466701705cbdf01d82b55bf7558d23ed851ef8ba300b2dd6123c60",
+      "status": "identical"
+    },
+    {
+      "member": "code/nanogpt/data/cached_fineweb10B.py",
+      "bytes": 891,
+      "submitted_sha256": "1b5ed2bbdcd626a429a2b6854abc7854e0cb0a9e3958aad915732178a8b38d09",
+      "repo_sha256": "1b5ed2bbdcd626a429a2b6854abc7854e0cb0a9e3958aad915732178a8b38d09",
+      "status": "identical"
+    },
+    {
+      "member": "code/nanogpt/make_tables.py",
+      "bytes": 19529,
+      "submitted_sha256": "ebcbff3ec8e654654ea74fa465449ecfadc5f470b5154ce37a98e1705d7464b5",
+      "repo_sha256": "ebcbff3ec8e654654ea74fa465449ecfadc5f470b5154ce37a98e1705d7464b5",
+      "status": "identical"
+    },
+    {
+      "member": "code/nanogpt/parse_logs.py",
+      "bytes": 22127,
+      "submitted_sha256": "5b6defcec90d08ddb3ece32a22c388a25332097d75c85e711a3f1d9283064bf2",
+      "repo_sha256": "5b6defcec90d08ddb3ece32a22c388a25332097d75c85e711a3f1d9283064bf2",
+      "status": "identical"
+    },
+    {
+      "member": "code/nanogpt/plot_article.py",
+      "bytes": 19839,
+      "submitted_sha256": "254289e170c37b5aded31a11fcdc27660de5f89ba5c0e475319458304e9bb2f1",
+      "repo_sha256": "254289e170c37b5aded31a11fcdc27660de5f89ba5c0e475319458304e9bb2f1",
+      "status": "identical"
+    },
+    {
+      "member": "code/nanogpt/plot_runs.py",
+      "bytes": 18277,
+      "submitted_sha256": "74fc82c74800eeda6b86dbe6bbba4a8d6c9f9d967568ce385b72a9824e32ffd8",
+      "repo_sha256": "74fc82c74800eeda6b86dbe6bbba4a8d6c9f9d967568ce385b72a9824e32ffd8",
+      "status": "identical"
+    },
+    {
+      "member": "code/nanogpt/README.md",
+      "bytes": 27797,
+      "submitted_sha256": "6209d874fcd29ee65c62ca4093b41ce3f5592d3015ebbe0a7c0d6b8a4185e09e",
+      "repo_sha256": "75a8c63875d902dacc4bf0c31f870009308209c9e00d7f14356e5461f246ad83",
+      "status": "different"
+    },
+    {
+      "member": "code/nanogpt/reference_record40.csv",
+      "bytes": 1636,
+      "submitted_sha256": "363b2dd0e09369114cb03b06ccd3c17c18f8c130e424fc650c7d607f57cda99f",
+      "repo_sha256": "363b2dd0e09369114cb03b06ccd3c17c18f8c130e424fc650c7d607f57cda99f",
+      "status": "identical"
+    },
+    {
+      "member": "code/nanogpt/requirements.txt",
+      "bytes": 1518,
+      "submitted_sha256": "b5dca985c3f7db1cc170b6a32820c7f8b55d5d6a03bb73e9ce3731b2932abee2",
+      "repo_sha256": "b5dca985c3f7db1cc170b6a32820c7f8b55d5d6a03bb73e9ce3731b2932abee2",
+      "status": "identical"
+    },
+    {
+      "member": "code/nanogpt/run_all.sh",
+      "bytes": 9377,
+      "submitted_sha256": "923c42cad38cb55ea60f5071410ed69f6712f491a294f96ed2efc08f9124e578",
+      "repo_sha256": "923c42cad38cb55ea60f5071410ed69f6712f491a294f96ed2efc08f9124e578",
+      "status": "identical"
+    },
+    {
+      "member": "code/nanogpt/setup_env.sh",
+      "bytes": 2354,
+      "submitted_sha256": "597e1c99f36c613ba6965ed107211fab854262f15bbc9fef9ee19693901b2007",
+      "repo_sha256": "597e1c99f36c613ba6965ed107211fab854262f15bbc9fef9ee19693901b2007",
+      "status": "identical"
+    },
+    {
+      "member": "code/nanogpt/signmuon_optimizers.py",
+      "bytes": 51656,
+      "submitted_sha256": "4b3831107d1c8e6fca10d5e0fd1bed070937ad8d401bf9818ba68d5ee489bf15",
+      "repo_sha256": "cb89cc83b51ba45faee4f99f6546dc257c5bdce6fca34566cd9fea8fe48d52cd",
+      "status": "different"
+    },
+    {
+      "member": "code/nanogpt/test_distributed_sharding.py",
+      "bytes": 14458,
+      "submitted_sha256": "aff12a7dac4abe0b5f0ada77670f5d5e5288e1f49553fa62512b3e84e6539f00",
+      "repo_sha256": "aff12a7dac4abe0b5f0ada77670f5d5e5288e1f49553fa62512b3e84e6539f00",
+      "status": "identical"
+    },
+    {
+      "member": "code/nanogpt/test_signmuon_optimizers.py",
+      "bytes": 18935,
+      "submitted_sha256": "f3834bb689a6625d7b6f34d3babb763ee46dc2cda7ddeeedf88fc9875632d3df",
+      "repo_sha256": "a79d4da0a61da01a378d11b7eb34ea53fd6877462a4aa2a7f4d427f23d3451bf",
+      "status": "different"
+    },
+    {
+      "member": "code/nanogpt/train_gpt.py",
+      "bytes": 58885,
+      "submitted_sha256": "8241f9aaa6c456839f56ce44e516d71568e50010054cf31fc3687511f1b5b3c0",
+      "repo_sha256": "c594a0557bcd860da0206f16d29cf14922728ce6a325ccd514a6a243ae4618fc",
+      "status": "different"
+    },
+    {
+      "member": "code/nanogpt/train_gpt_a100.py",
+      "bytes": 63786,
+      "submitted_sha256": "47e588832fc5e4bc66cc9583a83c93670313a397d91e9c1b4c10924a5a6a6679",
+      "repo_sha256": "47e588832fc5e4bc66cc9583a83c93670313a397d91e9c1b4c10924a5a6a6679",
+      "status": "identical"
+    },
+    {
+      "member": "code/nanogpt/train_gpt_rec40_reference.py",
+      "bytes": 62638,
+      "submitted_sha256": "eb98b3ca53fc490181c8f34b04b14044f171924083e530b24501c70e16f9dd88",
+      "repo_sha256": "eb98b3ca53fc490181c8f34b04b14044f171924083e530b24501c70e16f9dd88",
+      "status": "identical"
+    },
+    {
+      "member": "code/README.md",
+      "bytes": 11476,
+      "submitted_sha256": "05f65ea7890ec07a60e21f80da3f4c21427fa35da1e5e91b11bbf3b5ab0e00db",
+      "repo_sha256": "d224b49af228ebe5e91264bf0bb5af112282f4b6da7bd95cf97fbd9c06ad51cf",
+      "status": "different"
+    },
+    {
+      "member": "code/REPRODUCE.md",
+      "bytes": 36092,
+      "submitted_sha256": "707607a517d59e6e970088845093de85aaaa5e19e2eceea0ee0610c1915bd632",
+      "repo_sha256": "707607a517d59e6e970088845093de85aaaa5e19e2eceea0ee0610c1915bd632",
+      "status": "identical"
+    },
+    {
+      "member": "code/requirements.txt",
+      "bytes": 1411,
+      "submitted_sha256": "494d6b2f94d0b0fcbae62083ade002bbc67a0001dc786e06cc5c958050f2742d",
+      "repo_sha256": "494d6b2f94d0b0fcbae62083ade002bbc67a0001dc786e06cc5c958050f2742d",
+      "status": "identical"
+    },
+    {
+      "member": "code/results/article_export.tar.gz",
+      "bytes": 363404,
+      "submitted_sha256": "5a753ecb47dbb547f4eb0bfb3a6bb1a58583657644e37225d6b03677d24e358d",
+      "repo_sha256": "c50f1467e9522efe9e7a95e7f0d0a47b5e960dc4ea686c515d2b115f2bb6ff0c",
+      "status": "different"
+    },
+    {
+      "member": "code/results/federated_export_results.zip",
+      "bytes": 384192,
+      "submitted_sha256": "ed9b7829bd8e6fc87b5adc70f64a41aa33b68b503ea2bea797ff2813ff6d4d9b",
+      "repo_sha256": "4bfe3b0fbc51d5e2a31c88102d7b50c4184707ea259a5f6615211db33977e3e7",
+      "status": "different"
+    },
+    {
+      "member": "code/results/nanogpt/.gitignore",
+      "bytes": 22,
+      "submitted_sha256": "b9d2972d9bf5f482e0b26744c6c95b5e8587d939e005295e4ee7775a21c5bbb2",
+      "repo_sha256": "b9d2972d9bf5f482e0b26744c6c95b5e8587d939e005295e4ee7775a21c5bbb2",
+      "status": "identical"
+    },
+    {
+      "member": "code/results/nanogpt/diagnostics.csv",
+      "bytes": 19066,
+      "submitted_sha256": "f03938d453caa8e059632a41f3c6f8f1456b80c22debed0110898c38a37da001",
+      "repo_sha256": "f03938d453caa8e059632a41f3c6f8f1456b80c22debed0110898c38a37da001",
+      "status": "identical"
+    },
+    {
+      "member": "code/results/nanogpt/figures/exploratory/train_loss_vs_steps.pdf",
+      "bytes": 238978,
+      "submitted_sha256": "1e3edfddfbb535c2ec372de51ef2e99d32d2fc661b3d85461bcacd307bab76e9",
+      "repo_sha256": "1e3edfddfbb535c2ec372de51ef2e99d32d2fc661b3d85461bcacd307bab76e9",
+      "status": "identical"
+    },
+    {
+      "member": "code/results/nanogpt/figures/exploratory/train_loss_vs_steps.png",
+      "bytes": 280664,
+      "submitted_sha256": "c005912f7bfcef0d40c025cc33d70b778dbe0dc3a4747456f9d67d82e0a9adb7",
+      "repo_sha256": "c005912f7bfcef0d40c025cc33d70b778dbe0dc3a4747456f9d67d82e0a9adb7",
+      "status": "identical"
+    },
+    {
+      "member": "code/results/nanogpt/figures/exploratory/train_loss_vs_time.pdf",
+      "bytes": 240032,
+      "submitted_sha256": "0496e82eeb8a65da85b7701bdb2c7ddf70c18746ff7cd3b06e089be704fae09d",
+      "repo_sha256": "0496e82eeb8a65da85b7701bdb2c7ddf70c18746ff7cd3b06e089be704fae09d",
+      "status": "identical"
+    },
+    {
+      "member": "code/results/nanogpt/figures/exploratory/train_loss_vs_time.png",
+      "bytes": 288253,
+      "submitted_sha256": "5071f2927896f0bf720dbe8f145d99162f5e7f0e64dcd706633a8718f30dcf18",
+      "repo_sha256": "5071f2927896f0bf720dbe8f145d99162f5e7f0e64dcd706633a8718f30dcf18",
+      "status": "identical"
+    },
+    {
+      "member": "code/results/nanogpt/figures/exploratory/val_loss_vs_steps.pdf",
+      "bytes": 21171,
+      "submitted_sha256": "55078728dbe78f95f8bb05fa9698cb7b49ebdd4e9596476912344eea1e5c32d7",
+      "repo_sha256": "55078728dbe78f95f8bb05fa9698cb7b49ebdd4e9596476912344eea1e5c32d7",
+      "status": "identical"
+    },
+    {
+      "member": "code/results/nanogpt/figures/exploratory/val_loss_vs_steps.png",
+      "bytes": 158164,
+      "submitted_sha256": "854d447bac0bf21b4ff832775ce6dcad7b5f25d2983af4afa735e06c22e11df4",
+      "repo_sha256": "854d447bac0bf21b4ff832775ce6dcad7b5f25d2983af4afa735e06c22e11df4",
+      "status": "identical"
+    },
+    {
+      "member": "code/results/nanogpt/figures/exploratory/val_loss_vs_time.pdf",
+      "bytes": 22015,
+      "submitted_sha256": "5cd8306af893f6ea695550025a257c48bf28ef5de468fc618246d23b49ac55df",
+      "repo_sha256": "5cd8306af893f6ea695550025a257c48bf28ef5de468fc618246d23b49ac55df",
+      "status": "identical"
+    },
+    {
+      "member": "code/results/nanogpt/figures/exploratory/val_loss_vs_time.png",
+      "bytes": 175561,
+      "submitted_sha256": "e90227c0eb08e01a4f8d7c681b2f81127ff4c98ef9999b0a88369490ae345964",
+      "repo_sha256": "e90227c0eb08e01a4f8d7c681b2f81127ff4c98ef9999b0a88369490ae345964",
+      "status": "identical"
+    },
+    {
+      "member": "code/results/nanogpt/figures/fig_nanogpt_appendix.pdf",
+      "bytes": 160482,
+      "submitted_sha256": "01d095d87b6bf6d3fa89ac95a3a1bae8e95abc3ab19c323f87f5e1ccaa123be0",
+      "repo_sha256": "01d095d87b6bf6d3fa89ac95a3a1bae8e95abc3ab19c323f87f5e1ccaa123be0",
+      "status": "identical"
+    },
+    {
+      "member": "code/results/nanogpt/figures/fig_nanogpt_appendix.png",
+      "bytes": 509678,
+      "submitted_sha256": "4ed5bba48a60bc277d20870d5eb29acc6f3ac9485aa6a1efdaf4746d80db2cdc",
+      "repo_sha256": "4ed5bba48a60bc277d20870d5eb29acc6f3ac9485aa6a1efdaf4746d80db2cdc",
+      "status": "identical"
+    },
+    {
+      "member": "code/results/nanogpt/figures/fig_nanogpt_diag.pdf",
+      "bytes": 43185,
+      "submitted_sha256": "38a301df2a715093dba2dab060d54b42410d3f819b08c4ae552cd92021470948",
+      "repo_sha256": "38a301df2a715093dba2dab060d54b42410d3f819b08c4ae552cd92021470948",
+      "status": "identical"
+    },
+    {
+      "member": "code/results/nanogpt/figures/fig_nanogpt_diag.png",
+      "bytes": 156553,
+      "submitted_sha256": "3b8e94587450fb7c90e4b9ae5c79099b2cc11b11c3ad214d2ec23bf7a1dd8ace",
+      "repo_sha256": "3b8e94587450fb7c90e4b9ae5c79099b2cc11b11c3ad214d2ec23bf7a1dd8ace",
+      "status": "identical"
+    },
+    {
+      "member": "code/results/nanogpt/figures/fig_nanogpt_main.pdf",
+      "bytes": 37212,
+      "submitted_sha256": "30af2fde1f3e068dac40512ac12623fc84bc9d60517f2604b45f4be90fd0afc3",
+      "repo_sha256": "30af2fde1f3e068dac40512ac12623fc84bc9d60517f2604b45f4be90fd0afc3",
+      "status": "identical"
+    },
+    {
+      "member": "code/results/nanogpt/figures/fig_nanogpt_main.png",
+      "bytes": 272462,
+      "submitted_sha256": "5aba455237294304d501dc9d2ad61c0a554a73778db8e34db249ab901c35c3c3",
+      "repo_sha256": "5aba455237294304d501dc9d2ad61c0a554a73778db8e34db249ab901c35c3c3",
+      "status": "identical"
+    },
+    {
+      "member": "code/results/nanogpt/logs/EF21-MuonSign_lr0.06_e6770317.txt",
+      "bytes": 325949,
+      "submitted_sha256": "31fe2f5ec713b28aa6e62371503b9025573488f4161f3264528c3e9043620cd2",
+      "repo_sha256": "31fe2f5ec713b28aa6e62371503b9025573488f4161f3264528c3e9043620cd2",
+      "status": "identical"
+    },
+    {
+      "member": "code/results/nanogpt/logs/EF21-MuonUSign_lr0.06_2717df49.txt",
+      "bytes": 324445,
+      "submitted_sha256": "b060619aa0b7cbf8331d847fe551c6e97a0720134ceead1d5ec3ea9fcb6340ef",
+      "repo_sha256": "b060619aa0b7cbf8331d847fe551c6e97a0720134ceead1d5ec3ea9fcb6340ef",
+      "status": "identical"
+    },
+    {
+      "member": "code/results/nanogpt/logs/EF21-SignMuon_lr0.06_bb803ec4.txt",
+      "bytes": 324430,
+      "submitted_sha256": "330af0a14045e1adff5796fb5730b859f8692b1ebb5ad94d726283c944515c21",
+      "repo_sha256": "330af0a14045e1adff5796fb5730b859f8692b1ebb5ad94d726283c944515c21",
+      "status": "identical"
+    },
+    {
+      "member": "code/results/nanogpt/logs/Muon_lr0.06_5db64adc.txt",
+      "bytes": 302858,
+      "submitted_sha256": "52530edfa70622b770cd020a1d6e190d2fb5d8d52512760367ee03d0e9e7f37e",
+      "repo_sha256": "52530edfa70622b770cd020a1d6e190d2fb5d8d52512760367ee03d0e9e7f37e",
+      "status": "identical"
+    },
+    {
+      "member": "code/results/nanogpt/logs/MuonSign_lr0.03_8ae069a3.txt",
+      "bytes": 302885,
+      "submitted_sha256": "d27b18edd0782b17c311ce9c1f85a0935e736a495f53049511be6dca54fe3429",
+      "repo_sha256": "d27b18edd0782b17c311ce9c1f85a0935e736a495f53049511be6dca54fe3429",
+      "status": "identical"
+    },
+    {
+      "member": "code/results/nanogpt/logs/MuonUSign_lr0.06_d9721bde.txt",
+      "bytes": 302880,
+      "submitted_sha256": "62892d88d724c9091fc0624ccc31187efac0e0452a35c922796b71a46366da79",
+      "repo_sha256": "62892d88d724c9091fc0624ccc31187efac0e0452a35c922796b71a46366da79",
+      "status": "identical"
+    },
+    {
+      "member": "code/results/nanogpt/logs/SignMuon_lr0.03_19f64fe1.txt",
+      "bytes": 302904,
+      "submitted_sha256": "f1b87f77253036d82c2b9cde0eb233008e30c7756fb57b8a3d23af83762dcb7f",
+      "repo_sha256": "f1b87f77253036d82c2b9cde0eb233008e30c7756fb57b8a3d23af83762dcb7f",
+      "status": "identical"
+    },
+    {
+      "member": "code/results/nanogpt/logs/SignSGD_lr0.03_1f0db2d4.txt",
+      "bytes": 302876,
+      "submitted_sha256": "091706a04c37c1189fd871997640fa48c94ac90c67c67c0d24b5064aa198a59c",
+      "repo_sha256": "091706a04c37c1189fd871997640fa48c94ac90c67c67c0d24b5064aa198a59c",
+      "status": "identical"
+    },
+    {
+      "member": "code/results/nanogpt/MANIFEST.json",
+      "bytes": 5116,
+      "submitted_sha256": "02701e3fa01a87ad8d0b7f3acc8e561cb8ff544228ff2274269605860a725417",
+      "repo_sha256": "02701e3fa01a87ad8d0b7f3acc8e561cb8ff544228ff2274269605860a725417",
+      "status": "identical"
+    },
+    {
+      "member": "code/results/nanogpt/runs.csv",
+      "bytes": 2239,
+      "submitted_sha256": "fd539ed15efa05882d9bc9352319850332edbf88cc0f817035bdea77ec4075f2",
+      "repo_sha256": "fd539ed15efa05882d9bc9352319850332edbf88cc0f817035bdea77ec4075f2",
+      "status": "identical"
+    },
+    {
+      "member": "code/results/nanogpt/runs.json",
+      "bytes": 12301,
+      "submitted_sha256": "82852e1681a87482fe350cdf60a2a2bcc2e45881b904a0dbcbd8adc4a48d607e",
+      "repo_sha256": "82852e1681a87482fe350cdf60a2a2bcc2e45881b904a0dbcbd8adc4a48d607e",
+      "status": "identical"
+    },
+    {
+      "member": "code/results/nanogpt/steps.csv",
+      "bytes": 1431789,
+      "submitted_sha256": "0061a13afed79eb973cd4d5b2947cdfe782f4ddb69f33241be5e08faa810e0c6",
+      "repo_sha256": "0061a13afed79eb973cd4d5b2947cdfe782f4ddb69f33241be5e08faa810e0c6",
+      "status": "identical"
+    },
+    {
+      "member": "code/results/nanogpt/SUMMARY.md",
+      "bytes": 4604,
+      "submitted_sha256": "3a8a26323e9c6a142f8c75f5d08f9b7b68a69ed8d943527f33f3855781f8168c",
+      "repo_sha256": "3a8a26323e9c6a142f8c75f5d08f9b7b68a69ed8d943527f33f3855781f8168c",
+      "status": "identical"
+    },
+    {
+      "member": "code/results/nanogpt/tab_nanogpt.tex",
+      "bytes": 781,
+      "submitted_sha256": "249f21ce99789a2564d14ebca35c044f6915d7c65bc1b8ddaa41a187696a3bf9",
+      "repo_sha256": "249f21ce99789a2564d14ebca35c044f6915d7c65bc1b8ddaa41a187696a3bf9",
+      "status": "identical"
+    },
+    {
+      "member": "code/results/nanogpt/tab_nanogpt_diag.tex",
+      "bytes": 1019,
+      "submitted_sha256": "46c6040507b0927e9122e71e35bbc277517419775ad16d35f723d05112301553",
+      "repo_sha256": "46c6040507b0927e9122e71e35bbc277517419775ad16d35f723d05112301553",
+      "status": "identical"
+    },
+    {
+      "member": "code/results/synthetic_results.zip",
+      "bytes": 968020,
+      "submitted_sha256": "d405b4f37952e2a0a456195f9a0714258da4f6e8d0a85110a90410ad6eeb1140",
+      "repo_sha256": "25033d6ee9c6669de22ead7adebd7a0c54f48711d297e35fb127cae12702556c",
+      "status": "different"
+    },
+    {
+      "member": "code/synthetic/__init__.py",
+      "bytes": 57,
+      "submitted_sha256": "ac282f9f6f11fa057d78456104f3c988d00822abac5d11dcedd50c0cc9965686",
+      "repo_sha256": "ac282f9f6f11fa057d78456104f3c988d00822abac5d11dcedd50c0cc9965686",
+      "status": "identical"
+    },
+    {
+      "member": "code/synthetic/batched.py",
+      "bytes": 24644,
+      "submitted_sha256": "053de3739a29e0cdeec0eef448037072de70e173d2261c8f3d51264018d8e8de",
+      "repo_sha256": "053de3739a29e0cdeec0eef448037072de70e173d2261c8f3d51264018d8e8de",
+      "status": "identical"
+    },
+    {
+      "member": "code/synthetic/benchmark.py",
+      "bytes": 64706,
+      "submitted_sha256": "6ef5aafc7093a4bf4f5f4350ac4f74bdf2626f5441846d887257249bac0ad21e",
+      "repo_sha256": "6ef5aafc7093a4bf4f5f4350ac4f74bdf2626f5441846d887257249bac0ad21e",
+      "status": "identical"
+    },
+    {
+      "member": "code/synthetic/plot_synthetic.py",
+      "bytes": 27855,
+      "submitted_sha256": "dd59366fef39ea0104057213925a6db89bdecef2039cbeb7bbc056d90e67620c",
+      "repo_sha256": "dd59366fef39ea0104057213925a6db89bdecef2039cbeb7bbc056d90e67620c",
+      "status": "identical"
+    },
+    {
+      "member": "code/synthetic/README.md",
+      "bytes": 7751,
+      "submitted_sha256": "601dd417f98994215bdb85876ba23ba2d9bb64b047cd7216c0e8f0c38674248a",
+      "repo_sha256": "601dd417f98994215bdb85876ba23ba2d9bb64b047cd7216c0e8f0c38674248a",
+      "status": "identical"
+    },
+    {
+      "member": "code/synthetic/run_gpu.py",
+      "bytes": 38261,
+      "submitted_sha256": "c49efba7d03d1348b6a7e4096324e546e512ac7ddf9c305e35528a459de929ff",
+      "repo_sha256": "c49efba7d03d1348b6a7e4096324e546e512ac7ddf9c305e35528a459de929ff",
+      "status": "identical"
+    },
+    {
+      "member": "code/tests/__init__.py",
+      "bytes": 27,
+      "submitted_sha256": "44ee348b896ed9b28f4dd110eab82943a8d6f3d8d5064cc70c95886d6dee8fd6",
+      "repo_sha256": "44ee348b896ed9b28f4dd110eab82943a8d6f3d8d5064cc70c95886d6dee8fd6",
+      "status": "identical"
+    },
+    {
+      "member": "code/tests/README.md",
+      "bytes": 5320,
+      "submitted_sha256": "8d820a7edeb72d46b7a4d0092e32bfeea5b888e6cb916f6a6fcfaf7395ce55dc",
+      "repo_sha256": "f1f8573a71e4fad3e23351ef4f8df57ae9e5a21e59221a921f346f182947c0cb",
+      "status": "different"
+    },
+    {
+      "member": "code/tests/test_code.py",
+      "bytes": 149486,
+      "submitted_sha256": "24c5b217691d85c9cdbc48bedf31f474fbb6287f4cbdf9d20b2cca4b52671e69",
+      "repo_sha256": "ae51ff1122ba4de70d85a2e9636e8f30e9be1a248b2aa564ba78e8f4f9846703",
+      "status": "different"
+    },
+    {
+      "member": "code/MANIFEST.md",
+      "bytes": 2726,
+      "submitted_sha256": "df02429463af72cd8c2e20461730b93f6205a25f2f4598132d1bbce8e7bb0cf1",
+      "status": "missing_in_repo"
+    }
+  ]
+}

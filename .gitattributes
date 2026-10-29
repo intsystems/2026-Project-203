@@ -8,3 +8,12 @@
 # The frozen reference has a recorded byte hash; preserve its original bytes.
 /lean_proofs/comparator/Reference.lean.in -text !eol
 /.github/workflows/*.yml text eol=lf
+
+# Rebuttal inputs, primer manifests, and validation records contain byte hashes.
+# Preserve their original line endings across Windows, macOS, and Linux clones.
+/aaai_submission_openreview/** -text whitespace=cr-at-eol
+# Exact reviewer quotations and saved author baselines retain source whitespace.
+/aaai_submission_openreview/reviews/** whitespace=cr-at-eol,-blank-at-eol
+/aaai_submission_openreview/response_history/** whitespace=cr-at-eol,-blank-at-eol
+# The recorded source comparison is a literal patch, including context whitespace.
+/aaai_submission_openreview/evidence/submitted_to_repo.diff -whitespace

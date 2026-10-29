@@ -1,0 +1,29 @@
+{
+  "version": 1,
+  "reviews": {
+    "confidential_ac": {
+      "target": "confidential_ac_comment.md",
+      "revision": 1,
+      "intro": "",
+      "closing": "",
+      "sections": [
+        {
+          "id": "comment",
+          "lead": ""
+        }
+      ],
+      "reply_topics": [],
+      "fragments": [
+        {
+          "id": "C1",
+          "text": "Dear AC/SPC, we highlight two corrections relevant across reviews. Ueq5 and pqje (Q2) correctly identified a stale main table. The already-submitted five-seed logs independently reproduce Table A8: MuonSign 82.94±0.19% versus SignSGD 81.44±0.15%, not the reversed main-table ordering. SignMuon remains 85.72±0.24% versus Muon 85.98±0.26%. This is a reporting correction, not new training.\n\nTx34 (Q1–2) is right that the general positive EF21 framework is prior work and Theorem 4 does not rule out decreasing schedules or horizon-tuned rates. Our principal submitted novelty is the explicit sign-placement ascent analysis and smooth lower-bounded output-EF divergence construction. We will narrow the wording accordingly.\n\nFor 7S1b (Q1) and pqje’s scope concern, we add a structural positive-alignment condition and conditional SignMuon convergence. We also derive jointly smooth EF21 bounds without layer separability. These ideal results do not certify finite polar solvers, changing nanoGPT momentum or auxiliary Adam. Additional compressed-method seeds, trajectory diagnostics and broader federation remain open; nanoGPT is a centralized optimizer test after full-precision averaging. We ask that the verified correction and precise negative contribution be considered with these explicit limits.",
+          "notes": "Optional scientific synthesis, not a process complaint. Science checked against E1/N1/G1/J1. The actual confidential field limit and readers remain unverified; check them before using this text. Export success only validates local text/mappings.",
+          "include": true,
+          "needs_check": false,
+          "joiner": " ",
+          "section": "comment"
+        }
+      ]
+    }
+  }
+}

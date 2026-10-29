@@ -1,0 +1,110 @@
+{
+  "schema_version": 1,
+  "workspace_id": "c04b35a03e2a4a8abba9540ae279b59a",
+  "paper": {
+    "title": "SignMuon, MuonSign, and the Role of Error Feedback",
+    "short_title": "SignMuon",
+    "venue": "AAAI-27",
+    "submission_id": "48060"
+  },
+  "rules": {
+    "response_limit_unit": "characters",
+    "response_character_limit": 1500,
+    "confidential_character_limit": null,
+    "allow_external_links": false,
+    "deadline": "2026-10-31 AoE",
+    "source": "Author-supplied conference announcement; confirm other settings before drafting."
+  },
+  "source": {
+    "reviews_json": "signmuon_openreview_page.json",
+    "sha256": "0cc0650775acecc94b3c7da35198ad3132ece81c54bf64d1b694d2eb14122345"
+  },
+  "reviews": [
+    {
+      "stem": "review_R1_7S1b",
+      "target": "rebuttal_R1_7S1b.md",
+      "note_id": "smHroyG4g5",
+      "name": "Human review 1",
+      "reviewer": "7S1b",
+      "kind": "human"
+    },
+    {
+      "stem": "review_R2_D4r2",
+      "target": "rebuttal_R2_D4r2.md",
+      "note_id": "UC752MnbRo",
+      "name": "Human review 2",
+      "reviewer": "D4r2",
+      "kind": "human"
+    },
+    {
+      "stem": "review_R3_Ueq5",
+      "target": "rebuttal_R3_Ueq5.md",
+      "note_id": "xHT5WIiVi7",
+      "name": "Human review 3",
+      "reviewer": "Ueq5",
+      "kind": "human"
+    },
+    {
+      "stem": "review_R4_pqje",
+      "target": "rebuttal_R4_pqje.md",
+      "note_id": "kkv2ydIYff",
+      "name": "Human review 4",
+      "reviewer": "pqje",
+      "kind": "human"
+    },
+    {
+      "stem": "review_R5_Tx34",
+      "target": "rebuttal_R5_Tx34.md",
+      "note_id": "EDZy4k8BK7",
+      "name": "Human review 5",
+      "reviewer": "Tx34",
+      "kind": "human"
+    },
+    {
+      "stem": "review_AI_AI_Reviewer",
+      "target": "rebuttal_AI_AI_Reviewer.md",
+      "note_id": "LKOb5GFqWI",
+      "name": "AI review",
+      "reviewer": "AI_Reviewer",
+      "kind": "ai"
+    }
+  ],
+  "confidential": {
+    "enabled": true,
+    "stem": "confidential_ac",
+    "target": "confidential_ac_comment.md",
+    "references": [
+      {
+        "stem": "review_R3_Ueq5",
+        "point": "R3.2",
+        "label": "Ueq5 · Table 2/A8 discrepancy"
+      },
+      {
+        "stem": "review_R4_pqje",
+        "point": "R4.3",
+        "label": "pqje · Question2: correct five-seed results"
+      },
+      {
+        "stem": "review_R5_Tx34",
+        "point": "R5.1",
+        "label": "Tx34 · Question1: novelty beyond EF21"
+      },
+      {
+        "stem": "review_R5_Tx34",
+        "point": "R5.2",
+        "label": "Tx34 · Question2: Theorem 4 quantifiers"
+      },
+      {
+        "stem": "review_R1_7S1b",
+        "point": "R1.1",
+        "label": "7S1b · Question1: positive structural condition"
+      },
+      {
+        "stem": "review_R4_pqje",
+        "point": "R4.1",
+        "label": "pqje · Question1: theorem/implementation coverage"
+      }
+    ]
+  },
+  "port": 8766
+}

@@ -1,0 +1,21 @@
+{
+  "checked_utc": "2026-10-29T14:19:00.806906+00:00",
+  "article_drift_after_verified_claims": [
+    {
+      "path": "aaai_article/signmuon_addendum.pdf",
+      "earlier_sha256": "9f9b854694d00a73356031eff106833eadd54de529f09be6a3c4834ec98b0d6b",
+      "current_sha256": "4fa564775ec3bdeac18b6bc27e2fe89d73677575a9cc748ba5b4c80dbceb0f74"
+    },
+    {
+      "path": "aaai_article/signmuon_addendum_body.tex",
+      "earlier_sha256": "9afb45c3433973afa599423a786ffeec83b41efa1d2bb88c91d00297a68ee18a",
+      "current_sha256": "fa4dbccedca5842da7f741220a7c88a36c9a050162a94b5c8fe832c4607227d9"
+    }
+  ],
+  "code_drift_after_source_audit": [
+    "code/federated/README.md",
+    "code/tests/README.md"
+  ],
+  "note": "These source paths were not modified by this preparation. External live work is preserved.",
+  "latest_addendum_read": "479-line body read after drift; proofs and claims remain compatible; heterogeneous results still TODO, EF21 joint extension still open there."
+}
