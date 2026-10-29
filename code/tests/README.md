@@ -15,6 +15,12 @@ The experimental schedule and EF21 trace checks also run separately with
 trajectory/RNG preservation, known-gradient stationarity accounting, missing
 rounds, and the actual federated logging path.
 
+The heterogeneous experiment protocol has a separate standard-library check:
+`python -m unittest tests.test_federated_heterogeneous -v`. It checks homogeneous
+parameter provenance, validation-only selection, paired seeds, resume/reuse,
+the complete ten-method transfer, two LR-only tuning parts, failure reporting,
+and their cumulative results archive without training or downloads.
+
 [`test_code.py`](test_code.py) is the suite. The anonymity checks sit beside it in
 `test_anonymize.py`, which `test_code.py` adopts when it is present, so one command
 still runs everything. They are separate because that file and the `anonymize.py`

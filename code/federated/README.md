@@ -34,6 +34,94 @@ horizon-stability check and warns; `--budget-hours 0` means no deadline.
 Read `SUMMARY.md` in the bundle first: `tab:exp_3`, the communication accounting
 and the diagnostics in one file.
 
+## Two heterogeneous experiments for the rebuttal
+
+Copy the updated `code/` directory to the GPU machine. From that directory,
+run one installment at a time: transfer, priority tuning, then remaining tuning.
+Send each ZIP back for analysis before starting the next installment.
+
+```bash
+# 1. All ten article algorithms, homogeneous hyperparameters (50 finals).
+python -m federated.heterogeneous --experiment transfer --device cuda:0 --download
+
+# 2. Priority algorithms: LR tuning and five-seed finals.
+python -m federated.heterogeneous --experiment tuned --tune-part priority --device cuda:0 --download
+
+# 3. Remaining algorithms: the same LR tuning and five-seed finals.
+python -m federated.heterogeneous --experiment tuned --tune-part remaining --device cuda:0 --download
+```
+
+At the end of **each** command, download the file printed after `Download:` and
+send it back. The cumulative `rebuttal_results.zip` includes all completed work
+from the three commands; the summary identifies unfinished methods. All three
+commands share the same protocol directory and automatically resume.
+
+Both use **CNN2/CIFAR-10, Dirichlet label skew with concentration 0.1**, 11 clients,
+full participation, 2000 rounds, and 3 x 64 gradient accumulation at the same
+broadcast model. Client objectives have equal weight. All other training choices
+match the homogeneous experiment: cosine schedule, unit-gain scaling,
+momentum 0.9 with each method's existing convention, zero weight decay, and
+auxiliary AdamW LR 0.001. **Momentum is fixed throughout; only LR is tuned.**
+
+- **Transfer:** keep the homogeneous validation-selected LR and momentum 0.9.
+  All ten methods run together, without splitting transfer into parts
+  (50 final runs). This measures robustness to heterogeneity without retuning.
+- **Tuned, priority:** `signmuon`, `ef21muonusign`, `ef21muonsign`,
+  `ef21signmuon`, and `muon` (25 validation trials plus up to 25 finals).
+  These compare the main practical method, both convergent EF21 placements,
+  divergent EF21-SignMuon, and full-precision Muon.
+- **Tuned, remaining:** `muonusign`, `muonsign`, `signsgd`, `sgd`, and `adam`
+  (25 validation trials plus up to 25 finals).
+
+Both tuning parts search LR factors `{0.1, 0.3, 1, 3, 10}` around each
+homogeneous LR. Each method gets the same five configurations, one tuning
+seed, and the full 2000-round horizon. Select
+by the last-five validation mean on the existing 45k/5k split, then retrain on
+all 50k images. Auxiliary LR stays fixed. All ten algorithms are the ten rows
+of the article's main federated table.
+
+Use **five paired final seeds**. A seed determines
+initialization and client partition, shared across methods and experiments.
+The transfer LRs, taken from the saved homogeneous validation search, are:
+
+| Method | LR | Tuning part |
+| :-- | --: | :-- |
+| `signmuon` | 0.1 | priority |
+| `ef21muonusign` | 0.01 | priority |
+| `ef21muonsign` | 0.05 | priority |
+| `ef21signmuon` | 0.02 | priority |
+| `muon` | 0.1 | priority |
+| `muonusign` | 0.05 | remaining |
+| `muonsign` | 0.02 | remaining |
+| `signsgd` | 0.01 | remaining |
+| `sgd` | 0.05 | remaining |
+| `adam` | 0.001 | remaining |
+
+Transfer answers whether the homogeneous settings remain effective; tuning checks
+whether adapting LR changes the comparison. A selected LR at a search endpoint
+is flagged in the summary; widen `--lr-factors` if this occurs. `--tune-seeds`
+can expand the search. `--methods` can restrict the family for a smoke run;
+`--tune-part` affects only tuning and never reduces the transfer method list.
+
+`--dry-run` prints the complete plan without training, downloads, or writes.
+Rerunning either command automatically resumes completed jobs. Identical finals
+are reused if tuning selects the transfer setting. `--retry-failed` retries
+recorded failures; `--report-only` rebuilds outputs without training. `--rounds`
+sets **both** horizons; a shorter smoke run is a separate protocol.
+
+Outputs are in `results/federated_heterogeneous/<protocol-id>/`: read `SUMMARY.md`
+or `table.csv` for mean +/- sample SD of per-seed last-five test accuracy, and
+`tuning.csv` for all validation trials. Download `rebuttal_results.zip` for the
+tables, state, full configs, and curves; weights stay on the training machine.
+Per-job logs are included for diagnosing failed trials from the same ZIP.
+The raw runs are isolated from the homogeneous article export. Changing training
+or search settings creates a separate protocol directory; switching between
+transfer, priority tuning, and remaining tuning keeps the same directory.
+`SIGNMUON_RESULTS` relocates the whole tree.
+
+Rebuttal setup sentence: "CNN2/CIFAR-10, 11 clients, Dirichlet(0.1) label skew;
+the homogeneous protocol and five paired seeds are retained."
+
 | File | What it does |
 | :--- | :--- |
 | [`algorithms.py`](algorithms.py) | `run_federated`, *the* federated implementation; re-exports everything in `methods.py` |
@@ -42,6 +130,7 @@ and the diagnostics in one file.
 | [`data.py`](data.py) | Partitioning, the 45k/5k split, device-resident shards |
 | [`tune.py`](tune.py) | Equal-budget, validation-only learning-rate search |
 | [`overnight.py`](overnight.py) | **Step 1**: the whole protocol, resumable |
+| [`heterogeneous.py`](heterogeneous.py) | Homogeneous-parameter transfer and validation-tuned label-skew experiments |
 | [`export_article.py`](export_article.py) | **Step 2**: pack the results into one `.zip` |
 | [`plot_article.py`](plot_article.py) | **Step 3**: `fig_federated_main.pdf`, the figure the paper prints |
 | [`plot_federated.py`](plot_federated.py) | Exploratory plotter: one file per metric, also takes `--bundle` |

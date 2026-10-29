@@ -1,0 +1,478 @@
+\begin{abstract}
+We organize the theory revision around the reviewers' questions. We give a
+geometric sufficient condition for vanilla SignMuon, extend it to stochastic
+EMA and Nesterov momentum, and strengthen the interpretation of the divergence
+examples. Further extensions are explicitly marked as open targets.
+\end{abstract}
+
+\paragraph{Status.}
+This working addendum includes proofs of the statements below. Results
+inherited from prior work or the existing manuscript are identified as such;
+open targets are not claimed as theorems. Section~\ref{add:heterogeneous}
+specifies pending heterogeneous experiments.
+
+\section{Why Can SignMuon Work in Practice?}
+\label{add:geometry}
+\paragraph{Critique: pqje, 7S1b, D4r2, Tx34.}
+A worst-case failure does not predict an empirical ranking. The relevant
+positive question is when signing a polar factor preserves descent. We use
+the diagonal-isotropy argument of \citet{wang2026olion} and supply a stochastic
+momentum extension for interacting parameter blocks.
+
+Write $X=(X_\ell)_{\ell=1}^p$, with
+$X_\ell\in\mathbb R^{m_\ell\times n_\ell}$, and set
+\begin{align*}
+ d&=\sum_\ell m_\ell n_\ell,\qquad
+ R=\sum_\ell\min(m_\ell,n_\ell),\\
+ \mathcal N(G)&=\sum_\ell\|G_\ell\|_*.
+\end{align*}
+The joint Frobenius norm is
+$\|X\|_F^2=\sum_\ell\|X_\ell\|_F^2$.
+Polar factors are exact throughout this section; zero signs may be resolved
+to either binary value.
+
+\subsection{A sufficient geometric condition}
+For a nonzero rank-$r$ matrix $H=U\Sigma V^\top$, define
+\begin{align*}
+ Q&=UV^\top,\quad S=\operatorname{sign}(Q),\quad
+ a=\operatorname{tr}(\Sigma)/r,\\
+ c&=\operatorname{diag}(U^\top SV),\quad b=\|Q\|_1/r,\\
+ \varepsilon(H)&=\frac{\|c-b\mathbf1\|_2}{b\sqrt r},\qquad
+ \rho(H)=\frac{\|\Sigma-aI\|_F}{a\sqrt r}.
+\end{align*}
+Here $\|\cdot\|_1$ is entrywise. Each $c_j$ measures how the signed polar
+factor correlates with the singular direction $u_jv_j^\top$.
+The quantity $\varepsilon$ measures how unequal these correlations are
+relative to their positive mean; $\rho$ measures how unequal the singular
+values are relative to their mean.
+
+\begin{lemma}[\textbf{Geometric alignment}]
+\label{add:lem:alignment}
+With the notation above,
+\begin{equation}\label{add:eq:alignment}
+ \langle H,S\rangle\ge
+ a\|Q\|_1\bigl(1-\varepsilon(H)\rho(H)\bigr).
+\end{equation}
+Consequently, if $\varepsilon(H)\rho(H)\le1-\delta$ for
+$\delta\in(0,1]$, then $\langle H,S\rangle\ge\delta\|H\|_*$.
+\end{lemma}
+\begin{paperproof}
+The first bound is the cancellation argument in OLion, Lemma~4.3:
+\[
+ \langle H,S\rangle
+ =a\|Q\|_1+\sum_j(\sigma_j-a)(c_j-b).
+\]
+Cauchy--Schwarz bounds the last term below by
+$-a\|Q\|_1\varepsilon(H)\rho(H)$.
+For the consequence, $\|Q\|_1\ge\|Q\|_*=r$ and
+$ar=\|H\|_*$.
+\end{paperproof}
+
+\begin{assumption}[\textbf{Smoothness and noise}]
+\label{add:as:regularity}
+The objective is bounded below by $f_*$ and its gradient is $L$-Lipschitz
+in the joint Frobenius norm. Conditional on the history before query $t$,
+\[
+ \mathbb E_tG_t=\nabla f(X_t),\qquad
+ \mathbb E_t\|G_t-\nabla f(X_t)\|_F^2\le\sigma^2.
+\]
+\end{assumption}
+
+\begin{assumption}[\textbf{Uniform geometric margin}]
+\label{add:as:margin}
+For a fixed $\delta\in(0,1]$, independent of the horizon, every nonzero block of the actual momentum
+signal $H_t$ satisfies, almost surely,
+\[
+ \varepsilon(H_{t,\ell})\rho(H_{t,\ell})\le1-\delta
+ \qquad\text{for all }t,\ell.
+\]
+\end{assumption}
+
+\paragraph{Relation to OLion.}
+The condition says that correlation imbalance times singular-value spread
+must stay below one by a fixed amount $\delta>0$. Thus a more uneven
+spectrum requires tighter balance across singular directions. The lemma
+then guarantees positive alignment of at least $\delta\|H\|_*$.
+Assumption~\ref{add:as:margin} is our quantitative adaptation, not a verbatim
+assumption from OLion. Their Assumption~4.2 bounds $\varepsilon$; their
+descent measure (11) contains $1-\varepsilon\rho$, and the discussion after
+Theorem~4.4 adds spectral-spread and density conditions. We make a uniform
+positive margin explicit on each momentum block. This is an adaptation of
+their geometric requirement, not a new geometric principle.
+
+The margin excludes our ascent witness by Lemma~\ref{add:lem:alignment};
+small isotropy error alone is insufficient. No separate density or
+spectral-flatness condition is needed for the dimension-dependent bounds
+below. Joint smoothness allows cross-layer coupling, unlike the manuscript's
+block-only smoothness condition.
+
+\subsection{Stochastic momentum convergence}
+Initialize $M_0=0$. With $\beta=1-\mu\in(0,1]$ and
+$\theta=0$ for EMA or $\theta=\beta$ for Nesterov, run
+\begin{align}
+ M_{t+1}&=\mu M_t+\beta G_t,\nonumber\\
+ H_t&=(1-\theta)M_{t+1}+\theta G_t,\label{add:eq:method}\\
+ S_{t,\ell}&=\operatorname{sign}(\operatorname{polar}(H_{t,\ell})),\nonumber\\
+ X_{t+1}&=X_t-\eta S_t.\nonumber
+\end{align}
+This is vanilla SignMuon, without error feedback or weight decay.
+Let $\Delta=f(X_0)-f_*$ and $I_0=\|\nabla f(X_0)\|_F$.
+
+\begin{theorem}[\textbf{Conditional convergence of SignMuon}]
+\label{add:thm:signmuon}
+Under Assumptions~\ref{add:as:regularity}--\ref{add:as:margin},
+the iterates of \eqref{add:eq:method} satisfy
+\begin{equation}\label{add:eq:rate}
+ \frac1T\sum_{t<T}\mathbb E\mathcal N(\nabla f(X_t))
+ \le\frac{\Delta}{\delta\eta T}+\frac{Ld\eta}{2\delta}
+       +K_\delta B_T,
+\end{equation}
+where $K_\delta=\sqrt R+\sqrt d/\delta$ and
+\begin{align*}
+ B_T={}&(1-\theta)\left[
+ \frac{\mu I_0}{\beta T}
+ +\frac{\mu L\eta\sqrt d}{\beta}
+ +\sigma\sqrt{\frac{\beta}{2-\beta}}\right]
+ +\theta\sigma.
+\end{align*}
+For fixed dimensions and problem constants, choosing
+$\beta=T^{-1/2}$ and $\eta=\eta_0T^{-3/4}$, with fixed $\eta_0>0$,
+gives an $\mathcal O(T^{-1/4})$ bound for either momentum rule. With exact
+gradients and no momentum, $\eta=\eta_0T^{-1/2}$ gives
+$\mathcal O(T^{-1/2})$.
+\end{theorem}
+\begin{paperproof}
+Put $g_t=\nabla f(X_t)$. Since $\|S_t\|_F\le\sqrt d$ and
+$\mathcal N(A)\le\sqrt R\|A\|_F$, Lemma~\ref{add:lem:alignment} gives
+\begin{align*}
+ \langle g_t,S_t\rangle
+ &\ge\delta\mathcal N(H_t)-\sqrt d\|H_t-g_t\|_F\\
+ &\ge\delta\mathcal N(g_t)
+       -(\delta\sqrt R+\sqrt d)\|H_t-g_t\|_F.
+\end{align*}
+Joint smoothness and telescoping therefore give \eqref{add:eq:rate}
+with $B_T$ replaced by $T^{-1}\sum_{t<T}\mathbb E\|H_t-g_t\|_F$.
+
+To bound this error, set $\xi_t=G_t-g_t$. Expanding the EMA yields
+\begin{align*}
+ M_{t+1}-g_t={}&-\mu^{t+1}g_0
+ +\sum_{s=1}^t\mu^{t-s+1}(g_{s-1}-g_s)\\
+ &+\beta\sum_{s=0}^t\mu^{t-s}\xi_s,
+\end{align*}
+The middle term has norm at most
+$\mu L\eta\sqrt d/\beta$.
+Conditional centering makes distinct noise terms orthogonal in expectation,
+so the last term has expected norm at most
+$\sigma\sqrt{\beta/(2-\beta)}$.
+Averaging $\mu^{t+1}I_0$ gives at most $\mu I_0/(\beta T)$.
+Finally,
+$H_t-g_t=(1-\theta)(M_{t+1}-g_t)+\theta\xi_t$.
+The triangle inequality gives $B_T$; substitution gives both rates.
+\end{paperproof}
+
+\paragraph{Interpretation.}
+The theorem supplies a sufficient mechanism for successful training, not a
+ranking against the EF21 variants. OLion reports small isotropy errors for
+selected GPT-2 matrices; this motivates checking the full product
+$\varepsilon\rho$ on our momentum signals. Neither smoothness nor the
+geometric margin is asserted automatically for a neural network.
+The rate controls a first moment; squaring it does not bound the expected
+squared gradient norm.
+
+\section{How General Are the Divergence Results?}
+\label{add:divergence}
+\paragraph{Critique: Tx34, D4r2.}
+We separate arbitrary-schedule failure of the plain sign placements from
+the parameter-dependent construction for EF21-SignMuon.
+
+\subsection{Lower-bounded examples for the plain methods}
+Let $s$ be any of the three direction maps in the paper:
+$\operatorname{sign}\circ\operatorname{polar}$,
+$\operatorname{polar}\circ\operatorname{sign}$, or
+$\operatorname{sign}\circ\operatorname{polar}\circ\operatorname{sign}$.
+Each has a witness $G\ne0$ with
+$a:=\langle G,s(G)\rangle<0$ and no relevant sign ties.
+
+\begin{proposition}[\textbf{Arbitrary schedules}]
+\label{add:prop:softplus}
+For each such witness, define
+\[
+ f(X)=\log(1+\exp(\langle G,X\rangle)).
+\]
+This function is convex, bounded below, and globally smooth with
+$L\le\|G\|_F^2/4$. From $X_0=0$, for any positive step sizes and any
+momentum coefficients $\mu_t\in[0,1)$, either EMA or Nesterov generates
+\[
+ X_t=-s(G)\sum_{k<t}\eta_k,\qquad
+ \|\nabla f(X_t)\|_F\ge\tfrac12\|G\|_F.
+\]
+If $\sum_k\eta_k=\infty$, then $f(X_t)\to\infty$.
+The objective is independent of the schedule and the horizon.
+\end{proposition}
+\begin{paperproof}
+Writing $z=\langle G,X\rangle$ gives
+$\nabla f(X)=q(z)G$, where $q(z)=(1+e^{-z})^{-1}>0$.
+Every momentum signal is a positive multiple of $G$, so positive
+homogeneity of $s$ fixes the direction at $s(G)$.
+Thus $\langle G,X_t\rangle=-a\sum_{k<t}\eta_k\ge0$, which implies
+$q(\langle G,X_t\rangle)\ge1/2$ and the stated divergence.
+The Hessian is $q(z)(1-q(z))\operatorname{vec}(G)
+\operatorname{vec}(G)^\top$, proving convexity and smoothness.
+\end{paperproof}
+
+\subsection{EF21-SignMuon: stationarity and quantifiers}
+The existing Theorem~4 has the quantifiers
+\[
+ \forall L,\eta>0,\ \forall\mu\in[0,1),\quad
+ \exists f_{L,\eta,\mu}.
+\]
+The fixed-step run diverges on this objective, for either momentum variant.
+The construction also gives a gradient
+lower bound, rather than only growth of the function value.
+
+\begin{proposition}[\textbf{EF21 gradient floor}]
+\label{add:prop:ef_floor}
+Fix $\mu$ and a momentum variant. There are constants $c_\mu,C_\mu>0$,
+independent of $L,\eta$, such that the existing bounded-below construction
+satisfies
+\begin{align*}
+ f(X_0)-\inf f&\le C_\mu L\eta^2,\\
+ \|\nabla f(X_t)\|_F&\ge c_\mu L\eta\qquad(t\ge3).
+\end{align*}
+\end{proposition}
+Here $\mu$ is the momentum coefficient, $L$ the smoothness constant, and
+$\eta$ the learning rate. The positive constant $c_\mu$ may depend on the
+fixed momentum coefficient and variant, but not on $L$ or $\eta$.
+\begin{paperproof}
+Let $\widetilde f$ be the normalized construction, with smoothness
+$\widetilde L_\mu$ and finite initial gap $\widetilde\Delta_\mu$.
+Its tail gradients have $(2,2)$-entry $-7/12$; the modification making
+$\widetilde f$ bounded below preserves the trajectory and these gradients.
+Under the paper's rescaling
+\[
+ f(X)=\frac{L\eta^2}{\widetilde L_\mu}\widetilde f(X/\eta),
+ \qquad X_t=\eta\widetilde X_t,
+\]
+take $c_\mu=7/(12\widetilde L_\mu)$ and any positive
+$C_\mu\ge\widetilde\Delta_\mu/\widetilde L_\mu$.
+\end{paperproof}
+
+\paragraph{What remains open.}
+These parameter-dependent examples do not by themselves rule out
+horizon-tuned rates: their gradient floor scales with $\eta$ and its
+constant may depend on $\mu$. They also do not establish failure under
+arbitrary decreasing schedules. A stronger lower bound must either use one
+fixed smooth objective for a specified decreasing schedule, or construct a
+family with uniformly controlled smoothness and initial gap whose gradient
+lower bound contradicts the proposed rate. This is an open target, not a
+consequence of Theorem~4. Proposition~\ref{add:prop:softplus} concerns the
+plain methods and is not an EF21 counterexample.
+
+\section{Which Guarantees Cover the Implementations?}
+\label{add:coverage}
+\paragraph{Critique: pqje, Ueq5, D4r2, 7S1b.}
+The new SignMuon theorem covers stochastic EMA and Nesterov under joint
+smoothness. Other implementation differences require distinct arguments.
+
+\paragraph{EF21 momentum and schedules: existing revision.}
+The revised appendix already supplies Nesterov and deterministic-schedule
+bounds for EF21-MuonUSign and EF21-MuonSign. For constant or cosine learning
+rates, their form is
+\[
+ \frac{\sum_{t<T}\eta_t\mathbb E\mathcal N(\nabla f(X_t))}
+      {\sum_{t<T}\eta_t}
+ \le\frac{\Delta+\bar\eta A_\beta}{\sum_{t<T}\eta_t}
+       +\bar\eta B_\beta+V_\beta,
+\]
+with fixed momentum within the run, exact polar factors, and explicit
+initialization, movement, and noise constants. Fixed peak learning rate
+and fixed noise leave a residual in this bound. The gradient is evaluated
+at the server model $X_t$, including for the compressed downlink.
+These results still use the manuscript's restrictive block-only smoothness.
+% Sources: ef21_nesterov_convergence.tex and ef21_fixed_radius.tex.
+
+\paragraph{EF21 cross-layer coupling: open target.}
+Extend the tracking estimates to joint Frobenius smoothness of each local
+objective. The required change is to control each local gradient increment
+by the displacement of the entire model. The current block-separable proofs
+do not establish this extension. First- and second-moment guarantees must
+remain separate.
+
+\paragraph{Finite orthogonalization and local voting.}
+Theorem~\ref{add:thm:signmuon} concerns signing the polar factor of one
+gradient estimator. A full-precision average followed by this update is
+different from voting on locally signed polar factors. Both finite-solver
+and voting effects can be exposed as a defect relative to the ideal $S_t$:
+\[
+ a_t=\max\{0,\langle H_t,S_t-\widehat S_t\rangle\},
+ \qquad\|\widehat S_t\|_F\le\sqrt d.
+\]
+For the run using $\widehat S_t$, the same proof adds
+$\frac1{\delta T}\sum_{t<T}\mathbb E a_t$ to
+\eqref{add:eq:rate}, provided the stated assumptions hold along that run.
+For binary updates,
+\[
+ a_t\le2\sum_{(\ell,i,j)\in\mathcal F_t}|(H_{t,\ell})_{ij}|,
+\]
+where $\mathcal F_t$ is the set of entries whose signs differ.
+Bounding this weighted disagreement for the actual solver or aggregation
+rule remains necessary; a small error before signing alone is insufficient.
+No conclusion about non-IID local training follows from the centralized
+theorem.
+
+\section{Does Heterogeneity Change the Empirical Ranking?}
+\label{add:heterogeneous}
+\paragraph{Critique: 7S1b, pqje, D4r2.}
+Table~\ref{add:tab:heterogeneous} compares the existing homogeneous results
+with two CNN2/CIFAR-10 experiments under Dirichlet label skew, concentration
+$\alpha=0.1$. Both retain 11 fully participating clients, 2000 rounds,
+cosine scheduling, momentum $\mu=0.9$, unit-gain scaling, zero weight decay, and auxiliary
+AdamW learning rate $0.001$. Each round accumulates three minibatches of
+64 images per client at the broadcast model, without local model steps.
+Client objectives have equal weight; initialization and partitions are
+paired across methods at each seed.
+
+\paragraph{Experiment 1: transfer homogeneous settings.}
+Keep each method's homogeneous learning rate and momentum $\mu=0.9$.
+All ten article algorithms run together (50 final runs). Changing only
+the client partition measures robustness without retuning.
+
+\paragraph{Experiment 2: retune learning rates in two parts.}
+Search learning-rate multipliers $\{0.1,0.3,1,3,10\}$ of the homogeneous
+optimum, keeping momentum fixed: five configurations per method, each
+trained for 2000 rounds with tuning seed 0. The priority part covers the
+first five rows of Table~\ref{add:tab:heterogeneous}; the remaining five
+follow for completeness. Each part has 25 validation runs and up to 25
+final runs, reusing matching transfer runs. Select by mean accuracy over
+the last five validation evaluations, holding out 5000 images before
+partitioning the remaining 45,000. Final runs retrain on all 50,000 images.
+Both experiments report the last-five test mean as mean $\pm$ sample
+standard deviation over paired seeds $0,\ldots,4$. The retuned learning
+rates also test whether the homogeneous optima transfer.
+
+% Homogeneous reference: code/results/federated_export/table_federated.csv.
+\begin{table*}[!t]
+\centering
+\footnotesize
+\setlength{\tabcolsep}{5pt}
+\renewcommand{\arraystretch}{1.1}
+\begin{tabular}{@{}lccccc@{}}
+\toprule
+\multirow{2}{*}{\textbf{Optimizer}} &
+\multicolumn{2}{c}{\textbf{Homogeneous reference}} &
+\textbf{Experiment 1: transfer} &
+\multicolumn{2}{c}{\textbf{Experiment 2: LR retuned}} \\
+\cmidrule(lr){2-3}\cmidrule(lr){4-4}\cmidrule(lr){5-6}
+& $\eta_0$ & \textbf{Test acc.\ (\%)} & \textbf{Test acc.\ (\%)} &
+$\eta_0$ & \textbf{Test acc.\ (\%)} \\
+\midrule
+\multicolumn{6}{l}{\emph{Tuning part 1: priority methods}} \\
+SignMuon & $0.1$ & $85.72\pm0.24$ & \texttt{TODO} & \texttt{TODO} & \texttt{TODO} \\
+EF21-MuonUSign & $0.01$ & $83.56\pm0.41$ & \texttt{TODO} & \texttt{TODO} & \texttt{TODO} \\
+EF21-MuonSign & $0.05$ & $83.99\pm0.28$ & \texttt{TODO} & \texttt{TODO} & \texttt{TODO} \\
+EF21-SignMuon & $0.02$ & $84.71\pm0.15$ & \texttt{TODO} & \texttt{TODO} & \texttt{TODO} \\
+Muon & $0.1$ & $85.98\pm0.26$ & \texttt{TODO} & \texttt{TODO} & \texttt{TODO} \\
+\midrule
+\multicolumn{6}{l}{\emph{Tuning part 2: remaining methods}} \\
+MuonUSign & $0.05$ & $84.56\pm0.35$ & \texttt{TODO} & \texttt{TODO} & \texttt{TODO} \\
+MuonSign & $0.02$ & $82.94\pm0.19$ & \texttt{TODO} & \texttt{TODO} & \texttt{TODO} \\
+SignSGD & $0.01$ & $81.44\pm0.15$ & \texttt{TODO} & \texttt{TODO} & \texttt{TODO} \\
+SGD & $0.05$ & $81.69\pm0.37$ & \texttt{TODO} & \texttt{TODO} & \texttt{TODO} \\
+Adam & $0.001$ & $77.12\pm1.04$ & \texttt{TODO} & \texttt{TODO} & \texttt{TODO} \\
+\bottomrule
+\end{tabular}
+\caption{CNN2/CIFAR-10, 11 clients, 2000 rounds, five seeds. Both new
+experiments use Dirichlet$(0.1)$ label skew. Experiment 1 retains the
+reference learning rates for all ten methods in one run; Experiment 2 selects
+only learning rates on validation, in two parts. Momentum stays $\mu=0.9$
+throughout. Accuracy is mean $\pm$ sample standard deviation of per-seed
+last-five test means. \texttt{TODO} denotes pending measurements.}
+\label{add:tab:heterogeneous}
+\end{table*}
+
+\section{What Is New, and What Must Be Corrected?}
+\label{add:novelty}
+\paragraph{Critique: Tx34, pqje, 7S1b.}
+The alignment lemma is credited to OLion. The contribution developed here
+is its explicit stochastic EMA/Nesterov bound under joint smoothness,
+together with the bounded-below arbitrary-schedule counterexamples and
+the quantified interpretation of the EF21 example. Verification of the
+geometric margin on our neural-network trajectories remains future work.
+
+The baseline EF21-MuonUSign/MuonSign guarantees instantiate
+\citet{gruntkowska2025error}. The Nesterov and deterministic-schedule
+bounds supply additional refinements.
+
+The updated SignMuon article now proves conditional guarantees for the
+actual signed vote, including a stochastic momentum result
+\citep{mishra2026signmuonv2}. The earlier description of its theory as
+covering only SignSGD must be replaced. Its alignment assumptions and our
+geometric sufficient condition are compatible with worst-case divergence.
+
+Frobenius contractivity suffices for the EF21 guarantees. Their first- and
+second-moment rates use separate proofs and tuning. These guarantees
+characterize convergence conditions; experiments determine the empirical
+ranking.
+
+\subsection{Draft rebuttal points}
+\label{add:rebuttals}
+Each reviewer block below fits 1,500 characters, including the quotations,
+spaces, and LaTeX markup. Quotations are exact excerpts from the reviews.
+Responses cite the revised manuscript and the results proved in this addendum.
+
+% BEGIN REBUTTAL Tx34
+\paragraph{Reviewer Tx34.}
+\noindent\emph{``Fixed-step divergence does not rule out a finite-time convergence rate.''}
+\textbf{Response.} Theorem 4 establishes failure for every fixed learning rate and momentum on a suitable smooth, lower-bounded objective. The addendum also bounds its gradient norm away from zero. For each plain sign placement, one fixed smooth, convex, lower-bounded example defeats every positive step schedule. Horizon-tuned EF21 rates remain a separate question because its gradient lower bound shrinks with the learning rate.
+
+\noindent\emph{``The theory does not predict the experimental ranking.''}
+\textbf{Response.} A sufficient condition is balanced correlation of the signed polar factor with momentum's singular directions, with tighter balance for more uneven singular values. Under this OLion-based condition, joint smoothness and bounded gradient noise, the average expected gradient norm is $O(T^{-1/4})$ for EMA/Nesterov with the stated tuning. This gives a measurable criterion separating our ascent examples from trajectories admitting convergence guarantees.
+
+\noindent\emph{``Sufficient conditions are treated as necessary conditions.''}
+\textbf{Response.} Frobenius contractivity of scaled sign is sufficient to apply EF21-Muon theory under its stated assumptions and tuning. Spectral contractivity is a sufficient tool in the compared analysis, not a necessary property of convergent compressors.
+% END REBUTTAL Tx34
+
+% BEGIN REBUTTAL pqje
+\paragraph{Reviewer pqje.}
+\noindent\emph{``under what reasonable assumptions does sign compression after orthogonalization preserve a useful descent direction''}
+\textbf{Response.} OLion's condition supplies a concrete answer: correlations of the signed polar factor with momentum's singular directions must be sufficiently balanced relative to singular-value spread. Under this condition at every step, joint smoothness and bounded gradient noise, our tuned EMA/Nesterov theorem gives an $O(T^{-1/4})$ bound on the average expected gradient norm. Correlation imbalance and spectral spread are measurable along a training trajectory.
+
+\noindent\emph{``The nanoGPT experiments do not actually evaluate the proposed distributed compression methods.''}
+\textbf{Response.} NanoGPT tests the update rule after full-precision gradient averaging. Federated CIFAR-10 tests locally compressed messages and aggregation, with per-round uplink and downlink costs reported separately.
+
+\noindent\emph{``Are any experiments covered by the convergence guarantees?''}
+\textbf{Response.} With exact polar factors and the stated block-smoothness/noise assumptions, the revised EF21 bounds cover fixed EMA/Nesterov momentum and constant/cosine schedules. They give an explicit transient plus step-size and noise terms; the prescribed horizon tuning makes all terms vanish.
+% END REBUTTAL pqje
+
+% BEGIN REBUTTAL Ueq5
+\paragraph{Reviewer Ueq5.}
+\noindent\emph{``the layer-wise smoothness assumption forces separability across layers.''}
+\textbf{Response.} The new vanilla SignMuon theorem uses joint Frobenius smoothness, so changing one layer may affect every gradient block. Together with the OLion-based geometric condition and bounded gradient noise, this suffices for stochastic EMA/Nesterov convergence on coupled objectives. The existing EF21 guarantees retain their original smoothness assumptions.
+
+\noindent\emph{``This does not follow by squaring the first-moment bound.''}
+\textbf{Response.} EF21's $O(T^{-1/4})$ expected-norm and $O(T^{-1/2})$ expected-squared-norm guarantees have separate proofs and tuning. The latter uses gradient-scaled steps. For constant/cosine schedules, the revised bound explicitly separates transient, step-size, and noise terms.
+
+\noindent\emph{``The authors should identify the correct results and revise the affected comparisons.''}
+\textbf{Response.} The revised main table and normalization ablation both report MuonSign $82.94\pm0.19\%$ and SignSGD $81.44\pm0.15\%$ over five seeds. MuonSign is therefore 1.50 percentage points higher. SignMuon remains ahead at $85.72\pm0.24\%$.
+% END REBUTTAL Ueq5
+
+% BEGIN REBUTTAL D4r2
+\paragraph{Reviewer D4r2.}
+\noindent\emph{``Ideally, the paper would provide a resolution to the tension it has documented.''}
+\textbf{Response.} A sufficient condition, adapted from OLion, balances the signed polar factor's correlations across momentum's singular directions relative to singular-value spread. It guarantees descent for the momentum linear model and, with joint smoothness and bounded gradient noise, a tuned EMA/Nesterov convergence rate. Our ascent witness violates this measurable condition. The addendum also gives smooth, convex, lower-bounded counterexamples for the plain methods, satisfying Assumption 1.
+
+\noindent\emph{``the scale of the input is also communicated with each update.''}
+\textbf{Response.} The communication-accounting appendix already includes one sign bit per matrix entry, a 32-bit scale per EF21 block, and 32-bit auxiliary parameters. On CNN2 this gives 1.0871 bits per parameter per compressed channel per round, a 29.4-fold reduction. EF21-MuonSign compresses both channels; EF21-SignMuon and EF21-MuonUSign retain full-precision downlinks.
+% END REBUTTAL D4r2
+
+% BEGIN REBUTTAL 7S1b
+\paragraph{Reviewer 7S1b.}
+\noindent\emph{``The central theory--practice gap remains largely unresolved.''}
+\textbf{Response.} A sufficient condition is balanced correlation of the signed polar factor across momentum's singular directions, with tighter balance for more uneven singular values. Combined with joint smoothness, bounded gradient noise, and the stated tuning, it yields stochastic EMA/Nesterov convergence. This OLion-based criterion is measurable on training trajectories and excludes our ascent witness.
+
+\noindent\emph{``What parts of the convergence analysis for EF21-MuonUSign and EF21-MuonSign are genuinely new relative to the existing EF21-Muon framework?''}
+\textbf{Response.} The baseline EMA guarantees instantiate EF21-Muon. Additional proofs cover Nesterov, constant/cosine schedules, conditional SignMuon convergence under joint smoothness, and bounded-below counterexamples valid for every positive step schedule for the plain methods.
+
+\noindent\emph{``How broadly should the federated-learning conclusions be interpreted?''}
+\textbf{Response.} EF21 theory permits different client objectives under the stated block-smoothness/noise assumptions and tuning, with exact polar updates and synchronized gradient queries. This supplies a guarantee for heterogeneous clients without local model steps. Federated CIFAR-10 tests the homogeneous case with 11 clients over five seeds.
+% END REBUTTAL 7S1b
