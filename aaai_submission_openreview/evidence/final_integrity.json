@@ -111,7 +111,7 @@
     },
     {
       "stem": "review_R2_D4r2",
-      "characters": 1462,
+      "characters": 1470,
       "included": [
         "R2.6",
         "R2.3"
@@ -131,7 +131,7 @@
     },
     {
       "stem": "review_R3_Ueq5",
-      "characters": 1490,
+      "characters": 1487,
       "included": [
         "R3.2",
         "R3.1",
@@ -144,7 +144,7 @@
     },
     {
       "stem": "review_R4_pqje",
-      "characters": 1497,
+      "characters": 1479,
       "included": [
         "R4.1",
         "R4.2",
@@ -170,7 +170,7 @@
     },
     {
       "stem": "review_R5_Tx34",
-      "characters": 1496,
+      "characters": 1492,
       "included": [
         "R5.1",
         "R5.3",
@@ -184,7 +184,7 @@
     },
     {
       "stem": "review_AI_AI_Reviewer",
-      "characters": 1473,
+      "characters": 1478,
       "included": [
         "AI.1",
         "AI.2",
@@ -216,8 +216,8 @@
     }
   ],
   "original_inputs_unchanged": true,
-  "checked_utc": "2026-10-29T21:32:24.342042+00:00",
-  "revision": 5,
+  "checked_utc": "2026-10-29T21:56:40.429966+00:00",
+  "revision": 6,
   "review_files_sha256": {
     "review_AI_AI_Reviewer.md": "65ea9de21ab2c19b45d70859f1b271935b5794a135580775074521d32b8f7dd9",
     "review_R1_7S1b.md": "80b24a98063f589b380b5820faab95485fc84816bcb6e62804e1796305f3ea7a",
@@ -236,7 +236,7 @@
   },
   "ef21_separability_retained": true,
   "transfer_runs_verified": 50,
-  "revision_validation": "evidence/revision_5_validation.json",
+  "revision_validation": "evidence/revision_6_validation.json",
   "previous_article_proof_sources_sha256": {
     "signmuon_body.tex": "184a74ac7d4d05d7a6596eed69ccda01f2af0c059b800c364b7e6bf04ac3b696",
     "signmuon_addendum_body.tex": "7a45c5c9c4185312d7f2afde99255dccd4f4452cc8f8e23fa6d19b099dddc8b1",

@@ -18,7 +18,7 @@ Thank you for your questions.
 
 **EF21-Muon(U)Sign are the only Muon variants that work well here (>80%).**
 
-3. Re our analysis: After your review, we extended gradient-side EF21 to fixed EMA/Nesterov and constant/cosine learning rates. Core convergence proofs are verified in Lean; separable layers remain assumed.
+3. Re our analysis: After your review, we proved EF21-Muon(U)Sign convergence for constant/cosine rates and fixed EMA/Nesterov, and verified the proofs in Lean. These bounds control expected gradient norms.
 4. Re choosing a method: SignMuon is effective on IID CNN2/CIFAR-10; for label skew, use EF21-MuonUSign for uplink-only compression or EF21-MuonSign for both links. Messages use 1.087 bits/parameter, including auxiliaries and scales.
 5. Re nanoGPT: nanoGPT validation losses are 3.2881 for SignMuon and 3.4049 for SignSGD (1 run each). The 0.0021 gap to EF21-SignMuon cannot rank methods.
 

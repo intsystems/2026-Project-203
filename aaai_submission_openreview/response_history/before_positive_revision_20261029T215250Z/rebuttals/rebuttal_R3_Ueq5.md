@@ -1,0 +1,7 @@
+Thank you for identifying the reporting and rate issues.
+
+1. Re the inconsistent tables: On federated CNN2/CIFAR-10 (11 IID clients, 5 seeds), the submitted logs reproduce A8: MuonSign 82.94±0.19% versus SignSGD 81.44±0.15%. SignMuon reaches 85.72±0.24% versus Muon 85.98±0.26%. Table 2 and its reversed comparison will be corrected. On the new label-skew split, **only EF21-Muon(U)Sign exceed 80% among Muon variants** at IID-selected rates (7S1b, Q2).
+2. Re the extended guarantees: In response to your review, we extended gradient-side EF21 to fixed EMA and Nesterov with deterministic learning rates, including constant/cosine schedules. The core tracking and convergence proofs are verified in Lean. The bounds retain separable layers and include noise and orthogonalization error; the actual numerical solver still needs an error bound. Our separate SignMuon theorem permits interacting layers under a uniform alignment condition. nanoGPT’s changing momentum and auxiliary Adam updates require further analysis.
+3. Re the two convergence rates: Squaring an expected-norm bound is invalid. We separate the claims: the $O(T^{-1/2})$ expected squared-gradient bound uses gradient-dependent steps; the new constant/cosine bounds control an expected gradient norm averaged with learning-rate weights. With learning rate and fixed momentum chosen for the run length, the exact-update bound tends to zero.
+
+If these corrections resolve your reservations, please consider raising your score.

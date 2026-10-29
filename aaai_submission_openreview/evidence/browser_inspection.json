@@ -1,5 +1,5 @@
 {
-  "checked_utc": "2026-10-29T21:31:10.804063+00:00",
+  "checked_utc": "2026-10-29T21:56:39.228177+00:00",
   "pages": [
     {
       "stem": "review_R1_7S1b",
@@ -91,8 +91,8 @@
     },
     {
       "stem": "review_R2_D4r2",
-      "characters": 1462,
-      "countLabel": "1462 / 1,500 characters",
+      "characters": 1470,
+      "countLabel": "1470 / 1,500 characters",
       "renderedMath": 4,
       "renderedTables": [],
       "strongText": [
@@ -113,9 +113,9 @@
     },
     {
       "stem": "review_R3_Ueq5",
-      "characters": 1490,
-      "countLabel": "1490 / 1,500 characters",
-      "renderedMath": 1,
+      "characters": 1487,
+      "countLabel": "1487 / 1,500 characters",
+      "renderedMath": 3,
       "renderedTables": [],
       "strongText": [
         "only EF21-Muon(U)Sign exceed 80% among Muon variants"
@@ -132,8 +132,8 @@
     },
     {
       "stem": "review_R4_pqje",
-      "characters": 1497,
-      "countLabel": "1497 / 1,500 characters",
+      "characters": 1479,
+      "countLabel": "1479 / 1,500 characters",
       "renderedMath": 0,
       "renderedTables": [],
       "strongText": [
@@ -153,8 +153,8 @@
     },
     {
       "stem": "review_R5_Tx34",
-      "characters": 1496,
-      "countLabel": "1496 / 1,500 characters",
+      "characters": 1492,
+      "countLabel": "1492 / 1,500 characters",
       "renderedMath": 0,
       "renderedTables": [],
       "strongText": [
@@ -172,8 +172,8 @@
     },
     {
       "stem": "review_AI_AI_Reviewer",
-      "characters": 1473,
-      "countLabel": "1473 / 1,500 characters",
+      "characters": 1478,
+      "countLabel": "1478 / 1,500 characters",
       "renderedMath": 0,
       "renderedTables": [],
       "strongText": [
@@ -194,8 +194,8 @@
     },
     {
       "stem": "confidential_ac",
-      "characters": 2145,
-      "countLabel": "2145 characters · limit not specified",
+      "characters": 2345,
+      "countLabel": "2345 characters · limit not specified",
       "renderedMath": 0,
       "renderedTables": [],
       "strongText": [

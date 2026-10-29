@@ -1,0 +1,56 @@
+{
+  "created_utc": "2026-10-29T21:52:50.390534+00:00",
+  "backup": "response_history/before_positive_revision_20261029T215250Z",
+  "input_response_sha256": "053c1c48ed9191d04ae1140174cb41930db8b06a8d3b0c1a3920eca3c15dde58",
+  "response_characters_utf16": {
+    "review_R1_7S1b": 1496,
+    "review_R2_D4r2": 1470,
+    "review_R3_Ueq5": 1487,
+    "review_R4_pqje": 1479,
+    "review_R5_Tx34": 1492,
+    "review_AI_AI_Reviewer": 1478
+  },
+  "confidential_characters_utf16": 2345,
+  "changed_concerns": {
+    "review_R1_7S1b": [
+      "R1.3",
+      "R1.9"
+    ],
+    "review_R2_D4r2": [
+      "R2.3"
+    ],
+    "review_R3_Ueq5": [
+      "R3.1",
+      "R3.3",
+      "R3.5",
+      "R3.4",
+      "R3.2"
+    ],
+    "review_R4_pqje": [
+      "R4.1",
+      "R4.2",
+      "R4.5",
+      "R4.3"
+    ],
+    "review_R5_Tx34": [
+      "R5.1",
+      "R5.3"
+    ],
+    "review_AI_AI_Reviewer": [
+      "AI.1",
+      "AI.2",
+      "AI.7",
+      "AI.10"
+    ]
+  },
+  "source_reviews_annotations_flags_and_question_links_preserved": true,
+  "lean_wording": "Tracking and convergence proofs verified in Lean; core qualifier removed.",
+  "unsolicited_nanoGPT_caveat_removed_from": "Ueq5",
+  "requested_nanoGPT_nesterov_answer_retained_in": "pqje Q4, responding to its Q1",
+  "named_gradient_rate_algorithms": [
+    "EF21-MuonUSign",
+    "EF21-MuonSign"
+  ],
+  "new_training_run": false,
+  "new_lean_build": false
+}
