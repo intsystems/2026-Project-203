@@ -129,6 +129,34 @@ search protocol and any boundary extensions are recorded in `state.json`.
 Keep the original results directory on the GPU machine to reuse those runs.
 The ZIP is an analysis bundle; resuming uses that machine's original run tree.
 
+### Continue a boundary search for MuonSign
+
+After the three installments, MuonSign selected the lowest tested LR, `5e-5`.
+From the same `code/` directory on the GPU machine, run:
+
+```bash
+python -m federated.heterogeneous --experiment tuned --tune-part remaining --refine-methods muonsign --device cuda:0 --download
+```
+
+`--refine-methods` selects work inside the existing ten-method cache. Keep the
+original results tree and default `--methods` list. The command resumes MuonSign's
+validation grid, first adding `1e-5` and `2e-5`, and continues with two lattice
+points per extension until the validation winner has tested LRs on both sides.
+The original three-extension cap does not apply to this explicit continuation.
+Momentum, seeds, validation split, 2000-round horizon, and training settings stay
+fixed. Test results do not enter selection. The selected LR gets five final
+seeds; matching completed runs are reused.
+
+The previous selected LR and continuation history are recorded in `state.json`
+and `SUMMARY.md`. All other results remain in the same cumulative
+`rebuttal_results.zip`; send that ZIP back when the command finishes. Rerunning
+resumes an interrupted continuation, and `--retry-failed` retries failed jobs.
+`--dry-run` shows the cached grid and next rates without training or writes.
+
+On the uploaded hardware, each new validation LR takes about 3.4 minutes, and
+five new final seeds take about 17 minutes. One extension plus new finals costs
+about 24 minutes; each further extension adds about 7 minutes.
+
 Rebuttal setup sentence: "CNN2/CIFAR-10, 11 clients, Dirichlet(0.1) label skew;
 the homogeneous protocol and five paired seeds are retained."
 

@@ -21,7 +21,9 @@ parameter provenance, validation-only selection, paired seeds, resume/reuse,
 the complete ten-method transfer, two LR-only tuning parts, failure reporting,
 the homogeneous lattice and boundary extension, reuse of the original transfer
 cache after the search correction, and the cumulative archive without training
-or downloads.
+or downloads. Continuation checks cover method-specific boundary refinement,
+preservation of all cached results, interruption/resume beyond the base search
+limit, and retrying failed trials before accepting an interior winner.
 
 [`test_code.py`](test_code.py) is the suite. The anonymity checks sit beside it in
 `test_anonymize.py`, which `test_code.py` adopts when it is present, so one command

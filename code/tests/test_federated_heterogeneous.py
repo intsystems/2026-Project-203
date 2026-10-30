@@ -4,6 +4,7 @@ import contextlib
 import csv
 import io
 import json
+import math
 import os
 import re
 import tempfile
@@ -25,7 +26,7 @@ class HeterogeneousExperimentsTests(unittest.TestCase):
                          "--seeds", "0", "1", "--tune-seeds", "0", "1",
                          "--lr-points", "5", "--lr-extend-rounds", "0", *extra])
 
-    def fake_runner(self, calls, best=None, fail=None):
+    def fake_runner(self, calls, best=None, fail=None, score=None):
         def runner(args, **kw):
             calls.append((args, kw))
             seed, split = kw["seed"], kw["split"]
@@ -43,12 +44,12 @@ class HeterogeneousExperimentsTests(unittest.TestCase):
             path.mkdir(parents=True, exist_ok=True)
             # High initial accuracy must not enter the last-five criterion.
             target = HOMOGENEOUS_LRS[kw["method"]] if best is None else best
-            val = 83.12345 if kw["lr"] == target else 70.0
+            val = score(kw) if score else (83.12345 if kw["lr"] == target else 70.0)
             metric = "val_acc" if split == "tune" else "test_acc"
-            score = val if split == "tune" else 81.12345 + seed
+            accuracy = val if split == "tune" else 81.12345 + seed
             data = {"config": {"rounds": kw["rounds"]},
                     "history": {"steps": [0, 2, 4, 6, 8, kw["rounds"]],
-                                metric: [99.0] + [score] * 5}}
+                                metric: [99.0] + [accuracy] * 5}}
             (path / "metrics.json").write_text(json.dumps(data), encoding="utf-8")
             (path / "model.pt").write_bytes(b"dummy weights, excluded from archive")
             # Selection must use full-precision saved validation, ignoring both
@@ -208,6 +209,113 @@ class HeterogeneousExperimentsTests(unittest.TestCase):
             updated = json.loads((old / "state.json").read_text())
             self.assertEqual(updated["protocol"]["version"], 3)
             self.assertEqual(updated["previous_protocol"]["version"], 2)
+
+    def test_refinement_reuses_family_cache_and_only_updates_requested_method(self):
+        calls = []
+        options = ["--methods", *DEFAULT_METHODS, "--tune-part", "remaining"]
+        original = self.args(*options, "--experiment", "both")
+        refined = self.args(*options, "--experiment", "tuned", "--refine-methods", "muonsign")
+        with tempfile.TemporaryDirectory() as tmp, patch.dict(os.environ, {"SIGNMUON_RESULTS": tmp}):
+            root = run(original, self.fake_runner(calls, best=.005))
+            previous = json.loads((root / "state.json").read_text())
+            previous_rows = list(csv.DictReader(io.StringIO((root / "table.csv").read_text())))
+            previous_metrics = {r["metrics"]: (root / r["metrics"]).read_bytes()
+                                for r in previous["jobs"].values()}
+            before = len(calls)
+            saved_state = (root / "state.json").read_bytes()
+            run(self.args(*options, "--experiment", "tuned", "--refine-methods", "muonsign", "--dry-run"),
+                lambda *a, **k: self.fail("refinement dry run launched training"))
+            self.assertEqual(saved_state, (root / "state.json").read_bytes())
+            score = lambda kw: 90.0 if kw["lr"] == .002 else 70.0
+            self.assertEqual(run(refined, self.fake_runner(calls, score=score)), root)
+            added = [kw for _, kw in calls[before:]]
+            self.assertEqual(len(added), 6)  # Two new LRs x two tune seeds, then two finals.
+            self.assertTrue(all(kw["method"] == "muonsign" for kw in added))
+            self.assertEqual({kw["lr"] for kw in added if kw["split"] == "tune"}, {.001, .002})
+            self.assertTrue(all(kw["lr"] == .002 for kw in added if kw["split"] == "full"))
+            updated = json.loads((root / "state.json").read_text())
+            self.assertEqual(previous["protocol"], updated["protocol"])
+            self.assertEqual(previous["tuning_protocol"], updated["tuning_protocol"])
+            self.assertTrue(all(updated["jobs"][key] == row for key, row in previous["jobs"].items()))
+            self.assertTrue(all((root / path).read_bytes() == data for path, data in previous_metrics.items()))
+            for method, search in previous["searches"].items():
+                if method != "muonsign":
+                    self.assertEqual(updated["searches"][method], search)
+            search = updated["searches"]["muonsign"]
+            self.assertTrue(search["complete"] and search["refinement"]["complete"])
+            self.assertFalse(search["boundary"])
+            self.assertEqual(search["refinement"]["previous_lr"], .005)
+            self.assertEqual(search["refinement"]["initial_grid"], previous["searches"]["muonsign"]["grid"])
+            with zipfile.ZipFile(root / "rebuttal_results.zip") as z:
+                rows = list(csv.DictReader(io.StringIO(z.read("table.csv").decode())))
+                untouched = lambda r: (r["experiment"], r["method"]) != ("tuned", "muonsign")
+                self.assertEqual([r for r in rows if untouched(r)], [r for r in previous_rows if untouched(r)])
+                self.assertEqual(sum(n.endswith("metrics.json") for n in z.namelist()), len(updated["jobs"]))
+                self.assertIn("Additional refinement", z.read("SUMMARY.md").decode())
+            run(refined, self.fake_runner(calls, score=score))
+            self.assertEqual(len(calls), before + 6)
+
+    def test_refinement_survives_interruption_and_continues_past_base_limit(self):
+        calls = []
+        options = ["--methods", "muonsign", "--experiment", "tuned", "--tune-part", "remaining"]
+        original = self.args(*options)
+        refined = self.args(*options, "--refine-methods", "muonsign")
+        score = lambda kw: 100.0 - abs(math.log10(kw["lr"] / .0001))
+        with tempfile.TemporaryDirectory() as tmp, patch.dict(os.environ, {"SIGNMUON_RESULTS": tmp}):
+            root = run(original, self.fake_runner(calls, best=.005))
+            before = len(calls)
+            runner = self.fake_runner(calls, score=score)
+            def interrupted(args, **kw):
+                if kw["split"] == "tune" and kw["lr"] == .002 and kw["seed"] == 1:
+                    raise KeyboardInterrupt()
+                return runner(args, **kw)
+            with self.assertRaises(KeyboardInterrupt):
+                run(refined, interrupted)
+            paused = json.loads((root / "state.json").read_text())
+            self.assertFalse(paused["searches"]["muonsign"]["complete"])
+            self.assertFalse(paused["searches"]["muonsign"]["refinement"]["complete"])
+            self.assertEqual(len(calls) - before, 3)
+            # The saved stop rule also survives resuming through the original command.
+            run(original, self.fake_runner(calls, score=score))
+            updated = json.loads((root / "state.json").read_text())
+            search = updated["searches"]["muonsign"]
+            self.assertEqual(search["extensions"], 3)  # Original test budget was zero.
+            self.assertTrue(search["refinement"]["complete"])
+            self.assertFalse(search["boundary"])
+            self.assertEqual(len(calls) - before, 14)  # Six new LRs x two seeds + two finals.
+            self.assertTrue(all(kw["split"] == "full" and kw["lr"] == .0001 for _, kw in calls[-2:]))
+
+    def test_refinement_does_not_select_across_failed_boundary_trials(self):
+        calls = []
+        options = ["--methods", "muonsign", "--experiment", "tuned", "--tune-part", "remaining"]
+        refined = self.args(*options, "--refine-methods", "muonsign")
+        score = lambda kw: 90.0 if kw["lr"] == .002 else 70.0
+        with tempfile.TemporaryDirectory() as tmp, patch.dict(os.environ, {"SIGNMUON_RESULTS": tmp}):
+            root = run(self.args(*options), self.fake_runner(calls, best=.005))
+            before = len(calls)
+            with self.assertRaisesRegex(RuntimeError, "refinement has failed validation jobs"):
+                run(refined, self.fake_runner(calls, score=score,
+                    fail=lambda a, kw: kw["split"] == "tune" and kw["lr"] == .001))
+            self.assertTrue(all(kw["split"] == "tune" for _, kw in calls[before:]))
+            state = json.loads((root / "state.json").read_text())
+            self.assertFalse(state["searches"]["muonsign"]["complete"])
+            run(self.args(*options, "--refine-methods", "muonsign", "--retry-failed"),
+                self.fake_runner(calls, score=score))
+            self.assertEqual(len(calls) - before, 8)  # Four attempts, two retries, two finals.
+            state = json.loads((root / "state.json").read_text())
+            self.assertTrue(state["searches"]["muonsign"]["refinement"]["complete"])
+            self.assertTrue(all(r["status"] == "ok" for r in state["jobs"].values()))
+
+    def test_refinement_requires_an_existing_search_and_correct_tuning_part(self):
+        options = ["--experiment", "tuned", "--tune-part", "remaining", "--refine-methods", "muonsign"]
+        with tempfile.TemporaryDirectory() as tmp, patch.dict(os.environ, {"SIGNMUON_RESULTS": tmp}):
+            with self.assertRaisesRegex(ValueError, "no cached search for muonsign"):
+                run(get_args(options), lambda *a, **k: self.fail("missing-cache refinement launched training"))
+            self.assertEqual(list(Path(tmp).iterdir()), [])
+        for invalid in (["--refine-methods", "muonsign"],
+                        ["--experiment", "tuned", "--refine-methods", "muonsign"]):
+            with contextlib.redirect_stderr(io.StringIO()), self.assertRaises(SystemExit):
+                get_args(invalid)
 
     def test_dry_run_writes_nothing_and_protocol_changes_are_isolated(self):
         with tempfile.TemporaryDirectory() as tmp, patch.dict(os.environ, {"SIGNMUON_RESULTS": tmp}):

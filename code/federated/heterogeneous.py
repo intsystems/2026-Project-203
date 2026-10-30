@@ -10,6 +10,8 @@ Tuning is split into priority and remaining methods, and selects LR only.
 Momentum stays 0.9 throughout. All three commands share one cumulative archive;
 completed jobs and identical finals are reused automatically. Planning and
 reporting need only the Python standard library.
+Use --refine-methods within a tuning part to continue cached boundary searches
+until the validation winner has tested learning rates on both sides.
 """
 
 from __future__ import annotations
@@ -67,6 +69,8 @@ def get_args(argv=None):
                    help="Initial 1-2-5 lattice points, matching homogeneous tuning")
     p.add_argument("--lr-extend-rounds", type=int, default=3)
     p.add_argument("--lr-extend-points", type=int, default=2)
+    p.add_argument("--refine-methods", nargs="+", choices=sorted(HOMOGENEOUS_LRS), default=[],
+                   help="Continue cached searches in this tuning part until the validation winner is interior")
     p.add_argument("--device", default="cuda:0")
     p.add_argument("--data", default="./data_federated")
     p.add_argument("--download", action="store_true")
@@ -81,10 +85,16 @@ def get_args(argv=None):
         p.error("LR points and extension points must be positive; extension rounds nonnegative")
     if any(x < 0 for x in args.seeds + args.tune_seeds):
         p.error("seeds must be nonnegative")
-    for name in ("methods", "seeds", "tune_seeds"):
+    for name in ("methods", "seeds", "tune_seeds", "refine_methods"):
         values = getattr(args, name)
         if len(set(values)) != len(values):
             p.error(f"duplicate entries in --{name.replace('_', '-')}")
+    if args.refine_methods:
+        if args.experiment != "tuned":
+            p.error("--refine-methods requires --experiment tuned")
+        group = PRIORITY_METHODS if args.tune_part == "priority" else REMAINING_METHODS
+        if any(m not in args.methods or m not in group for m in args.refine_methods):
+            p.error("--refine-methods must belong to --methods and the selected --tune-part")
     if args.experiment != "transfer" and not args.report_only and not tuning_methods(args):
         p.error(f"no requested methods belong to tuning part {args.tune_part!r}")
     return args
@@ -92,7 +102,8 @@ def get_args(argv=None):
 
 def tuning_methods(args):
     group = PRIORITY_METHODS if args.tune_part == "priority" else REMAINING_METHODS
-    return [m for m in args.methods if m in group]
+    return [m for m in args.methods if m in group
+            and (not args.refine_methods or m in args.refine_methods)]
 
 
 def tuning_part(method):
@@ -250,26 +261,48 @@ def tuned_setting(args, state, method):
 
 
 def tune_method(args, root, state, method, runner, outcomes):
-    """Same five-point lattice and 3 x 2-point boundary extension as overnight."""
+    """Use the homogeneous search, or continue a requested boundary refinement."""
     entry = state["searches"].setdefault(method, {
         "grid": [lr for lr, _ in candidates(args, method)], "extensions": 0, "complete": False})
+    if method in args.refine_methods and "refinement" not in entry:
+        previous = select_best(args, state["jobs"], method, entry["grid"])
+        entry["refinement"] = {
+            "stop_rule": "interior_validation_winner", "initial_grid": list(entry["grid"]),
+            "starting_extensions": entry["extensions"],
+            "previous_lr": previous[0] if previous else None,
+            "complete": False,
+        }
+    refining = "refinement" in entry
+    if refining and entry.get("boundary"):
+        entry["complete"] = False
     if args.retry_failed:
         entry["complete"] = False
+    save_state(root, state)
     while not entry["complete"]:
         for lr, mu in candidates(args, method, entry["grid"]):
             for seed in args.tune_seeds:
                 outcomes.append(run_job(args, root, state, method, lr, mu, seed, "tune", runner))
                 report(args, root, state)
+        if refining and any(state["jobs"][job_key(method, lr, mu, seed, "tune")]["status"] != "ok"
+                            for lr, mu in candidates(args, method, entry["grid"])
+                            for seed in args.tune_seeds):
+            raise RuntimeError(f"{method}: refinement has failed validation jobs; rerun with --retry-failed")
         best = select_best(args, state["jobs"], method, entry["grid"])
         boundary = best and len(entry["grid"]) > 1 and best[0] in (min(entry["grid"]), max(entry["grid"]))
-        if not boundary or entry["extensions"] >= args.lr_extend_rounds:
+        if not boundary or (not refining and entry["extensions"] >= args.lr_extend_rounds):
             entry["complete"] = True
             entry["boundary"] = bool(boundary)
         else:
             entry["grid"] = extend_grid(entry["grid"], low=best[0] == min(entry["grid"]),
                                         points=args.lr_extend_points)
             entry["extensions"] += 1
-            print(f"  Extending {method} to {entry['grid']} ({entry['extensions']}/{args.lr_extend_rounds})")
+            limit = "until an interior winner" if refining else f"limit {args.lr_extend_rounds}"
+            print(f"  Extending {method} to {entry['grid']} ({entry['extensions']} extensions; {limit})")
+        if refining:
+            entry["refinement"]["complete"] = entry["complete"] and not entry.get("boundary", False)
+        save_state(root, state)
+    if refining:
+        entry["refinement"]["complete"] = not entry.get("boundary", False)
         save_state(root, state)
 
 
@@ -335,7 +368,7 @@ def report(args, root, state, archive=False):
               f"Homogeneous 1-2-5 lattice: {args.lr_points} initial points, at most "
               f"{args.lr_extend_rounds} boundary extensions of {args.lr_extend_points} points; fixed momentum 0.9. "
               "Initial search centers match the homogeneous CNN2 experiment. "
-              "Every method receives the same search rule, seeds, and horizon. Each method's full grid "
+              "Base searches receive the same search rule, seeds, and horizon. Each method's full grid "
               "finishes before validation selection; test accuracy never enters selection. "
               "Identical final configurations are reused across experiments.", "",
               f"Priority tuning: {', '.join(m for m in args.methods if m in PRIORITY_METHODS)}.", "",
@@ -345,6 +378,13 @@ def report(args, root, state, archive=False):
     for method, entry in state.get("searches", {}).items():
         lines.append(f"- {method}: grid {entry['grid']}; extensions {entry['extensions']}; "
                      f"search {'complete' if entry['complete'] else 'pending'}.")
+        if "refinement" in entry:
+            refinement = entry["refinement"]
+            extra = entry["extensions"] - refinement["starting_extensions"]
+            lines.append(f"  Additional refinement: continue past the base extension budget until an interior "
+                         f"validation winner; {extra} extra extensions; "
+                         f"{'complete' if refinement['complete'] else 'pending'}. "
+                         f"Previous selected LR: {refinement['previous_lr']}.")
     lines += [f"- {note}" for note in notes]
     lines += ["", "Files: table.csv (final results), tuning.csv (validation trials), runs.csv, state.json, "
               "raw/federated/.../metrics.json (full configs and curves), and per-job logs. "
@@ -364,26 +404,6 @@ def report(args, root, state, archive=False):
 def run(args, runner=None):
     spec = protocol(args)
     root = protocol_directory(spec)
-    experiments = ["transfer", "tuned"] if args.experiment == "both" else [args.experiment]
-    n_final = len(args.methods) * len(args.seeds)
-    selected_tuning = tuning_methods(args)
-    n_tune = len(selected_tuning) * args.lr_points * len(args.tune_seeds)
-    n_max = len(selected_tuning) * (args.lr_points + args.lr_extend_points * args.lr_extend_rounds) * len(args.tune_seeds)
-    print(f"Dirichlet alpha={args.alpha:g}; methods={', '.join(args.methods)}")
-    print(f"Transfer: {n_final} finals (all requested methods, one experiment).")
-    print(f"Tuned/{args.tune_part}: {n_tune} initial validation trials ({n_max} maximum with extensions) + up to "
-          f"{len(selected_tuning) * len(args.seeds)} finals; fixed momentum 0.9.")
-    print(f"Selected experiment(s): {', '.join(experiments)}; {args.rounds} rounds per job.")
-    print(f"Results: {root}")
-    if args.dry_run:
-        if "transfer" in experiments:
-            for method in args.methods:
-                print(f"  transfer/{method}: lr={HOMOGENEOUS_LRS[method]:g}, mu=0.9")
-        if "tuned" in experiments:
-            for method in selected_tuning:
-                print(f"  tuned/{args.tune_part}/{method}: "
-                      f"LRs={sorted({lr for lr, _ in candidates(args, method)})}, mu=0.9")
-        return root
     path = root / "state.json"
     state = json.loads(path.read_text(encoding="utf-8")) if path.exists() else {
         "protocol": spec, "jobs": {}, "experiments": [], "tuning_parts": []}
@@ -397,6 +417,45 @@ def run(args, runner=None):
     search = search_protocol(args)
     if state.get("tuning_protocol", search) != search and state["searches"] and not args.report_only:
         raise ValueError("recorded LR search settings differ; keep the original search settings")
+    if args.refine_methods:
+        missing = [m for m in args.refine_methods if m not in state["searches"]]
+        if missing:
+            raise ValueError(f"no cached search for {', '.join(missing)}; keep the original results tree "
+                             "and --methods list when refining")
+    experiments = ["transfer", "tuned"] if args.experiment == "both" else [args.experiment]
+    n_final = len(args.methods) * len(args.seeds)
+    selected_tuning = tuning_methods(args)
+    n_tune = len(selected_tuning) * args.lr_points * len(args.tune_seeds)
+    n_max = len(selected_tuning) * (args.lr_points + args.lr_extend_points * args.lr_extend_rounds) * len(args.tune_seeds)
+    print(f"Dirichlet alpha={args.alpha:g}; methods={', '.join(args.methods)}")
+    if args.refine_methods:
+        print(f"Refine: {', '.join(selected_tuning)}; continue cached grids until an interior validation winner. "
+              f"Up to {len(selected_tuning) * len(args.seeds)} finals at the selected LR; fixed momentum 0.9.")
+    else:
+        print(f"Transfer: {n_final} finals (all requested methods, one experiment).")
+        print(f"Tuned/{args.tune_part}: {n_tune} initial validation trials ({n_max} maximum with extensions) + up to "
+              f"{len(selected_tuning) * len(args.seeds)} finals; fixed momentum 0.9.")
+    print(f"Selected experiment(s): {', '.join(experiments)}; {args.rounds} rounds per job.")
+    print(f"Results: {root}")
+    if args.dry_run:
+        if "transfer" in experiments:
+            for method in args.methods:
+                print(f"  transfer/{method}: lr={HOMOGENEOUS_LRS[method]:g}, mu=0.9")
+        if "tuned" in experiments:
+            for method in selected_tuning:
+                if args.refine_methods:
+                    entry = state["searches"][method]
+                    print(f"  refine/{method}: cached LRs={entry['grid']}; "
+                          f"{entry['extensions']} completed extensions; stop at an interior winner, mu=0.9")
+                    best = select_best(args, state["jobs"], method, entry["grid"])
+                    if best and best[0] in (min(entry["grid"]), max(entry["grid"])):
+                        expanded = extend_grid(entry["grid"], low=best[0] == min(entry["grid"]),
+                                               points=args.lr_extend_points)
+                        print(f"    Next new LRs: {sorted(set(expanded) - set(entry['grid']))}")
+                else:
+                    print(f"  tuned/{args.tune_part}/{method}: "
+                          f"LRs={sorted({lr for lr, _ in candidates(args, method)})}, mu=0.9")
+        return root
     if not args.report_only:
         state["tuning_protocol"] = search
     if not args.report_only:
