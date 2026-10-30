@@ -1,0 +1,173 @@
+{
+  "revision": 9,
+  "checked_utc": "2026-10-30T08:42:23.703430+00:00",
+  "build_passed": true,
+  "workspace_check_passed": true,
+  "browser_inspection_passed": true,
+  "browser_checked_utc": "2026-10-30T08:41:12.279062+00:00",
+  "browser_pages": 7,
+  "six_public_limits_passed": true,
+  "all_64_ids_and_79_mappings_preserved": true,
+  "source_reviews_inputs_and_rules_unchanged": true,
+  "selections_and_evidence_flags_unchanged": true,
+  "selected_concerns": 47,
+  "pending_evidence_flags": 8,
+  "five_human_score_requests_retained": true,
+  "ai_score_request": false,
+  "shared_numeric_table_unchanged": true,
+  "unrelated_accuracy_repetitions_removed": true,
+  "contribution_framed_as_exploration": true,
+  "gradient_component_defined_as_projection_onto_fixed_parameter_direction": true,
+  "decreasing_steps_and_finite_budget_tuning_results_distinguished": true,
+  "per_step_network_descent_not_asserted": true,
+  "proof_and_experiment_sources_unchanged": true,
+  "addendum_and_pdf_unchanged": true,
+  "author_primer_changes_preserved": true,
+  "concurrent_author_primer_updates_observed": {
+    "primer/AGENT_GUIDE.md": {
+      "before": "648f58f3d9fd3cd37491a5804fefb01d42194d28cd67379e112601ad792bb2d9",
+      "observed": "258a1dec9d76fe1f79007522c7b3ece36f2762d57c8463ee179b5139c91b4417"
+    },
+    "primer/primer_manifest.json": {
+      "before": "95e4711a6a93bfa40cb1f9a23406c88784d233c45c44cf8ec072c2ca7c075b97",
+      "observed": "ba2bddae22d06a585ca79332f58019f4ed4b05bc00dde3960978a2c79a90e987"
+    },
+    "primer/templates/AGENTS.md": {
+      "before": "45ef131e3342c612c2683f9ce50931aba125f483142de25d8e9f44e2dfe51df2",
+      "observed": "b4ea001579675044f7e2973d0a19e4d6a7158565216d086b69f6121fbd107320"
+    }
+  },
+  "confidential_characters": 2915,
+  "confidential_limit": null,
+  "drafts": [
+    {
+      "stem": "review_R1_7S1b",
+      "characters": 1476,
+      "included": [
+        "R1.1",
+        "R1.2",
+        "R1.3",
+        "R1.9",
+        "R1.4",
+        "R1.10",
+        "R1.5"
+      ],
+      "omitted": [
+        "R1.6",
+        "R1.7",
+        "R1.8"
+      ],
+      "pending": [
+        "R1.6",
+        "R1.7",
+        "R1.8"
+      ]
+    },
+    {
+      "stem": "review_R2_D4r2",
+      "characters": 1385,
+      "included": [
+        "R2.6",
+        "R2.3"
+      ],
+      "omitted": [
+        "R2.1",
+        "R2.4",
+        "R2.5",
+        "R2.7",
+        "R2.2",
+        "R2.8"
+      ],
+      "pending": [
+        "R2.2",
+        "R2.8"
+      ]
+    },
+    {
+      "stem": "review_R3_Ueq5",
+      "characters": 1389,
+      "included": [
+        "R3.2",
+        "R3.1",
+        "R3.3",
+        "R3.4",
+        "R3.5"
+      ],
+      "omitted": [],
+      "pending": []
+    },
+    {
+      "stem": "review_R4_pqje",
+      "characters": 1460,
+      "included": [
+        "R4.1",
+        "R4.2",
+        "R4.3",
+        "R4.4",
+        "R4.6",
+        "R4.5",
+        "R4.7",
+        "R4.8",
+        "R4.9",
+        "R4.10",
+        "R4.11",
+        "R4.12",
+        "R4.13",
+        "R4.14"
+      ],
+      "omitted": [
+        "R4.15"
+      ],
+      "pending": [
+        "R4.15"
+      ]
+    },
+    {
+      "stem": "review_R5_Tx34",
+      "characters": 1486,
+      "included": [
+        "R5.1",
+        "R5.3",
+        "R5.2",
+        "R5.4",
+        "R5.5"
+      ],
+      "omitted": [
+        "R5.6"
+      ],
+      "pending": []
+    },
+    {
+      "stem": "review_AI_AI_Reviewer",
+      "characters": 1482,
+      "included": [
+        "AI.1",
+        "AI.2",
+        "AI.7",
+        "AI.3",
+        "AI.4",
+        "AI.5",
+        "AI.18",
+        "AI.19",
+        "AI.8",
+        "AI.10",
+        "AI.14",
+        "AI.15",
+        "AI.16",
+        "AI.17"
+      ],
+      "omitted": [
+        "AI.6",
+        "AI.9",
+        "AI.11",
+        "AI.20",
+        "AI.13",
+        "AI.12"
+      ],
+      "pending": [
+        "AI.6",
+        "AI.20"
+      ]
+    }
+  ]
+}

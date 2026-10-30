@@ -1,36 +1,36 @@
-# Rebuttal workspace — proofreading revision 8
+# Rebuttal workspace — exploration and proof clarity, revision 9
 
-All six public replies and the AC comment have been proofread for direct, self-standing explanations. The public contribution paragraphs now lead with the comparisons of sign/error-feedback placement and their theoretical results. Tx34's reply explains why the quadratic construction prevents convergence. The pqje and AI replies identify Theorem 5 and Corollary 1 from the submitted supplement and define the roles of server X and broadcast W.
+The contribution paragraphs describe the exploration of combining Muon with sign compression and error feedback, and the observed difference between centralized deep learning and heterogeneous federated learning. The extra SignMuon–Muon percentage comparison has been removed from the table-correction replies; the requested MuonSign–SignSGD correction remains.
 
 ## Current drafts
 
-Open `start_workspace.cmd`, or read `rebuttals/rebuttal_*.md`. The full ten-method heterogeneous table remains in **7S1b Q2**, referenced from every other reply and the AC comment. Inline bold claims are removed; EF table rows remain highlighted. Five human replies retain conditional requests to raise the score; the AI reply has no score request.
+Open `start_workspace.cmd`, or read `rebuttals/rebuttal_*.md`. The full ten-method tuned heterogeneous table remains in **7S1b Q2**, with a natural cross-reference from every other reply and the AC comment. Five human replies retain requests to raise the score; the AI reply has no score request.
 
 | Reviewer | UTF-16 characters /1500 | Selected concerns | Missing evidence |
 | --- | ---: | ---: | --- |
-| 7S1b | 1456 | 7 | R1.6, R1.7, R1.8 |
+| 7S1b | 1476 | 7 | R1.6, R1.7, R1.8 |
 | D4r2 | 1385 | 2 | R2.2, R2.8 |
-| Ueq5 | 1435 | 5 | None |
-| pqje | 1495 | 14 | R4.15 |
-| Tx34 | 1496 | 5 | None |
-| AI_Reviewer | 1480 | 14 | AI.6, AI.20 |
+| Ueq5 | 1389 | 5 | None |
+| pqje | 1460 | 14 | R4.15 |
+| Tx34 | 1486 | 5 | None |
+| AI_Reviewer | 1482 | 14 | AI.6, AI.20 |
 
-## Evidence and scope
+## Counterexample explanation
 
-The completed heterogeneous study remains CNN2/CIFAR-10, 11 Dirichlet(0.1) clients, 2000 rounds, no local updates, momentum 0.9. Learning rates use validation seed 0 and 5000 held-out images. Five final seeds retrain on all 50000 images. EF21-MuonSign gives 84.03±0.52% and EF21-MuonUSign 83.84±0.32%, the only tuned means above 80%. The immutable archive and independent 167-run audit are unchanged.
+The Tx34 answer now identifies the gradient projection onto a fixed matrix direction in parameter space. Compressed updates are perpendicular to that direction, leaving this projection unchanged and the full gradient norm at least 1. It then separates two extensions of fixed-parameter Theorem 4: failure with decreasing learning rates and failure of constant learning-rate/momentum choices tuned to a finite budget. The latter keeps smoothness and initial gap fixed across the examples.
 
-The N4 explanation follows the checked theorem: a small alternating gradient component creates alternating polar factors; the compressed estimator stays orthogonal to a fixed nonzero gradient component. Thus the gradient norm stays at least 1, with fixed smoothness and initial gap across the examples. Constant rates/fixed momentum chosen for the run length and the documented decreasing schedules are covered with exact polar updates.
+Decreasing-step statements retain their actual scope: any strictly decreasing schedule to zero without momentum, or shifted power decay with fixed EMA/Nesterov. Exact polar updates are explicit. These construction proofs have their existing exact-certificate status; this prose revision adds no Lean claim.
 
-EF21 retains the submitted separable-layer assumption. The separate conditional SignMuon theorem permits interacting layers. Complete EF21 tracking/convergence proofs and original failure results retain their existing Lean scope. The printed cosine substitutions, conditional SignMuon theorem, softplus extension and N4 construction keep their previously documented verification status. This proofreading does not change theory or experiment sources, or the addendum/PDF.
+## Evidence and preservation
 
-## Remaining work and preservation
+SignMuon leads the tested centralized ResNet18/CIFAR-10 comparison by mean accuracy. In the completed heterogeneous CNN2/CIFAR-10 study (11 Dirichlet(0.1) clients, 2000 rounds, no local updates), only EF21-MuonSign and EF21-MuonUSign exceed 80% after validation LR tuning: 84.03±0.52% and 83.84±0.32% over five final seeds. The immutable archive and 167-run audit are unchanged. Centralized performance is described as an empirical result, without asserting that every network update descends.
 
-The same eight evidence flags remain: network alignment measurements, broader local-update/participation settings, additional large-model seeds and the matched-budget SSVR comparison. R5.6 and AI.12 are now omitted at the author's request to cut defensive qualifications. There are 47 selected concerns and 9 editorial omissions; all 64 IDs and 79 exact passage mappings remain.
+EF21 retains the submitted separable-layer assumption; the separate SignMuon theorem permits interacting layers under joint smoothness and uniform alignment. Existing proof verification, source reviews, all 64 IDs and 79 exact passage mappings remain unchanged. So do the 47 selections, 9 editorial omissions and 8 missing-evidence flags. Network alignment, local-update/participation extensions, more large-model seeds and the SSVR experiment remain open.
 
-The pre-edit JSON, exports and handoff documents are saved in `response_history/before_proofreading_20261030T081326Z/`. Existing author changes in `primer/` are preserved. The confidential comment has 2762 UTF-16 characters; its field limit/readers remain unknown, so the configured limit stays `null`.
+The pre-edit JSON, exports and handoff documents are backed up in `response_history/before_exploration_revision_20261030T083924Z/`. Existing author changes in `primer/` are preserved. The confidential draft has 2915 UTF-16 characters; its field limit/readers remain unknown and the limit stays `null`.
 
 ## Checks and collaboration
 
-Rebuild with `python -X utf8 aaai_submission_openreview/primer/workspace.py build`, inspect the editor pages, then run the same command with `check`. Completed source-preservation, count and browser checks are recorded in `evidence/revision_8_validation.json`. No new training, Lean build or addendum rebuild is needed for this prose-only update.
+Build with `python -X utf8 aaai_submission_openreview/primer/workspace.py build`, inspect the seven editor pages, then run the same command with `check`. Completed checks are recorded in `evidence/revision_9_validation.json`. All six public drafts fit 1500 characters. This prose update requires no training, Lean build or addendum rebuild.
 
 Save browser edits before merging, coordinate changes to `response_fragments.json`, and reload after rebuilding. Saves are local; nothing is submitted or pushed. The configured deadline remains 31 October 2026 AoE.

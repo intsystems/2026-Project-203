@@ -1,0 +1,7 @@
+Thank you for asking us to clarify the contribution and Theorem 4.
+
+1. Re our contribution: We compare signing before, after or on both sides of Muon’s orthogonalization, and prove every plain placement can ascend. Correcting compression before orthogonalization gives EF21-Muon(U)Sign convergence guarantees. Based on your review, we extended these to fixed EMA/Nesterov and constant/cosine schedules, with proofs verified in Lean.
+2. Re what Theorem 4 rules out: Extending Theorem 4, we constructed exact-polar EF21-SignMuon examples on 8×8 convex quadratics with fixed smoothness and initial gap. Orthogonalization amplifies a small oscillating gradient component. The compressed updates stay perpendicular to another, fixed nonzero component, even with error feedback. Every gradient has norm ≥1, including when constant rate and fixed EMA/Nesterov are chosen for the run length. The construction also covers strictly decreasing rates to zero without momentum and suitable power-decay schedules with fixed momentum.
+3. Re practical guidance: On CNN2/CIFAR-10 (11 clients, 5 seeds), SignMuon reaches 85.72% on IID data. In heterogeneous federated learning, tuned EF21-MuonSign reaches 84.03% and EF21-MuonUSign 83.84% (see our response to 7S1b, Q2). Our results favor SignMuon for IID data and gradient-side error feedback for heterogeneous clients; EF21-MuonUSign compresses uploads, EF21-MuonSign both directions.
+
+If these answers resolve your concerns, please consider raising your score.

@@ -1,10 +1,10 @@
 {
-  "checked_utc": "2026-10-30T08:18:08.433098+00:00",
+  "checked_utc": "2026-10-30T08:41:12.279062+00:00",
   "pages": [
     {
       "stem": "review_R1_7S1b",
-      "characters": 1456,
-      "countLabel": "1456 / 1,500 characters",
+      "characters": 1476,
+      "countLabel": "1476 / 1,500 characters",
       "renderedMath": 0,
       "renderedTables": [],
       "strongText": [],
@@ -45,8 +45,8 @@
     },
     {
       "stem": "review_R3_Ueq5",
-      "characters": 1435,
-      "countLabel": "1435 / 1,500 characters",
+      "characters": 1389,
+      "countLabel": "1389 / 1,500 characters",
       "renderedMath": 3,
       "renderedTables": [],
       "strongText": [],
@@ -62,8 +62,8 @@
     },
     {
       "stem": "review_R4_pqje",
-      "characters": 1495,
-      "countLabel": "1495 / 1,500 characters",
+      "characters": 1460,
+      "countLabel": "1460 / 1,500 characters",
       "renderedMath": 0,
       "renderedTables": [],
       "strongText": [],
@@ -81,8 +81,8 @@
     },
     {
       "stem": "review_R5_Tx34",
-      "characters": 1496,
-      "countLabel": "1496 / 1,500 characters",
+      "characters": 1486,
+      "countLabel": "1486 / 1,500 characters",
       "renderedMath": 0,
       "renderedTables": [],
       "strongText": [],
@@ -98,8 +98,8 @@
     },
     {
       "stem": "review_AI_AI_Reviewer",
-      "characters": 1480,
-      "countLabel": "1480 / 1,500 characters",
+      "characters": 1482,
+      "countLabel": "1482 / 1,500 characters",
       "renderedMath": 0,
       "renderedTables": [],
       "strongText": [],
@@ -118,8 +118,8 @@
     },
     {
       "stem": "confidential_ac",
-      "characters": 2762,
-      "countLabel": "2762 characters · limit not specified",
+      "characters": 2915,
+      "countLabel": "2915 characters · limit not specified",
       "renderedMath": 0,
       "renderedTables": [],
       "strongText": [],

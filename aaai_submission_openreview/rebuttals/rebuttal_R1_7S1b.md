@@ -19,7 +19,7 @@ Thank you for your questions.
 Only EF21-MuonSign and EF21-MuonUSign exceed 80%.
 
 3. Re our analysis: Based on your review, we proved expected gradient-norm bounds for EF21-Muon(U)Sign with constant/cosine rates and fixed EMA/Nesterov, verified in Lean.
-4. Re choosing a method: Our results favor SignMuon for IID data. For heterogeneous federated learning, EF21-MuonUSign compresses uploads and EF21-MuonSign both directions. EF messages use 1.087 bits/parameter, including auxiliaries and scales.
+4. Re choosing a method: SignMuon suits centralized deep learning and IID federation. For heterogeneous federated learning, EF21-MuonUSign compresses uploads and EF21-MuonSign both directions. EF messages use 1.087 bits/parameter, including auxiliaries and scales.
 5. Re nanoGPT: SignMuon achieves loss 3.2881 versus SignSGD 3.4049 (1 nanoGPT run each). Its 0.0021 gap to EF21-SignMuon needs more seeds to establish an ordering.
 
 If these clarifications address your concerns, please consider raising your score.

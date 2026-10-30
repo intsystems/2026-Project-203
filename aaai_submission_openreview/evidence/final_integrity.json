@@ -88,7 +88,7 @@
   "drafts": [
     {
       "stem": "review_R1_7S1b",
-      "characters": 1456,
+      "characters": 1476,
       "included": [
         "R1.1",
         "R1.2",
@@ -131,7 +131,7 @@
     },
     {
       "stem": "review_R3_Ueq5",
-      "characters": 1435,
+      "characters": 1389,
       "included": [
         "R3.2",
         "R3.1",
@@ -144,7 +144,7 @@
     },
     {
       "stem": "review_R4_pqje",
-      "characters": 1495,
+      "characters": 1460,
       "included": [
         "R4.1",
         "R4.2",
@@ -170,7 +170,7 @@
     },
     {
       "stem": "review_R5_Tx34",
-      "characters": 1496,
+      "characters": 1486,
       "included": [
         "R5.1",
         "R5.3",
@@ -185,7 +185,7 @@
     },
     {
       "stem": "review_AI_AI_Reviewer",
-      "characters": 1480,
+      "characters": 1482,
       "included": [
         "AI.1",
         "AI.2",
@@ -217,8 +217,8 @@
     }
   ],
   "original_inputs_unchanged": true,
-  "checked_utc": "2026-10-30T08:18:09.680899+00:00",
-  "revision": 8,
+  "checked_utc": "2026-10-30T08:42:23.703430+00:00",
+  "revision": 9,
   "review_files_sha256": {
     "review_AI_AI_Reviewer.md": "65ea9de21ab2c19b45d70859f1b271935b5794a135580775074521d32b8f7dd9",
     "review_R1_7S1b.md": "80b24a98063f589b380b5820faab95485fc84816bcb6e62804e1796305f3ea7a",
@@ -237,7 +237,7 @@
   },
   "ef21_separability_retained": true,
   "transfer_runs_verified": 50,
-  "revision_validation": "evidence/revision_8_validation.json",
+  "revision_validation": "evidence/revision_9_validation.json",
   "previous_article_proof_sources_sha256": {
     "signmuon_body.tex": "184a74ac7d4d05d7a6596eed69ccda01f2af0c059b800c364b7e6bf04ac3b696",
     "signmuon_addendum_body.tex": "7a45c5c9c4185312d7f2afde99255dccd4f4452cc8f8e23fa6d19b099dddc8b1",
@@ -261,7 +261,7 @@
   "heterogeneous_tuning_runs_verified": 167,
   "heterogeneous_tuning_report": "evidence/heterogeneous_tuning_verified.json",
   "addendum_updated_and_rebuilt": true,
-  "previous_revision_validation": "evidence/revision_7_validation.json",
+  "previous_revision_validation": "evidence/revision_8_validation.json",
   "editorial_omissions_added_in_revision_8": [
     "AI.12",
     "R5.6"
