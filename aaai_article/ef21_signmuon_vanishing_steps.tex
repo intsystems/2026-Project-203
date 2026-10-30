@@ -1,0 +1,180 @@
+% New EF21-SignMuon obstruction, independent of the fixed-step construction.
+% Exact certificate: research/ef21_signmuon_vanishing_steps.py (stdlib only).
+\subsection{EF21-SignMuon: decreasing steps and finite budgets}
+\label{add:ef_vanishing}
+
+The fixed-step construction scales its gradient floor with the learning
+rate. The following example instead keeps the smoothness, initial gap,
+dimension, and gradient floor uniform. Failure means nonstationarity;
+the objective need not increase without bound.
+
+\begin{lemma}[\textbf{An invisible gradient component}]
+\label{add:lem:invisible}
+There are $A,B\in\mathbb R^{8\times8}$ and
+$S\in\{\pm1\}^{8\times8}$ such that
+\begin{gather*}
+ \|A\|_F=1,\quad \|B\|_F^2=7,\quad
+ \langle A,B\rangle=\langle A,S\rangle=0,\\
+ \operatorname{polar}(aA+bB)=A+\operatorname{sign}(b)B
+ \quad(a>0,\ b\ne0),\\
+ \operatorname{sign}(A+B)=S,\qquad
+ \operatorname{sign}(A-B)=-S.
+\end{gather*}
+Every entry of $A+B$ and $B-A$ has magnitude greater than $1/50$.
+Put $h=\langle B,S\rangle/64>0$ and $\kappa=64h^2\le8$.
+For alternating targets $D_t=A+(-1)^{t-1}B$, scaled-sign EF21,
+initialized at $E_0=0$, produces
+\[
+ E_t=E_{t-1}+C(D_t-E_{t-1})=(-1)^{t-1}hS.
+\]
+In particular, $\langle A,E_t\rangle=0$ for every $t$.
+\end{lemma}
+
+The algebraic certificate below supplies the matrices. For the recursion,
+the two strict sign identities imply
+$S_{ij}B_{ij}>|A_{ij}|$ entrywise. The first message is $hS$.
+If $E_{t-1}=-shS$ and $D_t=A+sB$, their residual has signs $sS$
+and mean modulus $2h$, so $E_t=shS$.
+
+\begin{theorem}[\textbf{Uniform failure of stationarity}]
+\label{add:thm:ef_uniform}
+For every $b\in\mathbb R$, put
+$a_b=\sqrt{1+1/[7(1+b^2)]}$ and define the convex quadratic
+\begin{equation}\label{add:eq:quadratic}
+ f_b(X)=\frac{(a_b+\langle A,X\rangle)^2}{2}
+       +\frac{(\langle B,X\rangle-b)^2}{14(1+b^2)}.
+\end{equation}
+It is globally $1$-smooth in Frobenius norm, attains its minimum $0$, and satisfies
+$f_b(0)=4/7$. Run exact-gradient, exact-polar EF21-SignMuon from
+$X_0=M_0=E_0=0$, with either EMA or Nesterov and fixed
+$\mu\in[0,1)$.
+Let $r_t>0$ satisfy $r_t>\mu r_{t-1}$ for $t\ge2$, and set
+\[
+ \eta_t=r_t+r_{t+1},\qquad b=-\kappa r_1.
+\]
+Then, for every $t\ge0$,
+\begin{gather*}
+ X_t=-hS\sum_{k=1}^t(-1)^{k-1}\eta_k,\\
+ \langle B,X_t\rangle-b=(-1)^t\kappa r_{t+1},\\
+ \|\nabla f_b(X_t)\|_F\ge1.
+\end{gather*}
+The same statement holds through any finite horizon when the hypotheses
+hold only for the required finite sequence.
+\end{theorem}
+
+\begin{paperproof}
+The Hessian is the sum of two orthogonal rank-one operators with
+eigenvalues $1$ and $1/(1+b^2)$. A minimizer is
+$-a_bA+(b/7)B$, and
+$f_b(0)=a_b^2/2+b^2/[14(1+b^2)]=4/7$.
+In the article's spectral/nuclear smoothness convention, it also satisfies
+$\|\nabla f_b(X)-\nabla f_b(Y)\|_*\le8\|X-Y\|_{2\to2}$,
+since $\|A\|_*=1$ and $\|B\|_*=7$.
+Suppose the claimed trajectory holds through $X_{t-1}$. Its gradient is
+\[
+ G_t=a_bA+(-1)^{t-1}\frac{\kappa r_t}{7(1+b^2)}B.
+\]
+The EMA coefficient of $A$ is $a_b(1-\mu^t)>0$.
+After removing the sign $(-1)^{t-1}$ and a positive common factor,
+its coefficient of $B$ is
+\[
+ r_t-\mu r_{t-1}+\mu^2r_{t-2}-\cdots+(-\mu)^{t-1}r_1>0.
+\]
+Pair adjacent terms; each pair is positive by the hypothesis, as is
+the unpaired last term. Consecutive EMA coefficients of $B$ therefore
+have opposite signs. Nesterov's signal
+$(1+\mu)M_t-\mu M_{t-1}$ has the same $B$ sign and a positive $A$
+coefficient as well. Lemma~\ref{add:lem:invisible} gives $D_t$ and $E_t$.
+The update $X_t=X_{t-1}-\eta_tE_t$ and
+$\eta_t=r_t+r_{t+1}$ complete the induction.
+Finally, $\langle A,X_t\rangle=0$ implies
+$\langle A,\nabla f_b(X_t)\rangle=a_b\ge1$, proving the gradient floor.
+\end{paperproof}
+
+\paragraph{Decreasing steps.}
+With $\mu=0$, every strictly decreasing positive schedule
+$\eta_t\to0$ is covered: take
+$r_t=\sum_{k=t}^{\infty}(-1)^{k-t}\eta_k$.
+The alternating-series bounds give $0<r_t<\eta_t$ and
+$r_t+r_{t+1}=\eta_t$. Thus one fixed quadratic defeats the entire run,
+including $\eta_t=a/t$ and $a/\sqrt t$. The iterates converge to a point
+whose gradient is $a_bA$, of norm at least $1$.
+For any fixed $\mu<1$, choose $a>0$, $0<p\le1$, and $\tau\ge0$
+large enough that
+\[
+ r_t=\frac{a}{(t+\tau)^p},\qquad
+ \left(\frac{1+\tau}{2+\tau}\right)^p>\mu.
+\]
+Both momentum variants are then covered. These steps satisfy
+$\eta_t\asymp t^{-p}$ and
+$\sum_t\eta_t=\infty$; choosing $p>1/2$ also gives
+$\sum_t\eta_t^2<\infty$.
+
+\paragraph{Parameters chosen for a finite budget.}
+For every horizon $T$, any constant $\eta_T>0$ and any fixed
+$\mu_T\in[0,1)$, choose $r_t=\eta_T/2$ and
+$b_T=-\kappa\eta_T/2$. Then
+\begin{gather*}
+ \min_{0\le t\le T}\|\nabla f_{b_T}(X_t)\|_F\ge1,\\
+ L_F=1,\qquad f_{b_T}(0)-\inf f_{b_T}=4/7.
+\end{gather*}
+Thus no uniform vanishing stationarity rate over this smooth,
+lower-bounded class follows by tuning a constant learning rate and momentum
+to $T$. The dimension and compressor are also fixed, and the noise is zero.
+With $\mu=0$, any finite nonincreasing positive schedule is covered:
+set $r_{T+1}=\eta_T/2$ and recursively $r_t=\eta_t-r_{t+1}>0$.
+These are uniform worst-case statements, with the instance allowed to
+depend on the chosen schedule; arbitrary varying momentum is not asserted.
+
+\paragraph{Why contraction does not suffice.}
+Here $\kappa\simeq5.039$. The achieved scaled-sign contraction is
+$\kappa/8\simeq0.630$ initially and
+$4\kappa/(8+3\kappa)\simeq0.872$ thereafter.
+Nevertheless, every estimator is orthogonal to the fixed gradient
+component $a_bA$. All finite-time momentum signals have full rank and
+all compressed residuals have strict signs.
+As the steps decrease, the gradients approach rank one
+while their polar factors keep alternating. Smoothness of the objective
+therefore does not make the polar target slowly varying.
+
+\paragraph{Exact algebraic certificate.}
+The following data make Lemma~\ref{add:lem:invisible} explicit.
+Let $K$ be the skew-symmetric integer matrix
+\[
+\setlength{\arraycolsep}{2pt}
+K=\begin{pmatrix}
+0&-6&-10&15&4&-3&-9&3\\
+6&0&-3&-7&0&-12&-4&0\\
+10&3&0&20&0&8&-1&4\\
+-15&7&-20&0&-21&-7&0&-1\\
+-4&0&0&21&0&-6&-15&7\\
+3&12&-8&7&6&0&-17&0\\
+9&4&1&0&15&17&0&12\\
+-3&0&-4&1&-7&0&-12&0
+\end{pmatrix},
+\]
+and put $D=(20I-K)(20I+K)^{-1}$, $S=\operatorname{sign}(D)$,
+$w=(-1,-8,-9,0,0,-12,7,-8)^\top$.
+Let $z=w+\xi e_6$, where $\xi\in(251/250,201/200)$ is the unique root of
+\[
+3903331846\xi^2+1548933728\xi-5493727089=0.
+\]
+Define
+\[
+ A=\frac{Dzz^\top}{z^\top z},\qquad B=D-A.
+\]
+Skew-symmetry gives $D^\top D=I$; the polynomial is a nonzero
+multiple of $z^\top D^\top Sz$, so $\langle A,S\rangle=0$.
+The rank-one orthogonal projector $zz^\top/(z^\top z)$ gives the stated
+norms and polar identity. Rational interval arithmetic on the displayed
+interval verifies, entrywise,
+\[
+ S_{ij}D_{ij}>1/50,\qquad S_{ij}(D-2A)_{ij}>1/50.
+\]
+For reproducibility, the accompanying script
+\path{research/ef21_signmuon_vanishing_steps.py} verifies these
+inequalities with exact fractions: after multiplying the second by
+$z^\top z$, each is a quadratic inequality checked at the interval
+endpoints and, when applicable, its vertex. It also checks root existence,
+uniqueness, and orthogonality exactly; no numerical search is part of the
+certificate.

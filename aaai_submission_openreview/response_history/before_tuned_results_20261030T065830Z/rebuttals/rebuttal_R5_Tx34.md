@@ -1,0 +1,7 @@
+Thank you for asking us to clarify the contribution and Theorem 4.
+
+1. Re our contribution: On federated CNN2/CIFAR-10 (11 IID clients, 5 seeds), SignMuon reaches 85.72% at 1 bit per matrix entry, versus Muon 85.98% and SignSGD 81.44%. We isolate how sign and error-feedback placement affect performance. The new heterogeneous split gives **EF21-MuonSign 83.23% and EF21-MuonUSign 82.99%**, the only Muon variants above 80% at IID-selected rates (7S1b, Q2). After your review, we generalized EF21-Muon(U)Sign convergence to fixed EMA/Nesterov and constant/cosine rates, with proofs verified in Lean.
+2. Re what Theorem 4 rules out: Theorem 4 alone concerns fixed parameters. In response, for any constant learning rate and fixed EMA/Nesterov momentum chosen for the run length, we construct an 8×8 convex quadratic for exact-polar EF21-SignMuon with Frobenius smoothness 1, initial gap 4/7 and gradient norm ≥1 at every iterate. Its gradient cannot approach zero. We also cover strictly decreasing steps to zero without momentum and power decay with fixed momentum.
+3. Re practical guidance: Use SignMuon on IID data, EF21-MuonUSign for label-skewed uplink compression and EF21-MuonSign for both links. These choices follow experiments; failure examples do not predict a ranking. A sufficient compressor condition need not be necessary; the impossibility concerns only the specified output-EF scheme and schedules.
+
+If these answers resolve your concerns, please consider raising your score.

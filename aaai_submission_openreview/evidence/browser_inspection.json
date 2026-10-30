@@ -1,10 +1,10 @@
 {
-  "checked_utc": "2026-10-29T21:56:39.228177+00:00",
+  "checked_utc": "2026-10-30T07:11:23.931925+00:00",
   "pages": [
     {
       "stem": "review_R1_7S1b",
-      "characters": 1496,
-      "countLabel": "1496 / 1,500 characters",
+      "characters": 1495,
+      "countLabel": "1495 / 1,500 characters",
       "renderedMath": 0,
       "renderedTables": [
         {
@@ -15,43 +15,43 @@
           "rows": [
             [
               "EF21-MuonSign",
-              "83.23±0.36"
+              "84.03±0.52"
             ],
             [
               "EF21-MuonUSign",
-              "82.99±0.46"
+              "83.84±0.32"
             ],
             [
               "SGD",
-              "81.03±0.62"
+              "79.71±2.03"
             ],
             [
               "Adam",
-              "71.17±7.16"
+              "75.16±1.07"
+            ],
+            [
+              "EF21-SignMuon",
+              "49.73±6.69"
             ],
             [
               "Muon",
               "46.02±8.55"
             ],
             [
-              "EF21-SignMuon",
-              "45.46±7.66"
+              "MuonUSign",
+              "44.23±3.28"
             ],
             [
               "SignMuon",
-              "35.92±8.49"
-            ],
-            [
-              "SignSGD",
-              "26.42±3.23"
-            ],
-            [
-              "MuonUSign",
-              "26.21±2.75"
+              "42.96±5.94"
             ],
             [
               "MuonSign",
-              "25.63±3.98"
+              "40.75±0.98"
+            ],
+            [
+              "SignSGD",
+              "36.24±4.64"
             ]
           ],
           "strongCells": [
@@ -70,10 +70,10 @@
       ],
       "strongText": [
         "EF21-MuonSign",
-        "83.23±0.36",
+        "84.03±0.52",
         "EF21-MuonUSign",
-        "82.99±0.46",
-        "EF21-Muon(U)Sign are the only Muon variants that work well here (>80%)."
+        "83.84±0.32",
+        "EF21-Muon(U)Sign are the only methods above 80% after tuning."
       ],
       "draftMathErrors": [],
       "sourceMathErrors": [],
@@ -91,12 +91,12 @@
     },
     {
       "stem": "review_R2_D4r2",
-      "characters": 1470,
-      "countLabel": "1470 / 1,500 characters",
+      "characters": 1451,
+      "countLabel": "1451 / 1,500 characters",
       "renderedMath": 4,
       "renderedTables": [],
       "strongText": [
-        "only EF21-Muon(U)Sign above 80% among Muon variants"
+        "only EF21-Muon(U)Sign above 80%"
       ],
       "draftMathErrors": [],
       "sourceMathErrors": [],
@@ -113,12 +113,12 @@
     },
     {
       "stem": "review_R3_Ueq5",
-      "characters": 1487,
-      "countLabel": "1487 / 1,500 characters",
+      "characters": 1472,
+      "countLabel": "1472 / 1,500 characters",
       "renderedMath": 3,
       "renderedTables": [],
       "strongText": [
-        "only EF21-Muon(U)Sign exceed 80% among Muon variants"
+        "only EF21-Muon(U)Sign exceed 80%"
       ],
       "draftMathErrors": [],
       "sourceMathErrors": [],
@@ -132,12 +132,12 @@
     },
     {
       "stem": "review_R4_pqje",
-      "characters": 1479,
-      "countLabel": "1479 / 1,500 characters",
+      "characters": 1464,
+      "countLabel": "1464 / 1,500 characters",
       "renderedMath": 0,
       "renderedTables": [],
       "strongText": [
-        "only EF21-Muon(U)Sign exceed 80% among Muon variants"
+        "only EF21-Muon(U)Sign exceed 80%"
       ],
       "draftMathErrors": [],
       "sourceMathErrors": [],
@@ -153,12 +153,12 @@
     },
     {
       "stem": "review_R5_Tx34",
-      "characters": 1492,
-      "countLabel": "1492 / 1,500 characters",
+      "characters": 1493,
+      "countLabel": "1493 / 1,500 characters",
       "renderedMath": 0,
       "renderedTables": [],
       "strongText": [
-        "EF21-MuonSign 83.23% and EF21-MuonUSign 82.99%"
+        "EF21-MuonSign reaches 84.03% and EF21-MuonUSign 83.84%"
       ],
       "draftMathErrors": [],
       "sourceMathErrors": [],
@@ -177,7 +177,7 @@
       "renderedMath": 0,
       "renderedTables": [],
       "strongText": [
-        "Only EF21-Muon(U)Sign exceed 80% among Muon variants"
+        "Only EF21-Muon(U)Sign exceed 80%"
       ],
       "draftMathErrors": [],
       "sourceMathErrors": [],
@@ -194,12 +194,12 @@
     },
     {
       "stem": "confidential_ac",
-      "characters": 2345,
-      "countLabel": "2345 characters · limit not specified",
+      "characters": 2478,
+      "countLabel": "2478 characters · limit not specified",
       "renderedMath": 0,
       "renderedTables": [],
       "strongText": [
-        "EF21-MuonSign reaches 83.23±0.36% and EF21-MuonUSign 82.99±0.46%"
+        "EF21-MuonSign reaches 84.03±0.52% and EF21-MuonUSign 83.84±0.32%"
       ],
       "draftMathErrors": [],
       "sourceMathErrors": [],

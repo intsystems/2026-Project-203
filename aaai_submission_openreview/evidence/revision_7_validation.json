@@ -1,0 +1,182 @@
+{
+  "checked_utc": "2026-10-30T07:11:53.476630+00:00",
+  "revision": 7,
+  "build_passed": true,
+  "workspace_check_passed": true,
+  "browser_inspection_passed": true,
+  "browser_checked_utc": "2026-10-30T07:11:23.931925+00:00",
+  "browser_pages": 7,
+  "six_public_limits_passed": true,
+  "source_inputs_review_wording_and_79_mappings_unchanged": true,
+  "all_64_ids_selections_pending_flags_and_question_links_preserved": true,
+  "public_tuned_table_matches_all_ten_verified_results": true,
+  "all_replies_and_ac_reference_updated_table": true,
+  "five_human_score_requests_retained": true,
+  "selected_concerns": 49,
+  "pending_evidence_flags": 8,
+  "tuning_audit": {
+    "archive_sha256": "9d7c55c609b9a7fff8761c70b7d596bda13d972803e4dd7f36dfd3956f001bec",
+    "unique_runs": 167,
+    "validation_trials": 72,
+    "unique_final_runs": 95,
+    "comparison_rows": 20,
+    "final_seed_memberships": 100,
+    "all_winners_interior": true,
+    "original_transfer_runs_unchanged": true,
+    "validation_only_selection": true
+  },
+  "addendum": {
+    "compiled": true,
+    "pages": 6,
+    "table_page": 5,
+    "all_ten_rows_and_learning_rates_match": true,
+    "proof_section_preserved": true,
+    "n4_dependency_matches_frozen_theorem": true,
+    "seed_reply_characters": {
+      "Tx34": 1431,
+      "pqje": 1354,
+      "Ueq5": 1208,
+      "D4r2": 1089,
+      "7S1b": 1401
+    },
+    "unresolved_references": false,
+    "overfull_boxes": false,
+    "pdf_sha256": "6d130805533d590ecf2ec60874cc1f62d568037085f1207c7cae8ebeeb068843",
+    "body_sha256": "29a7e0957c07ae82029db12e442e0c2b0758b4038104e02868310f521d96f016"
+  },
+  "training_run_for_preparation": false,
+  "lean_build_rerun": false,
+  "primer_changed": false,
+  "confidential_characters": 2478,
+  "confidential_limit": null,
+  "drafts": [
+    {
+      "stem": "review_R1_7S1b",
+      "characters": 1495,
+      "included": [
+        "R1.1",
+        "R1.2",
+        "R1.3",
+        "R1.9",
+        "R1.4",
+        "R1.10",
+        "R1.5"
+      ],
+      "omitted": [
+        "R1.6",
+        "R1.7",
+        "R1.8"
+      ],
+      "pending": [
+        "R1.6",
+        "R1.7",
+        "R1.8"
+      ]
+    },
+    {
+      "stem": "review_R2_D4r2",
+      "characters": 1451,
+      "included": [
+        "R2.6",
+        "R2.3"
+      ],
+      "omitted": [
+        "R2.1",
+        "R2.4",
+        "R2.5",
+        "R2.7",
+        "R2.2",
+        "R2.8"
+      ],
+      "pending": [
+        "R2.2",
+        "R2.8"
+      ]
+    },
+    {
+      "stem": "review_R3_Ueq5",
+      "characters": 1472,
+      "included": [
+        "R3.2",
+        "R3.1",
+        "R3.3",
+        "R3.4",
+        "R3.5"
+      ],
+      "omitted": [],
+      "pending": []
+    },
+    {
+      "stem": "review_R4_pqje",
+      "characters": 1464,
+      "included": [
+        "R4.1",
+        "R4.2",
+        "R4.3",
+        "R4.4",
+        "R4.6",
+        "R4.5",
+        "R4.7",
+        "R4.8",
+        "R4.9",
+        "R4.10",
+        "R4.11",
+        "R4.12",
+        "R4.13",
+        "R4.14"
+      ],
+      "omitted": [
+        "R4.15"
+      ],
+      "pending": [
+        "R4.15"
+      ]
+    },
+    {
+      "stem": "review_R5_Tx34",
+      "characters": 1493,
+      "included": [
+        "R5.1",
+        "R5.3",
+        "R5.2",
+        "R5.4",
+        "R5.5",
+        "R5.6"
+      ],
+      "omitted": [],
+      "pending": []
+    },
+    {
+      "stem": "review_AI_AI_Reviewer",
+      "characters": 1478,
+      "included": [
+        "AI.1",
+        "AI.2",
+        "AI.7",
+        "AI.3",
+        "AI.4",
+        "AI.5",
+        "AI.18",
+        "AI.19",
+        "AI.8",
+        "AI.10",
+        "AI.14",
+        "AI.15",
+        "AI.16",
+        "AI.17",
+        "AI.12"
+      ],
+      "omitted": [
+        "AI.6",
+        "AI.9",
+        "AI.11",
+        "AI.20",
+        "AI.13"
+      ],
+      "pending": [
+        "AI.6",
+        "AI.20"
+      ]
+    }
+  ]
+}

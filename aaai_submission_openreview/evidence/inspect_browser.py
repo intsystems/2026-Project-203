@@ -89,7 +89,7 @@ def main():
                     assert len(rendered)==1 and rendered[0]['headers']==['Method','Accuracy (%)'],rendered
                     assert rendered[0]['rows']==[line.replace('**','').strip('|').split('|') for line in table_rows],rendered
                     assert rendered[0]['strongCells']==[2,2]+[0]*8,rendered
-                    assert any('only Muon variants' in text for text in data['strongText']),data['strongText']
+                    assert any('only methods above 80%' in text for text in data['strongText']),data['strongText']
                 else:
                     assert '7S1b, Q2' in expected,spec['stem']
                     data['referencesHeterogeneousTable']=True

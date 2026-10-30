@@ -1,0 +1,7 @@
+Thank you for identifying the reporting and rate issues.
+
+1. Re the inconsistent tables: On federated CNN2/CIFAR-10 (11 IID clients, 5 seeds), the submitted logs reproduce A8: MuonSign 82.94±0.19% versus SignSGD 81.44±0.15%. SignMuon reaches 85.72±0.24% versus Muon 85.98±0.26%. We corrected Table 2 and its reversed comparison in the revision. On the new label-skew split, **only EF21-Muon(U)Sign exceed 80% among Muon variants** at IID-selected rates (7S1b, Q2).
+2. Re the extended guarantees: To address the schedule mismatch, we generalized EF21-MuonUSign and EF21-MuonSign convergence to fixed EMA/Nesterov and deterministic learning rates, including constant/cosine schedules. We verified the tracking and convergence proofs in Lean. The bounds quantify initialization, stochastic noise and orthogonalization accuracy. EF21 uses the submitted separable-layer assumption; our separate SignMuon theorem allows interacting layers under joint smoothness and uniform alignment.
+3. Re the two convergence rates: For EF21-MuonUSign and EF21-MuonSign with exact polar updates, the new constant/cosine theorem bounds the learning-rate-weighted average expected nuclear gradient norm. Choosing the peak learning rate and fixed momentum for $T$ iterations gives $O(T^{-1/4})$ convergence. A separate proof gives an $O(T^{-1/2})$ average expected squared nuclear gradient norm with gradient-dependent steps.
+
+If these corrections resolve your reservations, please consider raising your score.

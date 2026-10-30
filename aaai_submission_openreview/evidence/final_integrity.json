@@ -88,7 +88,7 @@
   "drafts": [
     {
       "stem": "review_R1_7S1b",
-      "characters": 1496,
+      "characters": 1495,
       "included": [
         "R1.1",
         "R1.2",
@@ -111,7 +111,7 @@
     },
     {
       "stem": "review_R2_D4r2",
-      "characters": 1470,
+      "characters": 1451,
       "included": [
         "R2.6",
         "R2.3"
@@ -131,7 +131,7 @@
     },
     {
       "stem": "review_R3_Ueq5",
-      "characters": 1487,
+      "characters": 1472,
       "included": [
         "R3.2",
         "R3.1",
@@ -144,7 +144,7 @@
     },
     {
       "stem": "review_R4_pqje",
-      "characters": 1479,
+      "characters": 1464,
       "included": [
         "R4.1",
         "R4.2",
@@ -170,7 +170,7 @@
     },
     {
       "stem": "review_R5_Tx34",
-      "characters": 1492,
+      "characters": 1493,
       "included": [
         "R5.1",
         "R5.3",
@@ -216,8 +216,8 @@
     }
   ],
   "original_inputs_unchanged": true,
-  "checked_utc": "2026-10-29T21:56:40.429966+00:00",
-  "revision": 6,
+  "checked_utc": "2026-10-30T07:11:53.476630+00:00",
+  "revision": 7,
   "review_files_sha256": {
     "review_AI_AI_Reviewer.md": "65ea9de21ab2c19b45d70859f1b271935b5794a135580775074521d32b8f7dd9",
     "review_R1_7S1b.md": "80b24a98063f589b380b5820faab95485fc84816bcb6e62804e1796305f3ea7a",
@@ -229,14 +229,14 @@
   "annotations_unchanged": true,
   "article_proof_sources_sha256": {
     "signmuon_body.tex": "184a74ac7d4d05d7a6596eed69ccda01f2af0c059b800c364b7e6bf04ac3b696",
-    "signmuon_addendum_body.tex": "7a45c5c9c4185312d7f2afde99255dccd4f4452cc8f8e23fa6d19b099dddc8b1",
+    "signmuon_addendum_body.tex": "29a7e0957c07ae82029db12e442e0c2b0758b4038104e02868310f521d96f016",
     "ef21_fixed_radius.tex": "9f4db532589580202646064e3196d7153f235c11f9b94f212cbf66656d369458",
     "ef21_nesterov_convergence.tex": "f3232e168942ebbb49ade7e9382bf3e77a20306f834de789b7b0ef4d11ca3ddd",
     "ef21_rate_takeaways.tex": "a5d9690015032fa576b39e83999cb76969859e68240d2043182dc7fb7ff97019"
   },
   "ef21_separability_retained": true,
   "transfer_runs_verified": 50,
-  "revision_validation": "evidence/revision_6_validation.json",
+  "revision_validation": "evidence/revision_7_validation.json",
   "previous_article_proof_sources_sha256": {
     "signmuon_body.tex": "184a74ac7d4d05d7a6596eed69ccda01f2af0c059b800c364b7e6bf04ac3b696",
     "signmuon_addendum_body.tex": "7a45c5c9c4185312d7f2afde99255dccd4f4452cc8f8e23fa6d19b099dddc8b1",
@@ -256,5 +256,8 @@
     "R2.4",
     "R2.5",
     "R2.7"
-  ]
+  ],
+  "heterogeneous_tuning_runs_verified": 167,
+  "heterogeneous_tuning_report": "evidence/heterogeneous_tuning_verified.json",
+  "addendum_updated_and_rebuilt": true
 }

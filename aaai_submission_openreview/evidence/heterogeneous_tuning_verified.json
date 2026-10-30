@@ -1,0 +1,1314 @@
+{
+  "checked_utc": "2026-10-30T06:56:49.939409+00:00",
+  "archive": "heterogeneous_tuning_results.zip",
+  "archive_sha256": "9d7c55c609b9a7fff8761c70b7d596bda13d972803e4dd7f36dfd3956f001bec",
+  "source": "Supplied code/results/rebuttal_results4.zip",
+  "protocol": {
+    "version": 3,
+    "dataset": "cifar10",
+    "model": "cnn2",
+    "rounds": 2000,
+    "n_parties": 11,
+    "n_steps": 3,
+    "batch_size": 64,
+    "partition": "noniid-labeldir",
+    "beta": 0.1,
+    "partition_seed": "run seed",
+    "val_seed": 12345,
+    "lr_aux": 0.001,
+    "lr_scaling": "unit-gain",
+    "weight_decay": 0.0,
+    "nesterov": false,
+    "cosine_schedule": true,
+    "freeze_bn_stats": true,
+    "ns_steps": 5,
+    "lmo_dtype": "bfloat16",
+    "mv_ties": "random",
+    "uplink_zeros": "random",
+    "last_k": 5,
+    "eval_points": 20,
+    "methods": [
+      "signmuon",
+      "ef21muonusign",
+      "ef21muonsign",
+      "ef21signmuon",
+      "muon",
+      "muonusign",
+      "muonsign",
+      "signsgd",
+      "sgd",
+      "adam"
+    ],
+    "seeds": [
+      0,
+      1,
+      2,
+      3,
+      4
+    ],
+    "tune_seeds": [
+      0
+    ],
+    "momentum": 0.9,
+    "homogeneous_lrs": {
+      "signmuon": 0.1,
+      "ef21muonusign": 0.01,
+      "ef21muonsign": 0.05,
+      "ef21signmuon": 0.02,
+      "muon": 0.1,
+      "muonusign": 0.05,
+      "muonsign": 0.02,
+      "signsgd": 0.01,
+      "sgd": 0.05,
+      "adam": 0.001
+    },
+    "homogeneous_momentum": 0.9
+  },
+  "search_protocol": {
+    "grid": "1-2-5",
+    "initial_points": 5,
+    "extension_rounds": 3,
+    "extension_points": 2,
+    "centers": {
+      "signmuon": 0.02,
+      "ef21muonusign": 0.02,
+      "ef21muonsign": 0.05,
+      "ef21signmuon": 0.02,
+      "muon": 0.05,
+      "muonusign": 0.05,
+      "muonsign": 0.02,
+      "signsgd": 0.02,
+      "sgd": 0.02,
+      "adam": 0.001
+    }
+  },
+  "unique_runs": 167,
+  "validation_runs": 72,
+  "unique_final_runs": 95,
+  "final_table_rows": 20,
+  "final_seed_memberships": 100,
+  "shared_final_runs": 5,
+  "all_runs_reached_2000": true,
+  "validation_only_selection_verified": true,
+  "all_selected_rates_interior": true,
+  "original_50_transfer_runs_unchanged": true,
+  "muonsign_extra_validation_refinement": {
+    "rates": [
+      1e-05,
+      2e-05
+    ],
+    "selected_lr_unchanged": 5e-05,
+    "extra_runs": 2
+  },
+  "selections": {
+    "signmuon": {
+      "lr": 0.005,
+      "validation_accuracy": 47.14,
+      "candidates": 7,
+      "grid": [
+        0.001,
+        0.002,
+        0.005,
+        0.01,
+        0.02,
+        0.05,
+        0.1
+      ],
+      "interior": true,
+      "boundary_extensions": 1
+    },
+    "ef21muonusign": {
+      "lr": 0.02,
+      "validation_accuracy": 83.052,
+      "candidates": 5,
+      "grid": [
+        0.005,
+        0.01,
+        0.02,
+        0.05,
+        0.1
+      ],
+      "interior": true,
+      "boundary_extensions": 0
+    },
+    "ef21muonsign": {
+      "lr": 0.02,
+      "validation_accuracy": 82.94,
+      "candidates": 5,
+      "grid": [
+        0.01,
+        0.02,
+        0.05,
+        0.1,
+        0.2
+      ],
+      "interior": true,
+      "boundary_extensions": 0
+    },
+    "ef21signmuon": {
+      "lr": 0.2,
+      "validation_accuracy": 57.552,
+      "candidates": 7,
+      "grid": [
+        0.005,
+        0.01,
+        0.02,
+        0.05,
+        0.1,
+        0.2,
+        0.5
+      ],
+      "interior": true,
+      "boundary_extensions": 1
+    },
+    "muon": {
+      "lr": 0.1,
+      "validation_accuracy": 52.9,
+      "candidates": 5,
+      "grid": [
+        0.01,
+        0.02,
+        0.05,
+        0.1,
+        0.2
+      ],
+      "interior": true,
+      "boundary_extensions": 0
+    },
+    "muonusign": {
+      "lr": 0.001,
+      "validation_accuracy": 46.488,
+      "candidates": 9,
+      "grid": [
+        0.0005,
+        0.001,
+        0.002,
+        0.005,
+        0.01,
+        0.02,
+        0.05,
+        0.1,
+        0.2
+      ],
+      "interior": true,
+      "boundary_extensions": 2
+    },
+    "muonsign": {
+      "lr": 5e-05,
+      "validation_accuracy": 40.96,
+      "candidates": 13,
+      "grid": [
+        1e-05,
+        2e-05,
+        5e-05,
+        0.0001,
+        0.0002,
+        0.0005,
+        0.001,
+        0.002,
+        0.005,
+        0.01,
+        0.02,
+        0.05,
+        0.1
+      ],
+      "interior": true,
+      "boundary_extensions": 4
+    },
+    "signsgd": {
+      "lr": 0.0005,
+      "validation_accuracy": 39.404,
+      "candidates": 9,
+      "grid": [
+        0.0002,
+        0.0005,
+        0.001,
+        0.002,
+        0.005,
+        0.01,
+        0.02,
+        0.05,
+        0.1
+      ],
+      "interior": true,
+      "boundary_extensions": 2
+    },
+    "sgd": {
+      "lr": 0.1,
+      "validation_accuracy": 81.22,
+      "candidates": 7,
+      "grid": [
+        0.005,
+        0.01,
+        0.02,
+        0.05,
+        0.1,
+        0.2,
+        0.5
+      ],
+      "interior": true,
+      "boundary_extensions": 1
+    },
+    "adam": {
+      "lr": 0.0005,
+      "validation_accuracy": 74.912,
+      "candidates": 5,
+      "grid": [
+        0.0002,
+        0.0005,
+        0.001,
+        0.002,
+        0.005
+      ],
+      "interior": true,
+      "boundary_extensions": 0
+    }
+  },
+  "results": {
+    "transfer": {
+      "signmuon": {
+        "lr": 0.1,
+        "mean": 35.9176,
+        "sample_sd": 8.494826825780502,
+        "runs": [
+          {
+            "method": "signmuon",
+            "seed": 0,
+            "split": "full",
+            "lr": 0.1,
+            "score": 42.206,
+            "metrics_path": "raw/federated/final_hetero_7d50d2b73d33_signmuon_lr0.1_mu0.9_full_s0_e2000_fs0/seed0/metrics.json",
+            "metrics_sha256": "a7aeb1e8ab4b73b7da06040076bd7eafca1691b5bfddd9839f89c6ce4fe7d919"
+          },
+          {
+            "method": "signmuon",
+            "seed": 1,
+            "split": "full",
+            "lr": 0.1,
+            "score": 37.388,
+            "metrics_path": "raw/federated/final_hetero_7d50d2b73d33_signmuon_lr0.1_mu0.9_full_s1_e2000_fs1/seed1/metrics.json",
+            "metrics_sha256": "d5ed2a8de093b8f417ee9ec66388533241bb288a71d6fbead89a5fd8fe2318ca"
+          },
+          {
+            "method": "signmuon",
+            "seed": 2,
+            "split": "full",
+            "lr": 0.1,
+            "score": 23.416,
+            "metrics_path": "raw/federated/final_hetero_7d50d2b73d33_signmuon_lr0.1_mu0.9_full_s2_e2000_fs2/seed2/metrics.json",
+            "metrics_sha256": "4eb1a459d1e51146a4abab36e4e8615ff0bd7ce6402b788e3140652ff5a1be65"
+          },
+          {
+            "method": "signmuon",
+            "seed": 3,
+            "split": "full",
+            "lr": 0.1,
+            "score": 31.988,
+            "metrics_path": "raw/federated/final_hetero_7d50d2b73d33_signmuon_lr0.1_mu0.9_full_s3_e2000_fs3/seed3/metrics.json",
+            "metrics_sha256": "961147781fe93b834f839ea5006a826cdbeffdf39a73cddefef92452cbfc7d73"
+          },
+          {
+            "method": "signmuon",
+            "seed": 4,
+            "split": "full",
+            "lr": 0.1,
+            "score": 44.59,
+            "metrics_path": "raw/federated/final_hetero_7d50d2b73d33_signmuon_lr0.1_mu0.9_full_s4_e2000_fs4/seed4/metrics.json",
+            "metrics_sha256": "dd1a5e5dd2e66f1f4085e161813e561aee4a451edaad565b755ae62551406e7f"
+          }
+        ]
+      },
+      "ef21muonusign": {
+        "lr": 0.01,
+        "mean": 82.9868,
+        "sample_sd": 0.45906775099106784,
+        "runs": [
+          {
+            "method": "ef21muonusign",
+            "seed": 0,
+            "split": "full",
+            "lr": 0.01,
+            "score": 82.528,
+            "metrics_path": "raw/federated/final_hetero_7d50d2b73d33_ef21muonusign_lr0.01_mu0.9_full_s0_e2000_fs0/seed0/metrics.json",
+            "metrics_sha256": "2d084f31e400f2ef0bfcd471aefc85d295c8a35790a3e523896a1c84330fd751"
+          },
+          {
+            "method": "ef21muonusign",
+            "seed": 1,
+            "split": "full",
+            "lr": 0.01,
+            "score": 82.656,
+            "metrics_path": "raw/federated/final_hetero_7d50d2b73d33_ef21muonusign_lr0.01_mu0.9_full_s1_e2000_fs1/seed1/metrics.json",
+            "metrics_sha256": "f40d5a1293a30619012b5430d87571624c78479ca7846e88bca85333a8a449c0"
+          },
+          {
+            "method": "ef21muonusign",
+            "seed": 2,
+            "split": "full",
+            "lr": 0.01,
+            "score": 83.248,
+            "metrics_path": "raw/federated/final_hetero_7d50d2b73d33_ef21muonusign_lr0.01_mu0.9_full_s2_e2000_fs2/seed2/metrics.json",
+            "metrics_sha256": "3ba5529d9ef92f5a9969599625185817c63c1cc0418d0b1e718d5c6adcd9e6a1"
+          },
+          {
+            "method": "ef21muonusign",
+            "seed": 3,
+            "split": "full",
+            "lr": 0.01,
+            "score": 83.648,
+            "metrics_path": "raw/federated/final_hetero_7d50d2b73d33_ef21muonusign_lr0.01_mu0.9_full_s3_e2000_fs3/seed3/metrics.json",
+            "metrics_sha256": "94aa158314e7c0200f6acb2ab6ce7689b8ea53372271fa2b620bc69e675f581e"
+          },
+          {
+            "method": "ef21muonusign",
+            "seed": 4,
+            "split": "full",
+            "lr": 0.01,
+            "score": 82.854,
+            "metrics_path": "raw/federated/final_hetero_7d50d2b73d33_ef21muonusign_lr0.01_mu0.9_full_s4_e2000_fs4/seed4/metrics.json",
+            "metrics_sha256": "a1240b4719c69ce1b18834daaaf744a20f7d7f458b037442833fff72d543227b"
+          }
+        ]
+      },
+      "ef21muonsign": {
+        "lr": 0.05,
+        "mean": 83.22840000000001,
+        "sample_sd": 0.3583249921509813,
+        "runs": [
+          {
+            "method": "ef21muonsign",
+            "seed": 0,
+            "split": "full",
+            "lr": 0.05,
+            "score": 83.456,
+            "metrics_path": "raw/federated/final_hetero_7d50d2b73d33_ef21muonsign_lr0.05_mu0.9_full_s0_e2000_fs0/seed0/metrics.json",
+            "metrics_sha256": "35bbcd114a19be9545fe70c734fe4c494030bdc611e96a1fea6ab1de5091f9ab"
+          },
+          {
+            "method": "ef21muonsign",
+            "seed": 1,
+            "split": "full",
+            "lr": 0.05,
+            "score": 83.376,
+            "metrics_path": "raw/federated/final_hetero_7d50d2b73d33_ef21muonsign_lr0.05_mu0.9_full_s1_e2000_fs1/seed1/metrics.json",
+            "metrics_sha256": "d4c8c1f1ce0e721ca56e2726905a7d21ed1034322a59747739b5408d5db9a852"
+          },
+          {
+            "method": "ef21muonsign",
+            "seed": 2,
+            "split": "full",
+            "lr": 0.05,
+            "score": 82.7,
+            "metrics_path": "raw/federated/final_hetero_7d50d2b73d33_ef21muonsign_lr0.05_mu0.9_full_s2_e2000_fs2/seed2/metrics.json",
+            "metrics_sha256": "403e740d3bed1823dc92c9c783baefbb4e5b56132ad81f5e257d0c63f5e1d307"
+          },
+          {
+            "method": "ef21muonsign",
+            "seed": 3,
+            "split": "full",
+            "lr": 0.05,
+            "score": 83.578,
+            "metrics_path": "raw/federated/final_hetero_7d50d2b73d33_ef21muonsign_lr0.05_mu0.9_full_s3_e2000_fs3/seed3/metrics.json",
+            "metrics_sha256": "339b37dc19174a11262708ede0d9eac8802dc39d5d4346285884401448a174b7"
+          },
+          {
+            "method": "ef21muonsign",
+            "seed": 4,
+            "split": "full",
+            "lr": 0.05,
+            "score": 83.032,
+            "metrics_path": "raw/federated/final_hetero_7d50d2b73d33_ef21muonsign_lr0.05_mu0.9_full_s4_e2000_fs4/seed4/metrics.json",
+            "metrics_sha256": "c9b279f31d1e7405f022a8f4c8cc219ba9b84f1e62c05dd04dd4549670b720ea"
+          }
+        ]
+      },
+      "ef21signmuon": {
+        "lr": 0.02,
+        "mean": 45.4576,
+        "sample_sd": 7.663050097709133,
+        "runs": [
+          {
+            "method": "ef21signmuon",
+            "seed": 0,
+            "split": "full",
+            "lr": 0.02,
+            "score": 51.818,
+            "metrics_path": "raw/federated/final_hetero_7d50d2b73d33_ef21signmuon_lr0.02_mu0.9_full_s0_e2000_fs0/seed0/metrics.json",
+            "metrics_sha256": "e3595de33b3204ebb3628bcddbc98db6a0cbf10a87030225c52b5fcdc6787aef"
+          },
+          {
+            "method": "ef21signmuon",
+            "seed": 1,
+            "split": "full",
+            "lr": 0.02,
+            "score": 43.606,
+            "metrics_path": "raw/federated/final_hetero_7d50d2b73d33_ef21signmuon_lr0.02_mu0.9_full_s1_e2000_fs1/seed1/metrics.json",
+            "metrics_sha256": "7c3fac44082203732c0481830af1e700b38cb70e0ca7ed22d27b050c66e59896"
+          },
+          {
+            "method": "ef21signmuon",
+            "seed": 2,
+            "split": "full",
+            "lr": 0.02,
+            "score": 35.176,
+            "metrics_path": "raw/federated/final_hetero_7d50d2b73d33_ef21signmuon_lr0.02_mu0.9_full_s2_e2000_fs2/seed2/metrics.json",
+            "metrics_sha256": "bee0c086a2331cff75e42d5dbbf565c0fc59f2cf969a2ea9aac354287ece30b6"
+          },
+          {
+            "method": "ef21signmuon",
+            "seed": 3,
+            "split": "full",
+            "lr": 0.02,
+            "score": 42.486000000000004,
+            "metrics_path": "raw/federated/final_hetero_7d50d2b73d33_ef21signmuon_lr0.02_mu0.9_full_s3_e2000_fs3/seed3/metrics.json",
+            "metrics_sha256": "6c9f55fd7b19424f850d6a93d7e07f0e58bd949e2d199f12080f45078b10a093"
+          },
+          {
+            "method": "ef21signmuon",
+            "seed": 4,
+            "split": "full",
+            "lr": 0.02,
+            "score": 54.202,
+            "metrics_path": "raw/federated/final_hetero_7d50d2b73d33_ef21signmuon_lr0.02_mu0.9_full_s4_e2000_fs4/seed4/metrics.json",
+            "metrics_sha256": "7bc9959b14aa107af1c437bae3709974f3f27d48b024aa1f50e202a364b063ef"
+          }
+        ]
+      },
+      "muon": {
+        "lr": 0.1,
+        "mean": 46.022,
+        "sample_sd": 8.546213547530858,
+        "runs": [
+          {
+            "method": "muon",
+            "seed": 0,
+            "split": "full",
+            "lr": 0.1,
+            "score": 51.53,
+            "metrics_path": "raw/federated/final_hetero_7d50d2b73d33_muon_lr0.1_mu0.9_full_s0_e2000_fs0/seed0/metrics.json",
+            "metrics_sha256": "571947e19464372d3881c9f0f3978724ddb47316544bfeb00936e87a1c8bd2a0"
+          },
+          {
+            "method": "muon",
+            "seed": 1,
+            "split": "full",
+            "lr": 0.1,
+            "score": 47.404,
+            "metrics_path": "raw/federated/final_hetero_7d50d2b73d33_muon_lr0.1_mu0.9_full_s1_e2000_fs1/seed1/metrics.json",
+            "metrics_sha256": "3ecf5071f9119bf81e8de63affc98ef1e738e2c8b2cc9950978acd467eb7186d"
+          },
+          {
+            "method": "muon",
+            "seed": 2,
+            "split": "full",
+            "lr": 0.1,
+            "score": 33.614000000000004,
+            "metrics_path": "raw/federated/final_hetero_7d50d2b73d33_muon_lr0.1_mu0.9_full_s2_e2000_fs2/seed2/metrics.json",
+            "metrics_sha256": "8e0ead1b8e3cd4b9c1f0c3c1dbb6d28746f8888dd634bb2c3d2e00b0da2ee325"
+          },
+          {
+            "method": "muon",
+            "seed": 3,
+            "split": "full",
+            "lr": 0.1,
+            "score": 42.046,
+            "metrics_path": "raw/federated/final_hetero_7d50d2b73d33_muon_lr0.1_mu0.9_full_s3_e2000_fs3/seed3/metrics.json",
+            "metrics_sha256": "1733dc73e0564a96f74a40c0e5eda04f01b6603f885d5fbf4d23bac314bbf1dd"
+          },
+          {
+            "method": "muon",
+            "seed": 4,
+            "split": "full",
+            "lr": 0.1,
+            "score": 55.516,
+            "metrics_path": "raw/federated/final_hetero_7d50d2b73d33_muon_lr0.1_mu0.9_full_s4_e2000_fs4/seed4/metrics.json",
+            "metrics_sha256": "5397fc132605710e73be277bb36f2b016f7afd412fa7e5726ae0f1e9602311cc"
+          }
+        ]
+      },
+      "muonusign": {
+        "lr": 0.05,
+        "mean": 26.2144,
+        "sample_sd": 2.7488377180182892,
+        "runs": [
+          {
+            "method": "muonusign",
+            "seed": 0,
+            "split": "full",
+            "lr": 0.05,
+            "score": 28.348,
+            "metrics_path": "raw/federated/final_hetero_7d50d2b73d33_muonusign_lr0.05_mu0.9_full_s0_e2000_fs0/seed0/metrics.json",
+            "metrics_sha256": "e445ae386ba2c660117c53129226a9af410b788ebb921535b07693b3d80f07cc"
+          },
+          {
+            "method": "muonusign",
+            "seed": 1,
+            "split": "full",
+            "lr": 0.05,
+            "score": 24.798000000000002,
+            "metrics_path": "raw/federated/final_hetero_7d50d2b73d33_muonusign_lr0.05_mu0.9_full_s1_e2000_fs1/seed1/metrics.json",
+            "metrics_sha256": "c3a5246e7b260408c6c9eefa7908534ec55a067ddf8e6a181f34cdfd9874f375"
+          },
+          {
+            "method": "muonusign",
+            "seed": 2,
+            "split": "full",
+            "lr": 0.05,
+            "score": 23.706,
+            "metrics_path": "raw/federated/final_hetero_7d50d2b73d33_muonusign_lr0.05_mu0.9_full_s2_e2000_fs2/seed2/metrics.json",
+            "metrics_sha256": "a68b14ee59b6e6c09ffd9165f29a39ae21ac3769b712b1ba36e46f49dfa9e684"
+          },
+          {
+            "method": "muonusign",
+            "seed": 3,
+            "split": "full",
+            "lr": 0.05,
+            "score": 24.302,
+            "metrics_path": "raw/federated/final_hetero_7d50d2b73d33_muonusign_lr0.05_mu0.9_full_s3_e2000_fs3/seed3/metrics.json",
+            "metrics_sha256": "8e1ebd24a329f6a0806b23e1bb3fa7a85a32af500a2354f9d2880b1fcc8789d5"
+          },
+          {
+            "method": "muonusign",
+            "seed": 4,
+            "split": "full",
+            "lr": 0.05,
+            "score": 29.918,
+            "metrics_path": "raw/federated/final_hetero_7d50d2b73d33_muonusign_lr0.05_mu0.9_full_s4_e2000_fs4/seed4/metrics.json",
+            "metrics_sha256": "bb3f9350487c7b91c782dd116d293da9b440d2b969fb4a982f480da39eba85d7"
+          }
+        ]
+      },
+      "muonsign": {
+        "lr": 0.02,
+        "mean": 25.6268,
+        "sample_sd": 3.977293200155101,
+        "runs": [
+          {
+            "method": "muonsign",
+            "seed": 0,
+            "split": "full",
+            "lr": 0.02,
+            "score": 27.832,
+            "metrics_path": "raw/federated/final_hetero_7d50d2b73d33_muonsign_lr0.02_mu0.9_full_s0_e2000_fs0/seed0/metrics.json",
+            "metrics_sha256": "40f5d40f02ebf2afce54191de2dcc9a1838a34fa5b3514c90c4d6d32f3acfa80"
+          },
+          {
+            "method": "muonsign",
+            "seed": 1,
+            "split": "full",
+            "lr": 0.02,
+            "score": 24.810000000000002,
+            "metrics_path": "raw/federated/final_hetero_7d50d2b73d33_muonsign_lr0.02_mu0.9_full_s1_e2000_fs1/seed1/metrics.json",
+            "metrics_sha256": "e425042e5c3d01f41ac6492f04659bbce490ed1a894e0d50b0d9f44d025bd8a9"
+          },
+          {
+            "method": "muonsign",
+            "seed": 2,
+            "split": "full",
+            "lr": 0.02,
+            "score": 19.572,
+            "metrics_path": "raw/federated/final_hetero_7d50d2b73d33_muonsign_lr0.02_mu0.9_full_s2_e2000_fs2/seed2/metrics.json",
+            "metrics_sha256": "3f8a77e79e65db20d455faa19ce475f4d440fa65e4ffd3fa674fc959a80610bb"
+          },
+          {
+            "method": "muonsign",
+            "seed": 3,
+            "split": "full",
+            "lr": 0.02,
+            "score": 25.701999999999998,
+            "metrics_path": "raw/federated/final_hetero_7d50d2b73d33_muonsign_lr0.02_mu0.9_full_s3_e2000_fs3/seed3/metrics.json",
+            "metrics_sha256": "224ae766c92c4d2abc4ac7bbb4494d157ded8c31d7afbe78b9f83ee11aacedfb"
+          },
+          {
+            "method": "muonsign",
+            "seed": 4,
+            "split": "full",
+            "lr": 0.02,
+            "score": 30.218,
+            "metrics_path": "raw/federated/final_hetero_7d50d2b73d33_muonsign_lr0.02_mu0.9_full_s4_e2000_fs4/seed4/metrics.json",
+            "metrics_sha256": "ca9dc4ce9b8ecb63bf2c584fafb11931fd22689c2149c084e1d35f449e45e7f2"
+          }
+        ]
+      },
+      "signsgd": {
+        "lr": 0.01,
+        "mean": 26.4216,
+        "sample_sd": 3.2258283897318525,
+        "runs": [
+          {
+            "method": "signsgd",
+            "seed": 0,
+            "split": "full",
+            "lr": 0.01,
+            "score": 26.446,
+            "metrics_path": "raw/federated/final_hetero_7d50d2b73d33_signsgd_lr0.01_mu0.9_full_s0_e2000_fs0/seed0/metrics.json",
+            "metrics_sha256": "239a2b16a390bf7fa630a352944d0680c9580e53f5057c3aa5fe51c6cdbeb8b0"
+          },
+          {
+            "method": "signsgd",
+            "seed": 1,
+            "split": "full",
+            "lr": 0.01,
+            "score": 28.03,
+            "metrics_path": "raw/federated/final_hetero_7d50d2b73d33_signsgd_lr0.01_mu0.9_full_s1_e2000_fs1/seed1/metrics.json",
+            "metrics_sha256": "738a5506a3668f4aaeb375ff1b269db7c33d757e4754b85742e8c22177a46852"
+          },
+          {
+            "method": "signsgd",
+            "seed": 2,
+            "split": "full",
+            "lr": 0.01,
+            "score": 21.478,
+            "metrics_path": "raw/federated/final_hetero_7d50d2b73d33_signsgd_lr0.01_mu0.9_full_s2_e2000_fs2/seed2/metrics.json",
+            "metrics_sha256": "489a1fd25b268bcc7ac69ba0ecbd67cb6bfa4a11f6d50c9b466270e955e56ac2"
+          },
+          {
+            "method": "signsgd",
+            "seed": 3,
+            "split": "full",
+            "lr": 0.01,
+            "score": 25.942,
+            "metrics_path": "raw/federated/final_hetero_7d50d2b73d33_signsgd_lr0.01_mu0.9_full_s3_e2000_fs3/seed3/metrics.json",
+            "metrics_sha256": "2142697febf2268bb07e94c8a4fb493ca75f5632bd4ab9354dd01c0efc341c5a"
+          },
+          {
+            "method": "signsgd",
+            "seed": 4,
+            "split": "full",
+            "lr": 0.01,
+            "score": 30.212,
+            "metrics_path": "raw/federated/final_hetero_7d50d2b73d33_signsgd_lr0.01_mu0.9_full_s4_e2000_fs4/seed4/metrics.json",
+            "metrics_sha256": "5247a6f04acfcfaa81b3116655c7251d5877556eed5715c2666a2cc8d4e2b2b9"
+          }
+        ]
+      },
+      "sgd": {
+        "lr": 0.05,
+        "mean": 81.0276,
+        "sample_sd": 0.6213266451714421,
+        "runs": [
+          {
+            "method": "sgd",
+            "seed": 0,
+            "split": "full",
+            "lr": 0.05,
+            "score": 80.01,
+            "metrics_path": "raw/federated/final_hetero_7d50d2b73d33_sgd_lr0.05_mu0.9_full_s0_e2000_fs0/seed0/metrics.json",
+            "metrics_sha256": "452df9a3453807ad8ad3c67d316e85637323793945c765577cae149dbd97ef95"
+          },
+          {
+            "method": "sgd",
+            "seed": 1,
+            "split": "full",
+            "lr": 0.05,
+            "score": 81.102,
+            "metrics_path": "raw/federated/final_hetero_7d50d2b73d33_sgd_lr0.05_mu0.9_full_s1_e2000_fs1/seed1/metrics.json",
+            "metrics_sha256": "cbef454ddb7266b8cf8c3b8207f936884f285a1d26096eb89cc773a8c350a1dc"
+          },
+          {
+            "method": "sgd",
+            "seed": 2,
+            "split": "full",
+            "lr": 0.05,
+            "score": 81.182,
+            "metrics_path": "raw/federated/final_hetero_7d50d2b73d33_sgd_lr0.05_mu0.9_full_s2_e2000_fs2/seed2/metrics.json",
+            "metrics_sha256": "1a20b205d678209ad7a383cc6e886d280da9f6f785b39e6d5811ed806213e335"
+          },
+          {
+            "method": "sgd",
+            "seed": 3,
+            "split": "full",
+            "lr": 0.05,
+            "score": 81.712,
+            "metrics_path": "raw/federated/final_hetero_7d50d2b73d33_sgd_lr0.05_mu0.9_full_s3_e2000_fs3/seed3/metrics.json",
+            "metrics_sha256": "64c14da9dbd36504d11214ec9d6c111fb2c1c7cd129be8b46fba418ad2a9f427"
+          },
+          {
+            "method": "sgd",
+            "seed": 4,
+            "split": "full",
+            "lr": 0.05,
+            "score": 81.132,
+            "metrics_path": "raw/federated/final_hetero_7d50d2b73d33_sgd_lr0.05_mu0.9_full_s4_e2000_fs4/seed4/metrics.json",
+            "metrics_sha256": "8e0f1f161c749bb488c1b6e0b2368ef0af256afbddd6f6c276fb2e6795e846a1"
+          }
+        ]
+      },
+      "adam": {
+        "lr": 0.001,
+        "mean": 71.1672,
+        "sample_sd": 7.161389334479726,
+        "runs": [
+          {
+            "method": "adam",
+            "seed": 0,
+            "split": "full",
+            "lr": 0.001,
+            "score": 70.354,
+            "metrics_path": "raw/federated/final_hetero_7d50d2b73d33_adam_lr0.001_mu0.9_full_s0_e2000_fs0/seed0/metrics.json",
+            "metrics_sha256": "f4aca9edc947fedaf6dc5e36e9fcbda82f275c60824011f42953b65a0a20f0fe"
+          },
+          {
+            "method": "adam",
+            "seed": 1,
+            "split": "full",
+            "lr": 0.001,
+            "score": 59.09,
+            "metrics_path": "raw/federated/final_hetero_7d50d2b73d33_adam_lr0.001_mu0.9_full_s1_e2000_fs1/seed1/metrics.json",
+            "metrics_sha256": "b8b9bdabebd3feb86e41bca0b01792fe1479110851b9be73db0d8f6d68965d87"
+          },
+          {
+            "method": "adam",
+            "seed": 2,
+            "split": "full",
+            "lr": 0.001,
+            "score": 75.352,
+            "metrics_path": "raw/federated/final_hetero_7d50d2b73d33_adam_lr0.001_mu0.9_full_s2_e2000_fs2/seed2/metrics.json",
+            "metrics_sha256": "899ae75be6d7df2b7f49a677008c509e698219fb13ddb33a170b702b605450f0"
+          },
+          {
+            "method": "adam",
+            "seed": 3,
+            "split": "full",
+            "lr": 0.001,
+            "score": 74.252,
+            "metrics_path": "raw/federated/final_hetero_7d50d2b73d33_adam_lr0.001_mu0.9_full_s3_e2000_fs3/seed3/metrics.json",
+            "metrics_sha256": "7f410d11e41d38d0cb3b3d17d15c408100848d1d03160b678d1284e23fbf9fcc"
+          },
+          {
+            "method": "adam",
+            "seed": 4,
+            "split": "full",
+            "lr": 0.001,
+            "score": 76.788,
+            "metrics_path": "raw/federated/final_hetero_7d50d2b73d33_adam_lr0.001_mu0.9_full_s4_e2000_fs4/seed4/metrics.json",
+            "metrics_sha256": "d8d0b2c6bc8d5c67538844da651c934406bd9096964640e57f146922e361c504"
+          }
+        ]
+      }
+    },
+    "tuned": {
+      "signmuon": {
+        "lr": 0.005,
+        "mean": 42.9648,
+        "sample_sd": 5.943060760248038,
+        "runs": [
+          {
+            "method": "signmuon",
+            "seed": 0,
+            "split": "full",
+            "lr": 0.005,
+            "score": 46.782,
+            "metrics_path": "raw/federated/final_hetero_7d50d2b73d33_signmuon_lr0.005_mu0.9_full_s0_e2000_fs0/seed0/metrics.json",
+            "metrics_sha256": "58e3b94e7d96f864cd5a06b5c36f5e458cfb60c980df9ad61c9d1696cb997438"
+          },
+          {
+            "method": "signmuon",
+            "seed": 1,
+            "split": "full",
+            "lr": 0.005,
+            "score": 42.884,
+            "metrics_path": "raw/federated/final_hetero_7d50d2b73d33_signmuon_lr0.005_mu0.9_full_s1_e2000_fs1/seed1/metrics.json",
+            "metrics_sha256": "8ca0ee8ad0d383e85a746c62473c4e55860f6d819cbb992b86bf9204ffaad9f2"
+          },
+          {
+            "method": "signmuon",
+            "seed": 2,
+            "split": "full",
+            "lr": 0.005,
+            "score": 34.726,
+            "metrics_path": "raw/federated/final_hetero_7d50d2b73d33_signmuon_lr0.005_mu0.9_full_s2_e2000_fs2/seed2/metrics.json",
+            "metrics_sha256": "c1dbd40938c4870433378f16a1c16204a0763e7a7f49dbc3c92ef232c2760ed8"
+          },
+          {
+            "method": "signmuon",
+            "seed": 3,
+            "split": "full",
+            "lr": 0.005,
+            "score": 40.282000000000004,
+            "metrics_path": "raw/federated/final_hetero_7d50d2b73d33_signmuon_lr0.005_mu0.9_full_s3_e2000_fs3/seed3/metrics.json",
+            "metrics_sha256": "440b01d2dce6b6b7897b60458b9fda769820deefaaa8a5321f1d5ca08998c3a8"
+          },
+          {
+            "method": "signmuon",
+            "seed": 4,
+            "split": "full",
+            "lr": 0.005,
+            "score": 50.15,
+            "metrics_path": "raw/federated/final_hetero_7d50d2b73d33_signmuon_lr0.005_mu0.9_full_s4_e2000_fs4/seed4/metrics.json",
+            "metrics_sha256": "8806c9ac94cc9c9c407acf586c5af6afcd0e926ad33e54bd37ad26753dd4bd06"
+          }
+        ]
+      },
+      "ef21muonusign": {
+        "lr": 0.02,
+        "mean": 83.842,
+        "sample_sd": 0.32302012321216117,
+        "runs": [
+          {
+            "method": "ef21muonusign",
+            "seed": 0,
+            "split": "full",
+            "lr": 0.02,
+            "score": 83.608,
+            "metrics_path": "raw/federated/final_hetero_7d50d2b73d33_ef21muonusign_lr0.02_mu0.9_full_s0_e2000_fs0/seed0/metrics.json",
+            "metrics_sha256": "99a2d73f198502ed1fbde46e958fdbe16832165d87571716f2ac5e459809d2cb"
+          },
+          {
+            "method": "ef21muonusign",
+            "seed": 1,
+            "split": "full",
+            "lr": 0.02,
+            "score": 83.482,
+            "metrics_path": "raw/federated/final_hetero_7d50d2b73d33_ef21muonusign_lr0.02_mu0.9_full_s1_e2000_fs1/seed1/metrics.json",
+            "metrics_sha256": "52dbb850566ee7b79b286c15af65000897d0164a8d98f883ffa0abe94b51183c"
+          },
+          {
+            "method": "ef21muonusign",
+            "seed": 2,
+            "split": "full",
+            "lr": 0.02,
+            "score": 83.96,
+            "metrics_path": "raw/federated/final_hetero_7d50d2b73d33_ef21muonusign_lr0.02_mu0.9_full_s2_e2000_fs2/seed2/metrics.json",
+            "metrics_sha256": "462889a1914e379424c5f859b6748f583025bc3796b3d0839851a1872075acc7"
+          },
+          {
+            "method": "ef21muonusign",
+            "seed": 3,
+            "split": "full",
+            "lr": 0.02,
+            "score": 84.31,
+            "metrics_path": "raw/federated/final_hetero_7d50d2b73d33_ef21muonusign_lr0.02_mu0.9_full_s3_e2000_fs3/seed3/metrics.json",
+            "metrics_sha256": "0b31b6f001f546de3f34e603561a9e3ad6921475b2dc10c89fb9455acc0beedd"
+          },
+          {
+            "method": "ef21muonusign",
+            "seed": 4,
+            "split": "full",
+            "lr": 0.02,
+            "score": 83.85,
+            "metrics_path": "raw/federated/final_hetero_7d50d2b73d33_ef21muonusign_lr0.02_mu0.9_full_s4_e2000_fs4/seed4/metrics.json",
+            "metrics_sha256": "3e962d5152b9e14e2caf15ecc247c841deb037bce0d81337abff1c4a8950056c"
+          }
+        ]
+      },
+      "ef21muonsign": {
+        "lr": 0.02,
+        "mean": 84.0348,
+        "sample_sd": 0.5186821762890977,
+        "runs": [
+          {
+            "method": "ef21muonsign",
+            "seed": 0,
+            "split": "full",
+            "lr": 0.02,
+            "score": 84.148,
+            "metrics_path": "raw/federated/final_hetero_7d50d2b73d33_ef21muonsign_lr0.02_mu0.9_full_s0_e2000_fs0/seed0/metrics.json",
+            "metrics_sha256": "19bc4bfdf5510f473c7227d7ffccc3985df0a22dd30e0e4ced76857954502109"
+          },
+          {
+            "method": "ef21muonsign",
+            "seed": 1,
+            "split": "full",
+            "lr": 0.02,
+            "score": 83.668,
+            "metrics_path": "raw/federated/final_hetero_7d50d2b73d33_ef21muonsign_lr0.02_mu0.9_full_s1_e2000_fs1/seed1/metrics.json",
+            "metrics_sha256": "5d9ab39e206849ac8099125c81148519db768a5d0066876bf4969dadc6854510"
+          },
+          {
+            "method": "ef21muonsign",
+            "seed": 2,
+            "split": "full",
+            "lr": 0.02,
+            "score": 84.088,
+            "metrics_path": "raw/federated/final_hetero_7d50d2b73d33_ef21muonsign_lr0.02_mu0.9_full_s2_e2000_fs2/seed2/metrics.json",
+            "metrics_sha256": "3a10fb78b2c8755ebdf2e93cffdf90500cc0175851371907164ef5fd9bdbd6c1"
+          },
+          {
+            "method": "ef21muonsign",
+            "seed": 3,
+            "split": "full",
+            "lr": 0.02,
+            "score": 84.80799999999999,
+            "metrics_path": "raw/federated/final_hetero_7d50d2b73d33_ef21muonsign_lr0.02_mu0.9_full_s3_e2000_fs3/seed3/metrics.json",
+            "metrics_sha256": "285f06720a395bc5295fd7f6a6f6db2c0df1d3c4f07930d3e1d409c7cfbc07e3"
+          },
+          {
+            "method": "ef21muonsign",
+            "seed": 4,
+            "split": "full",
+            "lr": 0.02,
+            "score": 83.462,
+            "metrics_path": "raw/federated/final_hetero_7d50d2b73d33_ef21muonsign_lr0.02_mu0.9_full_s4_e2000_fs4/seed4/metrics.json",
+            "metrics_sha256": "3ad5bcabc5429532575bab8a7373fb7996a3f9e12d6243483c7fcf0ad674a732"
+          }
+        ]
+      },
+      "ef21signmuon": {
+        "lr": 0.2,
+        "mean": 49.733200000000004,
+        "sample_sd": 6.691065027333094,
+        "runs": [
+          {
+            "method": "ef21signmuon",
+            "seed": 0,
+            "split": "full",
+            "lr": 0.2,
+            "score": 56.228,
+            "metrics_path": "raw/federated/final_hetero_7d50d2b73d33_ef21signmuon_lr0.2_mu0.9_full_s0_e2000_fs0/seed0/metrics.json",
+            "metrics_sha256": "4b516840fad67d18f7b587b08dc5ed1ae26a1f0e7e579a7ff3e8383f19e76ba6"
+          },
+          {
+            "method": "ef21signmuon",
+            "seed": 1,
+            "split": "full",
+            "lr": 0.2,
+            "score": 48.874,
+            "metrics_path": "raw/federated/final_hetero_7d50d2b73d33_ef21signmuon_lr0.2_mu0.9_full_s1_e2000_fs1/seed1/metrics.json",
+            "metrics_sha256": "cc726ffddf4a2358b889b11aff927a50d0d38f2b1ff6b783fb7bb7ef64249bc4"
+          },
+          {
+            "method": "ef21signmuon",
+            "seed": 2,
+            "split": "full",
+            "lr": 0.2,
+            "score": 40.292,
+            "metrics_path": "raw/federated/final_hetero_7d50d2b73d33_ef21signmuon_lr0.2_mu0.9_full_s2_e2000_fs2/seed2/metrics.json",
+            "metrics_sha256": "34f651a490dcf3db5096a028f2cc32e1a3249413bc4ccb315e4cc557d1ef305e"
+          },
+          {
+            "method": "ef21signmuon",
+            "seed": 3,
+            "split": "full",
+            "lr": 0.2,
+            "score": 47.175999999999995,
+            "metrics_path": "raw/federated/final_hetero_7d50d2b73d33_ef21signmuon_lr0.2_mu0.9_full_s3_e2000_fs3/seed3/metrics.json",
+            "metrics_sha256": "ded03b49f7c5eb89a56f91702b532c11e8209b0d1f0c1a3b9cee2bfd604f6d80"
+          },
+          {
+            "method": "ef21signmuon",
+            "seed": 4,
+            "split": "full",
+            "lr": 0.2,
+            "score": 56.096000000000004,
+            "metrics_path": "raw/federated/final_hetero_7d50d2b73d33_ef21signmuon_lr0.2_mu0.9_full_s4_e2000_fs4/seed4/metrics.json",
+            "metrics_sha256": "eded5882dfe8af13c3a9494e1131429cab2dd7fce8c292203488e63f82c9f347"
+          }
+        ]
+      },
+      "muon": {
+        "lr": 0.1,
+        "mean": 46.022,
+        "sample_sd": 8.546213547530858,
+        "runs": [
+          {
+            "method": "muon",
+            "seed": 0,
+            "split": "full",
+            "lr": 0.1,
+            "score": 51.53,
+            "metrics_path": "raw/federated/final_hetero_7d50d2b73d33_muon_lr0.1_mu0.9_full_s0_e2000_fs0/seed0/metrics.json",
+            "metrics_sha256": "571947e19464372d3881c9f0f3978724ddb47316544bfeb00936e87a1c8bd2a0"
+          },
+          {
+            "method": "muon",
+            "seed": 1,
+            "split": "full",
+            "lr": 0.1,
+            "score": 47.404,
+            "metrics_path": "raw/federated/final_hetero_7d50d2b73d33_muon_lr0.1_mu0.9_full_s1_e2000_fs1/seed1/metrics.json",
+            "metrics_sha256": "3ecf5071f9119bf81e8de63affc98ef1e738e2c8b2cc9950978acd467eb7186d"
+          },
+          {
+            "method": "muon",
+            "seed": 2,
+            "split": "full",
+            "lr": 0.1,
+            "score": 33.614000000000004,
+            "metrics_path": "raw/federated/final_hetero_7d50d2b73d33_muon_lr0.1_mu0.9_full_s2_e2000_fs2/seed2/metrics.json",
+            "metrics_sha256": "8e0ead1b8e3cd4b9c1f0c3c1dbb6d28746f8888dd634bb2c3d2e00b0da2ee325"
+          },
+          {
+            "method": "muon",
+            "seed": 3,
+            "split": "full",
+            "lr": 0.1,
+            "score": 42.046,
+            "metrics_path": "raw/federated/final_hetero_7d50d2b73d33_muon_lr0.1_mu0.9_full_s3_e2000_fs3/seed3/metrics.json",
+            "metrics_sha256": "1733dc73e0564a96f74a40c0e5eda04f01b6603f885d5fbf4d23bac314bbf1dd"
+          },
+          {
+            "method": "muon",
+            "seed": 4,
+            "split": "full",
+            "lr": 0.1,
+            "score": 55.516,
+            "metrics_path": "raw/federated/final_hetero_7d50d2b73d33_muon_lr0.1_mu0.9_full_s4_e2000_fs4/seed4/metrics.json",
+            "metrics_sha256": "5397fc132605710e73be277bb36f2b016f7afd412fa7e5726ae0f1e9602311cc"
+          }
+        ]
+      },
+      "muonusign": {
+        "lr": 0.001,
+        "mean": 44.226,
+        "sample_sd": 3.2834366142808378,
+        "runs": [
+          {
+            "method": "muonusign",
+            "seed": 0,
+            "split": "full",
+            "lr": 0.001,
+            "score": 47.544000000000004,
+            "metrics_path": "raw/federated/final_hetero_7d50d2b73d33_muonusign_lr0.001_mu0.9_full_s0_e2000_fs0/seed0/metrics.json",
+            "metrics_sha256": "54340e8d645f2ed2a357dafc4b2a6766679b60bc39f3f583b8f1e75396f021db"
+          },
+          {
+            "method": "muonusign",
+            "seed": 1,
+            "split": "full",
+            "lr": 0.001,
+            "score": 42.032000000000004,
+            "metrics_path": "raw/federated/final_hetero_7d50d2b73d33_muonusign_lr0.001_mu0.9_full_s1_e2000_fs1/seed1/metrics.json",
+            "metrics_sha256": "a2afe7889d720e9483157c577eed9c22ecaa89f6e0524b951dbda7b58a9ef24b"
+          },
+          {
+            "method": "muonusign",
+            "seed": 2,
+            "split": "full",
+            "lr": 0.001,
+            "score": 40.352,
+            "metrics_path": "raw/federated/final_hetero_7d50d2b73d33_muonusign_lr0.001_mu0.9_full_s2_e2000_fs2/seed2/metrics.json",
+            "metrics_sha256": "824250642606761d2c05e81034c8f223939503006e42edcee52757616306f635"
+          },
+          {
+            "method": "muonusign",
+            "seed": 3,
+            "split": "full",
+            "lr": 0.001,
+            "score": 43.538,
+            "metrics_path": "raw/federated/final_hetero_7d50d2b73d33_muonusign_lr0.001_mu0.9_full_s3_e2000_fs3/seed3/metrics.json",
+            "metrics_sha256": "6e3fbff658d30b18f55d2c1a4b899db186a18b5bf7e186265220bc5c66525ce8"
+          },
+          {
+            "method": "muonusign",
+            "seed": 4,
+            "split": "full",
+            "lr": 0.001,
+            "score": 47.664,
+            "metrics_path": "raw/federated/final_hetero_7d50d2b73d33_muonusign_lr0.001_mu0.9_full_s4_e2000_fs4/seed4/metrics.json",
+            "metrics_sha256": "76edc7711a055a4e72168fa5b857f690f9b18e4a5e5474d3d8bd317612adf16d"
+          }
+        ]
+      },
+      "muonsign": {
+        "lr": 5e-05,
+        "mean": 40.7472,
+        "sample_sd": 0.9804352094860731,
+        "runs": [
+          {
+            "method": "muonsign",
+            "seed": 0,
+            "split": "full",
+            "lr": 5e-05,
+            "score": 40.53,
+            "metrics_path": "raw/federated/final_hetero_7d50d2b73d33_muonsign_lr5e-05_mu0.9_full_s0_e2000_fs0/seed0/metrics.json",
+            "metrics_sha256": "1b7a235f3a82ee9dc358cb7f2ec668068781c117e930e2876b8d02d8f8d607ab"
+          },
+          {
+            "method": "muonsign",
+            "seed": 1,
+            "split": "full",
+            "lr": 5e-05,
+            "score": 39.392,
+            "metrics_path": "raw/federated/final_hetero_7d50d2b73d33_muonsign_lr5e-05_mu0.9_full_s1_e2000_fs1/seed1/metrics.json",
+            "metrics_sha256": "ca337c97bd7a229b021552065b89030e4177eee18b769ec02ff98edd7375688f"
+          },
+          {
+            "method": "muonsign",
+            "seed": 2,
+            "split": "full",
+            "lr": 5e-05,
+            "score": 40.832,
+            "metrics_path": "raw/federated/final_hetero_7d50d2b73d33_muonsign_lr5e-05_mu0.9_full_s2_e2000_fs2/seed2/metrics.json",
+            "metrics_sha256": "05255615c2d695f3568bf2e84708e9cdb4274f732d300136da302e56ccf0b1d3"
+          },
+          {
+            "method": "muonsign",
+            "seed": 3,
+            "split": "full",
+            "lr": 5e-05,
+            "score": 42.142,
+            "metrics_path": "raw/federated/final_hetero_7d50d2b73d33_muonsign_lr5e-05_mu0.9_full_s3_e2000_fs3/seed3/metrics.json",
+            "metrics_sha256": "11fa23f96400bce1eeabc413f878b4c82921eca07bb3d6bcad9799fbf0087f74"
+          },
+          {
+            "method": "muonsign",
+            "seed": 4,
+            "split": "full",
+            "lr": 5e-05,
+            "score": 40.84,
+            "metrics_path": "raw/federated/final_hetero_7d50d2b73d33_muonsign_lr5e-05_mu0.9_full_s4_e2000_fs4/seed4/metrics.json",
+            "metrics_sha256": "1b5c6b8f94354cdf38b52d6959de4a3cf59afa9f64775b19a15bcc8efc778e35"
+          }
+        ]
+      },
+      "signsgd": {
+        "lr": 0.0005,
+        "mean": 36.2436,
+        "sample_sd": 4.6376520783689665,
+        "runs": [
+          {
+            "method": "signsgd",
+            "seed": 0,
+            "split": "full",
+            "lr": 0.0005,
+            "score": 41.586,
+            "metrics_path": "raw/federated/final_hetero_7d50d2b73d33_signsgd_lr0.0005_mu0.9_full_s0_e2000_fs0/seed0/metrics.json",
+            "metrics_sha256": "39dad4138cd4352901b8b585f99169d596c19985bd4b4c5fda95fbcdf081d280"
+          },
+          {
+            "method": "signsgd",
+            "seed": 1,
+            "split": "full",
+            "lr": 0.0005,
+            "score": 34.736,
+            "metrics_path": "raw/federated/final_hetero_7d50d2b73d33_signsgd_lr0.0005_mu0.9_full_s1_e2000_fs1/seed1/metrics.json",
+            "metrics_sha256": "496b3923b822414ef5c44182ebf398d04eb3486257a0217d9704f6fee076f147"
+          },
+          {
+            "method": "signsgd",
+            "seed": 2,
+            "split": "full",
+            "lr": 0.0005,
+            "score": 29.724,
+            "metrics_path": "raw/federated/final_hetero_7d50d2b73d33_signsgd_lr0.0005_mu0.9_full_s2_e2000_fs2/seed2/metrics.json",
+            "metrics_sha256": "644fabc31b32656c598157a32f50d3adc2b590730c7e5b731128824efd4cd087"
+          },
+          {
+            "method": "signsgd",
+            "seed": 3,
+            "split": "full",
+            "lr": 0.0005,
+            "score": 35.452,
+            "metrics_path": "raw/federated/final_hetero_7d50d2b73d33_signsgd_lr0.0005_mu0.9_full_s3_e2000_fs3/seed3/metrics.json",
+            "metrics_sha256": "ec0132c5c42142383394ad8ff6d13b767f2a6f781f068fd8afafb06ee89aa789"
+          },
+          {
+            "method": "signsgd",
+            "seed": 4,
+            "split": "full",
+            "lr": 0.0005,
+            "score": 39.72,
+            "metrics_path": "raw/federated/final_hetero_7d50d2b73d33_signsgd_lr0.0005_mu0.9_full_s4_e2000_fs4/seed4/metrics.json",
+            "metrics_sha256": "b831355cb4c4e8928b74b31d78d26d0d5736410daedc4868ae609dca43d3ed1d"
+          }
+        ]
+      },
+      "sgd": {
+        "lr": 0.1,
+        "mean": 79.7124,
+        "sample_sd": 2.0324391257796606,
+        "runs": [
+          {
+            "method": "sgd",
+            "seed": 0,
+            "split": "full",
+            "lr": 0.1,
+            "score": 78.904,
+            "metrics_path": "raw/federated/final_hetero_7d50d2b73d33_sgd_lr0.1_mu0.9_full_s0_e2000_fs0/seed0/metrics.json",
+            "metrics_sha256": "81f5bae0bf357c34022e00c86344a4976ededc4b6ca8d9c8fb4008429809d53b"
+          },
+          {
+            "method": "sgd",
+            "seed": 1,
+            "split": "full",
+            "lr": 0.1,
+            "score": 81.672,
+            "metrics_path": "raw/federated/final_hetero_7d50d2b73d33_sgd_lr0.1_mu0.9_full_s1_e2000_fs1/seed1/metrics.json",
+            "metrics_sha256": "fb2dbd67ebd1e2e23e12bdfd93eadd8c30702d1145c457914de7748d79f17532"
+          },
+          {
+            "method": "sgd",
+            "seed": 2,
+            "split": "full",
+            "lr": 0.1,
+            "score": 81.746,
+            "metrics_path": "raw/federated/final_hetero_7d50d2b73d33_sgd_lr0.1_mu0.9_full_s2_e2000_fs2/seed2/metrics.json",
+            "metrics_sha256": "5a41441e1ef1bae633714c103ca58eae1a1eac96389c3d240ed74497de70060a"
+          },
+          {
+            "method": "sgd",
+            "seed": 3,
+            "split": "full",
+            "lr": 0.1,
+            "score": 79.30799999999999,
+            "metrics_path": "raw/federated/final_hetero_7d50d2b73d33_sgd_lr0.1_mu0.9_full_s3_e2000_fs3/seed3/metrics.json",
+            "metrics_sha256": "a4301af1f20588c442578a8236dd7d2d780231c12e56e138feb5b1def03bfa03"
+          },
+          {
+            "method": "sgd",
+            "seed": 4,
+            "split": "full",
+            "lr": 0.1,
+            "score": 76.932,
+            "metrics_path": "raw/federated/final_hetero_7d50d2b73d33_sgd_lr0.1_mu0.9_full_s4_e2000_fs4/seed4/metrics.json",
+            "metrics_sha256": "7e38b44cd1219a7ee818e2a5188b00e154c8cf3be5c0c28cba73df4f6a686ba5"
+          }
+        ]
+      },
+      "adam": {
+        "lr": 0.0005,
+        "mean": 75.15599999999999,
+        "sample_sd": 1.0702037189245794,
+        "runs": [
+          {
+            "method": "adam",
+            "seed": 0,
+            "split": "full",
+            "lr": 0.0005,
+            "score": 74.29599999999999,
+            "metrics_path": "raw/federated/final_hetero_7d50d2b73d33_adam_lr0.0005_mu0.9_full_s0_e2000_fs0/seed0/metrics.json",
+            "metrics_sha256": "084f6f85ab78d504a9b3d1bce49d9a53ca8b2c50de21055a9f5a33a1f2176cf9"
+          },
+          {
+            "method": "adam",
+            "seed": 1,
+            "split": "full",
+            "lr": 0.0005,
+            "score": 74.154,
+            "metrics_path": "raw/federated/final_hetero_7d50d2b73d33_adam_lr0.0005_mu0.9_full_s1_e2000_fs1/seed1/metrics.json",
+            "metrics_sha256": "74d055dfa1cf6aad95bcd3c56c69950c6a58e825fbb898d194cb74e77fee9c9d"
+          },
+          {
+            "method": "adam",
+            "seed": 2,
+            "split": "full",
+            "lr": 0.0005,
+            "score": 74.754,
+            "metrics_path": "raw/federated/final_hetero_7d50d2b73d33_adam_lr0.0005_mu0.9_full_s2_e2000_fs2/seed2/metrics.json",
+            "metrics_sha256": "574eec073f1747c98b2ab8dbd1153767e92397cc39ec7f58e5f750ec26844837"
+          },
+          {
+            "method": "adam",
+            "seed": 3,
+            "split": "full",
+            "lr": 0.0005,
+            "score": 76.526,
+            "metrics_path": "raw/federated/final_hetero_7d50d2b73d33_adam_lr0.0005_mu0.9_full_s3_e2000_fs3/seed3/metrics.json",
+            "metrics_sha256": "2a5b1be5c4dc39c4f87fe6dd3e783fbe0ab67fa41227599944b2758d64bb5923"
+          },
+          {
+            "method": "adam",
+            "seed": 4,
+            "split": "full",
+            "lr": 0.0005,
+            "score": 76.05,
+            "metrics_path": "raw/federated/final_hetero_7d50d2b73d33_adam_lr0.0005_mu0.9_full_s4_e2000_fs4/seed4/metrics.json",
+            "metrics_sha256": "a48fa0db2ba56aabefe1809e86ab536f033d3414d464688168accd6ea4a9302e"
+          }
+        ]
+      }
+    }
+  },
+  "scope": "LR-only validation selection at momentum 0.9; seed 0 tuning and five final seeds. No local parameter updates or partial participation. Not a joint LR/momentum optimum."
+}

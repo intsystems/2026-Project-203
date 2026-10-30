@@ -1,0 +1,49 @@
+{
+  "created_utc": "2026-10-30T06:58:30.305051+00:00",
+  "backup": "response_history/before_tuned_results_20261030T065830Z",
+  "before_sha256": {
+    "aaai_submission_openreview/response_fragments.json": "57da0e11a9e33cc64cd5e353b3be9f10dfd78584ab46a2893eac7de56f71c28e",
+    "aaai_submission_openreview/confidential_comment.json": "f75b7494099256b120e98cb8bdae045e7b7f2777b4f249fd3dd6bf65e254ca7a",
+    "aaai_submission_openreview/evidence/concern_evidence.json": "08c07229406d2f59e72420920bdef85af3325455cdf47b42a7640528ac76a4f5",
+    "aaai_submission_openreview/rebuttals/confidential_ac_comment.md": "6af8b70b2e862e11e5fbf460974702939ad788709112764c0d55deaf65835a28",
+    "aaai_submission_openreview/rebuttals/rebuttal_AI_AI_Reviewer.md": "da1ae5e81550cfc1a0c23d04fc199ee3a7f133debf1e8c7fcfc157012037fcd9",
+    "aaai_submission_openreview/rebuttals/rebuttal_R1_7S1b.md": "9174d7f9db508b694a0256da0a6a58b89ca8cd1a3c29d1a03edf25ed49ecd92c",
+    "aaai_submission_openreview/rebuttals/rebuttal_R2_D4r2.md": "8485ac83c4f925fb96f435bf3820b619fdd836a1059984ede0b6b586f93c5451",
+    "aaai_submission_openreview/rebuttals/rebuttal_R3_Ueq5.md": "d68941055281d1bc2fcacfadd7ae999be372bf4d6af51d39cea3a101ef3c6222",
+    "aaai_submission_openreview/rebuttals/rebuttal_R4_pqje.md": "0f9ec6254b015a3eab90cc4e0ad69072986c99211c06146016131ece91dfb727",
+    "aaai_submission_openreview/rebuttals/rebuttal_R5_Tx34.md": "45f5fa3a816ef075efb3646205d055f06368e7a6b4907a013fc464d7dccbaaa3",
+    "aaai_article/signmuon_addendum_body.tex": "7a45c5c9c4185312d7f2afde99255dccd4f4452cc8f8e23fa6d19b099dddc8b1",
+    "aaai_article/signmuon_addendum.pdf": "d7040e7ea7832101bab56c94fb82c78b02af82aac89ca97c8fee69a9c20bfa25"
+  },
+  "archive": "evidence/heterogeneous_tuning_results.zip",
+  "archive_sha256": "9d7c55c609b9a7fff8761c70b7d596bda13d972803e4dd7f36dfd3956f001bec",
+  "response_characters_utf16": {
+    "review_R1_7S1b": 1495,
+    "review_R2_D4r2": 1451,
+    "review_R3_Ueq5": 1472,
+    "review_R4_pqje": 1464,
+    "review_R5_Tx34": 1493,
+    "review_AI_AI_Reviewer": 1478
+  },
+  "confidential_characters_utf16": 2478,
+  "changed_export_concerns": [
+    "R1.2",
+    "R2.3",
+    "R3.2",
+    "R4.4",
+    "R4.6",
+    "R5.1",
+    "R5.3",
+    "AI.8"
+  ],
+  "all_selections_and_pending_flags_preserved": true,
+  "tuning_report": "evidence/heterogeneous_tuning_verified.json",
+  "shared_table": {
+    "reviewer": "7S1b",
+    "question": 2,
+    "comparison": "validation LR tuned",
+    "methods": 10,
+    "final_seeds": 5
+  },
+  "applied_utc": "2026-10-30T07:01:20.709342+00:00"
+}

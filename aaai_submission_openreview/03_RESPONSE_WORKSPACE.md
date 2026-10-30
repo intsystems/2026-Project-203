@@ -1,42 +1,42 @@
-# Rebuttal workspace — focused scientific replies, revision 6
+# Rebuttal workspace — completed heterogeneous tuning, revision 7
 
-All six replies and the AC comment have been revised around the scientific answers. Results name the model, dataset and regime. Routine presentation promises are excluded from exports and retained in notes. The human score requests remain active; the AI reply has none.
+All six replies and the AC comment now use the validation-LR-tuned heterogeneous results. The full ten-method table is in **7S1b Q2**, with references from the other five replies and AC comment. Both EF rows remain bold. Each human reply retains its conditional request to raise the score.
 
 ## Current drafts
 
 Open `start_workspace.cmd`, or read `rebuttals/rebuttal_*.md`.
 
-| Response | UTF-16 characters /1500 | Selected concerns | Missing evidence | Deliberately omitted presentation requests |
-| --- | ---: | ---: | --- | --- |
-| R1 ·7S1b | 1496 | 7/10 | R1.6, R1.7, R1.8 | None |
-| R2 ·D4r2 | 1470 | 2/8 | R2.2, R2.8 | R2.1, R2.4, R2.5, R2.7 |
-| R3 ·Ueq5 | 1487 | 5/5 | None | None |
-| R4 ·pqje | 1479 | 14/15 | R4.15 | None |
-| R5 ·Tx34 | 1492 | 6/6 | None | None |
-| AI reviewer | 1478 | 15/20 | AI.6, AI.20 | AI.9, AI.11, AI.13 |
+| Reviewer | UTF-16 characters /1500 | Selected concerns | Missing evidence |
+| --- | ---: | ---: | --- |
+| 7S1b | 1495 | 7 | R1.6, R1.7, R1.8 |
+| D4r2 | 1451 | 2 | R2.2, R2.8 |
+| Ueq5 | 1472 | 5 | None |
+| pqje | 1464 | 14 | R4.15 |
+| Tx34 | 1493 | 6 | None |
+| AI_Reviewer | 1478 | 15 | AI.6, AI.20 |
 
-## What changed
+## New evidence and addendum
 
-- Revision 6 removes unsolicited nanoGPT/auxiliary-Adam discussion from Ueq5 and the obvious squaring admonition. Rate statements name the gradient-side EF21 algorithms and nuclear gradient quantity. Proof verification is stated without “core”; positive answers explain what the new bounds measure. pqje retains the fixed-Nesterov/warmup answer it explicitly requested.
+**EF21-MuonSign: 84.03±0.52%; EF21-MuonUSign: 83.84±0.32%.** They are the only methods above 80% after LR tuning in this ten-method comparison. SGD reaches 79.71±2.03%, Adam 75.16±1.07%, Muon 46.02±8.55%, and SignMuon 42.96±5.94%. This preserves the practical recommendation: SignMuon is strong on the submitted IID/centralized vision tasks; gradient-side EF leads under this label skew.
 
-- The 85.72% accuracy is explicitly federated CNN2/CIFAR-10, 11 IID clients, 5 seeds. Centralized ResNet18/CIFAR-10 and nanoGPT validation losses are labeled separately.
-- Both EF results are bold in the full table in **7S1b Q2**. The conclusion states that EF21-Muon(U)Sign are the only Muon variants that work well here, with the criterion made concrete as above 80% accuracy. The reused IID rates remain in the caption; no local updates are used. SGD also exceeds 80%, so the scope is deliberate.
-- The softplus paragraph explains how the linear witnesses were made lower bounded and why their ascent directions survive. One fixed objective per plain method defeats all positive step schedules.
-- Replies report the post-submission EF21 momentum/schedule extensions, conditional SignMuon result and new quadratic output-EF obstruction. EF21 tracking/convergence and original witness Lean proofs remain distinct from the analytic softplus and N4 additions.
-- Presentation-only commitments are kept in notes rather than taking response space. The 7 deliberately unchecked concerns retain their IDs, links and planned edits. The 8 missing-evidence flags remain unchanged.
+CNN2/CIFAR-10, 11 Dirichlet(0.1) clients, 2000 rounds, no local parameter updates, cosine schedule, fixed momentum 0.9. LR selection uses seed 0 and a 5000-image validation holdout; five final seeds retrain on all 50000 images. Mean±sample SD is over per-run final-five test means. All ten LR winners are interior after MuonSign's two additional validation trials; its selected 5e-5 is unchanged.
 
-## Evidence and limits
+`evidence/heterogeneous_tuning_results.zip` freezes the supplied fourth archive. The independent audit verifies all 167 completed runs: 72 validation trials and 95 unique final runs. The two comparisons have 100 final-seed memberships because Muon's five finals are shared. All original fifty transfer runs are unchanged. `heterogeneous_tuning_verified.json` records each selection and result.
 
-The shared heterogeneous table is generated from the previously verified 50 runs: CNN2/CIFAR-10, 11 Dirichlet(0.1) clients, 2000 rounds, no local updates, IID-selected rates. Retuned heterogeneous optima, local updates and partial participation remain untested. The network alignment condition is not measured. nanoGPT has one run/method and uses full-precision gradient averaging. SSVR remains an untested matched-query comparison.
+The addendum now contains all ten selected rates and tuned means/SDs beside the homogeneous and transfer values, explains the completed search, and reports the persistent EF advantage. Its PDF is rebuilt; mathematical sections and prior author edits are preserved. The existing N4 input file is a build dependency and matches the frozen theorem source.
 
-The frozen N4 proof/certificate is in `evidence/ef21_vanishing_snapshot/`. It gives Frobenius smoothness 1, initial gap 4/7 and gradient norm at least 1 for budget-tuned constant rates/fixed EMA or Nesterov. Decreasing schedules are covered as stated in its proof. N4 and the softplus extension are not claimed Lean-verified. The existing 45-statement Lean audit covers the documented tracking, convergence and original failure results. No training or full Lean build was run for this prose revision.
+## Remaining evidence and preservation
 
-## Preservation and checks
+LR tuning is completed. Local parameter updates, partial participation, network alignment measurements, extra nanoGPT seeds and a matched-query SSVR comparison remain untested. The eight pending concern flags and seven author-directed presentation omissions are unchanged. All 64 concern IDs and 79 exact passage links are preserved. Original review wording, inputs and conference rules are unchanged.
 
-The source author JSON, evidence records and prior exported replies are backed up in `response_history/before_positive_revision_20261029T215250Z/`. All 64 concern IDs, 79 exact passage mappings, review wording, question references and pending flags are preserved. This revision preserves all selections and pending flags; the 7 presentation/definition omissions above remain from revision 5. Every response revision advances by one.
+The pre-update JSON, exported replies and current author addendum body/PDF are backed up in `response_history/before_tuned_results_20261030T065830Z/`. Complete EF21 tracking/convergence proof wording remains unchanged; no new Lean claim is attached to the plain SignMuon, softplus or N4 analytic results.
 
-The independently editable confidential draft has 2345 UTF-16 characters. Its actual field limit/readers remain unknown; the configured limit stays `null`.
+The independently editable confidential draft has 2478 UTF-16 characters. Its destination limit/readers remain unknown; the configured limit stays `null`.
 
-Build with `python -X utf8 aaai_submission_openreview/primer/workspace.py build`, inspect the editor pages and run the same command with `check`. Build and check passed; all 7 editor pages passed export, math, anchor and desktop/mobile checks. Both EF rows and the conclusion render bold. The primer is unchanged; all 6 portable checks and the relocated browser/save checks passed during revision 5. The record is `evidence/revision_6_validation.json`. The canonical Markdown and character counts retain the bold markup.
+## Checks and collaboration
 
-Save browser edits before pulling or merging, coordinate changes to `response_fragments.json`, and reload after rebuilding. Saves are local; nothing is submitted automatically. The configured deadline remains 31 October 2026 AoE. Read `README.md` for collaboration instructions.
+Build with `python -X utf8 aaai_submission_openreview/primer/workspace.py build`, inspect the editor pages, then run the same command with `check`. The run audit, browser inspection, source/selection integrity, addendum table/PDF inspection and character counts are recorded in `evidence/revision_7_validation.json`. The primer itself is unchanged; no training or full Lean build was needed for this results update.
+
+The build/check, all seven editor pages, all six public limits and the six-page addendum PDF passed verification.
+
+Save browser edits before pulling or merging, coordinate changes to `response_fragments.json`, and reload after rebuilding. Saves are local. The configured deadline remains 31 October 2026 AoE.
