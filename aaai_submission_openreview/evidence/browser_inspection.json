@@ -1,10 +1,10 @@
 {
-  "checked_utc": "2026-10-30T08:41:12.279062+00:00",
+  "checked_utc": "2026-10-30T10:30:53.432435+00:00",
   "pages": [
     {
       "stem": "review_R1_7S1b",
-      "characters": 1476,
-      "countLabel": "1476 / 1,500 characters",
+      "characters": 1492,
+      "countLabel": "1492 / 1,500 characters",
       "renderedMath": 0,
       "renderedTables": [],
       "strongText": [],
@@ -25,8 +25,8 @@
     },
     {
       "stem": "review_R2_D4r2",
-      "characters": 1385,
-      "countLabel": "1385 / 1,500 characters",
+      "characters": 1397,
+      "countLabel": "1397 / 1,500 characters",
       "renderedMath": 4,
       "renderedTables": [],
       "strongText": [],
@@ -45,8 +45,8 @@
     },
     {
       "stem": "review_R3_Ueq5",
-      "characters": 1389,
-      "countLabel": "1389 / 1,500 characters",
+      "characters": 1416,
+      "countLabel": "1416 / 1,500 characters",
       "renderedMath": 3,
       "renderedTables": [],
       "strongText": [],
@@ -62,8 +62,8 @@
     },
     {
       "stem": "review_R4_pqje",
-      "characters": 1460,
-      "countLabel": "1460 / 1,500 characters",
+      "characters": 1485,
+      "countLabel": "1485 / 1,500 characters",
       "renderedMath": 0,
       "renderedTables": [],
       "strongText": [],
@@ -81,8 +81,8 @@
     },
     {
       "stem": "review_R5_Tx34",
-      "characters": 1486,
-      "countLabel": "1486 / 1,500 characters",
+      "characters": 1445,
+      "countLabel": "1445 / 1,500 characters",
       "renderedMath": 0,
       "renderedTables": [],
       "strongText": [],
@@ -98,8 +98,8 @@
     },
     {
       "stem": "review_AI_AI_Reviewer",
-      "characters": 1482,
-      "countLabel": "1482 / 1,500 characters",
+      "characters": 1497,
+      "countLabel": "1497 / 1,500 characters",
       "renderedMath": 0,
       "renderedTables": [],
       "strongText": [],
@@ -118,8 +118,8 @@
     },
     {
       "stem": "confidential_ac",
-      "characters": 2915,
-      "countLabel": "2915 characters · limit not specified",
+      "characters": 3003,
+      "countLabel": "3003 characters · limit not specified",
       "renderedMath": 0,
       "renderedTables": [],
       "strongText": [],

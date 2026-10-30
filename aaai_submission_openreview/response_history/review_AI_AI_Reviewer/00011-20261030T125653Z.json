@@ -1,0 +1,423 @@
+{
+  "target": "rebuttal_AI_AI_Reviewer.md",
+  "revision": 11,
+  "intro": "Dear Reviewer, thank you for your checks.",
+  "closing": "",
+  "sections": [
+    {
+      "id": "answers",
+      "lead": ""
+    }
+  ],
+  "fragments": [
+    {
+      "id": "AI.1",
+      "text": "Noise: Assumption 3 (A.10) assumes unbiased, bounded-variance gradients; we will move it up. Agreed, Assumption 2 forces separable layers; it remains for EF21, while our new SignMuon theorem allows coupling. The EF21 theorems assume exact polar factors; the Newton–Schulz error is not bounded.",
+      "notes": "Evidence: T1: submitted supplement A.10; aaai_article/ef21_nesterov_convergence.tex, ef21_fixed_radius.tex, ef21_rate_takeaways.tex. Gradient-scaled steps and horizon-tuned momentum for the separate squared-moment result; never infer it by squaring a first moment. T1/G1: aaai_article/ef21_fixed_radius.tex (explicit separability step), ef21_nesterov_convergence.tex, and signmuon_addendum_body.tex (conditional SignMuon theorem and open EF21 cross-layer target). J1: separate candidate derivation in evidence/EF21_JOINT_SMOOTHNESS.md; not a revised-manuscript result and not relied on by the replies. F1: lean_proofs/README.md, PAPER_AUDIT.md, comparator/VERIFICATION.json (45 statements, passed 2026-10-23; reference and dependency hashes rechecked), and research/nesterov/lean-verification.log. Original ascent/output-EF divergence results and the generalized EF21 tracking/convergence arguments have Lean proofs. The printed cosine-sum specialization is a manual composition. The added conditional plain SignMuon theorem and softplus extensions are not claimed Lean-verified.\nFinding / complete answer: Unbiased bounded-variance assumptions are in submitted A.10 and must also appear in the main statement. Revised EF21 bounds retain the original separable smoothness; the added plain SignMuon theorem instead uses joint Frobenius smoothness and conditional centering/finite variance. The two results must be distinguished.\nSelected statement is checked; an open request is not marked complete.\nReadability revision: full sentences explain the result and its relevance. See evidence/revision_3_readability.md.\nRevision 4: identify the completed additions as post-submission work or a response to the reviews. The 10-method heterogeneous table is centralized in 7S1b Q2; all other replies refer to that table and retain the central finding. No new training or Lean build was run during this writing edit.\nRevision 5: export substantive answers with explicit experiment identity. Presentation-only promises are kept in internal notes. Heterogeneous success is scoped to the tested Muon variants at IID-selected rates; the two EF variants are the only such means above 80%.\nRevision 6: The AI review explicitly raises missing noise, layer coupling and inexact polar assumptions. State the completed general theorem and its explicit approximation-error contribution positively; do not imply a new certificate for the implemented five-stage solver. Complete generic trajectory/tracking proofs are Lean verified; printed cosine substitutions remain algebraic specializations.\nRevision 8: plain-language proofreading; retain submitted theorem numbering, name the measured setting and use a natural cross-reference to 7S1b. Mathematical and experimental evidence is unchanged.\nRevision 10: latest author instruction adds Dear Reviewer greetings and reviewer-specific closings; only pqje (5) and Tx34 (4) have gentle reassessment wording. This explicit instruction takes precedence over the concurrent generic primer suggestion to leave closings empty. Contribution wording describes sign placements and adding EF. Robustness is supported for both EF21-MuonUSign and its bidirectional variant EF21-MuonSign in the tested heterogeneous setting.\nRevision 10: the printed fixed-radius/constant-cosine theorem assumes exact polar factors. Its tracking budget separates initialization, movement and noise, with compressor constants. The more general Lean BlockTrajectory.Oracle assumes a spectral-radius bound and <h,D_t(h)> >= gain*||h||_* - delta_t, and expected_stationarity_sum adds sum_t eta_t*delta_t (summed over blocks), normalized by mass in expected_stationarity. This condition exposes approximation loss; it does not certify delta_t for the implemented solver. Earlier notes saying numerical accuracy is quantified must be read with this distinction.\nRevision 11 (2026-10-30): rewritten for directness. Answer the literal question first, concede valid points plainly, label post-submission results, explain the heterogeneous IID-versus-Dirichlet change by where each method applies sign/polar (per client before averaging versus once on the server), and cite submitted Tables A5/A8 for corrected values.",
+      "include": true,
+      "needs_check": false,
+      "joiner": " ",
+      "section": "answers"
+    },
+    {
+      "id": "AI.2",
+      "text": "Noise: Assumption 3 (A.10) assumes unbiased, bounded-variance gradients; we will move it up. Agreed, Assumption 2 forces separable layers; it remains for EF21, while our new SignMuon theorem allows coupling. The EF21 theorems assume exact polar factors; the Newton–Schulz error is not bounded.",
+      "notes": "Evidence: T1/G1: aaai_article/ef21_fixed_radius.tex (explicit separability step), ef21_nesterov_convergence.tex, and signmuon_addendum_body.tex (conditional SignMuon theorem and open EF21 cross-layer target). J1: separate candidate derivation in evidence/EF21_JOINT_SMOOTHNESS.md; not a revised-manuscript result and not relied on by the replies. F1: lean_proofs/README.md, PAPER_AUDIT.md, comparator/VERIFICATION.json (45 statements, passed 2026-10-23; reference and dependency hashes rechecked), and research/nesterov/lean-verification.log. Original ascent/output-EF divergence results and the generalized EF21 tracking/convergence arguments have Lean proofs. The printed cosine-sum specialization is a manual composition. The added conditional plain SignMuon theorem and softplus extensions are not claimed Lean-verified.\nFinding / complete answer: The manuscript does not remove EF21 separability. Its fixed-radius proof explicitly uses block independence, and the author addendum marks a joint-smooth EF21 extension open. The added conditional SignMuon theorem allows interacting layers. J1 is a separate candidate derivation and is excluded from public claims.\nSelected statement is checked; an open request is not marked complete.\nReadability revision: full sentences explain the result and its relevance. See evidence/revision_3_readability.md.\nRevision 4: identify the completed additions as post-submission work or a response to the reviews. The 10-method heterogeneous table is centralized in 7S1b Q2; all other replies refer to that table and retain the central finding. No new training or Lean build was run during this writing edit.\nRevision 5: export substantive answers with explicit experiment identity. Presentation-only promises are kept in internal notes. Heterogeneous success is scoped to the tested Muon variants at IID-selected rates; the two EF variants are the only such means above 80%.\nRevision 6: The AI review explicitly raises missing noise, layer coupling and inexact polar assumptions. State the completed general theorem and its explicit approximation-error contribution positively; do not imply a new certificate for the implemented five-stage solver. Complete generic trajectory/tracking proofs are Lean verified; printed cosine substitutions remain algebraic specializations.\nRevision 8: plain-language proofreading; retain submitted theorem numbering, name the measured setting and use a natural cross-reference to 7S1b. Mathematical and experimental evidence is unchanged.\nRevision 10: latest author instruction adds Dear Reviewer greetings and reviewer-specific closings; only pqje (5) and Tx34 (4) have gentle reassessment wording. This explicit instruction takes precedence over the concurrent generic primer suggestion to leave closings empty. Contribution wording describes sign placements and adding EF. Robustness is supported for both EF21-MuonUSign and its bidirectional variant EF21-MuonSign in the tested heterogeneous setting.\nRevision 10: the printed fixed-radius/constant-cosine theorem assumes exact polar factors. Its tracking budget separates initialization, movement and noise, with compressor constants. The more general Lean BlockTrajectory.Oracle assumes a spectral-radius bound and <h,D_t(h)> >= gain*||h||_* - delta_t, and expected_stationarity_sum adds sum_t eta_t*delta_t (summed over blocks), normalized by mass in expected_stationarity. This condition exposes approximation loss; it does not certify delta_t for the implemented solver. Earlier notes saying numerical accuracy is quantified must be read with this distinction.\nRevision 11 (2026-10-30): rewritten for directness. Answer the literal question first, concede valid points plainly, label post-submission results, explain the heterogeneous IID-versus-Dirichlet change by where each method applies sign/polar (per client before averaging versus once on the server), and cite submitted Tables A5/A8 for corrected values.",
+      "include": true,
+      "needs_check": false,
+      "joiner": " ",
+      "section": "answers"
+    },
+    {
+      "id": "AI.7",
+      "text": "Noise: Assumption 3 (A.10) assumes unbiased, bounded-variance gradients; we will move it up. Agreed, Assumption 2 forces separable layers; it remains for EF21, while our new SignMuon theorem allows coupling. The EF21 theorems assume exact polar factors; the Newton–Schulz error is not bounded.",
+      "notes": "Evidence: T1/G1: aaai_article/ef21_fixed_radius.tex (explicit separability step), ef21_nesterov_convergence.tex, and signmuon_addendum_body.tex (conditional SignMuon theorem and open EF21 cross-layer target). J1: separate candidate derivation in evidence/EF21_JOINT_SMOOTHNESS.md; not a revised-manuscript result and not relied on by the replies. G1: aaai_article/signmuon_addendum_body.tex, conditional SignMuon theorem and geometry lemma; OLion v2, Lemma 4.3 / Corollary 4.4; exact-oracle, fixed-within-run momentum, uniformly positive margin. E3: submitted Table 3 and supplement A.16–A.17; code/results/nanogpt/runs.csv, diagnostics.csv, SUMMARY.md; one independent unpinned run per compressed method, full-precision gradient reduce-scatter before optimizer. F1: lean_proofs/README.md, PAPER_AUDIT.md, comparator/VERIFICATION.json (45 statements, passed 2026-10-23; reference and dependency hashes rechecked), and research/nesterov/lean-verification.log. Original ascent/output-EF divergence results and the generalized EF21 tracking/convergence arguments have Lean proofs. The printed cosine-sum specialization is a manual composition. The added conditional plain SignMuon theorem and softplus extensions are not claimed Lean-verified.\nFinding / complete answer: Lean’s schedule/trajectory results include approximation-quality or error terms rather than requiring every direction to equal an exact polar factor. No trajectory-wide small-error certificate is available for the actual five-stage implementation, and no full nanoGPT theorem covers changing momentum plus auxiliary Adam. State the proved generalization and the remaining assumptions separately.\nSelected statement is checked; an open request is not marked complete.\nReadability revision: full sentences explain the result and its relevance. See evidence/revision_3_readability.md.\nRevision 4: identify the completed additions as post-submission work or a response to the reviews. The 10-method heterogeneous table is centralized in 7S1b Q2; all other replies refer to that table and retain the central finding. No new training or Lean build was run during this writing edit.\nRevision 5: export substantive answers with explicit experiment identity. Presentation-only promises are kept in internal notes. Heterogeneous success is scoped to the tested Muon variants at IID-selected rates; the two EF variants are the only such means above 80%.\nRevision 6: The AI review explicitly raises missing noise, layer coupling and inexact polar assumptions. State the completed general theorem and its explicit approximation-error contribution positively; do not imply a new certificate for the implemented five-stage solver. Complete generic trajectory/tracking proofs are Lean verified; printed cosine substitutions remain algebraic specializations.\nRevision 8: plain-language proofreading; retain submitted theorem numbering, name the measured setting and use a natural cross-reference to 7S1b. Mathematical and experimental evidence is unchanged.\nRevision 10: latest author instruction adds Dear Reviewer greetings and reviewer-specific closings; only pqje (5) and Tx34 (4) have gentle reassessment wording. This explicit instruction takes precedence over the concurrent generic primer suggestion to leave closings empty. Contribution wording describes sign placements and adding EF. Robustness is supported for both EF21-MuonUSign and its bidirectional variant EF21-MuonSign in the tested heterogeneous setting.\nRevision 10: the printed fixed-radius/constant-cosine theorem assumes exact polar factors. Its tracking budget separates initialization, movement and noise, with compressor constants. The more general Lean BlockTrajectory.Oracle assumes a spectral-radius bound and <h,D_t(h)> >= gain*||h||_* - delta_t, and expected_stationarity_sum adds sum_t eta_t*delta_t (summed over blocks), normalized by mass in expected_stationarity. This condition exposes approximation loss; it does not certify delta_t for the implemented solver. Earlier notes saying numerical accuracy is quantified must be read with this distinction.\nRevision 11 (2026-10-30): rewritten for directness. Answer the literal question first, concede valid points plainly, label post-submission results, explain the heterogeneous IID-versus-Dirichlet change by where each method applies sign/polar (per client before averaging versus once on the server), and cite submitted Tables A5/A8 for corrected values.",
+      "include": true,
+      "needs_check": false,
+      "joiner": " ",
+      "section": "answers"
+    },
+    {
+      "id": "AI.3",
+      "text": "Agreed: the guarantee bounds server model X, but gradients are taken at broadcast W; in nanoGPT, W reaches loss 3.3213 and X 5.5198. We will say so.",
+      "notes": "Evidence: E3: submitted Table 3 and supplement A.16–A.17; code/results/nanogpt/runs.csv, diagnostics.csv, SUMMARY.md; one independent unpinned run per compressed method, full-precision gradient reduce-scatter before optimizer. T1/G1: aaai_article/ef21_fixed_radius.tex (explicit separability step), ef21_nesterov_convergence.tex, and signmuon_addendum_body.tex (conditional SignMuon theorem and open EF21 cross-layer target). J1: separate candidate derivation in evidence/EF21_JOINT_SMOOTHNESS.md; not a revised-manuscript result and not relied on by the replies.\nFinding / complete answer: X takes the exact server update; W tracks it through compressed downlink; workers evaluate gradients at W. The guarantee is stationarity at X, not W.\nSelected statement is checked; an open request is not marked complete.\nReadability revision: full sentences explain the result and its relevance. See evidence/revision_3_readability.md.\nRevision 4: identify the completed additions as post-submission work or a response to the reviews. The 10-method heterogeneous table is centralized in 7S1b Q2; all other replies refer to that table and retain the central finding. No new training or Lean build was run during this writing edit.\nRevision 5: export substantive answers with explicit experiment identity. Presentation-only promises are kept in internal notes. Heterogeneous success is scoped to the tested Muon variants at IID-selected rates; the two EF variants are the only such means above 80%.\nRevision 8: plain-language proofreading; retain submitted theorem numbering, name the measured setting and use a natural cross-reference to 7S1b. Mathematical and experimental evidence is unchanged.\nRevision 10: latest author instruction adds Dear Reviewer greetings and reviewer-specific closings; only pqje (5) and Tx34 (4) have gentle reassessment wording. This explicit instruction takes precedence over the concurrent generic primer suggestion to leave closings empty. Contribution wording describes sign placements and adding EF. Robustness is supported for both EF21-MuonUSign and its bidirectional variant EF21-MuonSign in the tested heterogeneous setting.\nRevision 11 (2026-10-30): rewritten for directness. Answer the literal question first, concede valid points plainly, label post-submission results, explain the heterogeneous IID-versus-Dirichlet change by where each method applies sign/polar (per client before averaging versus once on the server), and cite submitted Tables A5/A8 for corrected values.",
+      "include": true,
+      "needs_check": false,
+      "joiner": " ",
+      "section": "answers"
+    },
+    {
+      "id": "AI.4",
+      "text": "Agreed: the guarantee bounds server model X, but gradients are taken at broadcast W; in nanoGPT, W reaches loss 3.3213 and X 5.5198. We will say so.",
+      "notes": "Evidence: E3: submitted Table 3 and supplement A.16–A.17; code/results/nanogpt/runs.csv, diagnostics.csv, SUMMARY.md; one independent unpinned run per compressed method, full-precision gradient reduce-scatter before optimizer.\nFinding / complete answer: The two reported losses are evaluations of the same EF21-MuonSign run, not two independent runs. The gap is 2.1985 nats; c_proj residual concentration is an observation, not a causal initialization/compressor ablation.\nSelected statement is checked; an open request is not marked complete.\nReadability revision: full sentences explain the result and its relevance. See evidence/revision_3_readability.md.\nRevision 4: identify the completed additions as post-submission work or a response to the reviews. The 10-method heterogeneous table is centralized in 7S1b Q2; all other replies refer to that table and retain the central finding. No new training or Lean build was run during this writing edit.\nRevision 5: export substantive answers with explicit experiment identity. Presentation-only promises are kept in internal notes. Heterogeneous success is scoped to the tested Muon variants at IID-selected rates; the two EF variants are the only such means above 80%.\nRevision 8: plain-language proofreading; retain submitted theorem numbering, name the measured setting and use a natural cross-reference to 7S1b. Mathematical and experimental evidence is unchanged.\nRevision 10: latest author instruction adds Dear Reviewer greetings and reviewer-specific closings; only pqje (5) and Tx34 (4) have gentle reassessment wording. This explicit instruction takes precedence over the concurrent generic primer suggestion to leave closings empty. Contribution wording describes sign placements and adding EF. Robustness is supported for both EF21-MuonUSign and its bidirectional variant EF21-MuonSign in the tested heterogeneous setting.\nRevision 11 (2026-10-30): rewritten for directness. Answer the literal question first, concede valid points plainly, label post-submission results, explain the heterogeneous IID-versus-Dirichlet change by where each method applies sign/polar (per client before averaging versus once on the server), and cite submitted Tables A5/A8 for corrected values.",
+      "include": true,
+      "needs_check": false,
+      "joiner": " ",
+      "section": "answers"
+    },
+    {
+      "id": "AI.5",
+      "text": "Agreed: the EF21 results instantiate EF21-Muon (we will credit Modoranu et al.); ours is the placement analysis.",
+      "notes": "Evidence: P1: Gruntkowska et al. 2025 EF21-Muon, Algorithm 3 / Theorem 19 / Remark 23; Modoranu et al. ICML 2024; Mishra et al. SignMuon v2 (17 October 2026), Section 4 / Appendix F. The current main article comparison to Mishra v1 is stale and must be replaced. N1: submitted Theorems 1–4 and proofs; aaai_article/ef21_signmuon_divergence.tex; evidence/verified_claims.json exact rational ascent/cycle certificates. Theorem 4 objective depends on fixed eta and mu; no decreasing-schedule impossibility follows. F1: lean_proofs/README.md, PAPER_AUDIT.md, comparator/VERIFICATION.json (45 statements, passed 2026-10-23; reference and dependency hashes rechecked), and research/nesterov/lean-verification.log. Original ascent/output-EF divergence results and the generalized EF21 tracking/convergence arguments have Lean proofs. The printed cosine-sum specialization is a manual composition. The added conditional plain SignMuon theorem and softplus extensions are not claimed Lean-verified.\nFinding / complete answer: The arbitrary-norm EF21 framework and gradient-side EF before a matrix transform are credited to prior work. Our empirical contribution is a controlled six-variant comparison with strong SignMuon performance; the new submitted proofs diagnose sign/polar ascent and output-EF divergence.\nSelected statement is checked; an open request is not marked complete.\nReadability revision: full sentences explain the result and its relevance. See evidence/revision_3_readability.md.\nRevision 4: identify the completed additions as post-submission work or a response to the reviews. The 10-method heterogeneous table is centralized in 7S1b Q2; all other replies refer to that table and retain the central finding. No new training or Lean build was run during this writing edit.\nAuthor requested removing credit-only sentences from the replies. The text states the controlled placement comparison, failure theorems, post-submission extensions and heterogeneous evidence without claiming priority for SignMuon or the general EF21 framework. Bibliographic evidence remains in this ledger.\nRevision 5: export substantive answers with explicit experiment identity. Presentation-only promises are kept in internal notes. Heterogeneous success is scoped to the tested Muon variants at IID-selected rates; the two EF variants are the only such means above 80%.\nRevision 8: plain-language proofreading; retain submitted theorem numbering, name the measured setting and use a natural cross-reference to 7S1b. Mathematical and experimental evidence is unchanged.\nRevision 9: contribution framed as exploration of Muon/sign/EF combinations and observed centralized versus heterogeneous behavior. Unrequested SignMuon–Muon accuracy repetitions removed. Counterexample prose defines the fixed matrix direction and separates decreasing-step failure from finite-budget tuning. Evidence and assumptions are unchanged.\nRevision 10: latest author instruction adds Dear Reviewer greetings and reviewer-specific closings; only pqje (5) and Tx34 (4) have gentle reassessment wording. This explicit instruction takes precedence over the concurrent generic primer suggestion to leave closings empty. Contribution wording describes sign placements and adding EF. Robustness is supported for both EF21-MuonUSign and its bidirectional variant EF21-MuonSign in the tested heterogeneous setting.\nRevision 11 (2026-10-30): rewritten for directness. Answer the literal question first, concede valid points plainly, label post-submission results, explain the heterogeneous IID-versus-Dirichlet change by where each method applies sign/polar (per client before averaging versus once on the server), and cite submitted Tables A5/A8 for corrected values.",
+      "include": true,
+      "needs_check": false,
+      "joiner": " ",
+      "section": "answers"
+    },
+    {
+      "id": "AI.18",
+      "text": "Agreed: the EF21 results instantiate EF21-Muon (we will credit Modoranu et al.); ours is the placement analysis.",
+      "notes": "Evidence: P1: Gruntkowska et al. 2025 EF21-Muon, Algorithm 3 / Theorem 19 / Remark 23; Modoranu et al. ICML 2024; Mishra et al. SignMuon v2 (17 October 2026), Section 4 / Appendix F. The current main article comparison to Mishra v1 is stale and must be replaced. F1: lean_proofs/README.md, PAPER_AUDIT.md, comparator/VERIFICATION.json (45 statements, passed 2026-10-23; reference and dependency hashes rechecked), and research/nesterov/lean-verification.log. Original ascent/output-EF divergence results and the generalized EF21 tracking/convergence arguments have Lean proofs. The printed cosine-sum specialization is a manual composition. The added conditional plain SignMuon theorem and softplus extensions are not claimed Lean-verified.\nFinding / complete answer: Modoranu et al. 2024 establishes a precedent for EF compression before a structured preconditioner. It does not supply the sign/polar negative construction; cite both facts accurately.\nSelected statement is checked; an open request is not marked complete.\nReadability revision: full sentences explain the result and its relevance. See evidence/revision_3_readability.md.\nRevision 4: identify the completed additions as post-submission work or a response to the reviews. The 10-method heterogeneous table is centralized in 7S1b Q2; all other replies refer to that table and retain the central finding. No new training or Lean build was run during this writing edit.\nAuthor requested removing credit-only sentences from the replies. The text states the controlled placement comparison, failure theorems, post-submission extensions and heterogeneous evidence without claiming priority for SignMuon or the general EF21 framework. Bibliographic evidence remains in this ledger.\nRevision 5: export substantive answers with explicit experiment identity. Presentation-only promises are kept in internal notes. Heterogeneous success is scoped to the tested Muon variants at IID-selected rates; the two EF variants are the only such means above 80%.\nRevision 8: plain-language proofreading; retain submitted theorem numbering, name the measured setting and use a natural cross-reference to 7S1b. Mathematical and experimental evidence is unchanged.\nRevision 9: contribution framed as exploration of Muon/sign/EF combinations and observed centralized versus heterogeneous behavior. Unrequested SignMuon–Muon accuracy repetitions removed. Counterexample prose defines the fixed matrix direction and separates decreasing-step failure from finite-budget tuning. Evidence and assumptions are unchanged.\nRevision 10: latest author instruction adds Dear Reviewer greetings and reviewer-specific closings; only pqje (5) and Tx34 (4) have gentle reassessment wording. This explicit instruction takes precedence over the concurrent generic primer suggestion to leave closings empty. Contribution wording describes sign placements and adding EF. Robustness is supported for both EF21-MuonUSign and its bidirectional variant EF21-MuonSign in the tested heterogeneous setting.\nRevision 11 (2026-10-30): rewritten for directness. Answer the literal question first, concede valid points plainly, label post-submission results, explain the heterogeneous IID-versus-Dirichlet change by where each method applies sign/polar (per client before averaging versus once on the server), and cite submitted Tables A5/A8 for corrected values.",
+      "include": true,
+      "needs_check": false,
+      "joiner": " ",
+      "section": "answers"
+    },
+    {
+      "id": "AI.6",
+      "text": "No SSVR run has been completed. Our SignSGD already uses momentum, but this does not substitute for a variance-reduced baseline; add the citation and remove exclusive causal attribution.",
+      "notes": "Evidence: P2: Jiang et al., NeurIPS 2024, Efficient Sign-based Optimization; code/common/optimizers.py SignSGD baseline.\nFinding / complete answer: No SSVR run has been completed. Our SignSGD already uses momentum, but this does not substitute for a variance-reduced baseline; add the citation and remove exclusive causal attribution.\nAdditional evidence remains pending; excluded from export.\nReadability revision: full sentences explain the result and its relevance. See evidence/revision_3_readability.md.",
+      "include": false,
+      "needs_check": true,
+      "joiner": " ",
+      "section": "answers"
+    },
+    {
+      "id": "AI.19",
+      "text": "Our SignSGD shares the EMA momentum, separating geometry from momentum but not from variance reduction; we will cite Jiang et al.",
+      "notes": "Evidence: P2: code/common/optimizers.py and code/federated/algorithms.py; Jiang et al. 2024.\nFinding / complete answer: The existing SignSGD baseline uses the same EMA momentum coefficient. Thus the comparison is not against memoryless gradient signs, but it does not isolate geometry against all variance-reduction choices.\nSelected statement is checked; an open request is not marked complete.\nReadability revision: full sentences explain the result and its relevance. See evidence/revision_3_readability.md.\nRevision 4: identify the completed additions as post-submission work or a response to the reviews. The 10-method heterogeneous table is centralized in 7S1b Q2; all other replies refer to that table and retain the central finding. No new training or Lean build was run during this writing edit.\nRevision 5: export substantive answers with explicit experiment identity. Presentation-only promises are kept in internal notes. Heterogeneous success is scoped to the tested Muon variants at IID-selected rates; the two EF variants are the only such means above 80%.\nRevision 8: plain-language proofreading; retain submitted theorem numbering, name the measured setting and use a natural cross-reference to 7S1b. Mathematical and experimental evidence is unchanged.\nRevision 11 (2026-10-30): rewritten for directness. Answer the literal question first, concede valid points plainly, label post-submission results, explain the heterogeneous IID-versus-Dirichlet change by where each method applies sign/polar (per client before averaging versus once on the server), and cite submitted Tables A5/A8 for corrected values.",
+      "include": true,
+      "needs_check": false,
+      "joiner": " ",
+      "section": "answers"
+    },
+    {
+      "id": "AI.8",
+      "text": "Sec. 5.2 will be scoped to IID clients; with Dirichlet(0.1) clients, both guaranteed EF21 methods keep 84% while per-client sign/polar methods lose 35–45 points (response to 7S1b, Q2).",
+      "notes": "Evidence: E2: submitted supplement A.14–A.15 and code/federated/algorithms.py, main.py, methods.py. CNN2, N=11, homogeneous, full participation; 3 mini-batches of 64 at fixed weights, zero local updates. E5: evidence/heterogeneous_transfer_results.zip (supplied during revision 2), verified by verify_heterogeneous_transfer.py against all 50 raw run configs/histories; heterogeneous_transfer_verified.json. Dirichlet(0.1), 11 clients, five paired seeds, IID learning rates held fixed. LR tuning is complete; local updates and partial participation remain outstanding. E3: submitted Table 3 and supplement A.16–A.17; code/results/nanogpt/runs.csv, diagnostics.csv, SUMMARY.md; one independent unpinned run per compressed method, full-precision gradient reduce-scatter before optimizer.\nFinding / complete answer: New supplied CNN2 transfer adds five-seed Dirichlet(0.1) label skew using unchanged IID rates, still 11 fully participating clients and no local updates. EF21-MuonSign reaches 83.23±0.36% versus SignMuon 35.92±8.49%; LR tuning is complete. nanoGPT remains centralized optimization after full-precision averaging, not an LLM one-bit transport test.\nSelected statement is checked; an open request is not marked complete.\nReadability revision: full sentences explain the result and its relevance. See evidence/revision_3_readability.md.\nRevision 4: identify the completed additions as post-submission work or a response to the reviews. The 10-method heterogeneous table is centralized in 7S1b Q2; all other replies refer to that table and retain the central finding. No new training or Lean build was run during this writing edit.\nRevision 5: export substantive answers with explicit experiment identity. Presentation-only promises are kept in internal notes. Heterogeneous success is scoped to the tested Muon variants at IID-selected rates; the two EF variants are the only such means above 80%.\nRevision 7 supersedes earlier LR-retuning-pending statements: E6: evidence/heterogeneous_tuning_results.zip (supplied rebuttal_results4.zip), verify_heterogeneous_tuning.py and heterogeneous_tuning_verified.json. All 167 unique 2000-round jobs: 72 validation trials, 95 final runs, 20 five-seed comparison rows with five Muon finals reused. Only LR tuned, at momentum 0.9; validation seed 0 and 5000 held-out images; finals retrain on 50000. All ten selected rates interior after two additional MuonSign validation trials. EF21-MuonSign 84.0348+/-0.5187, EF21-MuonUSign 83.8420+/-0.3230; SGD 79.7124+/-2.0324, Muon 46.0220+/-8.5462, SignMuon 42.9648+/-5.9431. Local parameter updates, partial participation and joint LR/momentum tuning remain untested.\nRevision 8: plain-language proofreading; retain submitted theorem numbering, name the measured setting and use a natural cross-reference to 7S1b. Mathematical and experimental evidence is unchanged.\nRevision 10: latest author instruction adds Dear Reviewer greetings and reviewer-specific closings; only pqje (5) and Tx34 (4) have gentle reassessment wording. This explicit instruction takes precedence over the concurrent generic primer suggestion to leave closings empty. Contribution wording describes sign placements and adding EF. Robustness is supported for both EF21-MuonUSign and its bidirectional variant EF21-MuonSign in the tested heterogeneous setting.\nRevision 11 (2026-10-30): rewritten for directness. Answer the literal question first, concede valid points plainly, label post-submission results, explain the heterogeneous IID-versus-Dirichlet change by where each method applies sign/polar (per client before averaging versus once on the server), and cite submitted Tables A5/A8 for corrected values.",
+      "include": true,
+      "needs_check": false,
+      "joiner": " ",
+      "section": "answers"
+    },
+    {
+      "id": "AI.9",
+      "text": "We will add your method matrix, move Sec. 4.1 to Sec. 5 and scope \"unrepairable\" to the analyzed recursion.",
+      "notes": "Evidence: C1: submitted supplement communication appendix, code/federated/methods.py:communication_bits; algorithms.py estimator allocation; evidence/verified_claims.json communication calculation. Counts are simulated payloads, not measured packed-network throughput. W1: 02_REBUTTAL_PLAN.md method matrix.\nFinding / complete answer: A concrete table is prepared internally with all six methods, EF targets, polar location, payloads, memory and theoretical iterate. It should replace the current scattered explanations.\nSelected statement is checked; an open request is not marked complete.\nReadability revision: full sentences explain the result and its relevance. See evidence/revision_3_readability.md.\nRevision 4: identify the completed additions as post-submission work or a response to the reviews. The 10-method heterogeneous table is centralized in 7S1b Q2; all other replies refer to that table and retain the central finding. No new training or Lean build was run during this writing edit.\nRevision 5: routine presentation/definition request deliberately omitted from the export at the author’s request. Keep the planned paper edit here; no new missing evidence is implied.\nRevision 11 (2026-10-30): rewritten for directness. Answer the literal question first, concede valid points plainly, label post-submission results, explain the heterogeneous IID-versus-Dirichlet change by where each method applies sign/polar (per client before averaging versus once on the server), and cite submitted Tables A5/A8 for corrected values.",
+      "include": true,
+      "needs_check": false,
+      "joiner": " ",
+      "section": "answers"
+    },
+    {
+      "id": "AI.11",
+      "text": "We will add your method matrix, move Sec. 4.1 to Sec. 5 and scope \"unrepairable\" to the analyzed recursion.",
+      "notes": "Evidence: W1: 02_REBUTTAL_PLAN.md proposed presentation changes.\nFinding / complete answer: Move solver and layer-scaling details from Section 4.1 to the experimental setup. Keep theory definitions before counterexamples and EF results.\nSelected statement is checked; an open request is not marked complete.\nReadability revision: full sentences explain the result and its relevance. See evidence/revision_3_readability.md.\nRevision 4: identify the completed additions as post-submission work or a response to the reviews. The 10-method heterogeneous table is centralized in 7S1b Q2; all other replies refer to that table and retain the central finding. No new training or Lean build was run during this writing edit.\nRevision 5: routine presentation/definition request deliberately omitted from the export at the author’s request. Keep the planned paper edit here; no new missing evidence is implied.\nRevision 11 (2026-10-30): rewritten for directness. Answer the literal question first, concede valid points plainly, label post-submission results, explain the heterogeneous IID-versus-Dirichlet change by where each method applies sign/polar (per client before averaging versus once on the server), and cite submitted Tables A5/A8 for corrected values.",
+      "include": true,
+      "needs_check": false,
+      "joiner": " ",
+      "section": "answers"
+    },
+    {
+      "id": "AI.10",
+      "text": "We also proved SignMuon converges if its signed polar factor correlates evenly with momentum's singular directions (via OLion).",
+      "notes": "Evidence: G1: aaai_article/signmuon_addendum_body.tex, conditional SignMuon theorem and geometry lemma; OLion v2, Lemma 4.3 / Corollary 4.4; exact-oracle, fixed-within-run momentum, uniformly positive margin.\nFinding / complete answer: The diagonal lower bound implies alignment by a singular-value-weighted sum. The full covariance criterion and stochastic first-moment theorem are in the author addendum. Credit OLion v2; it is not an empirical explanation for our networks.\nSelected statement is checked; an open request is not marked complete.\nReadability revision: full sentences explain the result and its relevance. See evidence/revision_3_readability.md.\nRevision 4: identify the completed additions as post-submission work or a response to the reviews. The 10-method heterogeneous table is centralized in 7S1b Q2; all other replies refer to that table and retain the central finding. No new training or Lean build was run during this writing edit.\nRevision 5: export substantive answers with explicit experiment identity. Presentation-only promises are kept in internal notes. Heterogeneous success is scoped to the tested Muon variants at IID-selected rates; the two EF variants are the only such means above 80%.\nRevision 6: Explain the positive meaning of the conditional plain SignMuon theorem. The unmeasured network-alignment request AI.20 remains excluded and needs_check=true; this conditional statement does not assert that training trajectories satisfy the condition.\nRevision 8: plain-language proofreading; retain submitted theorem numbering, name the measured setting and use a natural cross-reference to 7S1b. Mathematical and experimental evidence is unchanged.\nRevision 10 consistency check: explicitly state unbiased bounded-variance noise for the separate conditional SignMuon theorem.\nRevision 11 (2026-10-30): rewritten for directness. Answer the literal question first, concede valid points plainly, label post-submission results, explain the heterogeneous IID-versus-Dirichlet change by where each method applies sign/polar (per client before averaging versus once on the server), and cite submitted Tables A5/A8 for corrected values.",
+      "include": true,
+      "needs_check": false,
+      "joiner": " ",
+      "section": "answers"
+    },
+    {
+      "id": "AI.20",
+      "text": "The geometric criterion has not been measured on the actual trajectories. Xiao et al. 2025 concerns SignSGD and does not by itself justify the SignMuon condition.",
+      "notes": "Evidence: G1: aaai_article/signmuon_addendum_body.tex, conditional SignMuon theorem and geometry lemma; OLion v2, Lemma 4.3 / Corollary 4.4; exact-oracle, fixed-within-run momentum, uniformly positive margin. E3: submitted Table 3 and supplement A.16–A.17; code/results/nanogpt/runs.csv, diagnostics.csv, SUMMARY.md; one independent unpinned run per compressed method, full-precision gradient reduce-scatter before optimizer.\nFinding / complete answer: The geometric criterion has not been measured on the actual trajectories. Xiao et al. 2025 concerns SignSGD and does not by itself justify the SignMuon condition.\nAdditional evidence remains pending; excluded from export.\nReadability revision: full sentences explain the result and its relevance. See evidence/revision_3_readability.md.",
+      "include": false,
+      "needs_check": true,
+      "joiner": " ",
+      "section": "answers"
+    },
+    {
+      "id": "AI.13",
+      "text": "A.10 sets the zero step at zero input. The 0.0021 gap is not claimed. Per Table A5, SignMuon reaches 90% in ~128 s vs 238–260 s for SignSGD/Adam/SGD. We will cite 1.087 bits/parameter. All 5 seeds of MuonSign and SGD reach 80%.",
+      "notes": "Evidence: W1: thin-SVD convention in aaai_article/ef21_signmuon_divergence.tex; code/common/optimizers.py.\nFinding / complete answer: Use polar(0)=0 in the exact theory. For plain strict-binary sign ties at zero, the implementation can randomize; this is distinct from the polar selection.\nSelected statement is checked; an open request is not marked complete.\nReadability revision: full sentences explain the result and its relevance. See evidence/revision_3_readability.md.\nRevision 4: identify the completed additions as post-submission work or a response to the reviews. The 10-method heterogeneous table is centralized in 7S1b Q2; all other replies refer to that table and retain the central finding. No new training or Lean build was run during this writing edit.\nRevision 5: routine presentation/definition request deliberately omitted from the export at the author’s request. Keep the planned paper edit here; no new missing evidence is implied.\nRevision 11 (2026-10-30): rewritten for directness. Answer the literal question first, concede valid points plainly, label post-submission results, explain the heterogeneous IID-versus-Dirichlet change by where each method applies sign/polar (per client before averaging versus once on the server), and cite submitted Tables A5/A8 for corrected values.",
+      "include": true,
+      "needs_check": false,
+      "joiner": " ",
+      "section": "answers"
+    },
+    {
+      "id": "AI.14",
+      "text": "A.10 sets the zero step at zero input. The 0.0021 gap is not claimed. Per Table A5, SignMuon reaches 90% in ~128 s vs 238–260 s for SignSGD/Adam/SGD. We will cite 1.087 bits/parameter. All 5 seeds of MuonSign and SGD reach 80%.",
+      "notes": "Evidence: E3: submitted Table 3 and supplement A.16–A.17; code/results/nanogpt/runs.csv, diagnostics.csv, SUMMARY.md; one independent unpinned run per compressed method, full-precision gradient reduce-scatter before optimizer.\nFinding / complete answer: nanoGPT has one training run per compressed method. EF21-SignMuon 3.2860 versus SignMuon 3.2881 is an observed gap of 0.0021, not evidence of a reproducible ranking. SignMuon improves the observed SignSGD loss by 0.1168. No variance estimate is available for the compressed variants.\nSelected statement is checked; an open request is not marked complete.\nReadability revision: full sentences explain the result and its relevance. See evidence/revision_3_readability.md.\nRevision 4: identify the completed additions as post-submission work or a response to the reviews. The 10-method heterogeneous table is centralized in 7S1b Q2; all other replies refer to that table and retain the central finding. No new training or Lean build was run during this writing edit.\nRevision 5: export substantive answers with explicit experiment identity. Presentation-only promises are kept in internal notes. Heterogeneous success is scoped to the tested Muon variants at IID-selected rates; the two EF variants are the only such means above 80%.\nRevision 8: plain-language proofreading; retain submitted theorem numbering, name the measured setting and use a natural cross-reference to 7S1b. Mathematical and experimental evidence is unchanged.\nRevision 10: latest author instruction adds Dear Reviewer greetings and reviewer-specific closings; only pqje (5) and Tx34 (4) have gentle reassessment wording. This explicit instruction takes precedence over the concurrent generic primer suggestion to leave closings empty. Contribution wording describes sign placements and adding EF. Robustness is supported for both EF21-MuonUSign and its bidirectional variant EF21-MuonSign in the tested heterogeneous setting.\nRevision 11 (2026-10-30): rewritten for directness. Answer the literal question first, concede valid points plainly, label post-submission results, explain the heterogeneous IID-versus-Dirichlet change by where each method applies sign/polar (per client before averaging versus once on the server), and cite submitted Tables A5/A8 for corrected values.",
+      "include": true,
+      "needs_check": false,
+      "joiner": " ",
+      "section": "answers"
+    },
+    {
+      "id": "AI.15",
+      "text": "A.10 sets the zero step at zero input. The 0.0021 gap is not claimed. Per Table A5, SignMuon reaches 90% in ~128 s vs 238–260 s for SignSGD/Adam/SGD. We will cite 1.087 bits/parameter. All 5 seeds of MuonSign and SGD reach 80%.",
+      "notes": "Evidence: E4: submitted supplement Table A5, seconds/epoch (SignMuon16.6, SGD12.2, SignSGD12.5, Adam12.7); centralized export table_cifar.csv.\nFinding / complete answer: Elapsed seconds/epoch are already in A5, so timing data are not entirely absent. The old main-table threshold numbers are stale. Withdraw the generic approximately 2x end-to-end speed claim and report per-epoch timing/threshold separately; compilation/validation and network transport differ across settings.\nSelected statement is checked; an open request is not marked complete.\nReadability revision: full sentences explain the result and its relevance. See evidence/revision_3_readability.md.\nRevision 4: identify the completed additions as post-submission work or a response to the reviews. The 10-method heterogeneous table is centralized in 7S1b Q2; all other replies refer to that table and retain the central finding. No new training or Lean build was run during this writing edit.\nRevision 5: export substantive answers with explicit experiment identity. Presentation-only promises are kept in internal notes. Heterogeneous success is scoped to the tested Muon variants at IID-selected rates; the two EF variants are the only such means above 80%.\nRevision 8: plain-language proofreading; retain submitted theorem numbering, name the measured setting and use a natural cross-reference to 7S1b. Mathematical and experimental evidence is unchanged.\nRevision 10: latest author instruction adds Dear Reviewer greetings and reviewer-specific closings; only pqje (5) and Tx34 (4) have gentle reassessment wording. This explicit instruction takes precedence over the concurrent generic primer suggestion to leave closings empty. Contribution wording describes sign placements and adding EF. Robustness is supported for both EF21-MuonUSign and its bidirectional variant EF21-MuonSign in the tested heterogeneous setting.\nRevision 11 (2026-10-30): rewritten for directness. Answer the literal question first, concede valid points plainly, label post-submission results, explain the heterogeneous IID-versus-Dirichlet change by where each method applies sign/polar (per client before averaging versus once on the server), and cite submitted Tables A5/A8 for corrected values.",
+      "include": true,
+      "needs_check": false,
+      "joiner": " ",
+      "section": "answers"
+    },
+    {
+      "id": "AI.16",
+      "text": "A.10 sets the zero step at zero input. The 0.0021 gap is not claimed. Per Table A5, SignMuon reaches 90% in ~128 s vs 238–260 s for SignSGD/Adam/SGD. We will cite 1.087 bits/parameter. All 5 seeds of MuonSign and SGD reach 80%.",
+      "notes": "Evidence: C1: submitted supplement communication appendix, code/federated/methods.py:communication_bits; algorithms.py estimator allocation; evidence/verified_claims.json communication calculation. Counts are simulated payloads, not measured packed-network throughput.\nFinding / complete answer: CNN2 has 762560 matrix and 2146 auxiliary parameters and 3 compressed blocks. Bits/channel are 1.0870 plain and 1.0871 EF, not exactly one per total parameter; uplink-only round-trip gain is 1.93x, not 29.4x.\nSelected statement is checked; an open request is not marked complete.\nReadability revision: full sentences explain the result and its relevance. See evidence/revision_3_readability.md.\nRevision 4: identify the completed additions as post-submission work or a response to the reviews. The 10-method heterogeneous table is centralized in 7S1b Q2; all other replies refer to that table and retain the central finding. No new training or Lean build was run during this writing edit.\nRevision 5: export substantive answers with explicit experiment identity. Presentation-only promises are kept in internal notes. Heterogeneous success is scoped to the tested Muon variants at IID-selected rates; the two EF variants are the only such means above 80%.\nRevision 8: plain-language proofreading; retain submitted theorem numbering, name the measured setting and use a natural cross-reference to 7S1b. Mathematical and experimental evidence is unchanged.\nRevision 10: latest author instruction adds Dear Reviewer greetings and reviewer-specific closings; only pqje (5) and Tx34 (4) have gentle reassessment wording. This explicit instruction takes precedence over the concurrent generic primer suggestion to leave closings empty. Contribution wording describes sign placements and adding EF. Robustness is supported for both EF21-MuonUSign and its bidirectional variant EF21-MuonSign in the tested heterogeneous setting.\nRevision 11 (2026-10-30): rewritten for directness. Answer the literal question first, concede valid points plainly, label post-submission results, explain the heterogeneous IID-versus-Dirichlet change by where each method applies sign/polar (per client before averaging versus once on the server), and cite submitted Tables A5/A8 for corrected values.",
+      "include": true,
+      "needs_check": false,
+      "joiner": " ",
+      "section": "answers"
+    },
+    {
+      "id": "AI.17",
+      "text": "A.10 sets the zero step at zero input. The 0.0021 gap is not claimed. Per Table A5, SignMuon reaches 90% in ~128 s vs 238–260 s for SignSGD/Adam/SGD. We will cite 1.087 bits/parameter. All 5 seeds of MuonSign and SGD reach 80%.",
+      "notes": "Evidence: E1: submitted Table A8 and code/results/federated_export_results.zip: table_federated.csv and final_*_unit-gain_e2000_fs{0..4}/seed*/metrics.json; evidence/verified_claims.json independently recomputes means/sample SDs and thresholds.\nFinding / complete answer: Corrected submitted archive: MuonSign rounds80 860, SGD1240, both 5/5 successes; SignSGD1140 and SignMuon540, also5/5. Do not use the stale main-table 4/5 and3/5 denominators.\nSelected statement is checked; an open request is not marked complete.\nReadability revision: full sentences explain the result and its relevance. See evidence/revision_3_readability.md.\nRevision 4: identify the completed additions as post-submission work or a response to the reviews. The 10-method heterogeneous table is centralized in 7S1b Q2; all other replies refer to that table and retain the central finding. No new training or Lean build was run during this writing edit.\nRevision 5: export substantive answers with explicit experiment identity. Presentation-only promises are kept in internal notes. Heterogeneous success is scoped to the tested Muon variants at IID-selected rates; the two EF variants are the only such means above 80%.\nRevision 8: plain-language proofreading; retain submitted theorem numbering, name the measured setting and use a natural cross-reference to 7S1b. Mathematical and experimental evidence is unchanged.\nRevision 10: latest author instruction adds Dear Reviewer greetings and reviewer-specific closings; only pqje (5) and Tx34 (4) have gentle reassessment wording. This explicit instruction takes precedence over the concurrent generic primer suggestion to leave closings empty. Contribution wording describes sign placements and adding EF. Robustness is supported for both EF21-MuonUSign and its bidirectional variant EF21-MuonSign in the tested heterogeneous setting.\nRevision 11 (2026-10-30): rewritten for directness. Answer the literal question first, concede valid points plainly, label post-submission results, explain the heterogeneous IID-versus-Dirichlet change by where each method applies sign/polar (per client before averaging versus once on the server), and cite submitted Tables A5/A8 for corrected values.",
+      "include": true,
+      "needs_check": false,
+      "joiner": " ",
+      "section": "answers"
+    },
+    {
+      "id": "AI.12",
+      "text": "We will add your method matrix, move Sec. 4.1 to Sec. 5 and scope \"unrepairable\" to the analyzed recursion.",
+      "notes": "Evidence: N1: submitted Theorems 1–4 and proofs; aaai_article/ef21_signmuon_divergence.tex; evidence/verified_claims.json exact rational ascent/cycle certificates. Theorem 4 objective depends on fixed eta and mu; no decreasing-schedule impossibility follows. N2: aaai_article/signmuon_addendum_body.tex, lower-bounded softplus witnesses and EF21 gradient-floor corollary. Only plain placements have one fixed softplus witness for all schedules; do not extend this to output EF21.\nFinding / complete answer: Theorem4 is forall fixed L,eta,mu exists parameter-dependent f for the specified scaled-sign output estimator. It does not rule out horizon-tuned finite-time rates, other EF schemes or different analyses.\nSelected statement is checked; an open request is not marked complete.\nReadability revision: full sentences explain the result and its relevance. See evidence/revision_3_readability.md.\nRevision 4: identify the completed additions as post-submission work or a response to the reviews. The 10-method heterogeneous table is centralized in 7S1b Q2; all other replies refer to that table and retain the central finding. No new training or Lean build was run during this writing edit.\nNew checked N4 construction: N4: evidence/ef21_vanishing_snapshot/theorem.tex and certificate.py; evidence/new_quadratic_certificate.json and verification.log. Exact algebraic certificate checks 128 strict sign inequalities; 20 independent 2000-step SVD trajectories pass. For any budget-tuned constant learning rate and fixed EMA/Nesterov momentum, an 8x8 convex quadratic has Frobenius L=1, initial gap 4/7 and gradient norm >=1 at every iterate. The instance may depend on the parameters; the class constants are uniform. Arbitrary decreasing steps to zero are covered without momentum; suitable inverse-power decay is covered for each fixed momentum coefficient. Exact gradients/polar; not a Lean claim.\nRevision 5: export substantive answers with explicit experiment identity. Presentation-only promises are kept in internal notes. Heterogeneous success is scoped to the tested Muon variants at IID-selected rates; the two EF variants are the only such means above 80%.\nRevision 8: omitted from export at the author’s request to remove defensive qualifications; scientific scope remains in the evidence ledger.\nRevision 11 (2026-10-30): rewritten for directness. Answer the literal question first, concede valid points plainly, label post-submission results, explain the heterogeneous IID-versus-Dirichlet change by where each method applies sign/polar (per client before averaging versus once on the server), and cite submitted Tables A5/A8 for corrected values.",
+      "include": true,
+      "needs_check": false,
+      "joiner": " ",
+      "section": "answers"
+    }
+  ],
+  "reply_topics": [
+    {
+      "id": "Q1",
+      "heading": "1. Re our theory:",
+      "question": "- **The stated assumptions do not support the positive convergence claim in the stochastic multilayer setting.** Equation (3), asserted for arbitrary $X,Y$, makes $\\nabla\\_i g$ invariant to every other block when $X\\_i=Y\\_i$, while Equations (1) and (5) introduce stochastic gradients but the claimed rate under Assumptions 1–2 states no unbiasedness or noise condition. Unless smoothness is intended only for block-coordinate changes and the theory uses exact gradients, the advertised scope does not follow.",
+      "source": "review",
+      "occurrence": 0,
+      "points": [
+        "AI.1",
+        "AI.2",
+        "AI.7"
+      ]
+    },
+    {
+      "id": "Q2",
+      "heading": "2. Re the two models:",
+      "question": "- **EF21-MuonSign controls a different iterate from the model that trains successfully.** Equation (13) evaluates gradients at broadcast model $W\\_t$, while the guarantee bounds server model $X\\_t$; Table 3 reports validation losses of $3.3213$ for $W$ and $5.5198$ for $X$, with every other reported optimizer between $3.2785$ and $3.4049$. Thus the practically useful model in the largest-scale experiment is not the theoretically controlled output.",
+      "source": "review",
+      "occurrence": 0,
+      "points": [
+        "AI.3",
+        "AI.4"
+      ]
+    },
+    {
+      "id": "Q3",
+      "heading": "3. Re our contribution:",
+      "question": "- **The positive error-feedback contribution is primarily a framework instantiation rather than a new convergence analysis.** Section 4.4 states that EF21-MuonUSign and EF21-MuonSign are exact instances inheriting the existing EF21-Muon guarantee; gradient-side error feedback before a structured matrix transform also appears for full-matrix preconditioners in Modoranu et al. (2024). The novelty is therefore concentrated in the Muon/sign construction and LMO-specific negative diagnosis, which should frame the contribution.",
+      "source": "review",
+      "occurrence": 0,
+      "points": [
+        "AI.5",
+        "AI.18",
+        "AI.6",
+        "AI.19"
+      ]
+    },
+    {
+      "id": "Q4",
+      "heading": "4. Re heterogeneity:",
+      "question": "- **The federated evidence covers a narrow distributed regime.** Section 5.2 uses a homogeneous split across eleven clients with no local steps, thereby avoiding the heterogeneity and client drift central to federated optimization. This experiment supports synchronous distributed learning claims, but broader federated conclusions require non-IID partitions and local updating.",
+      "source": "review",
+      "occurrence": 0,
+      "points": [
+        "AI.8"
+      ]
+    },
+    {
+      "id": "Q5",
+      "heading": "5. Re suggestions:",
+      "question": "- **A compact method matrix would make the six similarly named variants directly comparable.** Placing it after Equation (6), with columns for sign location, error-feedback target, LMO location, transmitted objects, downlink precision, and guaranteed iterate, would eliminate repeated reconstruction across Sections 4.3–4.5.",
+      "source": "review",
+      "occurrence": 0,
+      "points": [
+        "AI.9",
+        "AI.11",
+        "AI.10",
+        "AI.20",
+        "AI.12"
+      ]
+    },
+    {
+      "id": "Q6",
+      "heading": "6. Re details:",
+      "question": "- A selection for $A(0)$ or $\\operatorname{polar}(0)$ should be defined.\n- In Table 3, the $0.0021$ gap between EF21-SignMuon and SignMuon is below the paper’s stated approximate noise level and comes from single-seed runs.\n- The centralized claim of an approximately twofold wall-clock margin is not accompanied by elapsed-time measurements.\n- “One bit” should consistently acknowledge the additional per-layer scalar; Table 2 reports $1.09$ bits per parameter.\n- Table 2’s rounds-to-threshold values for MuonSign and SGD are conditional means over only the seeds that reached the threshold.",
+      "source": "review",
+      "occurrence": 0,
+      "points": [
+        "AI.13",
+        "AI.14",
+        "AI.15",
+        "AI.16",
+        "AI.17"
+      ]
+    }
+  ],
+  "draft": [
+    {
+      "kind": "intro",
+      "before": "",
+      "after": "\n\n"
+    },
+    {
+      "kind": "heading",
+      "topic": "Q1",
+      "before": "",
+      "after": " "
+    },
+    {
+      "kind": "answer",
+      "points": [
+        "AI.1",
+        "AI.2",
+        "AI.7"
+      ],
+      "before": "",
+      "after": "\n"
+    },
+    {
+      "kind": "heading",
+      "topic": "Q2",
+      "before": "",
+      "after": " "
+    },
+    {
+      "kind": "answer",
+      "points": [
+        "AI.3",
+        "AI.4"
+      ],
+      "before": "",
+      "after": "\n"
+    },
+    {
+      "kind": "heading",
+      "topic": "Q3",
+      "before": "",
+      "after": " "
+    },
+    {
+      "kind": "answer",
+      "points": [
+        "AI.5",
+        "AI.18"
+      ],
+      "before": "",
+      "after": " "
+    },
+    {
+      "kind": "answer",
+      "points": [
+        "AI.19"
+      ],
+      "before": "",
+      "after": "\n"
+    },
+    {
+      "kind": "heading",
+      "topic": "Q4",
+      "before": "",
+      "after": " "
+    },
+    {
+      "kind": "answer",
+      "points": [
+        "AI.8"
+      ],
+      "before": "",
+      "after": "\n"
+    },
+    {
+      "kind": "heading",
+      "topic": "Q5",
+      "before": "",
+      "after": " "
+    },
+    {
+      "kind": "answer",
+      "points": [
+        "AI.9",
+        "AI.11",
+        "AI.12"
+      ],
+      "before": "",
+      "after": " "
+    },
+    {
+      "kind": "answer",
+      "points": [
+        "AI.10"
+      ],
+      "before": "",
+      "after": "\n"
+    },
+    {
+      "kind": "heading",
+      "topic": "Q6",
+      "before": "",
+      "after": " "
+    },
+    {
+      "kind": "answer",
+      "points": [
+        "AI.13",
+        "AI.14",
+        "AI.15",
+        "AI.16",
+        "AI.17"
+      ],
+      "before": "",
+      "after": "\n"
+    }
+  ],
+  "frame_variants": {
+    "intro": [
+      {
+        "id": "specific",
+        "label": "Thanks tied to this review",
+        "text": "Dear Reviewer, thank you for your checks."
+      },
+      {
+        "id": "brief",
+        "label": "Brief thanks",
+        "text": "Dear Reviewer, thank you for your helpful review."
+      },
+      {
+        "id": "none",
+        "label": "Minimal greeting",
+        "text": "Dear Reviewer, thank you for your review."
+      }
+    ],
+    "closing": [
+      {
+        "id": "none",
+        "label": "Omit closing",
+        "text": ""
+      },
+      {
+        "id": "conditional",
+        "label": "Acknowledgment of feedback",
+        "text": "Thank you for the technical checks."
+      },
+      {
+        "id": "evidence",
+        "label": "Closing tied to this review",
+        "text": ""
+      }
+    ]
+  }
+}

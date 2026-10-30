@@ -1,25 +1,24 @@
-Thank you for your questions.
+Dear Reviewer, thank you for your questions.
 
-1. Re why SignMuon works: Based on your review, we proved SignMuon convergence for interacting layers under joint smoothness, unbiased bounded-variance noise and uniform alignment of signed updates with momentum. Testing network alignment remains open.
-2. Re heterogeneous clients: We tuned rates for CNN2/CIFAR-10: 11 Dirichlet(0.1) clients, 2000 rounds, no local updates. Momentum 0.9; validation seed 0; mean±SD over 5 final seeds:
+1. Re why SignMuon works: Based on your review, we proved SignMuon convergence under joint smoothness, bounded noise and uniform alignment of signed updates with momentum, which our counterexample violates. Testing it in networks is open.
+2. Re heterogeneous clients: The ordering changes. We tuned rates for CNN2/CIFAR-10 with 11 Dirichlet(0.1) clients and no local updates; mean accuracy over 5 seeds:
 
-|Method|Accuracy (%)|
-|---|---:|
-|**EF21-MuonSign**|**84.03±0.52**|
-|**EF21-MuonUSign**|**83.84±0.32**|
-|SGD|79.71±2.03|
-|Adam|75.16±1.07|
-|EF21-SignMuon|49.73±6.69|
-|Muon|46.02±8.55|
-|MuonUSign|44.23±3.28|
-|SignMuon|42.96±5.94|
-|MuonSign|40.75±0.98|
-|SignSGD|36.24±4.64|
+|Method|IID|Non-IID|
+|---|---:|---:|
+|EF21-MuonSign|84.0|84.0|
+|EF21-MuonUSign|83.6|83.8|
+|SGD|81.7|79.7|
+|Adam|77.1|75.2|
+|EF21-SignMuon|84.7|49.7|
+|Muon|86.0|46.0|
+|MuonUSign|84.6|44.2|
+|SignMuon|85.7|43.0|
+|MuonSign|82.9|40.8|
+|SignSGD|81.4|36.2|
 
-Only EF21-MuonSign and EF21-MuonUSign exceed 80%.
+Methods that sign or orthogonalize client messages before aggregation lose 35–45 points (our federated Muon averages client polar factors). EF21-Muon(U)Sign orthogonalize at the server, and Theorem 5 assumes no bound on client dissimilarity.
+3. Re our analysis: The submitted EF21 rates follow from EF21-Muon once Lemma 5 shows that scaled sign is contractive; Theorems 1–4 are new.
+4. Re choosing a method: SignMuon suits centralized training and IID federation; for heterogeneous federation, EF21-MuonUSign compresses uploads and EF21-MuonSign both directions. We will add the cost table.
+5. Re nanoGPT: SignMuon reaches loss 3.2881 versus SignSGD 3.4049 (1 run each). Its 0.0021 gap to EF21-SignMuon needs more seeds to establish an ordering.
 
-3. Re our analysis: Based on your review, we proved expected gradient-norm bounds for EF21-Muon(U)Sign with constant/cosine rates and fixed EMA/Nesterov, verified in Lean.
-4. Re choosing a method: SignMuon suits centralized deep learning and IID federation. For heterogeneous federated learning, EF21-MuonUSign compresses uploads and EF21-MuonSign both directions. EF messages use 1.087 bits/parameter, including auxiliaries and scales.
-5. Re nanoGPT: SignMuon achieves loss 3.2881 versus SignSGD 3.4049 (1 nanoGPT run each). Its 0.0021 gap to EF21-SignMuon needs more seeds to establish an ordering.
-
-If these clarifications address your concerns, please consider raising your score.
+We hope this addresses your main reservations.

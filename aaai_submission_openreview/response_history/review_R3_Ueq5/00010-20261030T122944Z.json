@@ -1,0 +1,185 @@
+{
+  "target": "rebuttal_R3_Ueq5.md",
+  "revision": 10,
+  "intro": "Dear Reviewer, thank you for identifying the reporting and rate issues.",
+  "closing": "We hope reconciling the tables and proving the two rates separately address your stated reservations.",
+  "sections": [
+    {
+      "id": "answers",
+      "lead": ""
+    }
+  ],
+  "fragments": [
+    {
+      "id": "R3.2",
+      "text": "The submitted federated CNN2/CIFAR-10 logs (11 IID clients, 5 seeds) reproduce A8: MuonSign 82.94±0.19% versus SignSGD 81.44±0.15%. We corrected Table 2 and its reversed comparison in the revision. See our response to 7S1b, Q2 for the new heterogeneous federated results.",
+      "notes": "Evidence: E1: submitted Table A8 and code/results/federated_export_results.zip: table_federated.csv and final_*_unit-gain_e2000_fs{0..4}/seed*/metrics.json; evidence/verified_claims.json independently recomputes means/sample SDs and thresholds.\nFinding / complete answer: Table 2 is stale. Five independent submitted runs, each averaged over the final five evaluations at the 2000-round horizon, give MuonSign 82.9424 ± 0.1868 and SignSGD 81.4356 ± 0.1466 sample SD. These agree with A8, reversing the main-table sentence. SignMuon 85.7156 ± .2444 versus Muon 85.9836 ± .2608; no significance claim.\nSelected statement is checked; an open request is not marked complete.\nReadability revision: full sentences explain the result and its relevance. See evidence/revision_3_readability.md.\nRevision 4: identify the completed additions as post-submission work or a response to the reviews. The 10-method heterogeneous table is centralized in 7S1b Q2; all other replies refer to that table and retain the central finding. No new training or Lean build was run during this writing edit.\nRevision 5: export substantive answers with explicit experiment identity. Presentation-only promises are kept in internal notes. Heterogeneous success is scoped to the tested Muon variants at IID-selected rates; the two EF variants are the only such means above 80%.\nRevision 6: Current signmuon_body.tex main table and federated ranking paragraph already contain the corrected A8 values. Report this completed revision directly.\nRevision 7 supersedes earlier LR-retuning-pending statements: E6: evidence/heterogeneous_tuning_results.zip (supplied rebuttal_results4.zip), verify_heterogeneous_tuning.py and heterogeneous_tuning_verified.json. All 167 unique 2000-round jobs: 72 validation trials, 95 final runs, 20 five-seed comparison rows with five Muon finals reused. Only LR tuned, at momentum 0.9; validation seed 0 and 5000 held-out images; finals retrain on 50000. All ten selected rates interior after two additional MuonSign validation trials. EF21-MuonSign 84.0348+/-0.5187, EF21-MuonUSign 83.8420+/-0.3230; SGD 79.7124+/-2.0324, Muon 46.0220+/-8.5462, SignMuon 42.9648+/-5.9431. Local parameter updates, partial participation and joint LR/momentum tuning remain untested.\nRevision 8: plain-language proofreading; retain submitted theorem numbering, name the measured setting and use a natural cross-reference to 7S1b. Mathematical and experimental evidence is unchanged.\nRevision 9: contribution framed as exploration of Muon/sign/EF combinations and observed centralized versus heterogeneous behavior. Unrequested SignMuon–Muon accuracy repetitions removed. Counterexample prose defines the fixed matrix direction and separates decreasing-step failure from finite-budget tuning. Evidence and assumptions are unchanged.",
+      "include": true,
+      "needs_check": false,
+      "joiner": " ",
+      "section": "answers"
+    },
+    {
+      "id": "R3.1",
+      "text": "Based on your review, we extended EF21-MuonUSign and EF21-MuonSign convergence to fixed EMA/Nesterov and deterministic learning rates, including constant/cosine schedules. We verified the tracking and convergence proofs in Lean. The exact-polar bounds quantify initialization, tracking and stochastic noise. These EF21 bounds retain the submitted assumption that layers are separable; our separate SignMuon theorem allows interacting layers under joint smoothness and uniform alignment.",
+      "notes": "Evidence: T1: submitted supplement A.10; aaai_article/ef21_nesterov_convergence.tex, ef21_fixed_radius.tex, ef21_rate_takeaways.tex. Gradient-scaled steps and horizon-tuned momentum for the separate squared-moment result; never infer it by squaring a first moment. F1: lean_proofs/README.md, PAPER_AUDIT.md, comparator/VERIFICATION.json (45 statements, passed 2026-10-23; reference and dependency hashes rechecked), and research/nesterov/lean-verification.log. Original ascent/output-EF divergence results and the generalized EF21 tracking/convergence arguments have Lean proofs. The printed cosine-sum specialization is a manual composition. The added conditional plain SignMuon theorem and softplus extensions are not claimed Lean-verified.\nFinding / complete answer: The squared dual-gradient rate O(T^-1/2) has a separate second-moment argument with gradient-scaled radii and horizon-tuned momentum. It does not follow for the cosine settings used in the experiments.\nSelected statement is checked; an open request is not marked complete.\nReadability revision: full sentences explain the result and its relevance. See evidence/revision_3_readability.md.\nRevision 4: identify the completed additions as post-submission work or a response to the reviews. The 10-method heterogeneous table is centralized in 7S1b Q2; all other replies refer to that table and retain the central finding. No new training or Lean build was run during this writing edit.\nRevision 5: export substantive answers with explicit experiment identity. Presentation-only promises are kept in internal notes. Heterogeneous success is scoped to the tested Muon variants at IID-selected rates; the two EF variants are the only such means above 80%.\nRevision 6: Original Ueq5 review raises schedules, separability and rate moments, not nanoGPT momentum warmup or auxiliary Adam. Remove that unsolicited aside. State completed proof extensions and what their terms measure; preserve the EF21 versus plain SignMuon distinction.\nRevision 8: plain-language proofreading; retain submitted theorem numbering, name the measured setting and use a natural cross-reference to 7S1b. Mathematical and experimental evidence is unchanged.\nRevision 10: latest author instruction adds Dear Reviewer greetings and reviewer-specific closings; only pqje (5) and Tx34 (4) have gentle reassessment wording. This explicit instruction takes precedence over the concurrent generic primer suggestion to leave closings empty. Contribution wording describes sign placements and adding EF. Robustness is supported for both EF21-MuonUSign and its bidirectional variant EF21-MuonSign in the tested heterogeneous setting.\nRevision 10: the printed fixed-radius/constant-cosine theorem assumes exact polar factors. Its tracking budget separates initialization, movement and noise, with compressor constants. The more general Lean BlockTrajectory.Oracle assumes a spectral-radius bound and <h,D_t(h)> >= gain*||h||_* - delta_t, and expected_stationarity_sum adds sum_t eta_t*delta_t (summed over blocks), normalized by mass in expected_stationarity. This condition exposes approximation loss; it does not certify delta_t for the implemented solver. Earlier notes saying numerical accuracy is quantified must be read with this distinction.",
+      "include": true,
+      "needs_check": false,
+      "joiner": " ",
+      "section": "answers"
+    },
+    {
+      "id": "R3.3",
+      "text": "Based on your review, we extended EF21-MuonUSign and EF21-MuonSign convergence to fixed EMA/Nesterov and deterministic learning rates, including constant/cosine schedules. We verified the tracking and convergence proofs in Lean. The exact-polar bounds quantify initialization, tracking and stochastic noise. These EF21 bounds retain the submitted assumption that layers are separable; our separate SignMuon theorem allows interacting layers under joint smoothness and uniform alignment.",
+      "notes": "Evidence: T1/G1: aaai_article/ef21_fixed_radius.tex (explicit separability step), ef21_nesterov_convergence.tex, and signmuon_addendum_body.tex (conditional SignMuon theorem and open EF21 cross-layer target). J1: separate candidate derivation in evidence/EF21_JOINT_SMOOTHNESS.md; not a revised-manuscript result and not relied on by the replies.\nFinding / complete answer: The manuscript’s block-only smoothness forces separability, and the revised EF21 proofs retain it. The author addendum explicitly calls EF21 cross-layer coupling an open target. Only the added conditional plain SignMuon theorem uses joint Frobenius smoothness and permits interacting layers. The separate J1 candidate must not be described as a completed manuscript extension.\nSelected statement is checked; an open request is not marked complete.\nReadability revision: full sentences explain the result and its relevance. See evidence/revision_3_readability.md.\nRevision 4: identify the completed additions as post-submission work or a response to the reviews. The 10-method heterogeneous table is centralized in 7S1b Q2; all other replies refer to that table and retain the central finding. No new training or Lean build was run during this writing edit.\nRevision 5: export substantive answers with explicit experiment identity. Presentation-only promises are kept in internal notes. Heterogeneous success is scoped to the tested Muon variants at IID-selected rates; the two EF variants are the only such means above 80%.\nRevision 6: Original Ueq5 review raises schedules, separability and rate moments, not nanoGPT momentum warmup or auxiliary Adam. Remove that unsolicited aside. State completed proof extensions and what their terms measure; preserve the EF21 versus plain SignMuon distinction.\nRevision 8: plain-language proofreading; retain submitted theorem numbering, name the measured setting and use a natural cross-reference to 7S1b. Mathematical and experimental evidence is unchanged.\nRevision 10: latest author instruction adds Dear Reviewer greetings and reviewer-specific closings; only pqje (5) and Tx34 (4) have gentle reassessment wording. This explicit instruction takes precedence over the concurrent generic primer suggestion to leave closings empty. Contribution wording describes sign placements and adding EF. Robustness is supported for both EF21-MuonUSign and its bidirectional variant EF21-MuonSign in the tested heterogeneous setting.\nRevision 10: the printed fixed-radius/constant-cosine theorem assumes exact polar factors. Its tracking budget separates initialization, movement and noise, with compressor constants. The more general Lean BlockTrajectory.Oracle assumes a spectral-radius bound and <h,D_t(h)> >= gain*||h||_* - delta_t, and expected_stationarity_sum adds sum_t eta_t*delta_t (summed over blocks), normalized by mass in expected_stationarity. This condition exposes approximation loss; it does not certify delta_t for the implemented solver. Earlier notes saying numerical accuracy is quantified must be read with this distinction.",
+      "include": true,
+      "needs_check": false,
+      "joiner": " ",
+      "section": "answers"
+    },
+    {
+      "id": "R3.4",
+      "text": "For EF21-MuonUSign and EF21-MuonSign with exact polar updates, our constant/cosine theorem bounds the learning-rate-weighted average expected nuclear gradient norm. Choosing the peak learning rate and fixed momentum for $T$ iterations gives an $O(T^{-1/4})$ rate. We separately proved an $O(T^{-1/2})$ average expected squared nuclear gradient norm bound with gradient-dependent steps.",
+      "notes": "Evidence: T1: submitted supplement A.10; aaai_article/ef21_nesterov_convergence.tex, ef21_fixed_radius.tex, ef21_rate_takeaways.tex. Gradient-scaled steps and horizon-tuned momentum for the separate squared-moment result; never infer it by squaring a first moment. T1/G1: aaai_article/ef21_fixed_radius.tex (explicit separability step), ef21_nesterov_convergence.tex, and signmuon_addendum_body.tex (conditional SignMuon theorem and open EF21 cross-layer target). J1: separate candidate derivation in evidence/EF21_JOINT_SMOOTHNESS.md; not a revised-manuscript result and not relied on by the replies.\nFinding / complete answer: A first-moment gradient bound cannot be squared to obtain a second-moment bound. The squared O(T^-1/2) result has a separate proof and gradient-scaled steps. Under the original separable assumptions, ideal fixed-momentum EF21 has a deterministic-schedule first-moment bound: a transient plus residuals, or O(T^-1/4) with eta_peak proportional to T^-3/4 and 1-mu=T^-1/2.\nSelected statement is checked; an open request is not marked complete.\nReadability revision: full sentences explain the result and its relevance. See evidence/revision_3_readability.md.\nRevision 4: identify the completed additions as post-submission work or a response to the reviews. The 10-method heterogeneous table is centralized in 7S1b Q2; all other replies refer to that table and retain the central finding. No new training or Lean build was run during this writing edit.\nRevision 5: export substantive answers with explicit experiment identity. Presentation-only promises are kept in internal notes. Heterogeneous success is scoped to the tested Muon variants at IID-selected rates; the two EF variants are the only such means above 80%.\nRevision 6: Name both algorithms, the nuclear first-moment quantity, horizon tuning and exact polar assumption. The O(T^-1/4) statement follows cor:radius_schedules(iii); the O(T^-1/2) squared-norm result has its own proof. Drop the obvious squaring admonition and unclear claims-separation label.\nRevision 8: plain-language proofreading; retain submitted theorem numbering, name the measured setting and use a natural cross-reference to 7S1b. Mathematical and experimental evidence is unchanged.",
+      "include": true,
+      "needs_check": false,
+      "joiner": " ",
+      "section": "answers"
+    },
+    {
+      "id": "R3.5",
+      "text": "Based on your review, we extended EF21-MuonUSign and EF21-MuonSign convergence to fixed EMA/Nesterov and deterministic learning rates, including constant/cosine schedules. We verified the tracking and convergence proofs in Lean. The exact-polar bounds quantify initialization, tracking and stochastic noise. These EF21 bounds retain the submitted assumption that layers are separable; our separate SignMuon theorem allows interacting layers under joint smoothness and uniform alignment.",
+      "notes": "Evidence: T1/G1: aaai_article/ef21_fixed_radius.tex (explicit separability step), ef21_nesterov_convergence.tex, and signmuon_addendum_body.tex (conditional SignMuon theorem and open EF21 cross-layer target). J1: separate candidate derivation in evidence/EF21_JOINT_SMOOTHNESS.md; not a revised-manuscript result and not relied on by the replies. E3: submitted Table 3 and supplement A.16–A.17; code/results/nanogpt/runs.csv, diagnostics.csv, SUMMARY.md; one independent unpinned run per compressed method, full-precision gradient reduce-scatter before optimizer. F1: lean_proofs/README.md, PAPER_AUDIT.md, comparator/VERIFICATION.json (45 statements, passed 2026-10-23; reference and dependency hashes rechecked), and research/nesterov/lean-verification.log. Original ascent/output-EF divergence results and the generalized EF21 tracking/convergence arguments have Lean proofs. The printed cosine-sum specialization is a manual composition. The added conditional plain SignMuon theorem and softplus extensions are not claimed Lean-verified.\nFinding / complete answer: Lean’s fixed-momentum trajectory theorems allow approximate directions through explicit additive error or positive oracle-gain assumptions. This is not a certificate of a sufficiently small error for the actual finite polynomial implementation. The actual nanoGPT momentum changes and auxiliary Adam updates still need additional analysis. The multiple-block EF21 result retains separability.\nSelected statement is checked; an open request is not marked complete.\nReadability revision: full sentences explain the result and its relevance. See evidence/revision_3_readability.md.\nRevision 4: identify the completed additions as post-submission work or a response to the reviews. The 10-method heterogeneous table is centralized in 7S1b Q2; all other replies refer to that table and retain the central finding. No new training or Lean build was run during this writing edit.\nRevision 5: export substantive answers with explicit experiment identity. Presentation-only promises are kept in internal notes. Heterogeneous success is scoped to the tested Muon variants at IID-selected rates; the two EF variants are the only such means above 80%.\nRevision 6: Original Ueq5 review raises schedules, separability and rate moments, not nanoGPT momentum warmup or auxiliary Adam. Remove that unsolicited aside. State completed proof extensions and what their terms measure; preserve the EF21 versus plain SignMuon distinction.\nRevision 8: plain-language proofreading; retain submitted theorem numbering, name the measured setting and use a natural cross-reference to 7S1b. Mathematical and experimental evidence is unchanged.\nRevision 10: latest author instruction adds Dear Reviewer greetings and reviewer-specific closings; only pqje (5) and Tx34 (4) have gentle reassessment wording. This explicit instruction takes precedence over the concurrent generic primer suggestion to leave closings empty. Contribution wording describes sign placements and adding EF. Robustness is supported for both EF21-MuonUSign and its bidirectional variant EF21-MuonSign in the tested heterogeneous setting.\nRevision 10: the printed fixed-radius/constant-cosine theorem assumes exact polar factors. Its tracking budget separates initialization, movement and noise, with compressor constants. The more general Lean BlockTrajectory.Oracle assumes a spectral-radius bound and <h,D_t(h)> >= gain*||h||_* - delta_t, and expected_stationarity_sum adds sum_t eta_t*delta_t (summed over blocks), normalized by mass in expected_stationarity. This condition exposes approximation loss; it does not certify delta_t for the implemented solver. Earlier notes saying numerical accuracy is quantified must be read with this distinction.",
+      "include": true,
+      "needs_check": false,
+      "joiner": " ",
+      "section": "answers"
+    }
+  ],
+  "reply_topics": [
+    {
+      "id": "Q1",
+      "heading": "1. Re the inconsistent tables:",
+      "question": "- Table 2 reports MuonSign below SignSGD, at 80.68% versus 81.83%, whereas Table A8 reports 82.94% versus 81.44% under the unit-gain rule. Its caption says these are the five-seed results from Table 2. This may be a fixable reporting issue, but it reverses an explicitly discussed ranking. The authors should identify the correct results and revise the affected comparisons.\n- Appendix A.10 requires a gradient-dependent stepsize for the squared-gradient rate and explicitly excludes the tested EF21-MuonSign schedule. Appendix A.1 also acknowledges that the layer-wise smoothness assumption forces separability across layers. These limitations do not invalidate the counterexamples, but they substantially restrict the positive results. The main text should distinguish the analyzed variants from the experimental implementations more clearly.\n- The text treats an $O(T^{-1/4})$ bound on the expected gradient norm as corresponding to an $O(T^{-1/2})$ bound on its expected square. This does not follow by squaring the first-moment bound. This appears fixable by narrowing the statement or supplying a separate second-moment argument; it does not by itself invalidate the separately stated sharp-stepsize result.",
+      "source": "weaknesses",
+      "occurrence": 0,
+      "points": [
+        "R3.2"
+      ]
+    },
+    {
+      "id": "Q2",
+      "heading": "2. Re the extended guarantees:",
+      "question": "- Table 2 reports MuonSign below SignSGD, at 80.68% versus 81.83%, whereas Table A8 reports 82.94% versus 81.44% under the unit-gain rule. Its caption says these are the five-seed results from Table 2. This may be a fixable reporting issue, but it reverses an explicitly discussed ranking. The authors should identify the correct results and revise the affected comparisons.\n- Appendix A.10 requires a gradient-dependent stepsize for the squared-gradient rate and explicitly excludes the tested EF21-MuonSign schedule. Appendix A.1 also acknowledges that the layer-wise smoothness assumption forces separability across layers. These limitations do not invalidate the counterexamples, but they substantially restrict the positive results. The main text should distinguish the analyzed variants from the experimental implementations more clearly.\n- The text treats an $O(T^{-1/4})$ bound on the expected gradient norm as corresponding to an $O(T^{-1/2})$ bound on its expected square. This does not follow by squaring the first-moment bound. This appears fixable by narrowing the statement or supplying a separate second-moment argument; it does not by itself invalidate the separately stated sharp-stepsize result.",
+      "source": "weaknesses",
+      "occurrence": 0,
+      "points": [
+        "R3.1",
+        "R3.3",
+        "R3.5"
+      ]
+    },
+    {
+      "id": "Q3",
+      "heading": "3. Re the two convergence rates:",
+      "question": "- Table 2 reports MuonSign below SignSGD, at 80.68% versus 81.83%, whereas Table A8 reports 82.94% versus 81.44% under the unit-gain rule. Its caption says these are the five-seed results from Table 2. This may be a fixable reporting issue, but it reverses an explicitly discussed ranking. The authors should identify the correct results and revise the affected comparisons.\n- Appendix A.10 requires a gradient-dependent stepsize for the squared-gradient rate and explicitly excludes the tested EF21-MuonSign schedule. Appendix A.1 also acknowledges that the layer-wise smoothness assumption forces separability across layers. These limitations do not invalidate the counterexamples, but they substantially restrict the positive results. The main text should distinguish the analyzed variants from the experimental implementations more clearly.\n- The text treats an $O(T^{-1/4})$ bound on the expected gradient norm as corresponding to an $O(T^{-1/2})$ bound on its expected square. This does not follow by squaring the first-moment bound. This appears fixable by narrowing the statement or supplying a separate second-moment argument; it does not by itself invalidate the separately stated sharp-stepsize result.",
+      "source": "weaknesses",
+      "occurrence": 0,
+      "points": [
+        "R3.4"
+      ]
+    }
+  ],
+  "frame_variants": {
+    "intro": [
+      {
+        "id": "specific",
+        "label": "Thanks tied to this review",
+        "text": "Dear Reviewer, thank you for identifying the reporting and rate issues."
+      },
+      {
+        "id": "brief",
+        "label": "Brief thanks",
+        "text": "Dear Reviewer, thank you for your helpful review."
+      },
+      {
+        "id": "none",
+        "label": "Minimal greeting",
+        "text": "Dear Reviewer, thank you for your review."
+      }
+    ],
+    "closing": [
+      {
+        "id": "none",
+        "label": "Omit closing",
+        "text": ""
+      },
+      {
+        "id": "conditional",
+        "label": "Acknowledgment of feedback",
+        "text": "We hope these additions address your questions. Thank you for your feedback."
+      },
+      {
+        "id": "evidence",
+        "label": "Closing tied to this review",
+        "text": "We hope reconciling the tables and proving the two rates separately address your stated reservations."
+      }
+    ]
+  },
+  "draft": [
+    {
+      "kind": "intro",
+      "before": "",
+      "after": "\n\n"
+    },
+    {
+      "kind": "heading",
+      "topic": "Q1",
+      "before": "",
+      "after": " "
+    },
+    {
+      "kind": "answer",
+      "points": [
+        "R3.2"
+      ],
+      "before": "",
+      "after": "\n"
+    },
+    {
+      "kind": "heading",
+      "topic": "Q2",
+      "before": "",
+      "after": " "
+    },
+    {
+      "kind": "answer",
+      "points": [
+        "R3.1",
+        "R3.3",
+        "R3.5"
+      ],
+      "before": "",
+      "after": "\n"
+    },
+    {
+      "kind": "heading",
+      "topic": "Q3",
+      "before": "",
+      "after": " "
+    },
+    {
+      "kind": "answer",
+      "points": [
+        "R3.4"
+      ],
+      "before": "",
+      "after": "\n\n"
+    },
+    {
+      "kind": "closing",
+      "before": "",
+      "after": "\n"
+    }
+  ]
+}

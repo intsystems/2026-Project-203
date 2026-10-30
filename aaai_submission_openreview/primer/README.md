@@ -25,13 +25,13 @@ The importer accepts a downloaded OpenReview `notes` list (wrapped in an object 
 - Selectable summaries, exact highlighted review passages and return links.
 - Linked concern editors and numbered, editable “Re …” headings.
 - Editable full response synchronized with separate answers, plus rendered LaTeX.
-- Editable opening/closing alternatives and review-specific score requests.
+- Editable opening alternatives and optional neutral closing thanks.
 - Word/character counts; configurable character limits and external-link rules.
 - Local-server autosave, browser localStorage, Edge/Chrome folder saving, JSON backups, revision conflicts and last-valid Markdown preservation.
 - Separate confidential AC/SPC editor, configurable limit and links to review passages.
 - One identity per paper for browser copies; no embedded paper names or reviewer lists.
 
-The same editing safeguards apply on another paper. Scientific evidence, interpretations, figures, prose and score arguments must be prepared for that paper.
+The same editing safeguards apply on another paper. Scientific evidence, interpretations, figures, prose and arguments must be prepared for that paper.
 
 ## Files and update boundary
 

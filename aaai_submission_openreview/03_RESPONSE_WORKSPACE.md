@@ -1,36 +1,47 @@
-# Rebuttal workspace — exploration and proof clarity, revision 9
+# Rebuttal workspace — direct answers and the heterogeneity mechanism, revision 13
 
-The contribution paragraphs describe the exploration of combining Muon with sign compression and error feedback, and the observed difference between centralized deep learning and heterogeneous federated learning. The extra SignMuon–Muon percentage comparison has been removed from the table-correction replies; the requested MuonSign–SignSGD correction remains.
+Rules are now confirmed by the AAAI-27 author-response email: one response per review, at most 1500 characters each; one Confidential Comment to the SPC and AC; no external links (papers with links in responses are rejected); no uploads; editable until 31 October 2026 AoE.
 
 ## Current drafts
 
-Open `start_workspace.cmd`, or read `rebuttals/rebuttal_*.md`. The full ten-method tuned heterogeneous table remains in **7S1b Q2**, with a natural cross-reference from every other reply and the AC comment. Five human replies retain requests to raise the score; the AI reply has no score request.
+Open `start_workspace.cmd` or read `rebuttals/rebuttal_*.md`. The ten-method IID-versus-heterogeneous table is in **7S1b Q2**; other replies refer to it.
 
 | Reviewer | UTF-16 characters /1500 | Selected concerns | Missing evidence |
 | --- | ---: | ---: | --- |
-| 7S1b | 1476 | 7 | R1.6, R1.7, R1.8 |
-| D4r2 | 1385 | 2 | R2.2, R2.8 |
-| Ueq5 | 1389 | 5 | None |
-| pqje | 1460 | 14 | R4.15 |
-| Tx34 | 1486 | 5 | None |
-| AI_Reviewer | 1482 | 14 | AI.6, AI.20 |
+| 7S1b | 1496 | 7/10 | R1.6, R1.7, R1.8 |
+| D4r2 | 1493 | 6/8 | R2.2, R2.8 |
+| Ueq5 | 1480 | 5/5 | None |
+| pqje | 1496 | 14/15 | R4.15 |
+| Tx34 | 1488 | 6/6 | None |
+| AI_Reviewer | 1497 | 18/20 | AI.6, AI.20 |
 
-## Counterexample explanation
+## What changed and why
 
-The Tx34 answer now identifies the gradient projection onto a fixed matrix direction in parameter space. Compressed updates are perpendicular to that direction, leaving this projection unchanged and the full gradient norm at least 1. It then separates two extensions of fixed-parameter Theorem 4: failure with decreasing learning rates and failure of constant learning-rate/momentum choices tuned to a finite budget. The latter keeps smoothness and initial gap fixed across the examples.
+Each reply now answers the reviewer's literal question in its first sentence, concedes valid points plainly, and labels post-submission results.
 
-Decreasing-step statements retain their actual scope: any strictly decreasing schedule to zero without momentum, or shifted power decay with fixed EMA/Nesterov. Exact polar updates are explicit. These construction proofs have their existing exact-certificate status; this prose revision adds no Lean claim.
+- **7S1b:** the federated ordering does not persist. The table shows IID next to Dirichlet(0.1). It explains that methods applying sign or polar per client before averaging lose 35–45 points, while the guaranteed EF21 methods, which orthogonalize once on the server, lose nothing. That is consistent with Theorem 5, which has no client-dissimilarity bound.
+- **D4r2:** their one required item, the writing list, was previously unanswered. All five points now receive commitments; the renaming is declined politely in favour of a placement table.
+- **Ueq5:** the reply does exactly what their justification asks: reconciles the tables (including Table 1 against A5) and separates the two rates. The squaring error is conceded first.
+- **pqje:** Q1 is answered table by table (none fully covered as submitted; Tables 1–2 covered by the new bounds up to Newton–Schulz error; Table 3 not covered). SignMuon is identified as concurrent (Mishra et al. is a May 2026 preprint developed in parallel); the replies do not mention our own arXiv version or start date, to keep the review double-blind. All of their writing requests receive concrete edits.
+- **Tx34:** the reply separates inherited from new results and states the design lesson (compress the gradient; orthogonalize after aggregation). It says exactly what the submitted Theorem 4 covers before adding the 8×8 construction, and Q3 says we will clarify our statements on the empirical ranking and on sufficient versus necessary conditions.
+- **AI:** opens with a technical introduction, without a salutation; concessions on separability, exact polar factors and X versus W; credit to Modoranu et al. and Jiang et al.; the method matrix is committed; minor points are answered with submitted A5/A10 facts.
 
-## Evidence and preservation
+## Revision 13
 
-SignMuon leads the tested centralized ResNet18/CIFAR-10 comparison by mean accuracy. In the completed heterogeneous CNN2/CIFAR-10 study (11 Dirichlet(0.1) clients, 2000 rounds, no local updates), only EF21-MuonSign and EF21-MuonUSign exceed 80% after validation LR tuning: 84.03±0.52% and 83.84±0.32% over five final seeds. The immutable archive and 167-run audit are unchanged. Centralized performance is described as an empirical result, without asserting that every network update descends.
+The revision 11–12 logic is now phrased in the committed (Codex) wording, reusing its sentences wherever the content is unchanged. See the Revision 13 section of `02_REBUTTAL_PLAN.md`.
 
-EF21 retains the submitted separable-layer assumption; the separate SignMuon theorem permits interacting layers under joint smoothness and uniform alignment. Existing proof verification, source reviews, all 64 IDs and 79 exact passage mappings remain unchanged. So do the 47 selections, 9 editorial omissions and 8 missing-evidence flags. Network alignment, local-update/participation extensions, more large-model seeds and the SSVR experiment remain open.
+## Revision 12
 
-The pre-edit JSON, exports and handoff documents are backed up in `response_history/before_exploration_revision_20261030T083924Z/`. Existing author changes in `primer/` are preserved. The confidential draft has 2915 UTF-16 characters; its field limit/readers remain unknown and the limit stays `null`.
+A language pass: complete sentences throughout. Minor content was dropped where space ran out (the table SDs and repeated statements of the SignMuon condition). pqje point 4 now cites the heterogeneous federated CNN2 test of distributed compression. Concurrency is stated as independent of this work. See the Revision 12 section of `02_REBUTTAL_PLAN.md`.
 
-## Checks and collaboration
+## Scientific notes
 
-Build with `python -X utf8 aaai_submission_openreview/primer/workspace.py build`, inspect the seven editor pages, then run the same command with `check`. Completed checks are recorded in `evidence/revision_9_validation.json`. All six public drafts fit 1500 characters. This prose update requires no training, Lean build or addendum rebuild.
+See the **Revision 11** section of `02_REBUTTAL_PLAN.md`. In particular, the submitted main Table 1 also disagrees with Table A5, and the replies now say both main tables were corrected. "Guaranteed EF21 methods" always means EF21-MuonUSign and EF21-MuonSign. The heterogeneous mechanism is an observation from the code and the table; the `muonserver` control was not run under heterogeneity.
 
-Save browser edits before merging, coordinate changes to `response_fragments.json`, and reload after rebuilding. Saves are local; nothing is submitted or pushed. The configured deadline remains 31 October 2026 AoE.
+## Defaults applied for author decisions
+
+D4r2 renaming declined; Tx34 W3–W4 agreement reinstated (R5.6); joint-smoothness reduction not used. Edit these in the browser editor if you prefer otherwise.
+
+## Evidence and handoff
+
+All 64 IDs and 79 source mappings remain; 56 concerns are selected, there are no editorial omissions, and the 8 missing-evidence flags are unchanged. No experiments, proofs, addendum or PDF were changed. The pre-edit state is in `response_history/before_revision_11_rewrite_20261030T122944Z/`; per-review history entries were added as the editor does. Build with `python -X utf8 aaai_submission_openreview/primer/workspace.py build`, then run `check`; results are in `evidence/revision_11_validation.json`. Reload the editor after pulling: any browser copy based on an older revision will be reported as a conflict rather than overwriting the files. Saves are local; nothing was posted to OpenReview.

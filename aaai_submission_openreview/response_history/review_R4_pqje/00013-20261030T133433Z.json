@@ -1,0 +1,345 @@
+{
+  "target": "rebuttal_R4_pqje.md",
+  "revision": 13,
+  "intro": "Dear Reviewer, thank you for your questions.",
+  "closing": "We hope these answers warrant reassessing the score.",
+  "sections": [
+    {
+      "id": "answers",
+      "lead": ""
+    }
+  ],
+  "fragments": [
+    {
+      "id": "R4.1",
+      "text": "As submitted, none fully: Theorem 5 needs gradient-scaled or constant steps, but our runs anneal by cosine. Since submission, we have bounds for both EF21 methods under constant and cosine rates with fixed momentum; they cover Tables 1–2 up to the Newton–Schulz approximation, but not Table 3 (momentum warmup). We will add this as a table.",
+      "notes": "Evidence: T1: submitted supplement A.10; aaai_article/ef21_nesterov_convergence.tex, ef21_fixed_radius.tex, ef21_rate_takeaways.tex. Gradient-scaled steps and horizon-tuned momentum for the separate squared-moment result; never infer it by squaring a first moment. T1/G1: aaai_article/ef21_fixed_radius.tex (explicit separability step), ef21_nesterov_convergence.tex, and signmuon_addendum_body.tex (conditional SignMuon theorem and open EF21 cross-layer target). J1: separate candidate derivation in evidence/EF21_JOINT_SMOOTHNESS.md; not a revised-manuscript result and not relied on by the replies. F1: lean_proofs/README.md, PAPER_AUDIT.md, comparator/VERIFICATION.json (45 statements, passed 2026-10-23; reference and dependency hashes rechecked), and research/nesterov/lean-verification.log. Original ascent/output-EF divergence results and the generalized EF21 tracking/convergence arguments have Lean proofs. The printed cosine-sum specialization is a manual composition. The added conditional plain SignMuon theorem and softplus extensions are not claimed Lean-verified.\nFinding / complete answer: We generalized the EF21 analysis to EMA/Nesterov and deterministic learning rates. Its tracking and convergence arguments are formalized in Lean. Constant/cosine corollaries follow by schedule specialization, whose printed cosine sum is not itself a complete exported Lean theorem. Approximate directions are admitted through explicit error/quality assumptions. The squared-gradient rate still needs gradient-dependent steps and the manuscript retains separability.\nSelected statement is checked; an open request is not marked complete.\nReadability revision: full sentences explain the result and its relevance. See evidence/revision_3_readability.md.\nRevision 4: identify the completed additions as post-submission work or a response to the reviews. The 10-method heterogeneous table is centralized in 7S1b Q2; all other replies refer to that table and retain the central finding. No new training or Lean build was run during this writing edit.\nRevision 5: export substantive answers with explicit experiment identity. Presentation-only promises are kept in internal notes. Heterogeneous success is scoped to the tested Muon variants at IID-selected rates; the two EF variants are the only such means above 80%.\nRevision 6: Answer pqje Q1 positively with completed schedule/momentum extensions and their measured quantity. Unlike Ueq5, pqje explicitly asks about nanoGPT Nesterov; the direct answer on fixed coefficients versus warmup is in Q4. Formal correspondence still retains the underlying layerwise smoothness and approximation-quality assumptions.\nRevision 8: plain-language proofreading; retain submitted theorem numbering, name the measured setting and use a natural cross-reference to 7S1b. Mathematical and experimental evidence is unchanged.\nRevision 10: latest author instruction adds Dear Reviewer greetings and reviewer-specific closings; only pqje (5) and Tx34 (4) have gentle reassessment wording. This explicit instruction takes precedence over the concurrent generic primer suggestion to leave closings empty. Contribution wording describes sign placements and adding EF. Robustness is supported for both EF21-MuonUSign and its bidirectional variant EF21-MuonSign in the tested heterogeneous setting.\nRevision 10: the printed fixed-radius/constant-cosine theorem assumes exact polar factors. Its tracking budget separates initialization, movement and noise, with compressor constants. The more general Lean BlockTrajectory.Oracle assumes a spectral-radius bound and <h,D_t(h)> >= gain*||h||_* - delta_t, and expected_stationarity_sum adds sum_t eta_t*delta_t (summed over blocks), normalized by mass in expected_stationarity. This condition exposes approximation loss; it does not certify delta_t for the implemented solver. Earlier notes saying numerical accuracy is quantified must be read with this distinction.\nRevision 11 (2026-10-30): rewritten for directness. Answer the literal question first, concede valid points plainly, label post-submission results, explain the heterogeneous IID-versus-Dirichlet change by where each method applies sign/polar (per client before averaging versus once on the server), and cite submitted Tables A5/A8 for corrected values.\nRevision 11 author follow-up (2026-10-30): AI reply opens with a technical introduction; Tx34 Q3 reframed as clarifying our statements on the empirical ranking; pqje answer states that Mishra et al. is a May 2026 preprint developed in parallel (no arXiv or date of our own work is mentioned, to preserve anonymity).\nRevision 12 (2026-10-30): language pass in full sentences; pqje nanoGPT answer cites the heterogeneous CNN2 test of distributed compression; concurrency stated as independent of this work. Revision 11 basis: rewritten for directness. Answer the literal question first, concede valid points plainly, label post-submission results, explain the heterogeneous IID-versus-Dirichlet change by where each method applies sign/polar (per client before averaging versus once on the server), and cite submitted Tables A5/A8 for corrected values.",
+      "include": true,
+      "needs_check": false,
+      "joiner": " ",
+      "section": "answers"
+    },
+    {
+      "id": "R4.2",
+      "text": "As submitted, none fully: Theorem 5 needs gradient-scaled or constant steps, but our runs anneal by cosine. Since submission, we have bounds for both EF21 methods under constant and cosine rates with fixed momentum; they cover Tables 1–2 up to the Newton–Schulz approximation, but not Table 3 (momentum warmup). We will add this as a table.",
+      "notes": "Evidence: T1/G1: aaai_article/ef21_fixed_radius.tex (explicit separability step), ef21_nesterov_convergence.tex, and signmuon_addendum_body.tex (conditional SignMuon theorem and open EF21 cross-layer target). J1: separate candidate derivation in evidence/EF21_JOINT_SMOOTHNESS.md; not a revised-manuscript result and not relied on by the replies. E3: submitted Table 3 and supplement A.16–A.17; code/results/nanogpt/runs.csv, diagnostics.csv, SUMMARY.md; one independent unpinned run per compressed method, full-precision gradient reduce-scatter before optimizer. F1: lean_proofs/README.md, PAPER_AUDIT.md, comparator/VERIFICATION.json (45 statements, passed 2026-10-23; reference and dependency hashes rechecked), and research/nesterov/lean-verification.log. Original ascent/output-EF divergence results and the generalized EF21 tracking/convergence arguments have Lean proofs. The printed cosine-sum specialization is a manual composition. The added conditional plain SignMuon theorem and softplus extensions are not claimed Lean-verified.\nFinding / complete answer: The generalized analysis and Lean trajectory proofs cover a fixed momentum coefficient in EMA or Nesterov. nanoGPT changes that coefficient during training, so the implementation is not certified by the fixed-momentum result.\nSelected statement is checked; an open request is not marked complete.\nReadability revision: full sentences explain the result and its relevance. See evidence/revision_3_readability.md.\nRevision 4: identify the completed additions as post-submission work or a response to the reviews. The 10-method heterogeneous table is centralized in 7S1b Q2; all other replies refer to that table and retain the central finding. No new training or Lean build was run during this writing edit.\nRevision 5: export substantive answers with explicit experiment identity. Presentation-only promises are kept in internal notes. Heterogeneous success is scoped to the tested Muon variants at IID-selected rates; the two EF variants are the only such means above 80%.\nRevision 6: Answer pqje Q1 positively with completed schedule/momentum extensions and their measured quantity. Unlike Ueq5, pqje explicitly asks about nanoGPT Nesterov; the direct answer on fixed coefficients versus warmup is in Q4. Formal correspondence still retains the underlying layerwise smoothness and approximation-quality assumptions.\nRevision 8: plain-language proofreading; retain submitted theorem numbering, name the measured setting and use a natural cross-reference to 7S1b. Mathematical and experimental evidence is unchanged.\nRevision 10: latest author instruction adds Dear Reviewer greetings and reviewer-specific closings; only pqje (5) and Tx34 (4) have gentle reassessment wording. This explicit instruction takes precedence over the concurrent generic primer suggestion to leave closings empty. Contribution wording describes sign placements and adding EF. Robustness is supported for both EF21-MuonUSign and its bidirectional variant EF21-MuonSign in the tested heterogeneous setting.\nRevision 10: the printed fixed-radius/constant-cosine theorem assumes exact polar factors. Its tracking budget separates initialization, movement and noise, with compressor constants. The more general Lean BlockTrajectory.Oracle assumes a spectral-radius bound and <h,D_t(h)> >= gain*||h||_* - delta_t, and expected_stationarity_sum adds sum_t eta_t*delta_t (summed over blocks), normalized by mass in expected_stationarity. This condition exposes approximation loss; it does not certify delta_t for the implemented solver. Earlier notes saying numerical accuracy is quantified must be read with this distinction.\nRevision 11 (2026-10-30): rewritten for directness. Answer the literal question first, concede valid points plainly, label post-submission results, explain the heterogeneous IID-versus-Dirichlet change by where each method applies sign/polar (per client before averaging versus once on the server), and cite submitted Tables A5/A8 for corrected values.\nRevision 11 author follow-up (2026-10-30): AI reply opens with a technical introduction; Tx34 Q3 reframed as clarifying our statements on the empirical ranking; pqje answer states that Mishra et al. is a May 2026 preprint developed in parallel (no arXiv or date of our own work is mentioned, to preserve anonymity).\nRevision 12 (2026-10-30): language pass in full sentences; pqje nanoGPT answer cites the heterogeneous CNN2 test of distributed compression; concurrency stated as independent of this work. Revision 11 basis: rewritten for directness. Answer the literal question first, concede valid points plainly, label post-submission results, explain the heterogeneous IID-versus-Dirichlet change by where each method applies sign/polar (per client before averaging versus once on the server), and cite submitted Tables A5/A8 for corrected values.",
+      "include": true,
+      "needs_check": false,
+      "joiner": " ",
+      "section": "answers"
+    },
+    {
+      "id": "R4.3",
+      "text": "Table A8 is correct: the submitted logs (5 seeds) give MuonSign 82.94±0.19% vs SignSGD 81.44±0.15%. We corrected Tables 1–2 and the ranking.",
+      "notes": "Evidence: E1: submitted Table A8 and code/results/federated_export_results.zip: table_federated.csv and final_*_unit-gain_e2000_fs{0..4}/seed*/metrics.json; evidence/verified_claims.json independently recomputes means/sample SDs and thresholds.\nFinding / complete answer: The original submitted five-seed archive agrees with A8. Table 2 is stale; final-five-evaluation means give 82.9424 ± .1868 vs 81.4356 ± .1466. The main-table comparison must be reversed.\nSelected statement is checked; an open request is not marked complete.\nReadability revision: full sentences explain the result and its relevance. See evidence/revision_3_readability.md.\nRevision 4: identify the completed additions as post-submission work or a response to the reviews. The 10-method heterogeneous table is centralized in 7S1b Q2; all other replies refer to that table and retain the central finding. No new training or Lean build was run during this writing edit.\nRevision 5: export substantive answers with explicit experiment identity. Presentation-only promises are kept in internal notes. Heterogeneous success is scoped to the tested Muon variants at IID-selected rates; the two EF variants are the only such means above 80%.\nRevision 6: Current signmuon_body.tex main table and federated ranking paragraph already contain the corrected A8 values. Report this completed revision directly.\nRevision 8: plain-language proofreading; retain submitted theorem numbering, name the measured setting and use a natural cross-reference to 7S1b. Mathematical and experimental evidence is unchanged.\nRevision 9: contribution framed as exploration of Muon/sign/EF combinations and observed centralized versus heterogeneous behavior. Unrequested SignMuon–Muon accuracy repetitions removed. Counterexample prose defines the fixed matrix direction and separates decreasing-step failure from finite-budget tuning. Evidence and assumptions are unchanged.\nRevision 11 (2026-10-30): rewritten for directness. Answer the literal question first, concede valid points plainly, label post-submission results, explain the heterogeneous IID-versus-Dirichlet change by where each method applies sign/polar (per client before averaging versus once on the server), and cite submitted Tables A5/A8 for corrected values.",
+      "include": true,
+      "needs_check": false,
+      "joiner": " ",
+      "section": "answers"
+    },
+    {
+      "id": "R4.4",
+      "text": "As you suggest, we also proved a sufficient condition for SignMuon to converge (our response to 7S1b, Q1).",
+      "notes": "Evidence: G1: aaai_article/signmuon_addendum_body.tex, conditional SignMuon theorem and geometry lemma; OLion v2, Lemma 4.3 / Corollary 4.4; exact-oracle, fixed-within-run momentum, uniformly positive margin.\nFinding / complete answer: The full addendum gives the weaker covariance/spread criterion epsilon*rho<1 and a complete stochastic fixed-momentum first-moment proof. The simpler diagonal lower bound in the export is sufficient and self-contained.\nSelected statement is checked; an open request is not marked complete.\nReadability revision: full sentences explain the result and its relevance. See evidence/revision_3_readability.md.\nRevision 4: identify the completed additions as post-submission work or a response to the reviews. The 10-method heterogeneous table is centralized in 7S1b Q2; all other replies refer to that table and retain the central finding. No new training or Lean build was run during this writing edit.\nRevision 5: export substantive answers with explicit experiment identity. Presentation-only promises are kept in internal notes. Heterogeneous success is scoped to the tested Muon variants at IID-selected rates; the two EF variants are the only such means above 80%.\nRevision 7 supersedes earlier LR-retuning-pending statements: E6: evidence/heterogeneous_tuning_results.zip (supplied rebuttal_results4.zip), verify_heterogeneous_tuning.py and heterogeneous_tuning_verified.json. All 167 unique 2000-round jobs: 72 validation trials, 95 final runs, 20 five-seed comparison rows with five Muon finals reused. Only LR tuned, at momentum 0.9; validation seed 0 and 5000 held-out images; finals retrain on 50000. All ten selected rates interior after two additional MuonSign validation trials. EF21-MuonSign 84.0348+/-0.5187, EF21-MuonUSign 83.8420+/-0.3230; SGD 79.7124+/-2.0324, Muon 46.0220+/-8.5462, SignMuon 42.9648+/-5.9431. Local parameter updates, partial participation and joint LR/momentum tuning remain untested.\nRevision 8: plain-language proofreading; retain submitted theorem numbering, name the measured setting and use a natural cross-reference to 7S1b. Mathematical and experimental evidence is unchanged.\nRevision 9: contribution framed as exploration of Muon/sign/EF combinations and observed centralized versus heterogeneous behavior. Unrequested SignMuon–Muon accuracy repetitions removed. Counterexample prose defines the fixed matrix direction and separates decreasing-step failure from finite-budget tuning. Evidence and assumptions are unchanged.\nRevision 10: latest author instruction adds Dear Reviewer greetings and reviewer-specific closings; only pqje (5) and Tx34 (4) have gentle reassessment wording. This explicit instruction takes precedence over the concurrent generic primer suggestion to leave closings empty. Contribution wording describes sign placements and adding EF. Robustness is supported for both EF21-MuonUSign and its bidirectional variant EF21-MuonSign in the tested heterogeneous setting.\nRevision 11 (2026-10-30): rewritten for directness. Answer the literal question first, concede valid points plainly, label post-submission results, explain the heterogeneous IID-versus-Dirichlet change by where each method applies sign/polar (per client before averaging versus once on the server), and cite submitted Tables A5/A8 for corrected values.\nRevision 12 (2026-10-30): language pass in full sentences; pqje nanoGPT answer cites the heterogeneous CNN2 test of distributed compression; concurrency stated as independent of this work. Revision 11 basis: rewritten for directness. Answer the literal question first, concede valid points plainly, label post-submission results, explain the heterogeneous IID-versus-Dirichlet change by where each method applies sign/polar (per client before averaging versus once on the server), and cite submitted Tables A5/A8 for corrected values.",
+      "include": true,
+      "needs_check": false,
+      "joiner": " ",
+      "section": "answers"
+    },
+    {
+      "id": "R4.15",
+      "text": "The sufficient margin has not been checked on these neural-network trajectories, approximate solvers or distributed votes. The favorable quadratic result does not establish it.",
+      "notes": "Evidence: G1: aaai_article/signmuon_addendum_body.tex, conditional SignMuon theorem and geometry lemma; OLion v2, Lemma 4.3 / Corollary 4.4; exact-oracle, fixed-within-run momentum, uniformly positive margin.\nFinding / complete answer: The sufficient margin has not been checked on these neural-network trajectories, approximate solvers or distributed votes. The favorable quadratic result does not establish it.\nAdditional evidence remains pending; excluded from export.\nReadability revision: full sentences explain the result and its relevance. See evidence/revision_3_readability.md.",
+      "include": false,
+      "needs_check": true,
+      "joiner": " ",
+      "section": "answers"
+    },
+    {
+      "id": "R4.6",
+      "text": "SignMuon itself is concurrent: Mishra et al. is a May 2026 preprint developed independently. The EF21 rates are inherited; Theorems 1–4 are our contribution.",
+      "notes": "Evidence: P1: Gruntkowska et al. 2025 EF21-Muon, Algorithm 3 / Theorem 19 / Remark 23; Modoranu et al. ICML 2024; Mishra et al. SignMuon v2 (17 October 2026), Section 4 / Appendix F. The current main article comparison to Mishra v1 is stale and must be replaced. N1: submitted Theorems 1–4 and proofs; aaai_article/ef21_signmuon_divergence.tex; evidence/verified_claims.json exact rational ascent/cycle certificates. Theorem 4 objective depends on fixed eta and mu; no decreasing-schedule impossibility follows. F1: lean_proofs/README.md, PAPER_AUDIT.md, comparator/VERIFICATION.json (45 statements, passed 2026-10-23; reference and dependency hashes rechecked), and research/nesterov/lean-verification.log. Original ascent/output-EF divergence results and the generalized EF21 tracking/convergence arguments have Lean proofs. The printed cosine-sum specialization is a manual composition. The added conditional plain SignMuon theorem and softplus extensions are not claimed Lean-verified.\nFinding / complete answer: Practical SignMuon and the general EF21 framework are prior/concurrent work. Our supported contribution is the controlled comparison of six placements/EF variants, strong sign-based performance and distinct sign/polar failure mechanisms. Mishra v2 has conditional actual-vote stochastic momentum theory; the current manuscript’s v1-only comparison must be updated. The added conditional SignMuon theorem is new to this submission, not claimed as the first conditional SignMuon result.\nSelected statement is checked; an open request is not marked complete.\nReadability revision: full sentences explain the result and its relevance. See evidence/revision_3_readability.md.\nRevision 4: identify the completed additions as post-submission work or a response to the reviews. The 10-method heterogeneous table is centralized in 7S1b Q2; all other replies refer to that table and retain the central finding. No new training or Lean build was run during this writing edit.\nAuthor requested removing credit-only sentences from the replies. The text states the controlled placement comparison, failure theorems, post-submission extensions and heterogeneous evidence without claiming priority for SignMuon or the general EF21 framework. Bibliographic evidence remains in this ledger.\nRevision 5: export substantive answers with explicit experiment identity. Presentation-only promises are kept in internal notes. Heterogeneous success is scoped to the tested Muon variants at IID-selected rates; the two EF variants are the only such means above 80%.\nRevision 7 supersedes earlier LR-retuning-pending statements: E6: evidence/heterogeneous_tuning_results.zip (supplied rebuttal_results4.zip), verify_heterogeneous_tuning.py and heterogeneous_tuning_verified.json. All 167 unique 2000-round jobs: 72 validation trials, 95 final runs, 20 five-seed comparison rows with five Muon finals reused. Only LR tuned, at momentum 0.9; validation seed 0 and 5000 held-out images; finals retrain on 50000. All ten selected rates interior after two additional MuonSign validation trials. EF21-MuonSign 84.0348+/-0.5187, EF21-MuonUSign 83.8420+/-0.3230; SGD 79.7124+/-2.0324, Muon 46.0220+/-8.5462, SignMuon 42.9648+/-5.9431. Local parameter updates, partial participation and joint LR/momentum tuning remain untested.\nRevision 8: plain-language proofreading; retain submitted theorem numbering, name the measured setting and use a natural cross-reference to 7S1b. Mathematical and experimental evidence is unchanged.\nRevision 9: contribution framed as exploration of Muon/sign/EF combinations and observed centralized versus heterogeneous behavior. Unrequested SignMuon–Muon accuracy repetitions removed. Counterexample prose defines the fixed matrix direction and separates decreasing-step failure from finite-budget tuning. Evidence and assumptions are unchanged.\nRevision 10: latest author instruction adds Dear Reviewer greetings and reviewer-specific closings; only pqje (5) and Tx34 (4) have gentle reassessment wording. This explicit instruction takes precedence over the concurrent generic primer suggestion to leave closings empty. Contribution wording describes sign placements and adding EF. Robustness is supported for both EF21-MuonUSign and its bidirectional variant EF21-MuonSign in the tested heterogeneous setting.\nRevision 11 (2026-10-30): rewritten for directness. Answer the literal question first, concede valid points plainly, label post-submission results, explain the heterogeneous IID-versus-Dirichlet change by where each method applies sign/polar (per client before averaging versus once on the server), and cite submitted Tables A5/A8 for corrected values.\nRevision 11 author follow-up (2026-10-30): AI reply opens with a technical introduction; Tx34 Q3 reframed as clarifying our statements on the empirical ranking; pqje answer states that Mishra et al. is a May 2026 preprint developed in parallel (no arXiv or date of our own work is mentioned, to preserve anonymity).\nRevision 12 (2026-10-30): language pass in full sentences; pqje nanoGPT answer cites the heterogeneous CNN2 test of distributed compression; concurrency stated as independent of this work. Revision 11 basis: rewritten for directness. Answer the literal question first, concede valid points plainly, label post-submission results, explain the heterogeneous IID-versus-Dirichlet change by where each method applies sign/polar (per client before averaging versus once on the server), and cite submitted Tables A5/A8 for corrected values.",
+      "include": true,
+      "needs_check": false,
+      "joiner": " ",
+      "section": "answers"
+    },
+    {
+      "id": "R4.5",
+      "text": "You are right: nanoGPT averages full-precision gradients before compressing, so it tests centralized optimizers; Sec. 5.3 will say so. Distributed compression is tested on federated CNN2, where we added heterogeneous clients: even at this scale, SignMuon falls from 85.7% to 43.0%, while the guaranteed EF21 methods keep 84% (our response to 7S1b, Q2).",
+      "notes": "Evidence: E3: submitted Table 3 and supplement A.16–A.17; code/results/nanogpt/runs.csv, diagnostics.csv, SUMMARY.md; one independent unpinned run per compressed method, full-precision gradient reduce-scatter before optimizer.\nFinding / complete answer: The reviewer is correct. Full-precision gradient averaging precedes the owning-rank optimizer; parameter all-gather follows. Local compress-then-vote semantics and actual one-bit communication gains are not tested by this experiment.\nSelected statement is checked; an open request is not marked complete.\nReadability revision: full sentences explain the result and its relevance. See evidence/revision_3_readability.md.\nRevision 4: identify the completed additions as post-submission work or a response to the reviews. The 10-method heterogeneous table is centralized in 7S1b Q2; all other replies refer to that table and retain the central finding. No new training or Lean build was run during this writing edit.\nRevision 5: export substantive answers with explicit experiment identity. Presentation-only promises are kept in internal notes. Heterogeneous success is scoped to the tested Muon variants at IID-selected rates; the two EF variants are the only such means above 80%.\nRevision 6: pqje Q1 explicitly raises nanoGPT Nesterov and weakness 2 raises centralized averaging versus worker voting. Answer those issues only; omit auxiliary Adam, which this review does not ask about.\nRevision 8: plain-language proofreading; retain submitted theorem numbering, name the measured setting and use a natural cross-reference to 7S1b. Mathematical and experimental evidence is unchanged.\nRevision 10: latest author instruction adds Dear Reviewer greetings and reviewer-specific closings; only pqje (5) and Tx34 (4) have gentle reassessment wording. This explicit instruction takes precedence over the concurrent generic primer suggestion to leave closings empty. Contribution wording describes sign placements and adding EF. Robustness is supported for both EF21-MuonUSign and its bidirectional variant EF21-MuonSign in the tested heterogeneous setting.\nRevision 11 (2026-10-30): rewritten for directness. Answer the literal question first, concede valid points plainly, label post-submission results, explain the heterogeneous IID-versus-Dirichlet change by where each method applies sign/polar (per client before averaging versus once on the server), and cite submitted Tables A5/A8 for corrected values.\nRevision 12 (2026-10-30): language pass in full sentences; pqje nanoGPT answer cites the heterogeneous CNN2 test of distributed compression; concurrency stated as independent of this work. Revision 11 basis: rewritten for directness. Answer the literal question first, concede valid points plainly, label post-submission results, explain the heterogeneous IID-versus-Dirichlet change by where each method applies sign/polar (per client before averaging versus once on the server), and cite submitted Tables A5/A8 for corrected values.",
+      "include": true,
+      "needs_check": false,
+      "joiner": " ",
+      "section": "answers"
+    },
+    {
+      "id": "R4.7",
+      "text": "We will follow your writing suggestions: Theorem 4 will be stated precisely, and Sec. 4.4 will say that the server updates X, gradients are taken at its one-bit copy W, and the guarantee bounds X.",
+      "notes": "Evidence: N1: submitted Theorems 1–4 and proofs; aaai_article/ef21_signmuon_divergence.tex; evidence/verified_claims.json exact rational ascent/cycle certificates. Theorem 4 objective depends on fixed eta and mu; no decreasing-schedule impossibility follows. E3: submitted Table 3 and supplement A.16–A.17; code/results/nanogpt/runs.csv, diagnostics.csv, SUMMARY.md; one independent unpinned run per compressed method, full-precision gradient reduce-scatter before optimizer. W1: 02_REBUTTAL_PLAN.md replacement prose.\nFinding / complete answer: Introduce the operations before the introduction cites alignment results. Prepared replacement prose and a theorem/implementation table are in 02_REBUTTAL_PLAN.md. X takes exact server updates; W is the compressed broadcast at which gradients are queried. Theorem 4 has parameter-dependent objectives and no decreasing-schedule conclusion. The theory makes no performance-order prediction.\nSelected statement is checked; an open request is not marked complete.\nReadability revision: full sentences explain the result and its relevance. See evidence/revision_3_readability.md.\nRevision 4: identify the completed additions as post-submission work or a response to the reviews. The 10-method heterogeneous table is centralized in 7S1b Q2; all other replies refer to that table and retain the central finding. No new training or Lean build was run during this writing edit.\nRevision 5: export substantive answers with explicit experiment identity. Presentation-only promises are kept in internal notes. Heterogeneous success is scoped to the tested Muon variants at IID-selected rates; the two EF variants are the only such means above 80%.\nRevision 8: plain-language proofreading; retain submitted theorem numbering, name the measured setting and use a natural cross-reference to 7S1b. Mathematical and experimental evidence is unchanged.\nRevision 11 (2026-10-30): rewritten for directness. Answer the literal question first, concede valid points plainly, label post-submission results, explain the heterogeneous IID-versus-Dirichlet change by where each method applies sign/polar (per client before averaging versus once on the server), and cite submitted Tables A5/A8 for corrected values.\nRevision 11 author follow-up (2026-10-30): AI reply opens with a technical introduction; Tx34 Q3 reframed as clarifying our statements on the empirical ranking; pqje answer states that Mishra et al. is a May 2026 preprint developed in parallel (no arXiv or date of our own work is mentioned, to preserve anonymity).\nRevision 12 (2026-10-30): language pass in full sentences; pqje nanoGPT answer cites the heterogeneous CNN2 test of distributed compression; concurrency stated as independent of this work. Revision 11 basis: rewritten for directness. Answer the literal question first, concede valid points plainly, label post-submission results, explain the heterogeneous IID-versus-Dirichlet change by where each method applies sign/polar (per client before averaging versus once on the server), and cite submitted Tables A5/A8 for corrected values.",
+      "include": true,
+      "needs_check": false,
+      "joiner": " ",
+      "section": "answers"
+    },
+    {
+      "id": "R4.8",
+      "text": "We will follow your writing suggestions: Theorem 4 will be stated precisely, and Sec. 4.4 will say that the server updates X, gradients are taken at its one-bit copy W, and the guarantee bounds X.",
+      "notes": "Evidence: N1: submitted Theorems 1–4 and proofs; aaai_article/ef21_signmuon_divergence.tex; evidence/verified_claims.json exact rational ascent/cycle certificates. Theorem 4 objective depends on fixed eta and mu; no decreasing-schedule impossibility follows. E3: submitted Table 3 and supplement A.16–A.17; code/results/nanogpt/runs.csv, diagnostics.csv, SUMMARY.md; one independent unpinned run per compressed method, full-precision gradient reduce-scatter before optimizer. W1: 02_REBUTTAL_PLAN.md replacement prose.\nFinding / complete answer: Replace “unrepairable” with the specified fixed-parameter output-EF statement. Prepared replacement prose and a theorem/implementation table are in 02_REBUTTAL_PLAN.md. X takes exact server updates; W is the compressed broadcast at which gradients are queried. Theorem 4 has parameter-dependent objectives and no decreasing-schedule conclusion. The theory makes no performance-order prediction.\nSelected statement is checked; an open request is not marked complete.\nReadability revision: full sentences explain the result and its relevance. See evidence/revision_3_readability.md.\nRevision 4: identify the completed additions as post-submission work or a response to the reviews. The 10-method heterogeneous table is centralized in 7S1b Q2; all other replies refer to that table and retain the central finding. No new training or Lean build was run during this writing edit.\nRevision 5: export substantive answers with explicit experiment identity. Presentation-only promises are kept in internal notes. Heterogeneous success is scoped to the tested Muon variants at IID-selected rates; the two EF variants are the only such means above 80%.\nRevision 8: plain-language proofreading; retain submitted theorem numbering, name the measured setting and use a natural cross-reference to 7S1b. Mathematical and experimental evidence is unchanged.\nRevision 11 (2026-10-30): rewritten for directness. Answer the literal question first, concede valid points plainly, label post-submission results, explain the heterogeneous IID-versus-Dirichlet change by where each method applies sign/polar (per client before averaging versus once on the server), and cite submitted Tables A5/A8 for corrected values.\nRevision 11 author follow-up (2026-10-30): AI reply opens with a technical introduction; Tx34 Q3 reframed as clarifying our statements on the empirical ranking; pqje answer states that Mishra et al. is a May 2026 preprint developed in parallel (no arXiv or date of our own work is mentioned, to preserve anonymity).\nRevision 12 (2026-10-30): language pass in full sentences; pqje nanoGPT answer cites the heterogeneous CNN2 test of distributed compression; concurrency stated as independent of this work. Revision 11 basis: rewritten for directness. Answer the literal question first, concede valid points plainly, label post-submission results, explain the heterogeneous IID-versus-Dirichlet change by where each method applies sign/polar (per client before averaging versus once on the server), and cite submitted Tables A5/A8 for corrected values.",
+      "include": true,
+      "needs_check": false,
+      "joiner": " ",
+      "section": "answers"
+    },
+    {
+      "id": "R4.9",
+      "text": "We will follow your writing suggestions: Theorem 4 will be stated precisely, and Sec. 4.4 will say that the server updates X, gradients are taken at its one-bit copy W, and the guarantee bounds X.",
+      "notes": "Evidence: N1: submitted Theorems 1–4 and proofs; aaai_article/ef21_signmuon_divergence.tex; evidence/verified_claims.json exact rational ascent/cycle certificates. Theorem 4 objective depends on fixed eta and mu; no decreasing-schedule impossibility follows. E3: submitted Table 3 and supplement A.16–A.17; code/results/nanogpt/runs.csv, diagnostics.csv, SUMMARY.md; one independent unpinned run per compressed method, full-precision gradient reduce-scatter before optimizer. W1: 02_REBUTTAL_PLAN.md replacement prose.\nFinding / complete answer: The existence of failure examples does not predict method ranking. Prepared replacement prose and a theorem/implementation table are in 02_REBUTTAL_PLAN.md. X takes exact server updates; W is the compressed broadcast at which gradients are queried. Theorem 4 has parameter-dependent objectives and no decreasing-schedule conclusion. The theory makes no performance-order prediction.\nSelected statement is checked; an open request is not marked complete.\nReadability revision: full sentences explain the result and its relevance. See evidence/revision_3_readability.md.\nRevision 4: identify the completed additions as post-submission work or a response to the reviews. The 10-method heterogeneous table is centralized in 7S1b Q2; all other replies refer to that table and retain the central finding. No new training or Lean build was run during this writing edit.\nRevision 5: export substantive answers with explicit experiment identity. Presentation-only promises are kept in internal notes. Heterogeneous success is scoped to the tested Muon variants at IID-selected rates; the two EF variants are the only such means above 80%.\nRevision 8: plain-language proofreading; retain submitted theorem numbering, name the measured setting and use a natural cross-reference to 7S1b. Mathematical and experimental evidence is unchanged.\nRevision 11 (2026-10-30): rewritten for directness. Answer the literal question first, concede valid points plainly, label post-submission results, explain the heterogeneous IID-versus-Dirichlet change by where each method applies sign/polar (per client before averaging versus once on the server), and cite submitted Tables A5/A8 for corrected values.\nRevision 11 author follow-up (2026-10-30): AI reply opens with a technical introduction; Tx34 Q3 reframed as clarifying our statements on the empirical ranking; pqje answer states that Mishra et al. is a May 2026 preprint developed in parallel (no arXiv or date of our own work is mentioned, to preserve anonymity).\nRevision 12 (2026-10-30): language pass in full sentences; pqje nanoGPT answer cites the heterogeneous CNN2 test of distributed compression; concurrency stated as independent of this work. Revision 11 basis: rewritten for directness. Answer the literal question first, concede valid points plainly, label post-submission results, explain the heterogeneous IID-versus-Dirichlet change by where each method applies sign/polar (per client before averaging versus once on the server), and cite submitted Tables A5/A8 for corrected values.",
+      "include": true,
+      "needs_check": false,
+      "joiner": " ",
+      "section": "answers"
+    },
+    {
+      "id": "R4.10",
+      "text": "We will follow your writing suggestions: Theorem 4 will be stated precisely, and Sec. 4.4 will say that the server updates X, gradients are taken at its one-bit copy W, and the guarantee bounds X.",
+      "notes": "Evidence: N1: submitted Theorems 1–4 and proofs; aaai_article/ef21_signmuon_divergence.tex; evidence/verified_claims.json exact rational ascent/cycle certificates. Theorem 4 objective depends on fixed eta and mu; no decreasing-schedule impossibility follows. E3: submitted Table 3 and supplement A.16–A.17; code/results/nanogpt/runs.csv, diagnostics.csv, SUMMARY.md; one independent unpinned run per compressed method, full-precision gradient reduce-scatter before optimizer. W1: 02_REBUTTAL_PLAN.md replacement prose.\nFinding / complete answer: Remove repeated “document rather than resolve” language. Prepared replacement prose and a theorem/implementation table are in 02_REBUTTAL_PLAN.md. X takes exact server updates; W is the compressed broadcast at which gradients are queried. Theorem 4 has parameter-dependent objectives and no decreasing-schedule conclusion. The theory makes no performance-order prediction.\nSelected statement is checked; an open request is not marked complete.\nReadability revision: full sentences explain the result and its relevance. See evidence/revision_3_readability.md.\nRevision 4: identify the completed additions as post-submission work or a response to the reviews. The 10-method heterogeneous table is centralized in 7S1b Q2; all other replies refer to that table and retain the central finding. No new training or Lean build was run during this writing edit.\nRevision 5: export substantive answers with explicit experiment identity. Presentation-only promises are kept in internal notes. Heterogeneous success is scoped to the tested Muon variants at IID-selected rates; the two EF variants are the only such means above 80%.\nRevision 8: plain-language proofreading; retain submitted theorem numbering, name the measured setting and use a natural cross-reference to 7S1b. Mathematical and experimental evidence is unchanged.\nRevision 11 (2026-10-30): rewritten for directness. Answer the literal question first, concede valid points plainly, label post-submission results, explain the heterogeneous IID-versus-Dirichlet change by where each method applies sign/polar (per client before averaging versus once on the server), and cite submitted Tables A5/A8 for corrected values.\nRevision 11 author follow-up (2026-10-30): AI reply opens with a technical introduction; Tx34 Q3 reframed as clarifying our statements on the empirical ranking; pqje answer states that Mishra et al. is a May 2026 preprint developed in parallel (no arXiv or date of our own work is mentioned, to preserve anonymity).\nRevision 12 (2026-10-30): language pass in full sentences; pqje nanoGPT answer cites the heterogeneous CNN2 test of distributed compression; concurrency stated as independent of this work. Revision 11 basis: rewritten for directness. Answer the literal question first, concede valid points plainly, label post-submission results, explain the heterogeneous IID-versus-Dirichlet change by where each method applies sign/polar (per client before averaging versus once on the server), and cite submitted Tables A5/A8 for corrected values.",
+      "include": true,
+      "needs_check": false,
+      "joiner": " ",
+      "section": "answers"
+    },
+    {
+      "id": "R4.11",
+      "text": "We will follow your writing suggestions: Theorem 4 will be stated precisely, and Sec. 4.4 will say that the server updates X, gradients are taken at its one-bit copy W, and the guarantee bounds X.",
+      "notes": "Evidence: N1: submitted Theorems 1–4 and proofs; aaai_article/ef21_signmuon_divergence.tex; evidence/verified_claims.json exact rational ascent/cycle certificates. Theorem 4 objective depends on fixed eta and mu; no decreasing-schedule impossibility follows. E3: submitted Table 3 and supplement A.16–A.17; code/results/nanogpt/runs.csv, diagnostics.csv, SUMMARY.md; one independent unpinned run per compressed method, full-precision gradient reduce-scatter before optimizer. W1: 02_REBUTTAL_PLAN.md replacement prose.\nFinding / complete answer: Explain exact server X, compressed broadcast W and their roles. Prepared replacement prose and a theorem/implementation table are in 02_REBUTTAL_PLAN.md. X takes exact server updates; W is the compressed broadcast at which gradients are queried. Theorem 4 has parameter-dependent objectives and no decreasing-schedule conclusion. The theory makes no performance-order prediction.\nSelected statement is checked; an open request is not marked complete.\nReadability revision: full sentences explain the result and its relevance. See evidence/revision_3_readability.md.\nRevision 4: identify the completed additions as post-submission work or a response to the reviews. The 10-method heterogeneous table is centralized in 7S1b Q2; all other replies refer to that table and retain the central finding. No new training or Lean build was run during this writing edit.\nRevision 5: export substantive answers with explicit experiment identity. Presentation-only promises are kept in internal notes. Heterogeneous success is scoped to the tested Muon variants at IID-selected rates; the two EF variants are the only such means above 80%.\nRevision 8: plain-language proofreading; retain submitted theorem numbering, name the measured setting and use a natural cross-reference to 7S1b. Mathematical and experimental evidence is unchanged.\nRevision 11 (2026-10-30): rewritten for directness. Answer the literal question first, concede valid points plainly, label post-submission results, explain the heterogeneous IID-versus-Dirichlet change by where each method applies sign/polar (per client before averaging versus once on the server), and cite submitted Tables A5/A8 for corrected values.\nRevision 11 author follow-up (2026-10-30): AI reply opens with a technical introduction; Tx34 Q3 reframed as clarifying our statements on the empirical ranking; pqje answer states that Mishra et al. is a May 2026 preprint developed in parallel (no arXiv or date of our own work is mentioned, to preserve anonymity).\nRevision 12 (2026-10-30): language pass in full sentences; pqje nanoGPT answer cites the heterogeneous CNN2 test of distributed compression; concurrency stated as independent of this work. Revision 11 basis: rewritten for directness. Answer the literal question first, concede valid points plainly, label post-submission results, explain the heterogeneous IID-versus-Dirichlet change by where each method applies sign/polar (per client before averaging versus once on the server), and cite submitted Tables A5/A8 for corrected values.",
+      "include": true,
+      "needs_check": false,
+      "joiner": " ",
+      "section": "answers"
+    },
+    {
+      "id": "R4.12",
+      "text": "We will follow your writing suggestions: Theorem 4 will be stated precisely, and Sec. 4.4 will say that the server updates X, gradients are taken at its one-bit copy W, and the guarantee bounds X.",
+      "notes": "Evidence: N1: submitted Theorems 1–4 and proofs; aaai_article/ef21_signmuon_divergence.tex; evidence/verified_claims.json exact rational ascent/cycle certificates. Theorem 4 objective depends on fixed eta and mu; no decreasing-schedule impossibility follows. E3: submitted Table 3 and supplement A.16–A.17; code/results/nanogpt/runs.csv, diagnostics.csv, SUMMARY.md; one independent unpinned run per compressed method, full-precision gradient reduce-scatter before optimizer. W1: 02_REBUTTAL_PLAN.md replacement prose.\nFinding / complete answer: Distinguish finite-target success and stationary error floors from asymptotic rate. Prepared replacement prose and a theorem/implementation table are in 02_REBUTTAL_PLAN.md. X takes exact server updates; W is the compressed broadcast at which gradients are queried. Theorem 4 has parameter-dependent objectives and no decreasing-schedule conclusion. The theory makes no performance-order prediction.\nSelected statement is checked; an open request is not marked complete.\nReadability revision: full sentences explain the result and its relevance. See evidence/revision_3_readability.md.\nRevision 4: identify the completed additions as post-submission work or a response to the reviews. The 10-method heterogeneous table is centralized in 7S1b Q2; all other replies refer to that table and retain the central finding. No new training or Lean build was run during this writing edit.\nRevision 5: export substantive answers with explicit experiment identity. Presentation-only promises are kept in internal notes. Heterogeneous success is scoped to the tested Muon variants at IID-selected rates; the two EF variants are the only such means above 80%.\nRevision 8: plain-language proofreading; retain submitted theorem numbering, name the measured setting and use a natural cross-reference to 7S1b. Mathematical and experimental evidence is unchanged.\nRevision 11 (2026-10-30): rewritten for directness. Answer the literal question first, concede valid points plainly, label post-submission results, explain the heterogeneous IID-versus-Dirichlet change by where each method applies sign/polar (per client before averaging versus once on the server), and cite submitted Tables A5/A8 for corrected values.\nRevision 11 author follow-up (2026-10-30): AI reply opens with a technical introduction; Tx34 Q3 reframed as clarifying our statements on the empirical ranking; pqje answer states that Mishra et al. is a May 2026 preprint developed in parallel (no arXiv or date of our own work is mentioned, to preserve anonymity).\nRevision 12 (2026-10-30): language pass in full sentences; pqje nanoGPT answer cites the heterogeneous CNN2 test of distributed compression; concurrency stated as independent of this work. Revision 11 basis: rewritten for directness. Answer the literal question first, concede valid points plainly, label post-submission results, explain the heterogeneous IID-versus-Dirichlet change by where each method applies sign/polar (per client before averaging versus once on the server), and cite submitted Tables A5/A8 for corrected values.",
+      "include": true,
+      "needs_check": false,
+      "joiner": " ",
+      "section": "answers"
+    },
+    {
+      "id": "R4.13",
+      "text": "We will follow your writing suggestions: Theorem 4 will be stated precisely, and Sec. 4.4 will say that the server updates X, gradients are taken at its one-bit copy W, and the guarantee bounds X.",
+      "notes": "Evidence: N1: submitted Theorems 1–4 and proofs; aaai_article/ef21_signmuon_divergence.tex; evidence/verified_claims.json exact rational ascent/cycle certificates. Theorem 4 objective depends on fixed eta and mu; no decreasing-schedule impossibility follows. E3: submitted Table 3 and supplement A.16–A.17; code/results/nanogpt/runs.csv, diagnostics.csv, SUMMARY.md; one independent unpinned run per compressed method, full-precision gradient reduce-scatter before optimizer. W1: 02_REBUTTAL_PLAN.md replacement prose.\nFinding / complete answer: Lead with measured accuracy instead of theorem qualifications. Prepared replacement prose and a theorem/implementation table are in 02_REBUTTAL_PLAN.md. X takes exact server updates; W is the compressed broadcast at which gradients are queried. Theorem 4 has parameter-dependent objectives and no decreasing-schedule conclusion. The theory makes no performance-order prediction.\nSelected statement is checked; an open request is not marked complete.\nReadability revision: full sentences explain the result and its relevance. See evidence/revision_3_readability.md.\nRevision 4: identify the completed additions as post-submission work or a response to the reviews. The 10-method heterogeneous table is centralized in 7S1b Q2; all other replies refer to that table and retain the central finding. No new training or Lean build was run during this writing edit.\nRevision 5: export substantive answers with explicit experiment identity. Presentation-only promises are kept in internal notes. Heterogeneous success is scoped to the tested Muon variants at IID-selected rates; the two EF variants are the only such means above 80%.\nRevision 8: plain-language proofreading; retain submitted theorem numbering, name the measured setting and use a natural cross-reference to 7S1b. Mathematical and experimental evidence is unchanged.\nRevision 11 (2026-10-30): rewritten for directness. Answer the literal question first, concede valid points plainly, label post-submission results, explain the heterogeneous IID-versus-Dirichlet change by where each method applies sign/polar (per client before averaging versus once on the server), and cite submitted Tables A5/A8 for corrected values.\nRevision 11 author follow-up (2026-10-30): AI reply opens with a technical introduction; Tx34 Q3 reframed as clarifying our statements on the empirical ranking; pqje answer states that Mishra et al. is a May 2026 preprint developed in parallel (no arXiv or date of our own work is mentioned, to preserve anonymity).\nRevision 12 (2026-10-30): language pass in full sentences; pqje nanoGPT answer cites the heterogeneous CNN2 test of distributed compression; concurrency stated as independent of this work. Revision 11 basis: rewritten for directness. Answer the literal question first, concede valid points plainly, label post-submission results, explain the heterogeneous IID-versus-Dirichlet change by where each method applies sign/polar (per client before averaging versus once on the server), and cite submitted Tables A5/A8 for corrected values.",
+      "include": true,
+      "needs_check": false,
+      "joiner": " ",
+      "section": "answers"
+    },
+    {
+      "id": "R4.14",
+      "text": "We will follow your writing suggestions: Theorem 4 will be stated precisely, and Sec. 4.4 will say that the server updates X, gradients are taken at its one-bit copy W, and the guarantee bounds X.",
+      "notes": "Evidence: N1: submitted Theorems 1–4 and proofs; aaai_article/ef21_signmuon_divergence.tex; evidence/verified_claims.json exact rational ascent/cycle certificates. Theorem 4 objective depends on fixed eta and mu; no decreasing-schedule impossibility follows. E3: submitted Table 3 and supplement A.16–A.17; code/results/nanogpt/runs.csv, diagnostics.csv, SUMMARY.md; one independent unpinned run per compressed method, full-precision gradient reduce-scatter before optimizer. W1: 02_REBUTTAL_PLAN.md replacement prose.\nFinding / complete answer: Prepare a coverage table and shorten captions. Prepared replacement prose and a theorem/implementation table are in 02_REBUTTAL_PLAN.md. X takes exact server updates; W is the compressed broadcast at which gradients are queried. Theorem 4 has parameter-dependent objectives and no decreasing-schedule conclusion. The theory makes no performance-order prediction.\nSelected statement is checked; an open request is not marked complete.\nReadability revision: full sentences explain the result and its relevance. See evidence/revision_3_readability.md.\nRevision 4: identify the completed additions as post-submission work or a response to the reviews. The 10-method heterogeneous table is centralized in 7S1b Q2; all other replies refer to that table and retain the central finding. No new training or Lean build was run during this writing edit.\nRevision 5: export substantive answers with explicit experiment identity. Presentation-only promises are kept in internal notes. Heterogeneous success is scoped to the tested Muon variants at IID-selected rates; the two EF variants are the only such means above 80%.\nRevision 8: plain-language proofreading; retain submitted theorem numbering, name the measured setting and use a natural cross-reference to 7S1b. Mathematical and experimental evidence is unchanged.\nRevision 11 (2026-10-30): rewritten for directness. Answer the literal question first, concede valid points plainly, label post-submission results, explain the heterogeneous IID-versus-Dirichlet change by where each method applies sign/polar (per client before averaging versus once on the server), and cite submitted Tables A5/A8 for corrected values.\nRevision 11 author follow-up (2026-10-30): AI reply opens with a technical introduction; Tx34 Q3 reframed as clarifying our statements on the empirical ranking; pqje answer states that Mishra et al. is a May 2026 preprint developed in parallel (no arXiv or date of our own work is mentioned, to preserve anonymity).\nRevision 12 (2026-10-30): language pass in full sentences; pqje nanoGPT answer cites the heterogeneous CNN2 test of distributed compression; concurrency stated as independent of this work. Revision 11 basis: rewritten for directness. Answer the literal question first, concede valid points plainly, label post-submission results, explain the heterogeneous IID-versus-Dirichlet change by where each method applies sign/polar (per client before averaging versus once on the server), and cite submitted Tables A5/A8 for corrected values.",
+      "include": true,
+      "needs_check": false,
+      "joiner": " ",
+      "section": "answers"
+    }
+  ],
+  "reply_topics": [
+    {
+      "id": "Q1",
+      "heading": "1. Re guarantee coverage:",
+      "question": "Appendix A.10 states that the squared-gradient guarantee requires the learning-rate rule $\\eta_{t,i}=\\gamma_i\\|g_{t,i}\\|_*$, which is not used in the experiments. It also states that the experimental EF21-MuonSign schedule is not covered by either corollary, and that the Nesterov variant used in nanoGPT is outside the theoretical framework. Could the authors clarify which guarantees, if any, apply to each EF21 experiment in Tables 1–3? Currently, the paper compares methods with theoretical guarantees, but the actual experimental configurations do not necessarily satisfy their assumptions. This should be made clear in the main text.",
+      "source": "feedback",
+      "occurrence": 0,
+      "points": [
+        "R4.1",
+        "R4.2"
+      ]
+    },
+    {
+      "id": "Q2",
+      "heading": "2. Re Table 2:",
+      "question": "I noticed some values differ between tables that appear to describe the same experiments. Federated MuonSign achieves $80.68\\pm1.88$ in Table 2 but $82.94\\pm0.19$ under the unit-gain rule in Table A8, whose caption refers to the same five seeds as Table 2. With the Table A8 value, MuonSign is above SignSGD rather than below it, which changes the ordering stated in Section 5.2. Could the authors explain these values and state which runs support the main conclusions?",
+      "source": "feedback",
+      "occurrence": 0,
+      "points": [
+        "R4.3"
+      ]
+    },
+    {
+      "id": "Q3",
+      "heading": "3. Re our contribution:",
+      "question": "The most interesting finding is that sign-after methods consistently perform best, despite being the ones targeted by the negative theoretical results. Even the random quadratic experiments show positive alignment between SignMuon's update and the gradient. This raises a more important question than whether the method can fail on carefully constructed examples: under what reasonable assumptions does sign compression after orthogonalization preserve a useful descent direction, and why are the theoretical failure cases not observed in practice? Appendix A.7 already identifies the gradient-weighted sign disagreement term that could serve as a starting point for such an analysis, but the paper does not pursue it. Instead, the theory focuses on worst-case counterexamples, while the positive convergence results largely follow from existing work. Moreover, SignMuon and its practical effectiveness have already been reported in the concurrent work cited by the authors, so these cannot be considered new contributions.",
+      "source": "weaknesses",
+      "occurrence": 0,
+      "points": [
+        "R4.4",
+        "R4.15",
+        "R4.6"
+      ]
+    },
+    {
+      "id": "Q4",
+      "heading": "4. Re nanoGPT:",
+      "question": "The nanoGPT experiments do not actually evaluate the proposed distributed compression methods. As explained in Appendix A.16, the gradients are first averaged in full precision using reduce-scatter, and the compressed update is then applied locally. In contrast, Algorithms A8–A9 compress each worker's updates before aggregation. This is an important difference, since averaging the signs of local polar factors is generally not equivalent to taking the sign of the polar factor after averaging. Although Appendix A.16 describes this implementation, Section 5.3 presents the results as evidence that the one-bit methods work for language modeling without clearly explaining this distinction. The experiments therefore only support the centralized variants and do not demonstrate the performance or communication benefits of the proposed distributed methods at this scale.",
+      "source": "weaknesses",
+      "occurrence": 0,
+      "points": [
+        "R4.5"
+      ]
+    },
+    {
+      "id": "Q5",
+      "heading": "5. Re presentation:",
+      "question": "Throughout the paper, important explanations are deferred to appendix sections (A.7, A.10, A.12, A.16, A.17), and several figure captions are unnecessarily long. Overall, the paper needs a much simpler and more direct presentation, particularly in the sections explaining the main results, ideally with a table stating which implementation choices each theorem covers.",
+      "source": "weaknesses",
+      "occurrence": 0,
+      "points": [
+        "R4.7",
+        "R4.8",
+        "R4.9",
+        "R4.10",
+        "R4.11",
+        "R4.12",
+        "R4.13",
+        "R4.14"
+      ]
+    }
+  ],
+  "draft": [
+    {
+      "kind": "intro",
+      "before": "",
+      "after": "\n\n"
+    },
+    {
+      "kind": "heading",
+      "topic": "Q1",
+      "before": "",
+      "after": " "
+    },
+    {
+      "kind": "answer",
+      "points": [
+        "R4.1",
+        "R4.2"
+      ],
+      "before": "",
+      "after": "\n"
+    },
+    {
+      "kind": "heading",
+      "topic": "Q2",
+      "before": "",
+      "after": " "
+    },
+    {
+      "kind": "answer",
+      "points": [
+        "R4.3"
+      ],
+      "before": "",
+      "after": "\n"
+    },
+    {
+      "kind": "heading",
+      "topic": "Q3",
+      "before": "",
+      "after": " "
+    },
+    {
+      "kind": "answer",
+      "points": [
+        "R4.6"
+      ],
+      "before": "",
+      "after": " "
+    },
+    {
+      "kind": "answer",
+      "points": [
+        "R4.4"
+      ],
+      "before": "",
+      "after": "\n"
+    },
+    {
+      "kind": "heading",
+      "topic": "Q4",
+      "before": "",
+      "after": " "
+    },
+    {
+      "kind": "answer",
+      "points": [
+        "R4.5"
+      ],
+      "before": "",
+      "after": "\n"
+    },
+    {
+      "kind": "heading",
+      "topic": "Q5",
+      "before": "",
+      "after": " "
+    },
+    {
+      "kind": "answer",
+      "points": [
+        "R4.7",
+        "R4.8",
+        "R4.9",
+        "R4.10",
+        "R4.11",
+        "R4.12",
+        "R4.13",
+        "R4.14"
+      ],
+      "before": "",
+      "after": "\n\n"
+    },
+    {
+      "kind": "closing",
+      "before": "",
+      "after": "\n"
+    }
+  ],
+  "frame_variants": {
+    "intro": [
+      {
+        "id": "specific",
+        "label": "Thanks tied to this review",
+        "text": "Dear Reviewer, thank you for your questions."
+      },
+      {
+        "id": "brief",
+        "label": "Brief thanks",
+        "text": "Dear Reviewer, thank you for your helpful review."
+      },
+      {
+        "id": "none",
+        "label": "Minimal greeting",
+        "text": "Dear Reviewer, thank you for your review."
+      }
+    ],
+    "closing": [
+      {
+        "id": "none",
+        "label": "Omit closing",
+        "text": ""
+      },
+      {
+        "id": "conditional",
+        "label": "Acknowledgment of feedback",
+        "text": "We hope these additions address your questions. Thank you for your feedback."
+      },
+      {
+        "id": "evidence",
+        "label": "Closing tied to this review",
+        "text": "We hope these answers warrant reassessing the score."
+      }
+    ]
+  }
+}

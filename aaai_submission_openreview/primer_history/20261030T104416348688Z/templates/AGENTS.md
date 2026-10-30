@@ -1,0 +1,19 @@
+# Paper rebuttal workspace
+
+Follow `primer/AGENT_GUIDE.md` for the full preparation workflow and `workspace.json` for paper identity, source review IDs and conference rules.
+
+Preserve the original downloaded materials and exact reviewer wording. Read the submitted manuscript and code before making scientific claims. Record evidence and distinguish completed experiments, mathematical certificates, observations and proposed revisions. Keep unfinished answers visibly flagged.
+
+Summaries must be concrete, selectable and linked to exact passages. Follow the reviewer's specific-feedback order in editable “Re …” headings. Define notation and identify the algorithm, task and comparison. Use courteous, direct answers that defend the supported contribution. Respect the configured length and link rules, including headings, LaTeX and line breaks.
+
+The author prefers firm scientific answers and cordial engagement: lead with the paper's evidence, correct mistaken premises courteously, and begin “Dear reviewer, thank you for …”, with warm, review-specific thanks. Omit score requests and leave the active closing empty to save space for technical answers. Avoid demands, reflexive agreement or a “we will” promise for every request. Name the methods and quantities explicitly, use digits for numerical counts, and connect each experiment to the concern it answers. Address real technical gaps honestly and justify concrete presentation changes while defending the contribution.
+
+Answer each question before listing evidence. Explain the algorithmic difference from a requested baseline and how the existing comparison tests that difference. Specify what a grid represents and which methods an appendix compares. Check intermediate-output behavior in the submitted code before assigning a limitation. Give the reason for a parameter choice without inventing a comparison. For a valid presentation request, state the change we will make. Check the actual submitted bibliography before promising to replace a preprint citation; the published venue may already be listed there.
+
+Check the original baseline papers and identify whether an existing variant already tests their central design idea. State what the variant represents without relabeling its result as the original system's performance. Keep presentation commitments short. Connect supplied inputs, edits, computation and results into one explanation rather than joining unrelated facts with semicolons.
+
+Read method/application sections before claiming novelty from component generation, current-solution inputs or multiple generated functions. Identify the specific tested design choice. Distinguish random-number initialization, initial program code and a supplied solution. Explain when execution timing starts and whether later process restarts count. Name calls that crash or time out instead of using an undefined “failures”.
+
+Author data lives in this folder outside `primer/`. Preserve edits, notes, IDs, revisions and history; create backups before direct JSON migrations or manual draft replacement. Do not reinitialize an existing workspace. `Save to repo` means local file saving, never automatic Git or OpenReview publishing.
+
+Software changes belong in `primer/` and must remain paper-independent. Updating the primer must not overwrite these paper-specific files.

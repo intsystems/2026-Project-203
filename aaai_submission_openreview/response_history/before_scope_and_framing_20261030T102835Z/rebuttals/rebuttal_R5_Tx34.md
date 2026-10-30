@@ -1,0 +1,7 @@
+Thank you for asking us to clarify the contribution and Theorem 4.
+
+1. Re our contribution: We explore how to combine Muon with sign compression, varying the placement of sign and error feedback. SignMuon performs best in our centralized ResNet18/CIFAR-10 study; only EF21-Muon(U)Sign retain over 80% in our heterogeneous federated test. Based on your review, we extended EF21-Muon(U)Sign convergence to fixed EMA/Nesterov and constant/cosine rates, with proofs verified in Lean.
+2. Re what Theorem 4 rules out: Theorem 4 treats fixed parameters. In our new convex quadratic example for exact-polar EF21-SignMuon, the gradient has a nonzero projection onto a fixed direction in parameter space. Every compressed update is perpendicular to that direction, leaving this gradient projection unchanged and the full gradient norm ≥1. This proves failure with decreasing rates: any strictly decreasing rate to zero without momentum, or shifted power decay with fixed EMA/Nesterov. Separately, we prove failure for any constant rate and fixed momentum tuned to a budget T, with smoothness and initial gap fixed. Thus such tuning cannot ensure a uniform rate to zero.
+3. Re practical guidance: For centralized training use SignMuon; for heterogeneous federated learning use EF21-MuonUSign for uploads or EF21-MuonSign for both directions. See our response to 7S1b, Q2 for CNN2/CIFAR-10 results (11 clients, 5 seeds).
+
+If these answers resolve your concerns, please consider raising your score.

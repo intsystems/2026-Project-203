@@ -1,0 +1,30 @@
+{
+  "revision": 11,
+  "created_utc": "2026-10-30T12:32:26.407847+00:00",
+  "backup": "response_history/before_revision_11_rewrite_20261030T122944Z",
+  "before_sha256": {
+    "response_fragments.json": "ddebed6a789ae7cfc11e31efc30aa9fab0dc9521535823601d73a0ca2e7aadd5",
+    "confidential_comment.json": "899a18a9a39ce5f80d327170763f8f504eaa4164edc6167b281c76af353343ee",
+    "02_REBUTTAL_PLAN.md": "2a8321d88984e2cef2cc4158ea195020cd16b0f5399a5a95a71d091a60e7a6f7",
+    "03_RESPONSE_WORKSPACE.md": "2a2ac3fb4f0b5f5b3506a2b5aa35d8cfb13798d20ed379f1589343127da6a3ac",
+    "04_CONFIDENTIAL_COMMENT_STRATEGY.md": "d6e0559e54c78c6d11482ea4dba3e743ed87521a078ca7c52d5bb6bc5825a0f4",
+    "01_SUBMISSION_MAP.md": "927834067fd0ef5dcde64f13ce632721b583062aebccdebbf68a684fa92e311a",
+    "evidence/concern_evidence.json": "642869d814b44ec4f2e45ce9c0c8a00bcef60528a6db75a66e812873c60b823c"
+  },
+  "after_sha256": {
+    "response_fragments.json": "8da29225e434f5a2a99e67b1b922ee01129d7fdd0d5123d27337d74fcab4ce26",
+    "confidential_comment.json": "e15555dd4da0c3ab799a8ec3128787505d9b9bedabe8562c2dae1894ae209ec5",
+    "02_REBUTTAL_PLAN.md": "b2170d83591c5da43bbb5f2cb64f804b092c56f9fc9953153190e544b856f592",
+    "03_RESPONSE_WORKSPACE.md": "3381e1ac874c110bb077c09a84234967e406c56fc434dad002f56c4d92ec8324",
+    "04_CONFIDENTIAL_COMMENT_STRATEGY.md": "788c7729a28eba85657911519df535bbafb1b863b2849833b67e6526e82d5de0",
+    "01_SUBMISSION_MAP.md": "1697d11fc34c112f992b9e123d9d7a02c0e525336aae6267a07ace3c0f3e37d4",
+    "evidence/concern_evidence.json": "28a2532f8e5ce0fe60552e631a6bcdf0249b62465abfe8fa913312606d9e1da6",
+    "rebuttals/rebuttal_R1_7S1b.md": "8e78705535ccc238ac81dd42f97d9b5f3adcc3681a3819009175cc63ccb07662",
+    "rebuttals/rebuttal_R2_D4r2.md": "8172c694e9e025cf1a9d84de3ff8671e9106d1ef9f02ee7877dff583615fede1",
+    "rebuttals/rebuttal_R3_Ueq5.md": "c2e1cd86b193eefe7046b6c5b48dd762bad3edc6deb4d791c5224a853a1de935",
+    "rebuttals/rebuttal_R4_pqje.md": "048ad7582b2f2999d4cee90cd14fcafa29bcb99625985bad3a8eb966290382d1",
+    "rebuttals/rebuttal_R5_Tx34.md": "e09559c6b0c32fa0049d6cebf70da9013e4683da00cec30d0ee09de4fdde601f",
+    "rebuttals/rebuttal_AI_AI_Reviewer.md": "1bebaa1b76235000145eb5d52704ac1a2df1de49c2134befee207663d676cdeb",
+    "rebuttals/confidential_ac_comment.md": "6ce6482d2aee9211d414614e6cbcd7e384926fff1805dd6e21498be53c86b1bf"
+  }
+}

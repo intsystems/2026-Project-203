@@ -75,7 +75,7 @@ Live repository work appeared during preparation in `code/federated/heterogeneou
 | --- | --- | --- | --- |
 | Federated MuonSign vs SignSGD | Table 2: 80.68±1.88 vs 81.83±0.43 | A8 + submitted five-seed metrics: **82.94±0.19 vs 81.44±0.15** | Own the reporting error; reverse the affected ranking sentence. |
 | Federated SignMuon vs Muon | Table 2: 85.81?0.25 vs 85.99?0.26 | A8/archive: **85.72±0.24 vs 85.98±0.26** | Comparable observed accuracy; no equivalence/significance proof. |
-| Centralized SignMuon vs Muon | Table 1: 94.26±0.15 vs 94.26±0.18 | A5 + submitted `article_export/table_cifar.csv`: **94.60±0.15 vs 94.35±0.27** | Replace the whole main table coherently, not just a convenient cell. |
+| Centralized SignMuon vs Muon | Table 1: 94.53±0.22 vs 94.49±0.09, with EF21-SignMuon 94.64±0.24 on top and SignSGD 93.27±0.16 (corrected in revision 11; the earlier 94.26 entry was wrong) | A5 + submitted `article_export/table_cifar.csv`: **94.60±0.15 vs 94.35±0.27**; EF21-SignMuon 94.31±0.11, SignSGD 93.37±0.26 | Replace the whole main table coherently, not just a convenient cell. |
 | nanoGPT | Table 3 | Unchanged single-run values; SignMuon3.2881, EF21-SignMuon3.2860, SignSGD3.4049 | No new seeds or statistical ranking. |
 
 Federated values are means across five independently trained seeds of each seed's final-five-evaluation average; SD is the sample SD across those five means. Repeated checkpoints are not independent seeds. The central submitted export has three independent final seeds and rounded aggregate values; its extracted `runs.csv`/`table_cifar.csv` are in `evidence/`. nanoGPT has one independent, unpinned run per compressed method. X/W are two evaluations of the same EF21-MuonSign run.
