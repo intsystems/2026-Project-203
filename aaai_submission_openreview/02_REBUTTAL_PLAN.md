@@ -1,4 +1,4 @@
-# Rebuttal plan and concern-to-evidence ledger — revision 7
+# Rebuttal plan and concern-to-evidence ledger — revision 8
 
 ## Contribution and response logic
 
@@ -65,6 +65,14 @@ The separate conditional plain SignMuon theorem permits interacting layers under
 
 The eight pending concern flags remain: R1.6, R1.7, R1.8, R2.2, R2.8, R4.15, AI.6 and AI.20. For R1.7, heterogeneous LR tuning is completed; its local-update/broader-participation part remains outstanding. The seven intentionally omitted presentation requests retain their IDs, notes and exact source links. No new training or full Lean build was run by this preparation.
 
+## Proofreading revision 8
+
+Contribution paragraphs now state the controlled placement comparisons and their ascent/convergence results before empirical guidance. The Tx34 reply explains the N4 mechanism: orthogonalization magnifies an oscillating component, while compressed updates remain orthogonal to a persistent nonzero component. Uniform class constants and exact-polar scope are retained.
+
+The pqje and AI replies use Theorem 5 and Corollary 1 from the submitted Technical Supplement A.10, with Eq. (13) from the submitted main paper. They specify the expected squared nuclear gradient norm at server X and gradient evaluation at broadcast W. Inline bold numerical claims are removed; the two EF rows remain highlighted in the shared table. References now read “see our response to 7S1b, Q2.” Practical guidance uses heterogeneous federated learning and describes uploads/both directions directly.
+
+The author requested omitting R5.6 and AI.12's defensive qualifications. There are now 47 selected concerns, 9 editorial omissions and the same 8 missing-evidence flags. All 64 IDs and 79 source passage mappings remain. This revision changes prose only; experimental data, theorem sources, Lean claims and addendum/PDF are unchanged.
+
 ## Per-concern ledger
 ### R1.1 — Reviewer asks for gradient structure that permits SignMuon descent
 
@@ -76,11 +84,11 @@ The eight pending concern flags remain: R1.6, R1.7, R1.8, R2.2, R2.8, R4.15, AI.
 
 **Finding, meaning and limits:** The diagonal-correlation condition implies alignment by weighting each diagonal entry by its nonnegative singular value. Uniform alignment, joint smoothness, centered finite-variance noise, exact polar and horizon-tuned fixed EMA/Nesterov yield an expected first-moment nuclear-gradient rate O(T^-1/4). It is a conditional result; actual trajectory verification and distributed-vote alignment remain open.
 
-**Current answer:** After your review, we proved SignMuon convergence when signed updates remain uniformly aligned with momentum, under smoothness and unbiased bounded-variance noise. Layers may interact; network alignment is unmeasured.
+**Current answer:** Based on your review, we proved SignMuon convergence for interacting layers under joint smoothness, unbiased bounded-variance noise and uniform alignment of signed updates with momentum. Testing network alignment remains open.
 
 ### R1.6 — Reviewer requests neural-network alignment and spectral measurements
 
-**Status:** Additional evidence pending; excluded from export.
+**Status:** Needs additional evidence; omitted.
 
 **Reviewer request:** Measure the proposed condition along actual network trajectories.
 
@@ -100,7 +108,7 @@ The eight pending concern flags remain: R1.6, R1.7, R1.8, R2.2, R2.8, R4.15, AI.
 
 **Finding, meaning and limits:** Both gradient-side EF methods lead after validation LR selection, not only with transferred IID rates. At momentum 0.9, EF21-MuonSign gives 84.0348 +/- 0.5187 and EF21-MuonUSign 83.8420 +/- 0.3230; SGD 79.7124 +/- 2.0324, Adam 75.1560 +/- 1.0702, Muon 46.0220 +/- 8.5462, SignMuon 42.9648 +/- 5.9431. All ten methods have five full-data final seeds; LR selection uses seed 0 and a fixed 5000-image validation set. The public 7S1b Q2 table reports all ten tuned results, ordered by mean, with the two EF rows bold. Only those two methods exceed 80% in this comparison. The original transfer runs remain unchanged and appear beside tuned results in the addendum. No local parameter steps or partial participation were tested.
 
-**Current answer:** We tuned LRs on federated CNN2/CIFAR-10: 11 Dirichlet(0.1) clients, 2000 rounds, no local updates. Rates use validation seed 0; momentum 0.9; mean±SD over 5 final seeds:
+**Current answer:** We tuned rates for CNN2/CIFAR-10: 11 Dirichlet(0.1) clients, 2000 rounds, no local updates. Momentum 0.9; validation seed 0; mean±SD over 5 final seeds:
 
 |Method|Accuracy (%)|
 |---|---:|
@@ -115,11 +123,11 @@ The eight pending concern flags remain: R1.6, R1.7, R1.8, R2.2, R2.8, R4.15, AI.
 |MuonSign|40.75±0.98|
 |SignSGD|36.24±4.64|
 
-**EF21-Muon(U)Sign are the only methods above 80% after tuning.**
+Only EF21-MuonSign and EF21-MuonUSign exceed 80%.
 
 ### R1.7 — Reviewer requests heterogeneous and local-training experiments
 
-**Status:** Additional evidence pending; excluded from export.
+**Status:** Needs additional evidence; omitted.
 
 **Reviewer request:** Broaden the federated evaluation beyond synchronized homogeneous clients.
 
@@ -139,7 +147,7 @@ The eight pending concern flags remain: R1.6, R1.7, R1.8, R2.2, R2.8, R4.15, AI.
 
 **Finding, meaning and limits:** The base positive EF21 rates instantiate prior work. The revised manuscript adds fixed EMA/Nesterov and deterministic constant/cosine bounds under its original block-separable assumptions. It does not remove EF21 layer separability. Revision 6: Complete tracking and convergence proofs are formalized; remove the misleading core qualifier. This schedule statement does not claim that every solver configuration has a certified approximation error, or that EF21 separability was removed.
 
-**Current answer:** After your review, we proved EF21-Muon(U)Sign convergence for constant/cosine rates and fixed EMA/Nesterov, and verified the proofs in Lean. These bounds control expected gradient norms.
+**Current answer:** Based on your review, we proved expected gradient-norm bounds for EF21-Muon(U)Sign with constant/cosine rates and fixed EMA/Nesterov, verified in Lean.
 
 ### R1.9 — Reviewer asks what technical contribution is new
 
@@ -151,7 +159,7 @@ The eight pending concern flags remain: R1.6, R1.7, R1.8, R2.2, R2.8, R4.15, AI.
 
 **Finding, meaning and limits:** The contribution is the controlled comparison of three sign placements and their EF variants, demonstrating Muon-level quality at a sign budget, plus placement-specific ascent and output-EF divergence proofs. The author addendum adds conditional SignMuon analysis with joint smoothness; the general EF21 framework and practical SignMuon idea are credited to prior/concurrent work. Revision 6: Complete tracking and convergence proofs are formalized; remove the misleading core qualifier. This schedule statement does not claim that every solver configuration has a certified approximation error, or that EF21 separability was removed.
 
-**Current answer:** After your review, we proved EF21-Muon(U)Sign convergence for constant/cosine rates and fixed EMA/Nesterov, and verified the proofs in Lean. These bounds control expected gradient norms.
+**Current answer:** Based on your review, we proved expected gradient-norm bounds for EF21-Muon(U)Sign with constant/cosine rates and fixed EMA/Nesterov, verified in Lean.
 
 ### R1.4 — Reviewer asks how to choose a communication variant
 
@@ -163,7 +171,7 @@ The eight pending concern flags remain: R1.6, R1.7, R1.8, R2.2, R2.8, R4.15, AI.
 
 **Finding, meaning and limits:** Under an uplink constraint EF21-MuonUSign retains an exact/full-precision downlink; under a bidirectional constraint EF21-MuonSign compresses both sides. SignMuon is the empirical candidate if conditional rather than general guarantees are acceptable. No universal ranking is predicted.
 
-**Current answer:** SignMuon is effective on IID CNN2/CIFAR-10; for label skew, use EF21-MuonUSign for uplink-only compression or EF21-MuonSign for both links.
+**Current answer:** Our results favor SignMuon for IID data. For heterogeneous federated learning, EF21-MuonUSign compresses uploads and EF21-MuonSign both directions.
 
 ### R1.10 — Reviewer requests scales and memory in a comparison table
 
@@ -175,7 +183,7 @@ The eight pending concern flags remain: R1.6, R1.7, R1.8, R2.2, R2.8, R4.15, AI.
 
 **Finding, meaning and limits:** The internal method table is prepared in 02_REBUTTAL_PLAN.md. A compressed CNN2 channel costs 1.0870 bits/parameter for plain signs, 1.0871 for EF with FP32 auxiliary parameters and one FP32 scale per matrix. Each gradient EF method adds one client estimator and one global server estimator; two-sided EF additionally stores exact X separately from W.
 
-**Current answer:** Messages use 1.087 bits/parameter, including auxiliaries and scales.
+**Current answer:** EF messages use 1.087 bits/parameter, including auxiliaries and scales.
 
 ### R1.5 — Reviewer asks which nanoGPT differences are reliable
 
@@ -187,11 +195,11 @@ The eight pending concern flags remain: R1.6, R1.7, R1.8, R2.2, R2.8, R4.15, AI.
 
 **Finding, meaning and limits:** One nanoGPT training run per method gives SignMuon 3.2881 versus SignSGD 3.4049, an observed 0.1168-nat improvement. The 0.0021 gap to EF21-SignMuon does not establish an ordering; there is no compressed-method variance estimate. Upstream Muon variance cannot substitute.
 
-**Current answer:** nanoGPT validation losses are 3.2881 for SignMuon and 3.4049 for SignSGD (1 run each). The 0.0021 gap to EF21-SignMuon cannot rank methods.
+**Current answer:** SignMuon achieves loss 3.2881 versus SignSGD 3.4049 (1 nanoGPT run each). Its 0.0021 gap to EF21-SignMuon needs more seeds to establish an ordering.
 
 ### R1.8 — Reviewer requests additional language-model seeds
 
-**Status:** Additional evidence pending; excluded from export.
+**Status:** Needs additional evidence; omitted.
 
 **Reviewer request:** Repeat training rather than repeated validation of one run.
 
@@ -203,7 +211,7 @@ The eight pending concern flags remain: R1.6, R1.7, R1.8, R2.2, R2.8, R4.15, AI.
 
 ### R2.1 — Reviewer asks to identify sign as an LMO earlier
 
-**Status:** Presentation/definition request retained internally; deliberately omitted from export.
+**Status:** Author-directed editorial omission; evidence retained.
 
 **Reviewer request:** Define the geometry in Section 2.
 
@@ -215,7 +223,7 @@ The eight pending concern flags remain: R1.6, R1.7, R1.8, R2.2, R2.8, R4.15, AI.
 
 ### R2.4 — Reviewer asks to distinguish raw signs from scaled EF messages
 
-**Status:** Presentation/definition request retained internally; deliberately omitted from export.
+**Status:** Author-directed editorial omission; evidence retained.
 
 **Reviewer request:** Explain the EF scale when the variants are first introduced.
 
@@ -227,7 +235,7 @@ The eight pending concern flags remain: R1.6, R1.7, R1.8, R2.2, R2.8, R4.15, AI.
 
 ### R2.5 — Reviewer asks to distinguish centralized formulas from distributed algorithms
 
-**Status:** Presentation/definition request retained internally; deliberately omitted from export.
+**Status:** Author-directed editorial omission; evidence retained.
 
 **Reviewer request:** Explain the N=1 correspondence and nonlinear aggregation.
 
@@ -247,11 +255,11 @@ The eight pending concern flags remain: R1.6, R1.7, R1.8, R2.2, R2.8, R4.15, AI.
 
 **Finding, meaning and limits:** Compose each original linear witness <G,X> with softplus log(1+exp(z)). The result is convex, globally smooth with Frobenius L <= ||G||_F^2/4 and bounded below by 0. Its gradient is sigmoid(<G,X>) G, a positive multiple of the original gradient, so each sign/polar map retains its ascent direction. One fixed objective per method defeats all positive step schedules, with either EMA or Nesterov. The original ascent constructions are Lean-verified; this analytic softplus extension is not included in that Lean claim.
 
-**Current answer:** In response to your review, we made the linear counterexamples lower bounded by composing each objective with softplus, $z\mapsto\log(1+e^z)$. Its derivative is positive, so it only rescales the gradients and leaves the sign/polar directions unchanged. All 3 sign placements therefore still move uphill on smooth objectives bounded below by 0, even with decreasing steps. Each method has one fixed objective that defeats every positive step schedule. The original ascent constructions are now also verified in Lean.
+**Current answer:** In response to your review, we made the linear counterexamples lower bounded by composing each objective with softplus, $z\mapsto\log(1+e^z)$. Its positive derivative rescales the gradients while preserving the sign and orthogonalization directions. Thus all 3 sign placements still move uphill on smooth objectives bounded below by 0. Each method has one fixed objective that defeats every positive learning-rate schedule, including decreasing rates. The original ascent proofs are now verified in Lean.
 
 ### R2.7 — Reviewer suggests consistent names for sign placements
 
-**Status:** Presentation/definition request retained internally; deliberately omitted from export.
+**Status:** Author-directed editorial omission; evidence retained.
 
 **Reviewer request:** Make the composition order readable without changing identities.
 
@@ -263,7 +271,7 @@ The eight pending concern flags remain: R1.6, R1.7, R1.8, R2.2, R2.8, R4.15, AI.
 
 ### R2.2 — Reviewer suggests larger centralized and federated experiments
 
-**Status:** Additional evidence pending; excluded from export.
+**Status:** Needs additional evidence; omitted.
 
 **Reviewer request:** Additional models and truly distributed language-model training would strengthen the evidence.
 
@@ -283,11 +291,11 @@ The eight pending concern flags remain: R1.6, R1.7, R1.8, R2.2, R2.8, R4.15, AI.
 
 **Finding, meaning and limits:** With joint smoothness, unbiased finite-variance noise, exact polar and horizon-tuned steps/momentum, we prove SignMuon convergence if $\langle M,\mathrm{sign}(\mathrm{polar}(M))\rangle\ge\delta\|M\|_*$ uniformly. It suffices that all diagonal entries of $U^\top\mathrm{sign}(UV^\top)V$ exceed $\delta>0$ for $M=U\Sigma V^\top$. Verification in our networks remains open. Revision 6: Name the nuclear block-gradient norm in add:eq:rate; joint Frobenius describes the smoothness assumption. This analytic theorem is separate from the Lean-verified EF21 convergence proofs. Revision 7: LR tuning is complete for all ten methods. Both gradient-side EF variants exceed 83.8% after validation-only selection; every other tuned method is below 80%. Local parameter steps and partial participation remain untested. The new public shared table reports the tuned comparison, not the earlier transferred settings.
 
-**Current answer:** We now prove an $O(T^{-1/4})$ bound on SignMuon’s average expected nuclear gradient norm over $T$ iterations, when signing retains a fixed positive fraction of the polar update’s alignment with momentum. The theorem permits interacting layers and unbiased bounded-variance noise, with learning rate and momentum chosen for $T$. This gives a sufficient convergence condition; verifying it along network training remains open. On centralized ResNet18/CIFAR-10, SignMuon reaches 94.60% versus Muon 94.35% and SignSGD 93.37% (3 seeds). The added heterogeneous CNN2/CIFAR-10 tests show **only EF21-Muon(U)Sign above 80%** after validation LR tuning (table: 7S1b, Q2). Thus the useful placement depends on the data regime.
+**Current answer:** Based on your review, we proved an $O(T^{-1/4})$ bound on SignMuon’s average expected nuclear gradient norm over $T$ iterations. It holds when signing retains a uniform positive fraction of the polar update’s alignment with momentum, with joint smoothness and unbiased bounded-variance noise. Layers may interact, and learning rate and momentum are chosen for $T$. This identifies a sufficient condition for SignMuon to converge; measuring it during network training remains open. On centralized ResNet18/CIFAR-10, SignMuon reaches 94.60% versus Muon 94.35% and SignSGD 93.37% (3 seeds). See our response to 7S1b, Q2 for the new heterogeneous federated results.
 
 ### R2.8 — Reviewer wants a realistic explanation of observed success
 
-**Status:** Additional evidence pending; excluded from export.
+**Status:** Needs additional evidence; omitted.
 
 **Reviewer request:** Check the proposed sufficient condition on trained networks.
 
@@ -307,7 +315,7 @@ The eight pending concern flags remain: R1.6, R1.7, R1.8, R2.2, R2.8, R4.15, AI.
 
 **Finding, meaning and limits:** Table 2 is stale. Five independent submitted runs, each averaged over the final five evaluations at the 2000-round horizon, give MuonSign 82.9424 ± 0.1868 and SignSGD 81.4356 ± 0.1466 sample SD. These agree with A8, reversing the main-table sentence. SignMuon 85.7156 ± .2444 versus Muon 85.9836 ± .2608; no significance claim. Experiment identity is now stated explicitly: the 85.72/85.98/81.44% results are federated CNN2/CIFAR-10 with 11 IID clients and 5 seeds, not centralized ResNet18. The current main table and Section 5.2 prose have already been corrected; the public reply now reports this completed revision. Revision 7: LR tuning is complete for all ten methods. Both gradient-side EF variants exceed 83.8% after validation-only selection; every other tuned method is below 80%. Local parameter steps and partial participation remain untested. The new public shared table reports the tuned comparison, not the earlier transferred settings.
 
-**Current answer:** On federated CNN2/CIFAR-10 (11 IID clients, 5 seeds), the submitted logs reproduce A8: MuonSign 82.94±0.19% versus SignSGD 81.44±0.15%. SignMuon reaches 85.72±0.24% versus Muon 85.98±0.26%. We corrected Table 2 and its reversed comparison in the revision. On the new label-skew split, **only EF21-Muon(U)Sign exceed 80%** after validation LR tuning (7S1b, Q2).
+**Current answer:** The submitted federated CNN2/CIFAR-10 logs (11 IID clients, 5 seeds) reproduce A8: MuonSign 82.94±0.19% versus SignSGD 81.44±0.15%; SignMuon 85.72±0.24% versus Muon 85.98±0.26%. We corrected Table 2 and its reversed comparison in the revision. See our response to 7S1b, Q2 for the new heterogeneous federated results.
 
 ### R3.1 — Reviewer asks which learning-rate rule proves the squared-gradient rate
 
@@ -319,7 +327,7 @@ The eight pending concern flags remain: R1.6, R1.7, R1.8, R2.2, R2.8, R4.15, AI.
 
 **Finding, meaning and limits:** The squared dual-gradient rate O(T^-1/2) has a separate second-moment argument with gradient-scaled radii and horizon-tuned momentum. It does not follow for the cosine settings used in the experiments. Revision 6: Original Ueq5 review raises schedules, separability and rate moments, not nanoGPT momentum warmup or auxiliary Adam. Remove that unsolicited aside. State completed proof extensions and what their terms measure; preserve the EF21 versus plain SignMuon distinction.
 
-**Current answer:** To address the schedule mismatch, we generalized EF21-MuonUSign and EF21-MuonSign convergence to fixed EMA/Nesterov and deterministic learning rates, including constant/cosine schedules. We verified the tracking and convergence proofs in Lean. The bounds quantify initialization, stochastic noise and orthogonalization accuracy. EF21 uses the submitted separable-layer assumption; our separate SignMuon theorem allows interacting layers under joint smoothness and uniform alignment.
+**Current answer:** Based on your review, we extended EF21-MuonUSign and EF21-MuonSign convergence to fixed EMA/Nesterov and deterministic learning rates, including constant/cosine schedules. We verified the tracking and convergence proofs in Lean. The bounds quantify initialization, stochastic noise and orthogonalization accuracy. These EF21 bounds retain the submitted assumption that layers are separable; our separate SignMuon theorem allows interacting layers under joint smoothness and uniform alignment.
 
 ### R3.3 — Reviewer identifies the separability forced by layer-wise smoothness
 
@@ -331,7 +339,7 @@ The eight pending concern flags remain: R1.6, R1.7, R1.8, R2.2, R2.8, R4.15, AI.
 
 **Finding, meaning and limits:** The manuscript’s block-only smoothness forces separability, and the revised EF21 proofs retain it. The author addendum explicitly calls EF21 cross-layer coupling an open target. Only the added conditional plain SignMuon theorem uses joint Frobenius smoothness and permits interacting layers. The separate J1 candidate must not be described as a completed manuscript extension. Revision 6: Original Ueq5 review raises schedules, separability and rate moments, not nanoGPT momentum warmup or auxiliary Adam. Remove that unsolicited aside. State completed proof extensions and what their terms measure; preserve the EF21 versus plain SignMuon distinction.
 
-**Current answer:** To address the schedule mismatch, we generalized EF21-MuonUSign and EF21-MuonSign convergence to fixed EMA/Nesterov and deterministic learning rates, including constant/cosine schedules. We verified the tracking and convergence proofs in Lean. The bounds quantify initialization, stochastic noise and orthogonalization accuracy. EF21 uses the submitted separable-layer assumption; our separate SignMuon theorem allows interacting layers under joint smoothness and uniform alignment.
+**Current answer:** Based on your review, we extended EF21-MuonUSign and EF21-MuonSign convergence to fixed EMA/Nesterov and deterministic learning rates, including constant/cosine schedules. We verified the tracking and convergence proofs in Lean. The bounds quantify initialization, stochastic noise and orthogonalization accuracy. These EF21 bounds retain the submitted assumption that layers are separable; our separate SignMuon theorem allows interacting layers under joint smoothness and uniform alignment.
 
 ### R3.4 — Reviewer rejects squaring an expected first-moment bound
 
@@ -343,7 +351,7 @@ The eight pending concern flags remain: R1.6, R1.7, R1.8, R2.2, R2.8, R4.15, AI.
 
 **Finding, meaning and limits:** A first-moment gradient bound cannot be squared to obtain a second-moment bound. The squared O(T^-1/2) result has a separate proof and gradient-scaled steps. Under the original separable assumptions, ideal fixed-momentum EF21 has a deterministic-schedule first-moment bound: a transient plus residuals, or O(T^-1/4) with eta_peak proportional to T^-3/4 and 1-mu=T^-1/2. Revision 6: Name both algorithms, the nuclear first-moment quantity, horizon tuning and exact polar assumption. The O(T^-1/4) statement follows cor:radius_schedules(iii); the O(T^-1/2) squared-norm result has its own proof. Drop the obvious squaring admonition and unclear claims-separation label.
 
-**Current answer:** For EF21-MuonUSign and EF21-MuonSign with exact polar updates, the new constant/cosine theorem bounds the learning-rate-weighted average expected nuclear gradient norm. Choosing the peak learning rate and fixed momentum for $T$ iterations gives $O(T^{-1/4})$ convergence. A separate proof gives an $O(T^{-1/2})$ average expected squared nuclear gradient norm with gradient-dependent steps.
+**Current answer:** For EF21-MuonUSign and EF21-MuonSign with exact polar updates, our constant/cosine theorem bounds the learning-rate-weighted average expected nuclear gradient norm. Choosing the peak learning rate and fixed momentum for $T$ iterations gives an $O(T^{-1/4})$ rate. We separately proved an $O(T^{-1/2})$ average expected squared nuclear gradient norm bound with gradient-dependent steps.
 
 ### R3.5 — Reviewer asks to distinguish ideal EF21 from the implementations
 
@@ -355,7 +363,7 @@ The eight pending concern flags remain: R1.6, R1.7, R1.8, R2.2, R2.8, R4.15, AI.
 
 **Finding, meaning and limits:** Lean’s fixed-momentum trajectory theorems allow approximate directions through explicit additive error or positive oracle-gain assumptions. This is not a certificate of a sufficiently small error for the actual finite polynomial implementation. The actual nanoGPT momentum changes and auxiliary Adam updates still need additional analysis. The multiple-block EF21 result retains separability. Revision 6: Original Ueq5 review raises schedules, separability and rate moments, not nanoGPT momentum warmup or auxiliary Adam. Remove that unsolicited aside. State completed proof extensions and what their terms measure; preserve the EF21 versus plain SignMuon distinction.
 
-**Current answer:** To address the schedule mismatch, we generalized EF21-MuonUSign and EF21-MuonSign convergence to fixed EMA/Nesterov and deterministic learning rates, including constant/cosine schedules. We verified the tracking and convergence proofs in Lean. The bounds quantify initialization, stochastic noise and orthogonalization accuracy. EF21 uses the submitted separable-layer assumption; our separate SignMuon theorem allows interacting layers under joint smoothness and uniform alignment.
+**Current answer:** Based on your review, we extended EF21-MuonUSign and EF21-MuonSign convergence to fixed EMA/Nesterov and deterministic learning rates, including constant/cosine schedules. We verified the tracking and convergence proofs in Lean. The bounds quantify initialization, stochastic noise and orthogonalization accuracy. These EF21 bounds retain the submitted assumption that layers are separable; our separate SignMuon theorem allows interacting layers under joint smoothness and uniform alignment.
 
 ### R4.1 — Reviewer asks whether the experimental schedules have the proved rate
 
@@ -367,7 +375,7 @@ The eight pending concern flags remain: R1.6, R1.7, R1.8, R2.2, R2.8, R4.15, AI.
 
 **Finding, meaning and limits:** We generalized the EF21 analysis to EMA/Nesterov and deterministic learning rates. Its tracking and convergence arguments are formalized in Lean. Constant/cosine corollaries follow by schedule specialization, whose printed cosine sum is not itself a complete exported Lean theorem. Approximate directions are admitted through explicit error/quality assumptions. The squared-gradient rate still needs gradient-dependent steps and the manuscript retains separability. Revision 6: Answer pqje Q1 positively with completed schedule/momentum extensions and their measured quantity. Unlike Ueq5, pqje explicitly asks about nanoGPT Nesterov; the direct answer on fixed coefficients versus warmup is in Q4. Formal correspondence still retains the underlying layerwise smoothness and approximation-quality assumptions.
 
-**Current answer:** After your review, we generalized EF21-Muon(U)Sign convergence to fixed EMA/Nesterov and constant/cosine rates, and verified the proofs in Lean. This gives expected nuclear gradient norm bounds, with explicit noise and polar approximation terms. We also proved the squared-gradient rate for gradient-dependent steps.
+**Current answer:** Based on your review, we extended EF21-Muon(U)Sign convergence to constant/cosine rates and fixed EMA/Nesterov, with proofs verified in Lean. The bounds quantify noise and orthogonalization error. We separately proved the squared-gradient rate with gradient-dependent steps.
 
 ### R4.2 — Reviewer asks whether nanoGPT Nesterov momentum is covered
 
@@ -379,7 +387,7 @@ The eight pending concern flags remain: R1.6, R1.7, R1.8, R2.2, R2.8, R4.15, AI.
 
 **Finding, meaning and limits:** The generalized analysis and Lean trajectory proofs cover a fixed momentum coefficient in EMA or Nesterov. nanoGPT changes that coefficient during training, so the implementation is not certified by the fixed-momentum result. Revision 6: Answer pqje Q1 positively with completed schedule/momentum extensions and their measured quantity. Unlike Ueq5, pqje explicitly asks about nanoGPT Nesterov; the direct answer on fixed coefficients versus warmup is in Q4. Formal correspondence still retains the underlying layerwise smoothness and approximation-quality assumptions.
 
-**Current answer:** After your review, we generalized EF21-Muon(U)Sign convergence to fixed EMA/Nesterov and constant/cosine rates, and verified the proofs in Lean. This gives expected nuclear gradient norm bounds, with explicit noise and polar approximation terms. We also proved the squared-gradient rate for gradient-dependent steps.
+**Current answer:** Based on your review, we extended EF21-Muon(U)Sign convergence to constant/cosine rates and fixed EMA/Nesterov, with proofs verified in Lean. The bounds quantify noise and orthogonalization error. We separately proved the squared-gradient rate with gradient-dependent steps.
 
 ### R4.3 — Reviewer identifies inconsistent main and supplementary results
 
@@ -391,7 +399,7 @@ The eight pending concern flags remain: R1.6, R1.7, R1.8, R2.2, R2.8, R4.15, AI.
 
 **Finding, meaning and limits:** The original submitted five-seed archive agrees with A8. Table 2 is stale; final-five-evaluation means give 82.9424 ± .1868 vs 81.4356 ± .1466. The main-table comparison must be reversed. Experiment identity is now stated explicitly: the 85.72/85.98/81.44% results are federated CNN2/CIFAR-10 with 11 IID clients and 5 seeds, not centralized ResNet18. The current main table and Section 5.2 prose have already been corrected; the public reply now reports this completed revision.
 
-**Current answer:** The submitted federated CNN2/CIFAR-10 logs (11 IID clients, 5 seeds) give MuonSign 82.94±0.19% versus SignSGD 81.44±0.15%, agreeing with A8. We corrected Table 2 and the reversed comparison. SignMuon reaches 85.72% versus Muon 85.98%.
+**Current answer:** The submitted CNN2/CIFAR-10 logs (11 IID clients, 5 seeds) give MuonSign 82.94±0.19% versus SignSGD 81.44±0.15%, agreeing with A8. We corrected Table 2 and its comparison. SignMuon reaches 85.72% versus Muon 85.98%.
 
 ### R4.4 — Reviewer asks for useful sufficient conditions for SignMuon
 
@@ -403,11 +411,11 @@ The eight pending concern flags remain: R1.6, R1.7, R1.8, R2.2, R2.8, R4.15, AI.
 
 **Finding, meaning and limits:** The full addendum gives the weaker covariance/spread criterion epsilon*rho<1 and a complete stochastic fixed-momentum first-moment proof. The simpler diagonal lower bound in the export is sufficient and self-contained. Revision 7: LR tuning is complete for all ten methods. Both gradient-side EF variants exceed 83.8% after validation-only selection; every other tuned method is below 80%. Local parameter steps and partial participation remain untested. The new public shared table reports the tuned comparison, not the earlier transferred settings.
 
-**Current answer:** After submission, we proved SignMuon converges if signed updates retain enough alignment with momentum, under joint smoothness and unbiased bounded-variance noise. This permits interacting layers; network alignment remains unmeasured. On label-skewed CNN2/CIFAR-10, **only EF21-Muon(U)Sign exceed 80%** after validation LR tuning (7S1b, Q2).
+**Current answer:** We compare the 3 sign placements and prove each can ascend. Based on your review, we also proved SignMuon convergence when signing preserves a uniform fraction of the polar update’s alignment with momentum, allowing interacting layers and unbiased bounded-variance noise. See our response to 7S1b, Q2 for heterogeneous federated results.
 
 ### R4.15 — Reviewer asks why the favorable quadratic alignment extends to neural networks
 
-**Status:** Additional evidence pending; excluded from export.
+**Status:** Needs additional evidence; omitted.
 
 **Reviewer request:** Distinguish a sufficient theorem from evidence along actual training trajectories.
 
@@ -427,7 +435,7 @@ The eight pending concern flags remain: R1.6, R1.7, R1.8, R2.2, R2.8, R4.15, AI.
 
 **Finding, meaning and limits:** Practical SignMuon and the general EF21 framework are prior/concurrent work. Our supported contribution is the controlled comparison of six placements/EF variants, strong sign-based performance and distinct sign/polar failure mechanisms. Mishra v2 has conditional actual-vote stochastic momentum theory; the current manuscript’s v1-only comparison must be updated. The added conditional SignMuon theorem is new to this submission, not claimed as the first conditional SignMuon result. Revision 7: LR tuning is complete for all ten methods. Both gradient-side EF variants exceed 83.8% after validation-only selection; every other tuned method is below 80%. Local parameter steps and partial participation remain untested. The new public shared table reports the tuned comparison, not the earlier transferred settings.
 
-**Current answer:** After submission, we proved SignMuon converges if signed updates retain enough alignment with momentum, under joint smoothness and unbiased bounded-variance noise. This permits interacting layers; network alignment remains unmeasured. On label-skewed CNN2/CIFAR-10, **only EF21-Muon(U)Sign exceed 80%** after validation LR tuning (7S1b, Q2).
+**Current answer:** We compare the 3 sign placements and prove each can ascend. Based on your review, we also proved SignMuon convergence when signing preserves a uniform fraction of the polar update’s alignment with momentum, allowing interacting layers and unbiased bounded-variance noise. See our response to 7S1b, Q2 for heterogeneous federated results.
 
 ### R4.5 — Reviewer says nanoGPT does not test the proposed distributed compression
 
@@ -439,7 +447,7 @@ The eight pending concern flags remain: R1.6, R1.7, R1.8, R2.2, R2.8, R4.15, AI.
 
 **Finding, meaning and limits:** The reviewer is correct. Full-precision gradient averaging precedes the owning-rank optimizer; parameter all-gather follows. Local compress-then-vote semantics and actual one-bit communication gains are not tested by this experiment. Revision 6: pqje Q1 explicitly raises nanoGPT Nesterov and weakness 2 raises centralized averaging versus worker voting. Answer those issues only; omit auxiliary Adam, which this review does not ask about.
 
-**Current answer:** nanoGPT tests centralized updates after full-precision gradient averaging: validation loss 3.2881 for SignMuon versus 3.4049 for SignSGD. Our extension covers fixed Nesterov momentum; nanoGPT uses momentum warmup. Federated CNN2 tests worker voting.
+**Current answer:** nanoGPT applies the optimizer after full-precision gradient averaging (SignMuon loss 3.2881; SignSGD 3.4049). Federated CNN2 compresses client messages before aggregation. Our extension covers fixed Nesterov; nanoGPT uses momentum warmup.
 
 ### R4.7 — Reviewer asks for definitions before theorem references
 
@@ -451,7 +459,7 @@ The eight pending concern flags remain: R1.6, R1.7, R1.8, R2.2, R2.8, R4.15, AI.
 
 **Finding, meaning and limits:** Introduce the operations before the introduction cites alignment results. Prepared replacement prose and a theorem/implementation table are in 02_REBUTTAL_PLAN.md. X takes exact server updates; W is the compressed broadcast at which gradients are queried. Theorem 4 has parameter-dependent objectives and no decreasing-schedule conclusion. The theory makes no performance-order prediction.
 
-**Current answer:** EF21-MuonSign updates server model X and queries broadcast model W; its theorem controls X.
+**Current answer:** Theorem 5 and Corollary 1 in the submitted supplement bound the expected squared nuclear gradient norm at EF21-MuonSign’s server model X; workers compute gradients at its broadcast model W (Eq. 13).
 
 ### R4.8 — Reviewer objects to broad impossibility wording
 
@@ -463,7 +471,7 @@ The eight pending concern flags remain: R1.6, R1.7, R1.8, R2.2, R2.8, R4.15, AI.
 
 **Finding, meaning and limits:** Replace “unrepairable” with the specified fixed-parameter output-EF statement. Prepared replacement prose and a theorem/implementation table are in 02_REBUTTAL_PLAN.md. X takes exact server updates; W is the compressed broadcast at which gradients are queried. Theorem 4 has parameter-dependent objectives and no decreasing-schedule conclusion. The theory makes no performance-order prediction.
 
-**Current answer:** EF21-MuonSign updates server model X and queries broadcast model W; its theorem controls X.
+**Current answer:** Theorem 5 and Corollary 1 in the submitted supplement bound the expected squared nuclear gradient norm at EF21-MuonSign’s server model X; workers compute gradients at its broadcast model W (Eq. 13).
 
 ### R4.9 — Reviewer rejects presenting empirical ordering as a reversed theoretical prediction
 
@@ -475,7 +483,7 @@ The eight pending concern flags remain: R1.6, R1.7, R1.8, R2.2, R2.8, R4.15, AI.
 
 **Finding, meaning and limits:** The existence of failure examples does not predict method ranking. Prepared replacement prose and a theorem/implementation table are in 02_REBUTTAL_PLAN.md. X takes exact server updates; W is the compressed broadcast at which gradients are queried. Theorem 4 has parameter-dependent objectives and no decreasing-schedule conclusion. The theory makes no performance-order prediction.
 
-**Current answer:** EF21-MuonSign updates server model X and queries broadcast model W; its theorem controls X.
+**Current answer:** Theorem 5 and Corollary 1 in the submitted supplement bound the expected squared nuclear gradient norm at EF21-MuonSign’s server model X; workers compute gradients at its broadcast model W (Eq. 13).
 
 ### R4.10 — Reviewer asks for a direct conclusion without repetitive caveats
 
@@ -487,7 +495,7 @@ The eight pending concern flags remain: R1.6, R1.7, R1.8, R2.2, R2.8, R4.15, AI.
 
 **Finding, meaning and limits:** Remove repeated “document rather than resolve” language. Prepared replacement prose and a theorem/implementation table are in 02_REBUTTAL_PLAN.md. X takes exact server updates; W is the compressed broadcast at which gradients are queried. Theorem 4 has parameter-dependent objectives and no decreasing-schedule conclusion. The theory makes no performance-order prediction.
 
-**Current answer:** EF21-MuonSign updates server model X and queries broadcast model W; its theorem controls X.
+**Current answer:** Theorem 5 and Corollary 1 in the submitted supplement bound the expected squared nuclear gradient norm at EF21-MuonSign’s server model X; workers compute gradients at its broadcast model W (Eq. 13).
 
 ### R4.11 — Reviewer asks which of X and W is updated and analyzed
 
@@ -497,9 +505,9 @@ The eight pending concern flags remain: R1.6, R1.7, R1.8, R2.2, R2.8, R4.15, AI.
 
 **Sources:** N1: submitted Theorems 1–4 and proofs; aaai_article/ef21_signmuon_divergence.tex; evidence/verified_claims.json exact rational ascent/cycle certificates. Theorem 4 objective depends on fixed eta and mu; no decreasing-schedule impossibility follows from Theorem 4 alone; N4 is separate. E3: submitted Table 3 and supplement A.16–A.17; code/results/nanogpt/runs.csv, diagnostics.csv, SUMMARY.md; one independent unpinned run per compressed method, full-precision gradient reduce-scatter before optimizer. W1: 02_REBUTTAL_PLAN.md replacement prose.
 
-**Finding, meaning and limits:** Explain exact server X, compressed broadcast W and their roles. Prepared replacement prose and a theorem/implementation table are in 02_REBUTTAL_PLAN.md. X takes exact server updates; W is the compressed broadcast at which gradients are queried. Theorem 4 has parameter-dependent objectives and no decreasing-schedule conclusion. The theory makes no performance-order prediction.
+**Finding, meaning and limits:** Explain exact server X, compressed broadcast W and their roles. Prepared replacement prose and a theorem/implementation table are in 02_REBUTTAL_PLAN.md. X takes exact server updates; W is the compressed broadcast at which gradients are queried. Theorem 4 has parameter-dependent objectives and no decreasing-schedule conclusion. The theory makes no performance-order prediction. Submitted edition: Section 4.4, Eq. (13), and Technical Supplement A.10, Theorem 5(i) and Corollary 1. These bound the expected squared nuclear gradient norm at server X; gradient queries use broadcast W.
 
-**Current answer:** EF21-MuonSign updates server model X and queries broadcast model W; its theorem controls X.
+**Current answer:** Theorem 5 and Corollary 1 in the submitted supplement bound the expected squared nuclear gradient norm at EF21-MuonSign’s server model X; workers compute gradients at its broadcast model W (Eq. 13).
 
 ### R4.12 — Reviewer asks to explain target iteration counts before using them
 
@@ -511,7 +519,7 @@ The eight pending concern flags remain: R1.6, R1.7, R1.8, R2.2, R2.8, R4.15, AI.
 
 **Finding, meaning and limits:** Distinguish finite-target success and stationary error floors from asymptotic rate. Prepared replacement prose and a theorem/implementation table are in 02_REBUTTAL_PLAN.md. X takes exact server updates; W is the compressed broadcast at which gradients are queried. Theorem 4 has parameter-dependent objectives and no decreasing-schedule conclusion. The theory makes no performance-order prediction.
 
-**Current answer:** EF21-MuonSign updates server model X and queries broadcast model W; its theorem controls X.
+**Current answer:** Theorem 5 and Corollary 1 in the submitted supplement bound the expected squared nuclear gradient norm at EF21-MuonSign’s server model X; workers compute gradients at its broadcast model W (Eq. 13).
 
 ### R4.13 — Reviewer asks for a clearer statement of the Section 5.2 results
 
@@ -523,7 +531,7 @@ The eight pending concern flags remain: R1.6, R1.7, R1.8, R2.2, R2.8, R4.15, AI.
 
 **Finding, meaning and limits:** Lead with measured accuracy instead of theorem qualifications. Prepared replacement prose and a theorem/implementation table are in 02_REBUTTAL_PLAN.md. X takes exact server updates; W is the compressed broadcast at which gradients are queried. Theorem 4 has parameter-dependent objectives and no decreasing-schedule conclusion. The theory makes no performance-order prediction.
 
-**Current answer:** EF21-MuonSign updates server model X and queries broadcast model W; its theorem controls X.
+**Current answer:** Theorem 5 and Corollary 1 in the submitted supplement bound the expected squared nuclear gradient norm at EF21-MuonSign’s server model X; workers compute gradients at its broadcast model W (Eq. 13).
 
 ### R4.14 — Reviewer asks to move essential explanations into the main paper
 
@@ -535,7 +543,7 @@ The eight pending concern flags remain: R1.6, R1.7, R1.8, R2.2, R2.8, R4.15, AI.
 
 **Finding, meaning and limits:** Prepare a coverage table and shorten captions. Prepared replacement prose and a theorem/implementation table are in 02_REBUTTAL_PLAN.md. X takes exact server updates; W is the compressed broadcast at which gradients are queried. Theorem 4 has parameter-dependent objectives and no decreasing-schedule conclusion. The theory makes no performance-order prediction.
 
-**Current answer:** EF21-MuonSign updates server model X and queries broadcast model W; its theorem controls X.
+**Current answer:** Theorem 5 and Corollary 1 in the submitted supplement bound the expected squared nuclear gradient norm at EF21-MuonSign’s server model X; workers compute gradients at its broadcast model W (Eq. 13).
 
 ### R5.1 — Reviewer asks what is new beyond the EF21-Muon framework
 
@@ -547,7 +555,7 @@ The eight pending concern flags remain: R1.6, R1.7, R1.8, R2.2, R2.8, R4.15, AI.
 
 **Finding, meaning and limits:** The contribution combines strong measured sign-based optimization with a systematic comparison of three sign placements and their EF variants, and explicit placement-specific ascent/output-EF divergence proofs. In the submitted IID CNN2 study, at the same payload SignMuon gains 4.28 points over momentum SignSGD and is 0.27 points below Muon. This is evidence among tested methods, not a universal ranking or priority claim for the SignMuon idea. Experiment identity is now stated explicitly: the 85.72/85.98/81.44% results are federated CNN2/CIFAR-10 with 11 IID clients and 5 seeds, not centralized ResNet18. Revision 6: State verification of the convergence proofs without the core qualifier. This review asks about novelty and output-EF quantifiers; the public answer need not repeat unsolicited scope caveats. EF21 separability remains documented internally and in the Ueq5/AI answers. Revision 7: LR tuning is complete for all ten methods. Both gradient-side EF variants exceed 83.8% after validation-only selection; every other tuned method is below 80%. Local parameter steps and partial participation remain untested. The new public shared table reports the tuned comparison, not the earlier transferred settings.
 
-**Current answer:** On federated CNN2/CIFAR-10 (11 IID clients, 5 seeds), SignMuon reaches 85.72% at 1 bit per matrix entry, versus Muon 85.98% and SignSGD 81.44%. We isolate how sign and error-feedback placement affect performance. After validation LR tuning on the heterogeneous split, **EF21-MuonSign reaches 84.03% and EF21-MuonUSign 83.84%**, the only methods above 80% (7S1b, Q2). After your review, we generalized EF21-Muon(U)Sign convergence to fixed EMA/Nesterov and constant/cosine rates, with proofs verified in Lean.
+**Current answer:** We compare signing before, after or on both sides of Muon’s orthogonalization, and prove every plain placement can ascend. Correcting compression before orthogonalization gives EF21-Muon(U)Sign convergence guarantees. Based on your review, we extended these to fixed EMA/Nesterov and constant/cosine schedules, with proofs verified in Lean.
 
 ### R5.3 — Reviewer asks what optimizer-design lesson the counterexamples provide
 
@@ -559,7 +567,7 @@ The eight pending concern flags remain: R1.6, R1.7, R1.8, R2.2, R2.8, R4.15, AI.
 
 **Finding, meaning and limits:** The example proves that sharing one residual scale while tracking a rapidly changing polar output can create a persistent wrong-sign component. Gradient-level EF avoids this particular tracking obstacle under smoothness; the guarantee still requires its stated assumptions. Revision 6: State verification of the convergence proofs without the core qualifier. This review asks about novelty and output-EF quantifiers; the public answer need not repeat unsolicited scope caveats. EF21 separability remains documented internally and in the Ueq5/AI answers. Revision 7: LR tuning is complete for all ten methods. Both gradient-side EF variants exceed 83.8% after validation-only selection; every other tuned method is below 80%. Local parameter steps and partial participation remain untested. The new public shared table reports the tuned comparison, not the earlier transferred settings.
 
-**Current answer:** On federated CNN2/CIFAR-10 (11 IID clients, 5 seeds), SignMuon reaches 85.72% at 1 bit per matrix entry, versus Muon 85.98% and SignSGD 81.44%. We isolate how sign and error-feedback placement affect performance. After validation LR tuning on the heterogeneous split, **EF21-MuonSign reaches 84.03% and EF21-MuonUSign 83.84%**, the only methods above 80% (7S1b, Q2). After your review, we generalized EF21-Muon(U)Sign convergence to fixed EMA/Nesterov and constant/cosine rates, with proofs verified in Lean.
+**Current answer:** We compare signing before, after or on both sides of Muon’s orthogonalization, and prove every plain placement can ascend. Correcting compression before orthogonalization gives EF21-Muon(U)Sign convergence guarantees. Based on your review, we extended these to fixed EMA/Nesterov and constant/cosine schedules, with proofs verified in Lean.
 
 ### R5.2 — Reviewer asks whether Theorem 4 includes decreasing learning rates
 
@@ -569,9 +577,9 @@ The eight pending concern flags remain: R1.6, R1.7, R1.8, R2.2, R2.8, R4.15, AI.
 
 **Sources:** N1: submitted Theorems 1–4 and proofs; aaai_article/ef21_signmuon_divergence.tex; evidence/verified_claims.json exact rational ascent/cycle certificates. Theorem 4 objective depends on fixed eta and mu; no decreasing-schedule impossibility follows from Theorem 4 alone; N4 is separate. N2: aaai_article/signmuon_addendum_body.tex, lower-bounded softplus witnesses for the plain placements. Output-EF decreasing-step and finite-budget results use the separate N4 construction. F1: lean_proofs/README.md, PAPER_AUDIT.md, comparator/VERIFICATION.json (45 statements, passed 2026-10-23; reference and dependency hashes rechecked), and research/nesterov/lean-verification.log. Original ascent/output-EF divergence results and the generalized EF21 tracking/convergence arguments have Lean proofs. The printed cosine-sum specialization is a manual composition. The added conditional plain SignMuon theorem and softplus extensions are not claimed Lean-verified. N4: evidence/ef21_vanishing_snapshot/theorem.tex and certificate.py; evidence/new_quadratic_certificate.json and verification.log. Exact algebraic certificate checks 128 strict sign inequalities; 20 independent 2000-step SVD trajectories pass. For any budget-tuned constant learning rate and fixed EMA/Nesterov momentum, an 8x8 convex quadratic has Frobenius L=1, initial gap 4/7 and gradient norm >=1 at every iterate. The instance may depend on the parameters; the class constants are uniform. Arbitrary decreasing steps to zero are covered without momentum; suitable inverse-power decay is covered for each fixed momentum coefficient. Exact gradients/polar; not a Lean claim.
 
-**Finding, meaning and limits:** Submitted Theorem 4 alone uses fixed parameters and a parameter-dependent objective. The separate added N4 construction now gives a uniform nonstationarity obstruction: Frobenius smoothness 1, initial gap exactly 4/7, dimension 8x8 and gradient norm >=1 at every iterate, for any budget-tuned constant rate and fixed EMA/Nesterov coefficient. The instance may depend on the parameters; constants are uniform across the class. Without momentum it covers any strictly decreasing positive schedule tending to zero. For each fixed momentum it covers suitably shifted power decay. It does not assert arbitrary changing momentum or finite-polar trajectories. The exact certificate is checked; this addition is not in the Lean audit.
+**Finding, meaning and limits:** Submitted Theorem 4 alone uses fixed parameters and a parameter-dependent objective. The separate added N4 construction now gives a uniform nonstationarity obstruction: Frobenius smoothness 1, initial gap exactly 4/7, dimension 8x8 and gradient norm >=1 at every iterate, for any budget-tuned constant rate and fixed EMA/Nesterov coefficient. The instance may depend on the parameters; constants are uniform across the class. Without momentum it covers any strictly decreasing positive schedule tending to zero. For each fixed momentum it covers suitably shifted power decay. It does not assert arbitrary changing momentum or finite-polar trajectories. The exact certificate is checked; this addition is not in the Lean audit. In N4, a small alternating gradient component creates alternating polar factors even as its magnitude decreases. The EF21 estimator alternates between +hS and -hS, both Frobenius-orthogonal to the fixed rank-one component A. Hence <A,X_t>=0 and <A,grad f(X_t)>=a_b>=1 throughout. This is a loss of a persistent gradient component; the objective need not diverge to infinity.
 
-**Current answer:** Theorem 4 alone concerns fixed parameters. In response, for any constant learning rate and fixed EMA/Nesterov momentum chosen for the run length, we construct an 8×8 convex quadratic for exact-polar EF21-SignMuon with Frobenius smoothness 1, initial gap 4/7 and gradient norm ≥1 at every iterate. Its gradient cannot approach zero. We also cover strictly decreasing steps to zero without momentum and power decay with fixed momentum.
+**Current answer:** Extending Theorem 4, we constructed exact-polar EF21-SignMuon examples on 8×8 convex quadratics with fixed smoothness and initial gap. Orthogonalization amplifies a small oscillating gradient component. The compressed updates stay perpendicular to another, fixed nonzero component, even with error feedback. Every gradient has norm ≥1, including when constant rate and fixed EMA/Nesterov are chosen for the run length. The construction also covers strictly decreasing rates to zero without momentum and suitable power-decay schedules with fixed momentum.
 
 ### R5.4 — Reviewer says parameter-dependent divergence need not preclude finite-time rates
 
@@ -581,9 +589,9 @@ The eight pending concern flags remain: R1.6, R1.7, R1.8, R2.2, R2.8, R4.15, AI.
 
 **Sources:** N2: aaai_article/signmuon_addendum_body.tex, lower-bounded softplus witnesses for the plain placements. Output-EF decreasing-step and finite-budget results use the separate N4 construction. F1: lean_proofs/README.md, PAPER_AUDIT.md, comparator/VERIFICATION.json (45 statements, passed 2026-10-23; reference and dependency hashes rechecked), and research/nesterov/lean-verification.log. Original ascent/output-EF divergence results and the generalized EF21 tracking/convergence arguments have Lean proofs. The printed cosine-sum specialization is a manual composition. The added conditional plain SignMuon theorem and softplus extensions are not claimed Lean-verified. N4: evidence/ef21_vanishing_snapshot/theorem.tex and certificate.py; evidence/new_quadratic_certificate.json and verification.log. Exact algebraic certificate checks 128 strict sign inequalities; 20 independent 2000-step SVD trajectories pass. For any budget-tuned constant learning rate and fixed EMA/Nesterov momentum, an 8x8 convex quadratic has Frobenius L=1, initial gap 4/7 and gradient norm >=1 at every iterate. The instance may depend on the parameters; the class constants are uniform. Arbitrary decreasing steps to zero are covered without momentum; suitable inverse-power decay is covered for each fixed momentum coefficient. Exact gradients/polar; not a Lean claim.
 
-**Finding, meaning and limits:** Submitted Theorem 4 alone uses fixed parameters and a parameter-dependent objective. The separate added N4 construction now gives a uniform nonstationarity obstruction: Frobenius smoothness 1, initial gap exactly 4/7, dimension 8x8 and gradient norm >=1 at every iterate, for any budget-tuned constant rate and fixed EMA/Nesterov coefficient. The instance may depend on the parameters; constants are uniform across the class. Without momentum it covers any strictly decreasing positive schedule tending to zero. For each fixed momentum it covers suitably shifted power decay. It does not assert arbitrary changing momentum or finite-polar trajectories. The exact certificate is checked; this addition is not in the Lean audit.
+**Finding, meaning and limits:** Submitted Theorem 4 alone uses fixed parameters and a parameter-dependent objective. The separate added N4 construction now gives a uniform nonstationarity obstruction: Frobenius smoothness 1, initial gap exactly 4/7, dimension 8x8 and gradient norm >=1 at every iterate, for any budget-tuned constant rate and fixed EMA/Nesterov coefficient. The instance may depend on the parameters; constants are uniform across the class. Without momentum it covers any strictly decreasing positive schedule tending to zero. For each fixed momentum it covers suitably shifted power decay. It does not assert arbitrary changing momentum or finite-polar trajectories. The exact certificate is checked; this addition is not in the Lean audit. In N4, a small alternating gradient component creates alternating polar factors even as its magnitude decreases. The EF21 estimator alternates between +hS and -hS, both Frobenius-orthogonal to the fixed rank-one component A. Hence <A,X_t>=0 and <A,grad f(X_t)>=a_b>=1 throughout. This is a loss of a persistent gradient component; the objective need not diverge to infinity.
 
-**Current answer:** Theorem 4 alone concerns fixed parameters. In response, for any constant learning rate and fixed EMA/Nesterov momentum chosen for the run length, we construct an 8×8 convex quadratic for exact-polar EF21-SignMuon with Frobenius smoothness 1, initial gap 4/7 and gradient norm ≥1 at every iterate. Its gradient cannot approach zero. We also cover strictly decreasing steps to zero without momentum and power decay with fixed momentum.
+**Current answer:** Extending Theorem 4, we constructed exact-polar EF21-SignMuon examples on 8×8 convex quadratics with fixed smoothness and initial gap. Orthogonalization amplifies a small oscillating gradient component. The compressed updates stay perpendicular to another, fixed nonzero component, even with error feedback. Every gradient has norm ≥1, including when constant rate and fixed EMA/Nesterov are chosen for the run length. The construction also covers strictly decreasing rates to zero without momentum and suitable power-decay schedules with fixed momentum.
 
 ### R5.5 — Reviewer rejects a theoretical prediction of the empirical ranking
 
@@ -595,17 +603,17 @@ The eight pending concern flags remain: R1.6, R1.7, R1.8, R2.2, R2.8, R4.15, AI.
 
 **Finding, meaning and limits:** The theory does not predict which optimizer wins on a task. The positive SignMuon theorem is conditional and compatible with the counterexamples. A new fixed softplus objective proves arbitrary-schedule nonstationarity only for each plain placement; this does not strengthen the output-EF quantifiers.
 
-**Current answer:** Use SignMuon on IID data, EF21-MuonUSign for label-skewed uplink compression and EF21-MuonSign for both links. These choices follow experiments; failure examples do not predict a ranking.
+**Current answer:** On CNN2/CIFAR-10 (11 clients, 5 seeds), SignMuon reaches 85.72% on IID data. In heterogeneous federated learning, tuned EF21-MuonSign reaches 84.03% and EF21-MuonUSign 83.84% (see our response to 7S1b, Q2). Our results favor SignMuon for IID data and gradient-side error feedback for heterogeneous clients; EF21-MuonUSign compresses uploads, EF21-MuonSign both directions.
 
 ### R5.6 — Reviewer objects to presenting sufficient compressor assumptions as necessary
 
-**Status:** Checked statement; selected.
+**Status:** Author-directed editorial omission; evidence retained.
 
 **Reviewer request:** Retract claims that only changing compressors can help.
 
 **Sources:** N1: submitted Theorems 1–4 and proofs; aaai_article/ef21_signmuon_divergence.tex; evidence/verified_claims.json exact rational ascent/cycle certificates. Theorem 4 objective depends on fixed eta and mu; no decreasing-schedule impossibility follows from Theorem 4 alone; N4 is separate. E3: submitted Table 3 and supplement A.16–A.17; code/results/nanogpt/runs.csv, diagnostics.csv, SUMMARY.md; one independent unpinned run per compressed method, full-precision gradient reduce-scatter before optimizer.
 
-**Finding, meaning and limits:** Failure of spectral contractivity does not prove nonconvergence under every analysis or parameter choice. c_proj concentration is observational. No initialization/step/compressor ablation proves causation or uniqueness of a remedy.
+**Finding, meaning and limits:** Failure of spectral contractivity does not prove nonconvergence under every analysis or parameter choice. c_proj concentration is observational. No initialization/step/compressor ablation proves causation or uniqueness of a remedy. Revision 8: the author requested removing this defensive qualification from the public reply. Keep its scientific scope here; this is an editorial omission, not a new missing-evidence flag.
 
 **Current answer:** A sufficient compressor condition need not be necessary; the impossibility concerns only the specified output-EF scheme and schedules.
 
@@ -619,7 +627,7 @@ The eight pending concern flags remain: R1.6, R1.7, R1.8, R2.2, R2.8, R4.15, AI.
 
 **Finding, meaning and limits:** Unbiased bounded-variance assumptions are in submitted A.10 and must also appear in the main statement. Revised EF21 bounds retain the original separable smoothness; the added plain SignMuon theorem instead uses joint Frobenius smoothness and conditional centering/finite variance. The two results must be distinguished. Revision 6: The AI review explicitly raises missing noise, layer coupling and inexact polar assumptions. State the completed general theorem and its explicit approximation-error contribution positively; do not imply a new certificate for the implemented five-stage solver. Complete generic trajectory/tracking proofs are Lean verified; printed cosine substitutions remain algebraic specializations.
 
-**Current answer:** After submission, we generalized EF21-Muon(U)Sign convergence to fixed EMA/Nesterov and deterministic rates, and verified the proofs in Lean. The bounds use separable-layer smoothness and unbiased bounded-variance noise, with an explicit polar approximation term.
+**Current answer:** After submission, we extended EF21-Muon(U)Sign convergence to fixed EMA/Nesterov and deterministic rates, with proofs verified in Lean. The bounds use separable layers and unbiased bounded-variance noise, and quantify numerical orthogonalization error.
 
 ### AI.2 — Reviewer says the layer smoothness forces separability
 
@@ -631,7 +639,7 @@ The eight pending concern flags remain: R1.6, R1.7, R1.8, R2.2, R2.8, R4.15, AI.
 
 **Finding, meaning and limits:** The manuscript does not remove EF21 separability. Its fixed-radius proof explicitly uses block independence, and the author addendum marks a joint-smooth EF21 extension open. The added conditional SignMuon theorem allows interacting layers. J1 is a separate candidate derivation and is excluded from public claims. Revision 6: The AI review explicitly raises missing noise, layer coupling and inexact polar assumptions. State the completed general theorem and its explicit approximation-error contribution positively; do not imply a new certificate for the implemented five-stage solver. Complete generic trajectory/tracking proofs are Lean verified; printed cosine substitutions remain algebraic specializations.
 
-**Current answer:** After submission, we generalized EF21-Muon(U)Sign convergence to fixed EMA/Nesterov and deterministic rates, and verified the proofs in Lean. The bounds use separable-layer smoothness and unbiased bounded-variance noise, with an explicit polar approximation term.
+**Current answer:** After submission, we extended EF21-Muon(U)Sign convergence to fixed EMA/Nesterov and deterministic rates, with proofs verified in Lean. The bounds use separable layers and unbiased bounded-variance noise, and quantify numerical orthogonalization error.
 
 ### AI.7 — Reviewer asks for an inexact polar-oracle guarantee
 
@@ -643,7 +651,7 @@ The eight pending concern flags remain: R1.6, R1.7, R1.8, R2.2, R2.8, R4.15, AI.
 
 **Finding, meaning and limits:** Lean’s schedule/trajectory results include approximation-quality or error terms rather than requiring every direction to equal an exact polar factor. No trajectory-wide small-error certificate is available for the actual five-stage implementation, and no full nanoGPT theorem covers changing momentum plus auxiliary Adam. State the proved generalization and the remaining assumptions separately. Revision 6: The AI review explicitly raises missing noise, layer coupling and inexact polar assumptions. State the completed general theorem and its explicit approximation-error contribution positively; do not imply a new certificate for the implemented five-stage solver. Complete generic trajectory/tracking proofs are Lean verified; printed cosine substitutions remain algebraic specializations.
 
-**Current answer:** After submission, we generalized EF21-Muon(U)Sign convergence to fixed EMA/Nesterov and deterministic rates, and verified the proofs in Lean. The bounds use separable-layer smoothness and unbiased bounded-variance noise, with an explicit polar approximation term.
+**Current answer:** After submission, we extended EF21-Muon(U)Sign convergence to fixed EMA/Nesterov and deterministic rates, with proofs verified in Lean. The bounds use separable layers and unbiased bounded-variance noise, and quantify numerical orthogonalization error.
 
 ### AI.3 — Reviewer says the guaranteed iterate differs from the queried model
 
@@ -653,9 +661,9 @@ The eight pending concern flags remain: R1.6, R1.7, R1.8, R2.2, R2.8, R4.15, AI.
 
 **Sources:** E3: submitted Table 3 and supplement A.16–A.17; code/results/nanogpt/runs.csv, diagnostics.csv, SUMMARY.md; one independent unpinned run per compressed method, full-precision gradient reduce-scatter before optimizer. T1/G1: aaai_article/ef21_fixed_radius.tex (explicit separability step), ef21_nesterov_convergence.tex, and signmuon_addendum_body.tex (conditional SignMuon theorem and open EF21 cross-layer target). J1: separate candidate derivation in evidence/EF21_JOINT_SMOOTHNESS.md; not a revised-manuscript result and not relied on by the replies.
 
-**Finding, meaning and limits:** X takes the exact server update; W tracks it through compressed downlink; workers evaluate gradients at W. The guarantee is stationarity at X, not W.
+**Finding, meaning and limits:** X takes the exact server update; W tracks it through compressed downlink; workers evaluate gradients at W. The guarantee is stationarity at X, not W. Submitted edition: Section 4.4, Eq. (13), and Technical Supplement A.10, Theorem 5(i) and Corollary 1. These bound the expected squared nuclear gradient norm at server X; gradient queries use broadcast W.
 
-**Current answer:** EF21-MuonSign queries broadcast W but guarantees server X. Their nanoGPT losses are 3.3213/5.5198 in the same run, after full-precision gradient averaging.
+**Current answer:** Theorem 5 and Corollary 1 in the submitted supplement bound the expected squared nuclear gradient norm at EF21-MuonSign’s server model X. Gradients are computed at broadcast model W; Table 3 reports losses 3.3213 for W and 5.5198 for X in the same run.
 
 ### AI.4 — Reviewer identifies the large nanoGPT X/W loss gap
 
@@ -665,9 +673,9 @@ The eight pending concern flags remain: R1.6, R1.7, R1.8, R2.2, R2.8, R4.15, AI.
 
 **Sources:** E3: submitted Table 3 and supplement A.16–A.17; code/results/nanogpt/runs.csv, diagnostics.csv, SUMMARY.md; one independent unpinned run per compressed method, full-precision gradient reduce-scatter before optimizer.
 
-**Finding, meaning and limits:** The two reported losses are evaluations of the same EF21-MuonSign run, not two independent runs. The gap is 2.1985 nats; c_proj residual concentration is an observation, not a causal initialization/compressor ablation.
+**Finding, meaning and limits:** The two reported losses are evaluations of the same EF21-MuonSign run, not two independent runs. The gap is 2.1985 nats; c_proj residual concentration is an observation, not a causal initialization/compressor ablation. Submitted edition: Section 4.4, Eq. (13), and Technical Supplement A.10, Theorem 5(i) and Corollary 1. These bound the expected squared nuclear gradient norm at server X; gradient queries use broadcast W.
 
-**Current answer:** EF21-MuonSign queries broadcast W but guarantees server X. Their nanoGPT losses are 3.3213/5.5198 in the same run, after full-precision gradient averaging.
+**Current answer:** Theorem 5 and Corollary 1 in the submitted supplement bound the expected squared nuclear gradient norm at EF21-MuonSign’s server model X. Gradients are computed at broadcast model W; Table 3 reports losses 3.3213 for W and 5.5198 for X in the same run.
 
 ### AI.5 — Reviewer asks to frame positive EF21 results as an instantiation
 
@@ -679,7 +687,7 @@ The eight pending concern flags remain: R1.6, R1.7, R1.8, R2.2, R2.8, R4.15, AI.
 
 **Finding, meaning and limits:** The arbitrary-norm EF21 framework and gradient-side EF before a matrix transform are credited to prior work. Our empirical contribution is a controlled six-variant comparison with strong SignMuon performance; the new submitted proofs diagnose sign/polar ascent and output-EF divergence.
 
-**Current answer:** All 3 sign placements can ascend; output-level EF can fail with decreasing steps or budget tuning.
+**Current answer:** Our comparison isolates sign and error-feedback placement. We prove all 3 plain placements can ascend and establish gradient-side EF convergence.
 
 ### AI.18 — Reviewer cites gradient-side EF before full-matrix preconditioners
 
@@ -691,11 +699,11 @@ The eight pending concern flags remain: R1.6, R1.7, R1.8, R2.2, R2.8, R4.15, AI.
 
 **Finding, meaning and limits:** Modoranu et al. 2024 establishes a precedent for EF compression before a structured preconditioner. It does not supply the sign/polar negative construction; cite both facts accurately.
 
-**Current answer:** All 3 sign placements can ascend; output-level EF can fail with decreasing steps or budget tuning.
+**Current answer:** Our comparison isolates sign and error-feedback placement. We prove all 3 plain placements can ascend and establish gradient-side EF convergence.
 
 ### AI.6 — Reviewer requests the modern SSVR sign baseline
 
-**Status:** Additional evidence pending; excluded from export.
+**Status:** Needs additional evidence; omitted.
 
 **Reviewer request:** Compare with Jiang et al. rather than claiming all gains arise from geometry.
 
@@ -715,7 +723,7 @@ The eight pending concern flags remain: R1.6, R1.7, R1.8, R2.2, R2.8, R4.15, AI.
 
 **Finding, meaning and limits:** The existing SignSGD baseline uses the same EMA momentum coefficient. Thus the comparison is not against memoryless gradient signs, but it does not isolate geometry against all variance-reduction choices.
 
-**Current answer:** SignSGD already uses EMA. We cannot isolate geometry without a matched-query SSVR comparison, which remains untested.
+**Current answer:** SignSGD uses EMA in our comparison; a matched-gradient-budget SSVR experiment remains open.
 
 ### AI.8 — Reviewer asks to limit broad federated claims
 
@@ -727,11 +735,11 @@ The eight pending concern flags remain: R1.6, R1.7, R1.8, R2.2, R2.8, R4.15, AI.
 
 **Finding, meaning and limits:** New supplied CNN2 transfer adds five-seed Dirichlet(0.1) label skew using unchanged IID rates, still 11 fully participating clients and no local updates. EF21-MuonSign reaches 83.23±0.36% versus SignMuon 35.92±8.49%; LR tuning is complete. nanoGPT remains centralized optimization after full-precision averaging, not an LLM one-bit transport test. Revision 4 exports all 10 transfer results in 7S1b Q2, ordered by mean accuracy, with sample SD, 5 seeds, 11 clients, Dirichlet(0.1), 2000 rounds, no local updates and IID-selected rates. Gradient-side EF leads this transfer comparison. The validation LR-selected comparison is complete; local-update behavior is not established. The revision 5 table bolds both EF21-MuonSign and EF21-MuonUSign values and names. Their means 83.23% and 82.99% are the only Muon-variant means above 80% in this test. SGD also exceeds 80%, so the claim is explicitly scoped to Muon variants. The reused IID learning rates stay in the protocol; LR tuning is complete in revision 7. Revision 7: LR tuning is complete for all ten methods. Both gradient-side EF variants exceed 83.8% after validation-only selection; every other tuned method is below 80%. Local parameter steps and partial participation remain untested. The new public shared table reports the tuned comparison, not the earlier transferred settings.
 
-**Current answer:** We completed validation LR tuning on federated CNN2/CIFAR-10: 11 Dirichlet(0.1) clients, 2000 rounds, no local updates, 5 final seeds. **Only EF21-Muon(U)Sign exceed 80%** (table: 7S1b, Q2).
+**Current answer:** We completed learning-rate tuning on CNN2/CIFAR-10 with 11 Dirichlet(0.1) clients, 2000 rounds, no local updates and 5 final seeds. See our response to 7S1b, Q2.
 
 ### AI.9 — Reviewer requests a method matrix
 
-**Status:** Presentation/definition request retained internally; deliberately omitted from export.
+**Status:** Author-directed editorial omission; evidence retained.
 
 **Reviewer request:** Prepare the matrix of operations, payloads, states and guaranteed iterate.
 
@@ -743,7 +751,7 @@ The eight pending concern flags remain: R1.6, R1.7, R1.8, R2.2, R2.8, R4.15, AI.
 
 ### AI.11 — Reviewer asks to move Section 4.1 implementation details
 
-**Status:** Presentation/definition request retained internally; deliberately omitted from export.
+**Status:** Author-directed editorial omission; evidence retained.
 
 **Reviewer request:** Restore a clear sequence of definitions and theoretical results.
 
@@ -763,11 +771,11 @@ The eight pending concern flags remain: R1.6, R1.7, R1.8, R2.2, R2.8, R4.15, AI.
 
 **Finding, meaning and limits:** The diagonal lower bound implies alignment by a singular-value-weighted sum. The full covariance criterion and stochastic first-moment theorem are in the author addendum. Credit OLion v2; it is not an empirical explanation for our networks. Revision 6: Explain the positive meaning of the conditional plain SignMuon theorem. The unmeasured network-alignment request AI.20 remains excluded and needs_check=true; this conditional statement does not assert that training trajectories satisfy the condition.
 
-**Current answer:** Our separate theorem proves SignMuon convergence for interacting layers when signing preserves a uniform fraction of the polar update’s alignment with momentum.
+**Current answer:** We also proved SignMuon convergence for interacting layers under joint smoothness, bounded noise and uniform alignment of signed updates with momentum.
 
 ### AI.20 — Reviewer asks to connect the structural condition to realistic training
 
-**Status:** Additional evidence pending; excluded from export.
+**Status:** Needs additional evidence; omitted.
 
 **Reviewer request:** Measure the margin for the actual polar approximation and vote.
 
@@ -779,7 +787,7 @@ The eight pending concern flags remain: R1.6, R1.7, R1.8, R2.2, R2.8, R4.15, AI.
 
 ### AI.13 — Reviewer asks for the zero-input oracle selection
 
-**Status:** Presentation/definition request retained internally; deliberately omitted from export.
+**Status:** Author-directed editorial omission; evidence retained.
 
 **Reviewer request:** Define the exact thin-SVD selection and distinguish sign ties.
 
@@ -799,7 +807,7 @@ The eight pending concern flags remain: R1.6, R1.7, R1.8, R2.2, R2.8, R4.15, AI.
 
 **Finding, meaning and limits:** nanoGPT has one training run per compressed method. EF21-SignMuon 3.2860 versus SignMuon 3.2881 is an observed gap of 0.0021, not evidence of a reproducible ranking. SignMuon improves the observed SignSGD loss by 0.1168. No variance estimate is available for the compressed variants.
 
-**Current answer:** nanoGPT has 1 run/method; a 0.0021 gap cannot rank methods. CNN2’s 1.087 bits/parameter includes auxiliaries and EF scales. A5 reports SignMuon 16.6 s/epoch on centralized ResNet18/CIFAR-10. MuonSign and SGD reach 80% in all 5 IID seeds.
+**Current answer:** The 0.0021 nanoGPT gap needs more seeds (1 run/method). CNN2’s 1.087 bits/parameter includes auxiliaries and EF scales. A5 gives SignMuon 16.6 s/epoch on centralized ResNet18/CIFAR-10. MuonSign and SGD reach 80% in all 5 IID seeds.
 
 ### AI.15 — Reviewer asks for timing evidence behind the wall-clock claim
 
@@ -811,7 +819,7 @@ The eight pending concern flags remain: R1.6, R1.7, R1.8, R2.2, R2.8, R4.15, AI.
 
 **Finding, meaning and limits:** Elapsed seconds/epoch are already in A5, so timing data are not entirely absent. The old main-table threshold numbers are stale. Withdraw the generic approximately 2x end-to-end speed claim and report per-epoch timing/threshold separately; compilation/validation and network transport differ across settings.
 
-**Current answer:** nanoGPT has 1 run/method; a 0.0021 gap cannot rank methods. CNN2’s 1.087 bits/parameter includes auxiliaries and EF scales. A5 reports SignMuon 16.6 s/epoch on centralized ResNet18/CIFAR-10. MuonSign and SGD reach 80% in all 5 IID seeds.
+**Current answer:** The 0.0021 nanoGPT gap needs more seeds (1 run/method). CNN2’s 1.087 bits/parameter includes auxiliaries and EF scales. A5 gives SignMuon 16.6 s/epoch on centralized ResNet18/CIFAR-10. MuonSign and SGD reach 80% in all 5 IID seeds.
 
 ### AI.16 — Reviewer asks to count scales in one-bit claims
 
@@ -823,7 +831,7 @@ The eight pending concern flags remain: R1.6, R1.7, R1.8, R2.2, R2.8, R4.15, AI.
 
 **Finding, meaning and limits:** CNN2 has 762560 matrix and 2146 auxiliary parameters and 3 compressed blocks. Bits/channel are 1.0870 plain and 1.0871 EF, not exactly one per total parameter; uplink-only round-trip gain is 1.93x, not 29.4x.
 
-**Current answer:** nanoGPT has 1 run/method; a 0.0021 gap cannot rank methods. CNN2’s 1.087 bits/parameter includes auxiliaries and EF scales. A5 reports SignMuon 16.6 s/epoch on centralized ResNet18/CIFAR-10. MuonSign and SGD reach 80% in all 5 IID seeds.
+**Current answer:** The 0.0021 nanoGPT gap needs more seeds (1 run/method). CNN2’s 1.087 bits/parameter includes auxiliaries and EF scales. A5 gives SignMuon 16.6 s/epoch on centralized ResNet18/CIFAR-10. MuonSign and SGD reach 80% in all 5 IID seeds.
 
 ### AI.17 — Reviewer flags rounds-to-target conditioned on successful seeds
 
@@ -835,16 +843,16 @@ The eight pending concern flags remain: R1.6, R1.7, R1.8, R2.2, R2.8, R4.15, AI.
 
 **Finding, meaning and limits:** Corrected submitted archive: MuonSign rounds80 860, SGD1240, both 5/5 successes; SignSGD1140 and SignMuon540, also5/5. Do not use the stale main-table 4/5 and3/5 denominators.
 
-**Current answer:** nanoGPT has 1 run/method; a 0.0021 gap cannot rank methods. CNN2’s 1.087 bits/parameter includes auxiliaries and EF scales. A5 reports SignMuon 16.6 s/epoch on centralized ResNet18/CIFAR-10. MuonSign and SGD reach 80% in all 5 IID seeds.
+**Current answer:** The 0.0021 nanoGPT gap needs more seeds (1 run/method). CNN2’s 1.087 bits/parameter includes auxiliaries and EF scales. A5 gives SignMuon 16.6 s/epoch on centralized ResNet18/CIFAR-10. MuonSign and SGD reach 80% in all 5 IID seeds.
 
 ### AI.12 — Reviewer asks to scope impossibility to the analyzed EF repair
 
-**Status:** Checked statement; selected.
+**Status:** Author-directed editorial omission; evidence retained.
 
 **Reviewer request:** Avoid ruling out all repairs and decreasing schedules.
 
 **Sources:** N1: submitted Theorems 1–4 and proofs; aaai_article/ef21_signmuon_divergence.tex; evidence/verified_claims.json exact rational ascent/cycle certificates. Theorem 4 objective depends on fixed eta and mu; no decreasing-schedule impossibility follows from Theorem 4 alone; N4 is separate. N2: aaai_article/signmuon_addendum_body.tex, lower-bounded softplus witnesses for the plain placements. Output-EF decreasing-step and finite-budget results use the separate N4 construction. N4: evidence/ef21_vanishing_snapshot/theorem.tex and certificate.py; evidence/new_quadratic_certificate.json and verification.log. Exact algebraic certificate checks 128 strict sign inequalities; 20 independent 2000-step SVD trajectories pass. For any budget-tuned constant learning rate and fixed EMA/Nesterov momentum, an 8x8 convex quadratic has Frobenius L=1, initial gap 4/7 and gradient norm >=1 at every iterate. The instance may depend on the parameters; the class constants are uniform. Arbitrary decreasing steps to zero are covered without momentum; suitable inverse-power decay is covered for each fixed momentum coefficient. Exact gradients/polar; not a Lean claim.
 
-**Finding, meaning and limits:** Submitted Theorem 4 alone uses fixed parameters and a parameter-dependent objective. The separate added N4 construction now gives a uniform nonstationarity obstruction: Frobenius smoothness 1, initial gap exactly 4/7, dimension 8x8 and gradient norm >=1 at every iterate, for any budget-tuned constant rate and fixed EMA/Nesterov coefficient. The instance may depend on the parameters; constants are uniform across the class. Without momentum it covers any strictly decreasing positive schedule tending to zero. For each fixed momentum it covers suitably shifted power decay. It does not assert arbitrary changing momentum or finite-polar trajectories. The exact certificate is checked; this addition is not in the Lean audit.
+**Finding, meaning and limits:** Submitted Theorem 4 alone uses fixed parameters and a parameter-dependent objective. The separate added N4 construction now gives a uniform nonstationarity obstruction: Frobenius smoothness 1, initial gap exactly 4/7, dimension 8x8 and gradient norm >=1 at every iterate, for any budget-tuned constant rate and fixed EMA/Nesterov coefficient. The instance may depend on the parameters; constants are uniform across the class. Without momentum it covers any strictly decreasing positive schedule tending to zero. For each fixed momentum it covers suitably shifted power decay. It does not assert arbitrary changing momentum or finite-polar trajectories. The exact certificate is checked; this addition is not in the Lean audit. Revision 8: the author requested removing this defensive qualification from the public reply. Keep its scientific scope here; this is an editorial omission, not a new missing-evidence flag.
 
 **Current answer:** The negative result concerns the specified output-EF scheme.

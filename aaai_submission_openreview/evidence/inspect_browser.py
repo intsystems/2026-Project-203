@@ -64,7 +64,8 @@ def main():
                 data=browser.evaluate(r'''(() => {
                     const source=document.getElementById('assembled-text').value;
                     const links=[...document.querySelectorAll('a[href^="#"]')];
-                    return {source,characters:source.length,countLabel:document.getElementById('draft-count').textContent,
+                    return {source,previewText:document.getElementById('rendered-draft').textContent,
+                        characters:source.length,countLabel:document.getElementById('draft-count').textContent,
                         renderedMath:document.querySelectorAll('#rendered-draft .katex').length,
                         renderedTables:[...document.querySelectorAll('#rendered-draft table')].map(table=>({
                             headers:[...table.querySelectorAll('thead th')].map(cell=>cell.textContent),
@@ -86,13 +87,22 @@ def main():
                     assert len(table_rows)==10,table_rows
                     data['heterogeneousTableRows']=len(table_rows)
                     rendered=data['renderedTables']
-                    assert len(rendered)==1 and rendered[0]['headers']==['Method','Accuracy (%)'],rendered
-                    assert rendered[0]['rows']==[line.replace('**','').strip('|').split('|') for line in table_rows],rendered
-                    assert rendered[0]['strongCells']==[2,2]+[0]*8,rendered
-                    assert any('only methods above 80%' in text for text in data['strongText']),data['strongText']
+                    if rendered:
+                        assert len(rendered)==1 and rendered[0]['headers']==['Method','Accuracy (%)'],rendered
+                        assert rendered[0]['rows']==[line.replace('**','').strip('|').split('|') for line in table_rows],rendered
+                        assert rendered[0]['strongCells']==[2,2]+[0]*8,rendered
+                        assert data['strongText']==['EF21-MuonSign','84.03±0.52','EF21-MuonUSign','83.84±0.32'],data['strongText']
+                        data['tablePreviewMode']='rendered-markdown'
+                    else:
+                        # Preserve the author's existing text-and-math preview.
+                        # This reply has no math, so its displayed text must match exactly.
+                        assert data['previewText']==expected
+                        assert not data['strongText']
+                        data['tablePreviewMode']='exact-plain-source'
                 else:
                     assert '7S1b, Q2' in expected,spec['stem']
                     data['referencesHeterogeneousTable']=True
+                data.pop('previewText')
                 assert not data['draftMathErrors'] and not data['brokenAnchors'],data
                 if spec['stem']!='confidential_ac':assert data['characters']<=1500
                 assert not data['overflow'],data

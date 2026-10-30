@@ -1,7 +1,7 @@
 Thank you for your questions.
 
-1. Re why SignMuon works: After your review, we proved SignMuon convergence when signed updates remain uniformly aligned with momentum, under smoothness and unbiased bounded-variance noise. Layers may interact; network alignment is unmeasured.
-2. Re heterogeneous clients: We tuned LRs on federated CNN2/CIFAR-10: 11 Dirichlet(0.1) clients, 2000 rounds, no local updates. Rates use validation seed 0; momentum 0.9; mean±SD over 5 final seeds:
+1. Re why SignMuon works: Based on your review, we proved SignMuon convergence for interacting layers under joint smoothness, unbiased bounded-variance noise and uniform alignment of signed updates with momentum. Testing network alignment remains open.
+2. Re heterogeneous clients: We tuned rates for CNN2/CIFAR-10: 11 Dirichlet(0.1) clients, 2000 rounds, no local updates. Momentum 0.9; validation seed 0; mean±SD over 5 final seeds:
 
 |Method|Accuracy (%)|
 |---|---:|
@@ -16,10 +16,10 @@ Thank you for your questions.
 |MuonSign|40.75±0.98|
 |SignSGD|36.24±4.64|
 
-**EF21-Muon(U)Sign are the only methods above 80% after tuning.**
+Only EF21-MuonSign and EF21-MuonUSign exceed 80%.
 
-3. Re our analysis: After your review, we proved EF21-Muon(U)Sign convergence for constant/cosine rates and fixed EMA/Nesterov, and verified the proofs in Lean. These bounds control expected gradient norms.
-4. Re choosing a method: SignMuon is effective on IID CNN2/CIFAR-10; for label skew, use EF21-MuonUSign for uplink-only compression or EF21-MuonSign for both links. Messages use 1.087 bits/parameter, including auxiliaries and scales.
-5. Re nanoGPT: nanoGPT validation losses are 3.2881 for SignMuon and 3.4049 for SignSGD (1 run each). The 0.0021 gap to EF21-SignMuon cannot rank methods.
+3. Re our analysis: Based on your review, we proved expected gradient-norm bounds for EF21-Muon(U)Sign with constant/cosine rates and fixed EMA/Nesterov, verified in Lean.
+4. Re choosing a method: Our results favor SignMuon for IID data. For heterogeneous federated learning, EF21-MuonUSign compresses uploads and EF21-MuonSign both directions. EF messages use 1.087 bits/parameter, including auxiliaries and scales.
+5. Re nanoGPT: SignMuon achieves loss 3.2881 versus SignSGD 3.4049 (1 nanoGPT run each). Its 0.0021 gap to EF21-SignMuon needs more seeds to establish an ordering.
 
 If these clarifications address your concerns, please consider raising your score.

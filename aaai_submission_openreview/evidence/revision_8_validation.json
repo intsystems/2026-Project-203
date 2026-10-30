@@ -1,0 +1,160 @@
+{
+  "revision": 8,
+  "checked_utc": "2026-10-30T08:18:09.680899+00:00",
+  "build_passed": true,
+  "workspace_check_passed": true,
+  "browser_inspection_passed": true,
+  "browser_checked_utc": "2026-10-30T08:18:08.433098+00:00",
+  "browser_pages": 7,
+  "six_public_limits_passed": true,
+  "all_64_ids_and_79_mappings_preserved": true,
+  "original_reviews_inputs_and_rules_unchanged": true,
+  "evidence_flags_unchanged": true,
+  "pending_evidence_flags": 8,
+  "selected_concerns": 47,
+  "author_directed_new_omissions": [
+    "AI.12",
+    "R5.6"
+  ],
+  "five_human_score_requests_retained": true,
+  "ai_score_request": false,
+  "shared_numeric_table_unchanged": true,
+  "inline_bold_results_removed": true,
+  "submitted_theorem_references": "Technical Supplement A.10: Theorem 5(i), Corollary 1; main Eq. (13)",
+  "proof_and_experiment_sources_unchanged": true,
+  "addendum_and_pdf_unchanged": true,
+  "author_primer_changes_preserved": true,
+  "confidential_characters": 2762,
+  "confidential_limit": null,
+  "drafts": [
+    {
+      "stem": "review_R1_7S1b",
+      "characters": 1456,
+      "included": [
+        "R1.1",
+        "R1.2",
+        "R1.3",
+        "R1.9",
+        "R1.4",
+        "R1.10",
+        "R1.5"
+      ],
+      "omitted": [
+        "R1.6",
+        "R1.7",
+        "R1.8"
+      ],
+      "pending": [
+        "R1.6",
+        "R1.7",
+        "R1.8"
+      ]
+    },
+    {
+      "stem": "review_R2_D4r2",
+      "characters": 1385,
+      "included": [
+        "R2.6",
+        "R2.3"
+      ],
+      "omitted": [
+        "R2.1",
+        "R2.4",
+        "R2.5",
+        "R2.7",
+        "R2.2",
+        "R2.8"
+      ],
+      "pending": [
+        "R2.2",
+        "R2.8"
+      ]
+    },
+    {
+      "stem": "review_R3_Ueq5",
+      "characters": 1435,
+      "included": [
+        "R3.2",
+        "R3.1",
+        "R3.3",
+        "R3.4",
+        "R3.5"
+      ],
+      "omitted": [],
+      "pending": []
+    },
+    {
+      "stem": "review_R4_pqje",
+      "characters": 1495,
+      "included": [
+        "R4.1",
+        "R4.2",
+        "R4.3",
+        "R4.4",
+        "R4.6",
+        "R4.5",
+        "R4.7",
+        "R4.8",
+        "R4.9",
+        "R4.10",
+        "R4.11",
+        "R4.12",
+        "R4.13",
+        "R4.14"
+      ],
+      "omitted": [
+        "R4.15"
+      ],
+      "pending": [
+        "R4.15"
+      ]
+    },
+    {
+      "stem": "review_R5_Tx34",
+      "characters": 1496,
+      "included": [
+        "R5.1",
+        "R5.3",
+        "R5.2",
+        "R5.4",
+        "R5.5"
+      ],
+      "omitted": [
+        "R5.6"
+      ],
+      "pending": []
+    },
+    {
+      "stem": "review_AI_AI_Reviewer",
+      "characters": 1480,
+      "included": [
+        "AI.1",
+        "AI.2",
+        "AI.7",
+        "AI.3",
+        "AI.4",
+        "AI.5",
+        "AI.18",
+        "AI.19",
+        "AI.8",
+        "AI.10",
+        "AI.14",
+        "AI.15",
+        "AI.16",
+        "AI.17"
+      ],
+      "omitted": [
+        "AI.6",
+        "AI.9",
+        "AI.11",
+        "AI.20",
+        "AI.13",
+        "AI.12"
+      ],
+      "pending": [
+        "AI.6",
+        "AI.20"
+      ]
+    }
+  ]
+}
