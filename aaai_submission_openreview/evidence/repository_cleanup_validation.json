@@ -168,6 +168,17 @@
     "destination": "D:/GitHubD/KissingNumber27/research/kissing43",
     "verified_original_files": 668,
     "bytes": 113693952,
-    "old_path_excluded_from_signmuon_history": true
+    "old_path_excluded_from_signmuon_history": true,
+    "final_relocation": {
+      "relocated_utc": "2026-11-01T12:46:37.3651663Z",
+      "destination": "D:/GitHubD/KissingNumber27/kissing_upper_bounds/research/kissing43",
+      "verified_source_file_records": 679,
+      "source_bytes": 113938855,
+      "receipt": "RELOCATION_TO_UPPER_BOUNDS.json",
+      "signmuon_copy_removed": true,
+      "interim_copy_removed": true,
+      "junction_created": false,
+      "destination_static_repository_check": "passed: 1213 Python files, 11 reference-input hashes, source portability"
+    }
   }
 }

@@ -35,11 +35,13 @@ none was relabeled as resolved during cleanup.
 Current checks and immutable-input hashes are recorded in
 [`evidence/repository_cleanup_validation.json`](evidence/repository_cleanup_validation.json).
 
-The original 668 kissing-number research files were relocated, with every file
-verified by SHA-256, to `D:/GitHubD/KissingNumber27/research/kissing43/`. Its
-transfer receipt is stored there. Local research jobs may recreate the old path;
-it is excluded from SignMuon history. The ICML writing example is in
-`reference_materials/`.
+The original 668 kissing-number research files and 10 later files were consolidated
+in `D:/GitHubD/KissingNumber27/kissing_upper_bounds/research/kissing43/`.
+All 679 source file records (including the original transfer receipt) were
+verified by SHA-256. Transfer receipts are stored there. Both the interim copy
+and the SignMuon copy were removed; no junction was created. Local research jobs
+may recreate the old path, which is excluded from SignMuon history. The ICML
+writing example is in `reference_materials/`.
 
 ## What changed and why
 
