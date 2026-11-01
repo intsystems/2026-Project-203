@@ -24,6 +24,10 @@ code/im_dif/
 # Custom
 .DS_Store
 
+# Research belonging to the separate kissing-number workspace.
+# Local jobs may recreate this path; keep it out of SignMuon history.
+/research/kissing43
+
 # Byte-compiled / optimized / DLL files
 __pycache__/
 *.py[cod]

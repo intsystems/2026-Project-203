@@ -10,10 +10,11 @@
   "rules": {
     "response_limit_unit": "characters",
     "response_character_limit": 1500,
-    "confidential_character_limit": null,
+    "confidential_character_limit": 1500,
     "allow_external_links": false,
     "deadline": "2026-10-31 AoE",
-    "source": "Author-supplied conference announcement; confirm other settings before drafting."
+    "source": "Author-supplied conference announcement; confirm other settings before drafting.",
+    "confidential_title_character_limit": 250
   },
   "source": {
     "reviews_json": "signmuon_openreview_page.json",
@@ -108,8 +109,24 @@
         "stem": "review_R4_pqje",
         "point": "R4.1",
         "label": "pqje · Question1: theorem/implementation coverage"
+      },
+      {
+        "stem": "review_R2_D4r2",
+        "point": "R2.6",
+        "label": "D4r2: smooth lower-bounded extensions"
+      },
+      {
+        "stem": "review_R2_D4r2",
+        "point": "R2.3",
+        "label": "D4r2: conditional SignMuon convergence"
+      },
+      {
+        "stem": "review_R1_7S1b",
+        "point": "R1.3",
+        "label": "7S1b Question3: original contributions and EF21 credit"
       }
-    ]
+    ],
+    "export_title": "Confidential summary of responses to the main reviewer concerns"
   },
   "port": 8766
 }

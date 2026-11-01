@@ -5,7 +5,7 @@ from pathlib import Path
 import re
 
 
-from workspace_context import ROOT, EXPECTED_TARGETS, RESPONSE_LIMIT, CONFIDENTIAL, FORBID_LINKS
+from workspace_context import ROOT, EXPECTED_TARGETS, RESPONSE_LIMIT, CONFIDENTIAL, CONFIDENTIAL_LIMIT, CONFIDENTIAL_TITLE, FORBID_LINKS
 EXPECTED = EXPECTED_TARGETS
 LIMIT = RESPONSE_LIMIT
 LINK = re.compile(
@@ -37,15 +37,23 @@ def main():
 
     for path in paths:
         body = path.read_text(encoding="utf-8")
+        markdown = body
         markers = len(PLACEHOLDER.findall(body))
         issues = []
         if not body.strip():
             issues.append("empty response")
-        count = len(body.encode("utf-16-le")) // 2
         confidential = path.name == CONFIDENTIAL["target"]
-        if not confidential and LIMIT is not None and count > LIMIT:
+        if confidential and CONFIDENTIAL_TITLE:
+            prefix = f"# {CONFIDENTIAL_TITLE}\n\n"
+            if body.startswith(prefix):
+                body = body[len(prefix):]
+            else:
+                issues.append("missing or outdated confidential title")
+        count = len(body.encode("utf-16-le")) // 2
+        limit = CONFIDENTIAL_LIMIT if confidential else LIMIT
+        if limit is not None and count > limit:
             issues.append("over character limit")
-        if FORBID_LINKS and LINK.search(body):
+        if FORBID_LINKS and LINK.search(markdown):
             issues.append("link pattern found")
         if "\ufeff" in body:
             issues.append("byte-order mark found")
@@ -53,7 +61,7 @@ def main():
             issues.append("unfinished placeholders")
         label = "FAIL" if issues else ("DRAFT" if markers else "OK")
         detail = "; ".join(issues) or (f"{markers} TODO markers" if markers else "no link patterns or placeholders")
-        length = f"{count} characters (confidential limit unspecified)" if confidential else f"{count}/{LIMIT} characters"
+        length = f"{count}/{limit} characters" if limit is not None else f"{count} characters (limit unspecified)"
         print(f"{label:5} {path.name}: {length}; {detail}")
         failed |= bool(issues)
 

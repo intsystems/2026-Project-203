@@ -80,19 +80,20 @@
 
   function assemble(review = state) {
     const body = Draft.body(review);
+    const markdown = data.exportTitle ? `# ${data.exportTitle}\n\n${body}` : body;
     const selected = review.fragments.filter(item => item.include);
     const omitted = review.fragments.filter(item => !item.include).map(item => item.id);
     const pending = review.fragments.filter(item => item.needs_check).map(item => item.id);
     const issues = [];
     if (!body.trim() || !selected.length) issues.push("Select at least one response fragment.");
     if (limit !== null && body.length > limit) issues.push(`The assembled draft exceeds ${limit.toLocaleString("en-US")} characters.`);
-    if (data.forbidExternalLinks && linkPattern.test(body)) issues.push("The assembled draft contains a link or address.");
-    if (placeholders.test(body) || body.includes("\uFEFF")) issues.push("The assembled draft contains a placeholder or byte-order mark.");
+    if (data.forbidExternalLinks && linkPattern.test(markdown)) issues.push("The assembled draft contains a link or address.");
+    if (placeholders.test(markdown) || markdown.includes("\uFEFF")) issues.push("The assembled draft contains a placeholder or byte-order mark.");
     for (const item of selected) {
       if (!item.text.trim()) issues.push(item.id + " has an empty response.");
       if (item.needs_check) issues.push(item.id + " still needs an evidence check.");
     }
-    return {body, characters: body.length, words: body.trim() ? body.trim().split(/\s+/).length : 0, issues, can_export: !issues.length,
+    return {body, markdown, characters: body.length, words: body.trim() ? body.trim().split(/\s+/).length : 0, issues, can_export: !issues.length,
       included: selected.map(item => item.id), omitted, pending};
   }
 
@@ -378,7 +379,7 @@
         if (result.can_export) {
           const rebuttals = await directFolder.getDirectoryHandle("rebuttals", {create: true});
           const target = await rebuttals.getFileHandle(current.target, {create: true});
-          await writeHandle(target, result.body);
+          await writeHandle(target, result.markdown);
           result.written = true;
         }
         status.textContent = dirty ? "Earlier edits saved · save again for newer edits" : result.written ? "Saved to repo · Markdown updated" : "Fragments saved to repo · Markdown needs attention";

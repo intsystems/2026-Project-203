@@ -1,0 +1,173 @@
+{
+  "checked_utc": "2026-11-01T12:29:04.733942+00:00",
+  "checks": {
+    "portable_editor_tests_passed": 7,
+    "headless_edge_browser_checks": "passed outside sandbox, including confidential native save",
+    "workspace_check": "passed",
+    "export_length_and_link_check": "passed",
+    "primer_manifest_files_verified": 89
+  },
+  "approved_confidential_markdown_sha256": "62dd6d15832701e1fa79fca9f76264a0aabe47d7a88696d8f645e83800fa3397",
+  "confidential_title_characters": 63,
+  "confidential_body_characters": 1492,
+  "confidential_body_limit": 1500,
+  "pending_evidence_flags_preserved": 8,
+  "drafts": [
+    {
+      "stem": "review_R1_7S1b",
+      "characters": 1492,
+      "selected": [
+        "R1.1",
+        "R1.2",
+        "R1.3",
+        "R1.9",
+        "R1.4",
+        "R1.10",
+        "R1.5"
+      ],
+      "omitted": [
+        "R1.6",
+        "R1.7",
+        "R1.8"
+      ],
+      "pending_evidence": [
+        "R1.6",
+        "R1.7",
+        "R1.8"
+      ]
+    },
+    {
+      "stem": "review_R2_D4r2",
+      "characters": 1494,
+      "selected": [
+        "R2.1",
+        "R2.4",
+        "R2.5",
+        "R2.6",
+        "R2.7",
+        "R2.3"
+      ],
+      "omitted": [
+        "R2.2",
+        "R2.8"
+      ],
+      "pending_evidence": [
+        "R2.2",
+        "R2.8"
+      ]
+    },
+    {
+      "stem": "review_R3_Ueq5",
+      "characters": 1491,
+      "selected": [
+        "R3.2",
+        "R3.1",
+        "R3.3",
+        "R3.4",
+        "R3.5"
+      ],
+      "omitted": [],
+      "pending_evidence": []
+    },
+    {
+      "stem": "review_R4_pqje",
+      "characters": 1494,
+      "selected": [
+        "R4.1",
+        "R4.2",
+        "R4.3",
+        "R4.4",
+        "R4.6",
+        "R4.5",
+        "R4.7",
+        "R4.8",
+        "R4.9",
+        "R4.10",
+        "R4.11",
+        "R4.12",
+        "R4.13",
+        "R4.14"
+      ],
+      "omitted": [
+        "R4.15"
+      ],
+      "pending_evidence": [
+        "R4.15"
+      ]
+    },
+    {
+      "stem": "review_R5_Tx34",
+      "characters": 1496,
+      "selected": [
+        "R5.1",
+        "R5.3",
+        "R5.2",
+        "R5.4",
+        "R5.5",
+        "R5.6"
+      ],
+      "omitted": [],
+      "pending_evidence": []
+    },
+    {
+      "stem": "review_AI_AI_Reviewer",
+      "characters": 1497,
+      "selected": [
+        "AI.1",
+        "AI.2",
+        "AI.7",
+        "AI.3",
+        "AI.4",
+        "AI.5",
+        "AI.18",
+        "AI.19",
+        "AI.8",
+        "AI.9",
+        "AI.11",
+        "AI.10",
+        "AI.13",
+        "AI.14",
+        "AI.15",
+        "AI.16",
+        "AI.17",
+        "AI.12"
+      ],
+      "omitted": [
+        "AI.6",
+        "AI.20"
+      ],
+      "pending_evidence": [
+        "AI.6",
+        "AI.20"
+      ]
+    }
+  ],
+  "immutable_inputs": [
+    {
+      "path": "48060_SignMuon_MuonSign_and_th.pdf",
+      "sha256": "21b59932be1126ea6fb14a7692552e857835379e76df49c9a5f15df97131e5cd"
+    },
+    {
+      "path": "48060_SignMuon_MuonSign_and_th_Code And Data Supplement.zip",
+      "sha256": "71949a629127440afc0644cd0c15c6c8c56d98a7b446fdd9dd29fd6b9e945379"
+    },
+    {
+      "path": "48060_SignMuon_MuonSign_and_th_Reproducibility Checklist.pdf",
+      "sha256": "6aeef05eb5f0b1483a2472414678f1c3783859810daf07b711b5c396652a0a36"
+    },
+    {
+      "path": "48060_SignMuon_MuonSign_and_th_Technical Supplement.pdf",
+      "sha256": "c99343a41e01a2a571bdb9e58b8a011488534c3d52c6f8edd5e09035171fd11c"
+    },
+    {
+      "path": "signmuon_openreview_page.json",
+      "sha256": "0cc0650775acecc94b3c7da35198ad3132ece81c54bf64d1b694d2eb14122345"
+    }
+  ],
+  "research_transfer": {
+    "destination": "D:/GitHubD/KissingNumber27/research/kissing43",
+    "verified_original_files": 668,
+    "bytes": 113693952,
+    "old_path_excluded_from_signmuon_history": true
+  }
+}

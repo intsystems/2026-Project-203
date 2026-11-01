@@ -91,7 +91,7 @@ Federated values are means across five independently trained seeds of each seed'
 | R5 | Tx34 | EDZy4k8BK7 | 4 / 3 |
 | AI | AI_Reviewer | LKOb5GFqWI | AI review; no score request |
 
-Configured author-supplied rules: **1500 UTF-16 source characters per review**, headings/newlines/math included; no external links; deadline **31 October 2026 AoE**. These settings were retained. The confidential field's limit/readers remain unknown and must be checked in the actual form. No official field rules were inferred from a different venue.
+Configured author-supplied rules: **1500 UTF-16 source characters per review**, headings/newlines/math included; no external links; deadline **31 October 2026 AoE**. These settings were retained. The author confirmed on 31 October 2026 that the confidential field is also limited to 1500 characters; `workspace.json` enforces it. No official field rules were inferred from a different venue.
 
 ## Preservation and summary migration
 

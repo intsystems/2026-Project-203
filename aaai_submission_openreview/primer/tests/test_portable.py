@@ -111,6 +111,8 @@ class PortableChecks(unittest.TestCase):
     def test_configured_limit_confidential_limit_save_conflict_and_backup(self):
         config = self.initialize(humans=1, ai=False, limit=250)
         config['rules']['confidential_character_limit'] = 100
+        config['rules']['confidential_title_character_limit'] = 250
+        config['confidential']['export_title'] = 'Private decision summary'
         config['confidential']['references'] = [{'stem': config['reviews'][0]['stem'], 'point': 'R1.1', 'label': 'Rev1 question 1'}]
         (self.root/'workspace.json').write_text(json.dumps(config), encoding='utf-8')
         result = run(self.root, 'build')
@@ -170,6 +172,8 @@ class PortableChecks(unittest.TestCase):
             status, saved = request('PUT', 'confidential_ac', {'base_revision': comment['revision'], 'review': comment})
             self.assertEqual(status, 200)
             self.assertTrue(saved['result']['written'])
+            self.assertEqual(saved['result']['characters'], len(saved['result']['body']))
+            self.assertTrue((self.root/'rebuttals'/comment['target']).read_text(encoding='utf-8').startswith('# Private decision summary\n\n'))
         finally:
             process.terminate()
             process.wait(timeout=8)
@@ -191,6 +195,37 @@ class PortableChecks(unittest.TestCase):
             archives = list((self.root/'primer_history').glob('*/README.md'))
             self.assertEqual(len(archives), 1)
             self.assertEqual(archives[0].read_text(encoding='utf-8'), 'Locally edited primer guide.')
+
+    def test_confidential_title_survives_rebuild_with_separate_limits(self):
+        config = self.initialize(humans=1, ai=False, limit=321, name='Title Test')
+        config['rules'].update(confidential_character_limit=40, confidential_title_character_limit=10)
+        config['confidential']['export_title'] = 'A title 😀'
+        (self.root/'workspace.json').write_text(json.dumps(config), encoding='utf-8')
+        comments = json.loads((self.root/'confidential_comment.json').read_text(encoding='utf-8'))
+        review = comments['reviews']['confidential_ac']
+        fragment = review['fragments'][0]
+        review['draft'] = [{'kind': 'answer', 'points': [fragment['id']], 'before': '', 'after': ''}]
+        fragment.update(text='x'*40, needs_check=False)
+        path = self.root/'confidential_comment.json'
+        path.write_text(json.dumps(comments), encoding='utf-8')
+        target = self.root/'rebuttals'/config['confidential']['target']
+        result = run(self.root, 'build')
+        self.assertEqual(result.returncode, 0, result.stdout + result.stderr)
+        expected = '# A title 😀\n\n' + 'x'*40
+        self.assertEqual(target.read_text(encoding='utf-8'), expected)
+        self.assertIn('Short title', (self.root/'reviews'/'confidential_ac.html').read_text(encoding='utf-8'))
+        fragment['text'] += 'x'
+        path.write_text(json.dumps(comments), encoding='utf-8')
+        self.assertEqual(run(self.root, 'build').returncode, 0)
+        self.assertEqual(target.read_text(encoding='utf-8'), expected)
+        result = run(self.root, 'check')
+        self.assertIn('exceeds 40', result.stdout)
+        config['confidential']['export_title'] += 'x'
+        (self.root/'workspace.json').write_text(json.dumps(config), encoding='utf-8')
+        result = run(self.root, 'build')
+        self.assertNotEqual(result.returncode, 0)
+        self.assertIn('title exceeds', result.stderr)
+        self.assertEqual(target.read_text(encoding='utf-8'), expected)
 
     def test_final_check_rejects_invalid_confidential_text_but_allows_empty_optional_field(self):
         config = self.initialize(humans=1, ai=False)

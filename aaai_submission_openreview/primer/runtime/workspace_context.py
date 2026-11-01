@@ -20,7 +20,7 @@ for field in ("title", "short_title", "venue", "submission_id"):
 RULES = CONFIG["rules"]
 if RULES.get("response_limit_unit") != "characters":
     raise ValueError("This version supports character limits; word-limit rules need an explicit extension")
-for key in ("response_character_limit", "confidential_character_limit"):
+for key in ("response_character_limit", "confidential_character_limit", "confidential_title_character_limit"):
     limit = RULES.get(key)
     if limit is not None and (type(limit) is not int or limit <= 0):
         raise ValueError("Invalid " + key)
@@ -46,6 +46,12 @@ if not SAFE.fullmatch(CONFIDENTIAL.get("stem", "")) or CONFIDENTIAL["stem"] in s
 target = CONFIDENTIAL.get("target", "")
 if not target.endswith(".md") or not SAFE.fullmatch(target[:-3]) or target in targets:
     raise ValueError("Invalid confidential-comment filename")
+CONFIDENTIAL_TITLE = CONFIDENTIAL.get("export_title", "")
+if not isinstance(CONFIDENTIAL_TITLE, str) or any(char in CONFIDENTIAL_TITLE for char in "\r\n\ufeff"):
+    raise ValueError("The confidential export title must be a single line")
+title_limit = RULES.get("confidential_title_character_limit")
+if title_limit is not None and len(CONFIDENTIAL_TITLE.encode("utf-16-le")) // 2 > title_limit:
+    raise ValueError("The confidential export title exceeds its character limit")
 EXPECTED_TARGETS = targets
 RESPONSE_LIMIT = RULES["response_character_limit"]
 CONFIDENTIAL_LIMIT = RULES["confidential_character_limit"]
@@ -64,4 +70,5 @@ def browser_context(confidential=False):
         "expectedTargets": [CONFIDENTIAL["target"]] if confidential else sorted(EXPECTED_TARGETS),
         "limit": CONFIDENTIAL_LIMIT if confidential else RESPONSE_LIMIT,
         "forbidExternalLinks": FORBID_LINKS,
+        "exportTitle": CONFIDENTIAL_TITLE if confidential else "",
     }

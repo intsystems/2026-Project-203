@@ -15,5 +15,7 @@
 # Exact reviewer quotations and saved author baselines retain source whitespace.
 /aaai_submission_openreview/reviews/** whitespace=cr-at-eol,-blank-at-eol
 /aaai_submission_openreview/response_history/** whitespace=cr-at-eol,-blank-at-eol
+# Imported writing references retain their author's original whitespace.
+/aaai_submission_openreview/reference_materials/** whitespace=cr-at-eol,-blank-at-eol
 # The recorded source comparison is a literal patch, including context whitespace.
 /aaai_submission_openreview/evidence/submitted_to_repo.diff -whitespace

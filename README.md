@@ -1,6 +1,6 @@
 # SignMuon, MuonSign, and the Role of Error Feedback
 
-**Sign compression around the Muon LMO: neither order converges, and EF21 is what fixes it.**
+**One-bit Muon variants: where to compress, how to correct errors, and what changes under heterogeneous data.**
 
 [![License](https://img.shields.io/github/license/intsystems/2026-Project-203?color=green)](LICENSE)
 [![Contributors](https://img.shields.io/github/contributors/intsystems/2026-Project-203)](https://github.com/intsystems/2026-Project-203/graphs/contributors)
@@ -31,7 +31,7 @@ sign. There are two obvious places to put the sign, and one obvious question:
 | **MuonUSign** | `LMO(sign(·))` | sign **before** the oracle |
 | **MuonSign** | `sign(LMO(sign(·)))` | sign on **both** sides |
 
-**Neither placement converges.** We exhibit an *L*-smooth function on which each of
+**Each placement can ascend on explicit examples.** We exhibit an *L*-smooth function on which each of
 the three provably ascends, and momentum cannot save them: every one of these
 step maps is positively homogeneous of degree zero. Error feedback is what restores
 the guarantee: EF21-MuonSign attains the standard `O(T^{-1/2})` rate for smooth
@@ -55,22 +55,33 @@ diverges. We localize that to a single layer type and explain the mechanism.
 | 🖼️ Poster | [`slides/Poster_SignMuon.pdf`](slides/Poster_SignMuon.pdf) |
 | 🔗 Literature review | [`LINKREVIEW.md`](LINKREVIEW.md) |
 | 🔍 Code-review notes | [`REVIEW_NOTES.md`](REVIEW_NOTES.md) |
+| 📝 Rebuttal workspace | [`aaai_submission_openreview/README.md`](aaai_submission_openreview/README.md) |
 
-## Abstract
+## Current results
 
-SignMuon, sign compression of the Muon update to one bit per parameter, is the
-most straightforward adaptation of Muon to an extremely low communication budget.
-It outperforms SignSGD in practice, yet it can diverge on a linear function. The
-natural conjecture is that the order of operations is to blame, and that signing
-*before* rather than after the Linear Minimization Oracle (LMO) would fix it. It
-does not: sign-before (**MuonUSign**) diverges too, as does signing on both sides
-(**MuonSign**), so no naive placement of the sign around the LMO converges. Error
-feedback repairs one of them: **EF21-MuonUSign** attains the standard `O(T^{-1/2})`
-rate for smooth nonconvex optimization and decisively outperforms SignSGD, and
-compressing the downlink as well costs little beyond that. What the guarantee
-costs is the placement. Across centralized, federated and language-modelling
-experiments the best placement is consistently sign-*after*-the-LMO: precisely
-the one our counterexamples break and error feedback fails to repair.
+SignMuon compresses Muon's orthogonalized update by taking its sign. On CIFAR-10,
+it outperforms SignSGD in centralized ResNet-18 training (94.60% versus 93.37%)
+and IID federated CNN2 training (85.72% versus 81.44%). Theorems 1–4 establish
+why the placement of sign compression and error feedback matters. The new
+extensions include smooth objectives bounded below, a conditional SignMuon
+convergence theorem, and convex quadratic examples for learning rates and fixed
+momentum tuned to a finite training budget.
+
+Heterogeneous clients change the practical recommendation. With 11
+Dirichlet(0.1) CNN2/CIFAR-10 clients, validation-tuned learning rates, five final
+seeds and no local updates, **EF21-MuonSign reaches 84.03%** and
+**EF21-MuonUSign 83.84%**, compared with SignMuon at 42.96% and SignSGD at 36.24%.
+The two gradient-feedback variants retain their IID accuracy. These are
+experimental comparisons; the counterexamples do not predict an accuracy ranking.
+
+The EF21 rates build on EF21-Muon. The extended constant/cosine-schedule and
+fixed EMA/Nesterov proofs assume separable layers and exact polar updates;
+the conditional SignMuon theorem allows interacting layers but requires uniform
+alignment of signed updates with momentum. That condition remains untested in
+networks. nanoGPT tests centralized optimization after full-precision gradient
+averaging. See the [working addendum](aaai_article/signmuon_addendum_body.tex),
+[submitted-source map](aaai_submission_openreview/01_SUBMISSION_MAP.md), and
+[rebuttal evidence ledger](aaai_submission_openreview/02_REBUTTAL_PLAN.md).
 
 ## The eight methods
 
@@ -237,6 +248,7 @@ pinned dependencies, and build and axiom-audit instructions.
 ```
 ├── aaai_article/     the AAAI submission, and the source of every edition
 │   └── arxiv/          make_arxiv.py  ->  the arXiv version
+├── aaai_submission_openreview/  rebuttals, source reviews, evidence and editor
 ├── opt_article/      OPT 2026 workshop      (make_opt.py)
 ├── newinml_article/  NewInML @ NeurIPS 2026 (make_newinml.py)
 ├── icomp_article/    ICOMP, first version

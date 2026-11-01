@@ -26,17 +26,29 @@ remaining evidence requests, and verification results. Read
 | File or folder | Purpose |
 | --- | --- |
 | `response_fragments.json` | Human and AI responses, internal evidence notes, selections and review-specific wording options |
-| `confidential_comment.json` | Independently editable optional AC/SPC draft; actual field limit/readers still require verification |
+| `confidential_comment.json` | Editable AC/SPC body, limited to 1,500 characters; the separate title and its 250-character limit are configured in `workspace.json` |
 | `reviews/*.md`, `annotations.json` | Concern summaries and exact links to the immutable review export |
 | `rebuttals/*.md` | Last valid exported text for each response |
 | `reviews/*.html` | Generated browser pages; rebuild after pulling changed source files |
 | `evidence/` | Proofs, audit scripts, extracted tables and recorded checks |
 | `response_history/`, `primer_history/` | Preserved author baseline and earlier editor versions |
+| `reference_materials/` | Writing examples from other papers, kept apart from SignMuon evidence |
 
 The local server saves author JSON and valid Markdown automatically. **Save to
 repo means local files**; it never submits to OpenReview, commits, or pushes Git.
 Unchecked or overlength edits may leave the previous valid Markdown on disk, so
 check the editor's readiness status before copying an export.
+
+The confidential Markdown contains an H1 title followed by the body. Copy these
+into the separate title and comment fields: the 1,500-character limit applies to
+the body, including blank lines, not to the heading. The current approved title
+is 63 characters and the body is 1,492 including its final newline. Both editor
+save modes and rebuilds preserve that Markdown layout.
+
+To reconcile future direct Markdown edits, first run
+`python -X utf8 aaai_submission_openreview/evidence/sync_confidential_draft.py --dry-run`
+from the repository root. Review the counts, then use `--apply`; it backs up the
+previous JSON/configuration and Markdown and increases the editor revision.
 
 ## Share changes
 

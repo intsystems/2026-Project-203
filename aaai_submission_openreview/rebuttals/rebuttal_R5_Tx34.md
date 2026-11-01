@@ -1,7 +1,7 @@
-Dear Reviewer, thank you for your questions.
+Dear Reviewer, thank you for the careful review.
 
-1. Re our contribution: We explore how to combine Muon with sign compression, varying the placement of sign and error feedback. The EF21 rates follow from EF21-Muon. Our new results are the failures: all 3 sign placements can move uphill for every step size and momentum (Theorems 1–3). Error feedback on the LMO output fails because the polar factor can change by $\Theta(1)$ per step (Theorem 4), so error feedback should act on the gradient. In our heterogeneous test, only EF21-Muon(U)Sign retain over 80% (see our response to 7S1b, Q2).
+1. Re our contribution: We will state our contribution more sharply. We explore how to combine Muon with sign compression, varying the placement of sign and error feedback. The EF21 rates follow from EF21-Muon; the new results are the failures: all 3 sign placements can move uphill for every step size and momentum (Theorems 1–3). Error feedback on the LMO output fails because the polar factor can change by $\Theta(1)$ per step (Theorem 4), so it should act on the gradient. With heterogeneous clients, only EF21-Muon(U)Sign retain over 80% (see 7S1b, Q2).
 2. Re what Theorem 4 rules out: As you note, Theorem 4 treats fixed parameters. In our new 8×8 convex quadratic for exact-polar EF21-SignMuon, the gradient has a nonzero projection onto a fixed direction in parameter space. Every compressed update is perpendicular to that direction, leaving this gradient projection unchanged and the full gradient norm ≥1. This proves failure with decreasing rates: any strictly decreasing rate to zero without momentum, or shifted power decay with fixed EMA/Nesterov. Separately, we prove failure for any constant rate and fixed momentum tuned to a budget T, with smoothness and initial gap fixed.
 3. Re the empirical ranking: We will clarify our statements: our failure examples and guarantees do not predict the empirical ranking, and our compressor conditions are sufficient, not necessary.
 
-We hope this clarifies our contribution and warrants a reassessment.
+We hope these answers warrant reconsidering the score.

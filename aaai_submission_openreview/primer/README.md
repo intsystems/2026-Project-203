@@ -60,6 +60,22 @@ python primer/workspace.py check
 
 Character limits count UTF-16 source characters, including LaTeX and line breaks, matching the browser counter. Word counts are informational. Venues with word-based limits require a deliberate extension; the current version will not treat a word limit as a character limit.
 
+### Separate confidential title
+
+If the conference provides a separate title field, optionally set
+`confidential.export_title` and `rules.confidential_title_character_limit` in
+`workspace.json`. The title appears above the confidential editor and as an H1 in
+the Markdown export. The body editor, copy action and body limit exclude that
+heading; both server saves and native folder saves retain it in Markdown.
+Title-less workspaces keep their existing format and need no migration.
+
+When importing an already authored Markdown comment, first dry-run the import
+and verify the title/body counts, then back up `workspace.json`,
+`confidential_comment.json` and the Markdown before changing them. Copy only the
+body into the selected comment fragment, preserve its exact spacing, and increase
+the review revision so older browser drafts cannot overwrite it. Rebuild and
+check that the generated Markdown is byte-identical to the approved draft.
+
 ## Update the primer later
 
 An agent should read [AGENT_GUIDE.md](AGENT_GUIDE.md) and [AGENTS.md](AGENTS.md). Update runtime or templates, run the portable checks, then run `python primer/refresh_manifest.py`.

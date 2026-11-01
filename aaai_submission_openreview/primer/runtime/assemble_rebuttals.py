@@ -11,7 +11,7 @@ import tempfile
 
 from check_rebuttals import EXPECTED, LIMIT, LINK, PLACEHOLDER
 
-from workspace_context import ROOT, REVIEW_SPECS, CONFIDENTIAL, CONFIDENTIAL_LIMIT, FORBID_LINKS
+from workspace_context import ROOT, REVIEW_SPECS, CONFIDENTIAL, CONFIDENTIAL_LIMIT, CONFIDENTIAL_TITLE, FORBID_LINKS
 WORKSPACE = ROOT / "response_fragments.json"
 
 
@@ -229,6 +229,8 @@ def compose(review):
 
 def compile_review(review, limit=LIMIT):
     body = compose(review)
+    title = CONFIDENTIAL_TITLE if CONFIDENTIAL["enabled"] and review["target"] == CONFIDENTIAL["target"] else ""
+    markdown = f"# {title}\n\n{body}" if title else body
     selected = [fragment for fragment in review["fragments"] if fragment["include"]]
     omitted = [fragment["id"] for fragment in review["fragments"] if not fragment["include"]]
     issues = []
@@ -236,16 +238,16 @@ def compile_review(review, limit=LIMIT):
         issues.append("Select at least one response fragment.")
     if limit is not None and character_count(body) > limit:
         issues.append(f"The assembled draft exceeds {limit:,} characters.")
-    if FORBID_LINKS and LINK.search(body):
+    if FORBID_LINKS and LINK.search(markdown):
         issues.append("The assembled draft contains a link or address.")
-    if PLACEHOLDER.search(body) or "\ufeff" in body:
+    if PLACEHOLDER.search(markdown) or "\ufeff" in markdown:
         issues.append("The assembled draft contains a placeholder or byte-order mark.")
     for fragment in selected:
         if not fragment["text"].strip():
             issues.append(fragment["id"] + " has an empty response.")
         if fragment["needs_check"]:
             issues.append(fragment["id"] + " still needs an evidence check.")
-    return {"body": body, "characters": character_count(body), "words": len(body.split()), "limit": limit,
+    return {"body": body, "markdown": markdown, "characters": character_count(body), "words": len(body.split()), "limit": limit,
             "issues": issues, "can_export": not issues,
             "included": [fragment["id"] for fragment in selected], "omitted": omitted,
             "pending": [fragment["id"] for fragment in review["fragments"] if fragment["needs_check"]]}
@@ -257,10 +259,10 @@ def export_review(review, root=ROOT, check=False, limit=LIMIT):
     result["written"] = False
     if result["can_export"]:
         if check:
-            if not path.is_file() or path.read_text(encoding="utf-8") != result["body"]:
+            if not path.is_file() or path.read_text(encoding="utf-8") != result["markdown"]:
                 result["issues"].append("The Markdown file differs from the selected fragments.")
         else:
-            atomic_text(path, result["body"])
+            atomic_text(path, result["markdown"])
             result["written"] = True
     return result
 
@@ -285,7 +287,7 @@ def main():
         failed |= bool(result["issues"])
     for stem, review in (load_confidential()["reviews"] if CONFIDENTIAL["enabled"] else {}).items():
         result = export_review(review, check=args.check, limit=CONFIDENTIAL_LIMIT)
-        print(f"{stem}: {result['characters']} characters; confidential limit unspecified")
+        print(f"{stem}: {result['characters']}/{CONFIDENTIAL_LIMIT} characters")
         for issue in result['issues']:
             print('  ' + issue)
         failed |= bool(result['issues'])

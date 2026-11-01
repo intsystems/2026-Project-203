@@ -380,6 +380,11 @@ def confidential_page(reviews, css):
     editor = editor.replace('Edits across several answers join them into one shared answer, with every concern still linked. Its response fields then edit the same text. Use “Give this concern a separate answer” to split it again.', 'Edits here update the separate comment field above. References and internal notes stay outside the exported comment.')
     editor = editor.replace('The numbered responses follow the reviewer’s specific-feedback questions, with short editable “Re …” headings. Edit the full text freely or use the heading and answer fields', 'Edit the full confidential comment here or in its separate field')
     editor = editor.replace(f'The numbered “Re …” headings and answer text are exported. The longer concern summaries and navigation links below are for drafting. The {LIMIT_LABEL}-character limit counts LaTeX source and every line break; words are counted by spaces and line breaks.', 'Only the comment text is exported. References and notes are excluded. Confirm the separately configured confidential-comment limit before posting. Characters include LaTeX source and line breaks.')
+    title = CONFIDENTIAL.get('export_title', '')
+    if title:
+        editor = ('<section class="comment-title"><h3>Short title</h3>'
+                  f'<p>{escape(title)}</p><p>Copy this into the separate title field. '
+                  'It is excluded from the comment body character count.</p></section>') + editor
     data = {**browser_context(True), 'stem': CONFIDENTIAL_STEM, 'response': response, 'topicPassages': {},
             'pointTitles': {'C1': 'Confidential AC/SPC comment'}, 'evidence': review['evidence'],
             'sourceFile': 'confidential_comment.json', 'confidential': True}
@@ -392,7 +397,7 @@ def confidential_page(reviews, css):
 <div class="reader-layout"><aside class="summary-pane" id="summary-C1"><div class="pane-heading"><h2>Purpose and references</h2><p>A concise decision summary: correct a factual misunderstanding, connect the evidence, and make a reasoned request for acceptance.</p><p>This draft is for the AC/SPC. Saving writes local files; it does not post to OpenReview.</p><a class="button-link" href="#assembled-draft">Edit the confidential comment ↓</a></div>
 <section class="chair-references" id="chair-references"><h3>Relevant review passages</h3><p>Reviewer IDs and question numbers appear in the comment. These clickable links are drafting aids and are excluded from the exported text.</p><ol>{''.join(references)}</ol>
 <p>Use the internal notes to track unresolved technical items. Add decision-relevant reviewer references in <code>workspace.json</code>; the agent guide explains their format.</p>
-<p><strong>Length:</strong> review responses use the limit in <code>workspace.json</code>. The confidential limit is configured separately and remains unspecified until verified against the conference rules.</p>
+<p><strong>Length:</strong> the comment body and its optional short title have separately configured limits. The body counter includes LaTeX source and line breaks.</p>
 <p><a href="../04_CONFIDENTIAL_COMMENT_STRATEGY.md">Strategy, alternatives and source guidance</a></p></section></aside>
 <main class="original-pane"><div class="workspace-toolbar"><a href="#assembled-draft">Full comment and rendered preview</a><div class="workspace-save"><button id="save-to-repo" type="button" disabled>Save to repo</button><span id="save-status" role="status">Loading draft…</span></div></div>{editor}</main></div>
 <script type="application/json" id="review-data">{encoded}</script><script src="{ASSET_URL}/vendor/katex/katex.min.js"></script><script src="{ASSET_URL}/vendor/katex/contrib/auto-render.min.js"></script><script>{script}</script></body></html>'''

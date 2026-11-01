@@ -67,6 +67,13 @@ def main():
         result = run(paper, 'init', '--source', 'reviews.json', '--title', 'Relocated Paper', '--short-title', 'Relocated', '--venue', 'OtherConf', '--submission', '321', '--limit', '380')
         assert result.returncode == 0, result.stdout + result.stderr
         config = json.loads((paper/'workspace.json').read_text(encoding='utf-8'))
+        config['confidential']['export_title'] = 'A private decision summary'
+        config['rules'].update(confidential_character_limit=100, confidential_title_character_limit=250)
+        (paper/'workspace.json').write_text(json.dumps(config), encoding='utf-8')
+        comments = json.loads((paper/'confidential_comment.json').read_text(encoding='utf-8'))
+        comments['reviews']['confidential_ac']['fragments'][0].update(text='Private synthesis for the chairs.', needs_check=False)
+        (paper/'confidential_comment.json').write_text(json.dumps(comments), encoding='utf-8')
+        assert run(paper, 'build').returncode == 0
         stem = config['reviews'][0]['stem']
         with socket.socket() as listener:
             listener.bind(('127.0.0.1', 0))
@@ -142,7 +149,8 @@ def main():
             browser.load((paper/'reviews'/(stem+'.html')).as_uri()+'#responses')
             exercise = r'''(async initial => {
               const data = JSON.parse(document.getElementById('review-data').textContent);
-              const files = new Map([['response_fragments.json', JSON.stringify(initial)]]);
+              const sourceFile = data.sourceFile || 'response_fragments.json';
+              const files = new Map([[sourceFile, JSON.stringify(initial)]]);
               const folder = (prefix='') => ({name:data.workspaceFolder,
                 async getDirectoryHandle(name) {return folder(prefix+name+'/');},
                 async getFileHandle(name, options={}) {
@@ -151,19 +159,25 @@ def main():
                   return {async getFile(){return {text:async()=>files.get(key)};},async createWritable(){let pending;return {async write(text){pending=text;},async close(){files.set(key,pending);},async abort(){}};}};
                 }});
               window.showDirectoryPicker=async()=>({name:'parent',async getFileHandle(){throw new Error('Select child');},async getDirectoryHandle(name){if(name!==data.workspaceFolder)throw new Error('Wrong child');return folder();}});
-              const input=document.getElementById('answer-R1-1'); input.value+=' Native save.'; input.dispatchEvent(new Event('input',{bubbles:true}));
+              const input=document.getElementById('answer-'+data.response.fragments[0].id.replace(/\./g,'-')); input.value+=' Native save.'; input.dispatchEvent(new Event('input',{bubbles:true}));
               document.getElementById('save-to-repo').click();
               for(let i=0;i<100 && document.getElementById('save-to-repo').disabled;i++)await new Promise(resolve=>setTimeout(resolve,30));
               if(!document.getElementById('save-status').textContent.includes('Markdown updated'))throw new Error(document.getElementById('save-status').textContent);
-              const saved=JSON.parse(files.get('response_fragments.json'));
+              const saved=JSON.parse(files.get(sourceFile));
               if(saved.reviews[data.stem].fragments[0].text!==input.value)throw new Error('Native answer lost');
               for(const stem of Object.keys(initial.reviews))if(stem!==data.stem && JSON.stringify(initial.reviews[stem])!==JSON.stringify(saved.reviews[stem]))throw new Error('Other review changed');
-              if(files.get('rebuttals/'+data.response.target)!==document.getElementById('assembled-text').value)throw new Error('Native export differs');
+              const markdown=(data.exportTitle ? '# '+data.exportTitle+'\n\n' : '')+document.getElementById('assembled-text').value;
+              if(files.get('rebuttals/'+data.response.target)!==markdown)throw new Error('Native export differs');
               return true;
             })'''
             assert browser.evaluate(exercise+'('+json.dumps(current)+')')
+            browser.load((paper/'reviews'/'confidential_ac.html').as_uri()+'#responses')
+            assert browser.evaluate("JSON.parse(document.getElementById('review-data').textContent).limit") == 100
+            assert browser.evaluate("document.querySelector('.comment-title').textContent.includes('A private decision summary')")
+            current = json.loads((paper/'confidential_comment.json').read_text(encoding='utf-8'))
+            assert browser.evaluate(exercise+'('+json.dumps(current)+')')
             assert not browser.errors, browser.errors
-            print('Relocated browser checks passed: math, both editors, variants, 380-character limit, autosave, native folder save, 3 reviews, desktop/mobile and separate paper storage.')
+            print('Relocated browser checks passed: math, both editors, variants, separate title/body limits, autosave, native folder save, 3 reviews, desktop/mobile and separate paper storage.')
             browser.call('Browser.close')
         finally:
             if connection:

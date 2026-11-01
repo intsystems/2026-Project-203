@@ -1,4 +1,4 @@
-# Rebuttal workspace — direct answers and the heterogeneity mechanism, revision 13
+# Rebuttal workspace — final confidential comment and synchronized exports
 
 Rules are now confirmed by the AAAI-27 author-response email: one response per review, at most 1500 characters each; one Confidential Comment to the SPC and AC; no external links (papers with links in responses are rejected); no uploads; editable until 31 October 2026 AoE.
 
@@ -8,12 +8,38 @@ Open `start_workspace.cmd` or read `rebuttals/rebuttal_*.md`. The ten-method IID
 
 | Reviewer | UTF-16 characters /1500 | Selected concerns | Missing evidence |
 | --- | ---: | ---: | --- |
-| 7S1b | 1496 | 7/10 | R1.6, R1.7, R1.8 |
-| D4r2 | 1493 | 6/8 | R2.2, R2.8 |
-| Ueq5 | 1480 | 5/5 | None |
-| pqje | 1496 | 14/15 | R4.15 |
-| Tx34 | 1488 | 6/6 | None |
+| 7S1b | 1492 | 7/10 | R1.6, R1.7, R1.8 |
+| D4r2 | 1494 | 6/8 | R2.2, R2.8 |
+| Ueq5 | 1491 | 5/5 | None |
+| pqje | 1494 | 14/15 | R4.15 |
+| Tx34 | 1496 | 6/6 | None |
 | AI_Reviewer | 1497 | 18/20 | AI.6, AI.20 |
+| AC/SPC body | 1492 | Separate title: 63/250 | None selected |
+
+## Final confidential comment and repository cleanup
+
+The approved Markdown is preserved byte for byte. It now leads with progress
+toward optimization with sign compression and the centralized/federated SignSGD
+comparisons. Reviewer references connect novelty, the 8×8 construction, the
+smooth lower-bounded extensions, the heterogeneous tests, conditional SignMuon
+convergence, theorem coverage, and table/rate corrections. The closing asks the
+AC/SPC to consider the novelty and timeliness.
+
+The body is synchronized to `confidential_comment.json` at review revision 16;
+the separate title is `confidential.export_title` in `workspace.json`.
+Rebuilds and both save modes retain the title without counting it against the
+body limit. `evidence/sync_confidential_draft.py` provides a dry-run import with
+backups. The eight pre-existing evidence flags above remain open and excluded;
+none was relabeled as resolved during cleanup.
+
+Current checks and immutable-input hashes are recorded in
+[`evidence/repository_cleanup_validation.json`](evidence/repository_cleanup_validation.json).
+
+The original 668 kissing-number research files were relocated, with every file
+verified by SHA-256, to `D:/GitHubD/KissingNumber27/research/kissing43/`. Its
+transfer receipt is stored there. Local research jobs may recreate the old path;
+it is excluded from SignMuon history. The ICML writing example is in
+`reference_materials/`.
 
 ## What changed and why
 
@@ -22,9 +48,13 @@ Each reply now answers the reviewer's literal question in its first sentence, co
 - **7S1b:** the federated ordering does not persist. The table shows IID next to Dirichlet(0.1). It explains that methods applying sign or polar per client before averaging lose 35–45 points, while the guaranteed EF21 methods, which orthogonalize once on the server, lose nothing. That is consistent with Theorem 5, which has no client-dissimilarity bound.
 - **D4r2:** their one required item, the writing list, was previously unanswered. All five points now receive commitments; the renaming is declined politely in favour of a placement table.
 - **Ueq5:** the reply does exactly what their justification asks: reconciles the tables (including Table 1 against A5) and separates the two rates. The squaring error is conceded first.
-- **pqje:** Q1 is answered table by table (none fully covered as submitted; Tables 1–2 covered by the new bounds up to Newton–Schulz error; Table 3 not covered). SignMuon is identified as concurrent (Mishra et al. is a May 2026 preprint developed in parallel); the replies do not mention our own arXiv version or start date, to keep the review double-blind. All of their writing requests receive concrete edits.
+- **pqje:** Q1 is answered table by table (none fully covered as submitted; Tables 1–2 covered by the new bounds for exact polar updates; Newton–Schulz error and Table 3 momentum warmup remain outside the guarantee). SignMuon is identified as concurrent (Mishra et al. is a May 2026 preprint developed in parallel); the replies do not mention our own arXiv version or start date, to keep the review double-blind. All of their writing requests receive concrete edits.
 - **Tx34:** the reply separates inherited from new results and states the design lesson (compress the gradient; orthogonalize after aggregation). It says exactly what the submitted Theorem 4 covers before adding the 8×8 construction, and Q3 says we will clarify our statements on the empirical ranking and on sufficient versus necessary conditions.
 - **AI:** opens with a technical introduction, without a salutation; concessions on separability, exact polar factors and X versus W; credit to Modoranu et al. and Jiang et al.; the method matrix is committed; minor points are answered with submitted A5/A10 facts.
+
+## Revision 14
+
+The replies keep the revision 13 content in the wording of the authors' ICML response (specific thanks, "We agree", "We respectfully disagree", gentle score wording for pqje and Tx34 only). The confidential comment now tells the contribution story within its 1500-character limit. See the Revision 14 section of `02_REBUTTAL_PLAN.md`.
 
 ## Revision 13
 
